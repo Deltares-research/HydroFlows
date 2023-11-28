@@ -1,0 +1,28 @@
+name: gc-japan
+
+channels:
+  - conda-forge
+
+dependencies:
+  - hydromt
+  - hydromt_sfincs
+  - jupyter
+  - netcdf4
+  - matplotlib # to run examples
+  - nc-time-axis
+  - numba
+  - numpy
+  - openpyxl
+  - pandas
+  - pip
+  - pyflwdir
+  - pygeos
+  - python<3.11  # in case we need hydromt_delft3dfm. This is not yet for 3.11
+  - rasterio
+  - requests
+  - scipy
+  - toml
+  - xarray
+  - zarr
+  - pip:
+    - snakemake

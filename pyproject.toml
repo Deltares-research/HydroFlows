@@ -1,0 +1,73 @@
+[build-system]
+requires = ["flit_core >=3.4.0,<4"]
+build-backend = "flit_core.buildapi"
+
+[project]
+name = "HydroFlows"
+authors = [
+  { name = "Dirk Eilander", email = "dirk.eilander@deltares.nl" },
+  { name = "Hessel Winsemius", email = "hessel.winsemius@deltares.nl" },
+]
+dependencies = [
+  "hydromt",           # hydromt core for setting up models
+#  "hydromt_sfincs",    # hydromt plugin for sfincs models
+#  "hydromt_wflow",     # hydromt plugin for wflow models
+  "numba",             # speed up computations (used in e.g. stats)
+  "numpy>=1.20",       # pin necessary to ensure compatability with C headers
+  "netcdf4",           # netcfd IO
+  "tomli",             # parsing toml files
+  "tomli-w",           # writing toml files
+  "xarray",            # ndim data arrays
+  "universal_pathlib", # provides path compatability between different filesystems
+]
+
+requires-python = ">=3.9"
+readme = "README.md"
+classifiers = [
+  "Development Status :: 5 - Production/Stable",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Hydrology",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+]
+dynamic = ['version', 'description']
+
+[project.optional-dependencies]
+io = [
+]
+extra = [
+]
+dev = [
+  "black",       # linting
+  "ruff",        # linting
+  "pre-commit",  # linting
+  "pip>=23.1.2", # needed for recursive dependencies
+  "flit",        # needed to publish to pypi
+  "twine",       # needed to publish to pypi
+]
+test = [
+  "pytest>=2.7.3",  # testing framework
+  "pytest-cov",     # test coverage
+  "pytest-mock",    # mocking
+  "pytest-timeout", # darn hanging tests
+  "xugrid",
+]
+doc = [
+  "nbsphinx",                     # build notebooks in docs
+  "pydata-sphinx-theme",          # theme
+  "sphinx",                       # build docks
+  "sphinx_design",                # doc layout
+  "sphinx_autosummary_accessors", # doc layout
+  "HydroFlows[examples,extra]",      # examples are included in the docs
+]
+examples = [
+]
+
+full = ["HydroFlows[io,extra,dev,test,doc,examples]"]
+slim = ["HydroFlows[io,extra,examples]"]
+
+[project.urls]
+Source = "https://github.com/Deltares-research/HydroFlows"
+
+
