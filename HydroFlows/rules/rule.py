@@ -15,13 +15,16 @@ from typing import Dict, List, Optional
 
 __all__ = ["Rule"]
 
+
 class Input(BaseModel):
     file1: FilePath
     file2: FilePath
 
+
 class Params(BaseModel):
     name: str
     arg1: int
+
 
 class Output(BaseModel):
     file: FilePath
@@ -31,12 +34,12 @@ class Rule(BaseModel):
     """
     Base rule to rule them all. Must be extended to rule-specific e.g. for running models, pre / postprocessing
     """
-    input: Dict
-    output: Dict
-    params: Dict
+    input: Input
+    output: Output
+    params: Params
 
 
-    def to_file(
+    def to_str(
         self,
         format: str ="snakemake",
         wildcards: Optional[Dict[str, List]] = {}
@@ -48,7 +51,7 @@ class Rule(BaseModel):
         -------
         format : str
             selected format for output
-        wildcards : Dict[str, List],
+        wildcards : Dict[str, List], optional
             expansion of wildcards for given inputs or outputs
 
         """
@@ -66,5 +69,6 @@ class Rule(BaseModel):
         # TODO: change into logger object
         print(f"Running rule with input {self.input} and params {self.params}")
         print(f"Writing output to {self.output}")
+
         self.input.file1
 
