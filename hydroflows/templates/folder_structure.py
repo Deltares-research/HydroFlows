@@ -7,7 +7,7 @@
 ├── README.md
 ├── LICENSE.md
 ├── workflow
-│   ├── rules
+│   ├── methods
 |   │   ├── module1.smk
 |   │   └── module2.smk
 │   ├── envs

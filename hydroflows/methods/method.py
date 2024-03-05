@@ -1,19 +1,19 @@
 """This script contains the Rule class, which is the main class for
-defining rules in hydroflows. A rule the basic unit in a workflow
+defining methods in hydroflows. A rule the basic unit in a workflow
 and should have a name, inputs, and outputs, and optionally params.
 The goal of the Rule class is to validate these and hold the intelligence 
 for running the rule. 
 
-All HydroFlow rules should inherit from this class and implement specific
+All HydroFlow methods should inherit from this class and implement specific
 validators and a run method.
 
-Later we may want to add common methods to parse rules to certain formats, e.g. smk, or cwl.
+Later we may want to add common methods to parse methods to certain formats, e.g. smk, or cwl.
 """
 
 from pydantic import BaseModel, FilePath
 from typing import Dict, List, Optional
 
-__all__ = ["Rule"]
+__all__ = ["Method"]
 
 # NOTE these are just examples
 # file1, file2 etc should be replaced by the actual inputs for the rule
@@ -31,7 +31,7 @@ class Output(BaseModel):
     file: FilePath
 
 
-class Rule(BaseModel):
+class Method(BaseModel):
     """
     Base rule to rule them all. Must be extended to rule-specific e.g. for running models, pre / postprocessing
     """

@@ -1,7 +1,7 @@
 """This script contains the command line interface for hydroflows.
 We foresee the following commands:
 
-- hf run: run a single rule specified in the rules submodule
+- hf run: run a single method specified in the methods submodule
           e.g. hf run build_wflow --params param1 param2 --inputs input1 input2 --outputs output1
 
 optional
