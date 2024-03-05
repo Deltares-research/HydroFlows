@@ -10,11 +10,9 @@ optional
 """
 
 import click
-import json
 import os
 
-from .. import __version__
-from pydantic import ValidationError
+from .. import __version__, log
 
 
 def print_license(ctx, param, value):
@@ -32,6 +30,7 @@ def print_info(ctx, param, value):
 
 
 verbose_opt = click.option("--verbose", "-v", count=True, help="Increase verbosity.")
+quiet_opt = click.option("--quiet", "-q", count=True, help="Decrease verbosity.")
 
 @click.group()
 @click.version_option(__version__, message="HydroFlows version: %(version)s")
@@ -90,9 +89,23 @@ opt_params = click.option(
 @opt_input
 @opt_output
 @opt_params
+@verbose_opt
+@quiet_opt
 @click.pass_context
-def run(ctx, runner, input, output, params):
-    raise NotImplementedError
+def run(ctx, runner, input, output, params, verbose, quiet):
+    log_level = max(10, 30 - 10 * (verbose - quiet))
+    logger = log.setuplog(
+        f"run_{runner}",
+        os.path.join(os.getcwd(), f"hydroflows_run_{runner}.log"),
+        log_level=log_level,
+        append=False,
+    )
+    logger.info(f"Input: {input}")
+    logger.info(f"Parameters: {params}")
+    logger.info(f"Output: {output}")
+    print(f"Input: {input}")
+
+    # raise NotImplementedError
     # check if runner is available
 
 
