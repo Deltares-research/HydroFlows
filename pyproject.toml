@@ -51,6 +51,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
+  "pytest-lazy-fixture",  # tet on multiple fixtures
   "xugrid",
 ]
 doc = [
@@ -69,5 +70,8 @@ slim = ["HydroFlows[io,extra,examples]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
+
+[project.scripts]
+hydroflows = "hydroflows.cli.main:cli"
 
 
