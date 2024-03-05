@@ -85,7 +85,7 @@ opt_params = click.option(
 @cli.command(short_help="Run a workflow rule with set inputs, outputs and parameters")
 @click.argument(
     "RUNNER",
-    type="str"
+    type=str
 )
 @opt_input
 @opt_output
