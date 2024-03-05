@@ -12,16 +12,16 @@ from hydromt.log import setuplog
 import geopandas as gpd
 
 class Input(BaseModel):
-    sfincs_boundaries: FilePath
+    sfincs_src_points: FilePath
 
 class Output(BaseModel):
-    wflow_inp: Path
+    wflow_toml: Path
 
 class Params(BaseModel):
     # optional parameters 
     config: Path = Path(TEMPLATE_DIR, "wflow_build.yaml")
     data_libs: List[str] = ["artifact_data"]
-    strord: int = 4
+    upstream_area: int = 30
 
 class WflowBuild(Rule):
     """
@@ -35,7 +35,7 @@ class WflowBuild(Rule):
     def run(self):
         logger = setuplog("build", log_level=20)
         # read the Sfincs geometry file containing the boundary points required for building the upstream Wflow model
-        gdf = gpd.read_file(self.input.sfincs_boundaries)
+        gdf = gpd.read_file(self.input.sfincs_src_points)
         # define the target coordinate reference system as EPSG 4326
         tgt_crs = 'EPSG:4326'    
         # reproject the GeoDataFrame to the target CRS
@@ -48,16 +48,16 @@ class WflowBuild(Rule):
         # specify region 
         region = {
             "subbasin": region_lists,
-            "strord": self.params.strord,
+            "uparea": self.params.upstream_area,
         }
         # read the configuration
         opt = configread(self.params.config)
         # create the hydromt model
-        root = self.output.wflow_inp.parent
+        root = self.output.wflow_toml.parent
         w = WflowModel(
             root=root,
             mode="w+",
-            config_fn=None,
+            config_fn=self.output.wflow_toml.name,
             data_libs=self.params.data_libs,
             logger=logger
         )
