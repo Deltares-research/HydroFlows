@@ -71,6 +71,6 @@ slim = ["HydroFlows[io,extra,examples]"]
 Source = "https://github.com/Deltares-research/HydroFlows"
 
 [project.scripts]
-hydroflows = "HydroFlows.cli.main:cli"
+hydroflows = "hydroflows.cli.main:cli"
 
 

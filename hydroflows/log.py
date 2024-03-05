@@ -11,7 +11,7 @@ FMT = "%(asctime)s - %(name)s - %(module)s - %(levelname)s - %(message)s"
 
 
 def setuplog(
-    name: str = "HydroFlows",
+    name: str = "hydroflows",
     path: str = None,
     log_level: int = 20,
     fmt: str = FMT,
@@ -48,7 +48,7 @@ def setuplog(
         if append is False and os.path.isfile(path):
             os.unlink(path)
         add_filehandler(logger, path, log_level=log_level, fmt=fmt)
-    logger.info(f"HydroFlows version: {__version__}")
+    logger.info(f"hydroflows version: {__version__}")
     return logger
 
 def add_filehandler(logger, path, log_level=20, fmt=FMT):

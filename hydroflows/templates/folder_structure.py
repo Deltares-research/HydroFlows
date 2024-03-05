@@ -1,5 +1,5 @@
 # TODO move this into a cookiecutter template?
-# default nested folder structures for use in HydroFlows
+# default nested folder structures for use in hydroflows
 
 """ 
 ├── .gitignore
