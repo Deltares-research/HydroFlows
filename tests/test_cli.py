@@ -1,4 +1,4 @@
-from HydroFlows.cli.main import cli
+from hydroflows.cli.main import cli
 
 
 def test_cli_main(cli_obj):

@@ -1,4 +1,4 @@
-"""This script contains the command line interface for HydroFlows. 
+"""This script contains the command line interface for hydroflows.
 We foresee the following commands:
 
 - hf run: run a single rule specified in the rules submodule
@@ -25,21 +25,22 @@ def print_license(ctx, param, value):
 def print_info(ctx, param, value):
     if not value:
         return {}
-    click.echo(f"HydroFlows, Copyright Deltares")
+    click.echo(f"hydroflows, Copyright Deltares")
     ctx.exit()
 
 
 verbose_opt = click.option("--verbose", "-v", count=True, help="Increase verbosity.")
 quiet_opt = click.option("--quiet", "-q", count=True, help="Decrease verbosity.")
+overwrite_opt = click.option("--overwrite", "-w", is_flag=True, default=False, help="Overwrite log message (instead of appending).")
 
 @click.group()
-@click.version_option(__version__, message="HydroFlows version: %(version)s")
+@click.version_option(__version__, message="hydroflows version: %(version)s")
 @click.option(
     "--license",
     default=False,
     is_flag=True,
     is_eager=True,
-    help="Print license information for HydroFlows",
+    help="Print license information for hydroflows",
     callback=print_license,
 )
 @click.option(
@@ -47,7 +48,7 @@ quiet_opt = click.option("--quiet", "-q", count=True, help="Decrease verbosity."
     default=False,
     is_flag=True,
     is_eager=True,
-    help="Print information and version of HydroFlows",
+    help="Print information and version of hydroflows",
     callback=print_info,
 )
 @click.option(
@@ -57,7 +58,7 @@ quiet_opt = click.option("--quiet", "-q", count=True, help="Decrease verbosity."
 )
 @click.pass_context
 def cli(ctx, info, license, debug):  # , quiet, verbose):
-    """ Command line interface for HydroFlows """
+    """ Command line interface for hydroflows """
     if ctx.obj is None:
         ctx.obj = {}
 
@@ -91,14 +92,17 @@ opt_params = click.option(
 @opt_params
 @verbose_opt
 @quiet_opt
+@overwrite_opt
 @click.pass_context
-def run(ctx, runner, input, output, params, verbose, quiet):
+def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
+    append = not overwrite
+    # print(overwrite)
     log_level = max(10, 30 - 10 * (verbose - quiet))
     logger = log.setuplog(
         f"run_{runner}",
         os.path.join(os.getcwd(), f"hydroflows_run_{runner}.log"),
         log_level=log_level,
-        append=False,
+        append=append,
     )
     logger.info(f"Input: {input}")
     logger.info(f"Parameters: {params}")
