@@ -3,7 +3,7 @@ from pathlib import Path
 from pytest import fixture
 import geopandas as gpd
 from shapely.geometry import Point
-from hydroflows.rules import WflowBuild
+from hydroflows.methods import WflowBuild
 
 @fixture
 def sfincs_src_points():
