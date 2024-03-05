@@ -1,12 +1,12 @@
 """This script contains the command line interface for hydroflows.
 We foresee the following commands:
 
-- hf run: run a single method specified in the methods submodule
-          e.g. hf run build_wflow --params param1 param2 --inputs input1 input2 --outputs output1
+- hydroflows run: run a single method specified in the methods submodule
+          e.g. hydroflows run build_wflow --params param1 param2 --inputs input1 input2 --outputs output1
 
 optional
-- hf init: initialize a new project
-- hf create: create a new workflow
+- hydroflows init: initialize a new project
+- hydroflows create: create a new workflow
 """
 
 import click
@@ -18,14 +18,14 @@ from .. import __version__, log
 def print_license(ctx, param, value):
     if not value:
         return {}
-    click.echo(f"MIT License. See https://opensource.org/license/mit")
+    click.echo("MIT License. See https://opensource.org/license/mit")
     ctx.exit()
 
 
 def print_info(ctx, param, value):
     if not value:
         return {}
-    click.echo(f"hydroflows, Copyright Deltares")
+    click.echo("hydroflows, Copyright Deltares")
     ctx.exit()
 
 
