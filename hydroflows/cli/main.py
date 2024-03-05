@@ -104,13 +104,23 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
         log_level=log_level,
         append=append,
     )
-    logger.info(f"Input: {input}")
-    logger.info(f"Parameters: {params}")
-    logger.info(f"Output: {output}")
-    print(f"Input: {input}")
+    try:
+        logger.info(f"Input: {input}")
+        logger.info(f"Parameters: {params}")
+        logger.info(f"Output: {output}")
+        print(f"Input: {input}")
+        # close logger file
 
-    # raise NotImplementedError
-    # check if runner is available
+        # raise NotImplementedError
+        # check if runner is available
+    except Exception as e:
+        logger.exception(e)  # catch and log errors
+        raise
+    finally:
+        # close logger gracefully
+        for handler in logger.handlers[:]:
+            handler.close()
+            logger.removeHandler(handler)
 
 
 if __name__ == "__main__":

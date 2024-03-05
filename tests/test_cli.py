@@ -1,3 +1,5 @@
+import os
+import pytest
 from hydroflows.cli.main import cli
 
 
@@ -22,11 +24,19 @@ def test_cli_run_help(cli_obj):
     assert result.exit_code == 0
 
 
-def test_cli_run_SUBCOMMAND(cli_obj):
+
+@pytest.mark.parametrize(
+    "subcommand",
+    [
+        "SOME.SUBCOMMAND",
+        "OTHER.SUBCOMMAND",
+    ]
+)
+def test_cli_run_SUBCOMMAND(cli_obj, subcommand):
     result = cli_obj.invoke(
         cli, [
             'run',
-            'SOME.SUBCOMMAND',
+            subcommand,
             '--input',
             {
                 "file1": "/path/to/file1"
@@ -45,5 +55,11 @@ def test_cli_run_SUBCOMMAND(cli_obj):
         ],
         echo=True
     )
+
     assert result.exit_code == 0
+    # check if log file appears
+    log_file = f"hydroflows_run_{subcommand}.log"
+    assert os.path.isfile(log_file)
+    # remove log file afterwards
+    os.remove(log_file)
 

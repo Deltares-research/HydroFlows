@@ -51,6 +51,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
+  "pytest-lazy-fixture",  # tet on multiple fixtures
   "xugrid",
 ]
 doc = [
