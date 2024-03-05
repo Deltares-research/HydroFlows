@@ -18,3 +18,4 @@ dependencies:
 - pip:
   - pulp==2.7.0 # Making DAG's work
   - snakemake==7.32.4 # Snakemake 8.x.x sucks
+  - pytest-lazy-fixture

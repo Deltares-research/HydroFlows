@@ -3,7 +3,7 @@ from pathlib import Path
 from pytest import fixture
 import geopandas as gpd
 from shapely.geometry import Polygon
-from hydroflows.rules import SfincsBuild
+from hydroflows.methods import SfincsBuild
 
 @fixture
 def region():
