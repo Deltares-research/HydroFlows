@@ -1,10 +1,11 @@
 # tests typical input/output related things
-import os
-import hydroflows
+from pathlib import Path
+from hydroflows.templates import create_folders
 
 
-def test_create_folders(root_folder):
-
+def test_create_folders(tmpdir):
+    # FIXME: this test is not complete
     # test if deepest folder is created
-    hydroflows.create_folders(root_folder)
-    assert(os.path.isdir(root_folder))
+    root_folder = Path(tmpdir, "test")
+    create_folders(root_folder)
+    assert root_folder.exists()

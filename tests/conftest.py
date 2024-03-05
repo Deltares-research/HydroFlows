@@ -2,10 +2,4 @@
 import pytest
 import shutil
 
-@pytest.fixture
-def root_folder():
-    folder = "example_domain"
-    yield folder
-    shutil.rmtree(folder)
-
 
