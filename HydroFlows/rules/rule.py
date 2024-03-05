@@ -15,7 +15,8 @@ from typing import Dict, List, Optional
 
 __all__ = ["Rule"]
 
-
+# NOTE these are just examples
+# file1, file2 etc should be replaced by the actual inputs for the rule
 class Input(BaseModel):
     file1: FilePath
     file2: FilePath
@@ -58,17 +59,12 @@ class Rule(BaseModel):
 
         raise NotImplementedError
 
-    def run(self):
+    def run(self) -> None:
         """
-        Model specific running method goes here
-
-        Returns
-        -------
-
+        The rule logic should be implemented here. 
+        This method called when executing the rule.
         """
-        # TODO: change into logger object
-        print(f"Running rule with input {self.input} and params {self.params}")
-        print(f"Writing output to {self.output}")
-
-        self.input.file1
+        # NOTE: this should be implemented in the specific rule
+        # it can use input, output and params, e.g. self.input.file1
+        raise NotImplementedError
 
