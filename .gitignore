@@ -115,3 +115,6 @@ reports/figures
 
 # temporary snakemake files
 .snakemake
+
+# vscode
+.vscode

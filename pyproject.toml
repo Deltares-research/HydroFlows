@@ -13,10 +13,10 @@ authors = [
 ]
 dependencies = [
   "hydromt>=0.9.4",           # hydromt core for setting up models
-#  "hydromt_sfincs",          # hydromt plugin for sfincs models
-#  "hydromt_wflow",           # hydromt plugin for wflow models
-  "nc-time-axis", 
+  "hydromt_sfincs",          # hydromt plugin for sfincs models
+  "hydromt_wflow",           # hydromt plugin for wflow models
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pydantic",                 # data validation
   "tomli",                    # parsing toml files
   "tomli-w",                  # writing toml files
 ]
@@ -35,7 +35,7 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  "black",       # linting
+  # "black",       # linting
   "ruff",        # linting
   "pre-commit",  # linting
   "pip>=23.1.2", # needed for recursive dependencies
@@ -47,7 +47,6 @@ doc = [
   "pydata-sphinx-theme",              # theme
   "sphinx",                           # build docks
   "sphinx_design",                    # doc layout
-  "sphinx_autosummary_accessors",     # doc layout
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
@@ -67,6 +66,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
+  "pytest-lazy-fixture",  # tet on multiple fixtures
   "xugrid",
 ]
 
@@ -78,7 +78,10 @@ Source = "https://github.com/Deltares-research/HydroFlows"
 
 [tool.make_env]
 channels = ["conda-forge"]
-deps_not_in_conda = ["hydromt_fiat", "snakemake", "pulp"]
+deps_not_in_conda = ["hydromt_fiat", "snakemake", "pulp", "sphinx_design"]
+
+[project.scripts]
+hydroflows = "hydroflows.cli.main:cli"
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -131,11 +134,7 @@ exclude = ["docs"]
 "tests/**" = ["D103", "D100", "D104"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
-"hydroflows/rules/__init__.py" = ["F403"]
-"hydroflows/workflows/__init__.py" = ["F403"]
-"hydroflows/templates/__init__.py" = ["F403"]
-"hydroflows/utils/__init__.py" = ["F403"]
-"hydroflows/rules/**/__init__.py" = ["F403"]
+"hydroflows/**/__init__.py" = ["F403"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"

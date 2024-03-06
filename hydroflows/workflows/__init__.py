@@ -1,1 +1,1 @@
-"""Submodule for HydroFlows workflows."""
+"""Submodule for hydroflows workflows."""
