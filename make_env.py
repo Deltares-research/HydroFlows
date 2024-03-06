@@ -71,7 +71,7 @@ if args.channels is not None:
 name = args.name
 if name is None:
     name = project_name
-    if args.profile:
+    if args.profile not in ["", "full"]:
         name += f"_{args.profile}"
 print(f"Environment name: {name}")
 
@@ -95,7 +95,7 @@ if args.py_version is not None:
 pip_deps = sorted(list(set(pip_deps)))
 
 # add pip as a conda dependency if we have pip deps
-if len(pip_deps) > 0:
+if len(pip_deps) > 0 and not any([item.startswith("pip") for item in conda_deps]):
     conda_deps.append("pip")
 
 # the list(set()) is to remove duplicates

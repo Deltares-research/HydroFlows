@@ -1,4 +1,4 @@
-"""Module/ Rule for building FIAT models.""" 
+"""Module/ Rule for building FIAT models."""
 from pathlib import Path
 from typing import List
 
@@ -6,8 +6,9 @@ from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.rules.rule import Rule
 from hydroflows.templates import TEMPLATE_DIR
+
+from ..method import Method
 
 __all__ = ["FIATBuild"]
 
@@ -31,11 +32,11 @@ class Params(BaseModel):
 
 class Output(BaseModel):
     """Output FIAT build params."""
-    
+
     fiat_cfg: Path
 
 
-class FIATBuild(Rule):
+class FIATBuild(Method):
     """Rule for building FIAT."""
 
     name: str = "fiat_build"
