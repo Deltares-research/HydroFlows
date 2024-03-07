@@ -12,11 +12,16 @@ authors = [
   { name = "Athanasios Tsiokanos", email = "athanasios.tsiokanos@deltares.nl"},
 ]
 dependencies = [
+  "click",                    # CLI
+  "geopandas",                # Reading vector data
   "hydromt>=0.9.4",           # hydromt core for setting up models
-  "hydromt_sfincs",          # hydromt plugin for sfincs models
-  "hydromt_wflow",           # hydromt plugin for wflow models
+  "hydromt_fiat@git+ssh://git@github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
+  "hydromt_sfincs",           # hydromt plugin for sfincs models
+  "hydromt_wflow",            # hydromt plugin for wflow models
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pulp==2.7.0",              # Snakemake's engine >= 2.8.x causes issues 
   "pydantic",                 # data validation
+  "snakemake==7.32.4",        # Workflow manager, 8.x.x is bad
   "tomli",                    # parsing toml files
   "tomli-w",                  # writing toml files
 ]
@@ -35,7 +40,6 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  # "black",       # linting
   "ruff",        # linting
   "pre-commit",  # linting
   "pip>=23.1.2", # needed for recursive dependencies
@@ -54,19 +58,16 @@ examples = [
   "matplotlib",
 ]
 extra = [
+  "graphviz",
 ]
 io = [
-  "graphviz",
-  "hydromt_fiat@git+ssh://git@github.com/Deltares/hydromt_fiat.git",
-  "pulp==2.7.0",
-  "snakemake==7.32.4",
 ]
 test = [
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  "pytest-lazy-fixture",  # tet on multiple fixtures
+  "pytest-lazy-fixtures",  # tet on multiple fixtures
   "xugrid",
 ]
 
@@ -135,6 +136,7 @@ exclude = ["docs"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
 "hydroflows/**/__init__.py" = ["F403"]
+"hydroflows/templates/*.py" = ["D103", "D100", "D104", "D205", "D400", "F403"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"

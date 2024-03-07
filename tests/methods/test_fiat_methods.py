@@ -5,7 +5,7 @@ import geopandas as gpd
 import pytest
 from shapely.geometry import Polygon
 
-from hydroflows.rules import FIATBuild
+from hydroflows.methods import FIATBuild
 
 
 # TODO move to conftest but with a different name to avoid conflicts
@@ -32,6 +32,7 @@ def region_path(tmpdir, region):
     p = Path(str(tmpdir), "region.geojson")
     region.to_file(p)
     return p
+
 
 def test_fiat_build(tmpdir, region_path):
     # Setting input data

@@ -3,7 +3,8 @@ import pytest
 import sys
 from click.testing import CliRunner
 
-@pytest.fixture
+
+@pytest.fixture()
 def cli_obj():
     """Yield a click.testing.CliRunner to invoke the CLI."""
     class_ = CliRunner
@@ -26,6 +27,6 @@ def cli_obj():
         return wrapper
     class_.invoke = invoke_wrapper(class_.invoke)
     cli_runner = class_()
-    yield cli_runner
+    return cli_runner
 
 

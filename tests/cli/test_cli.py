@@ -1,4 +1,6 @@
+"""Testing of command line interface."""
 import os
+
 import pytest
 from hydroflows.cli.main import cli
 

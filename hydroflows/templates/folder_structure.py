@@ -76,7 +76,7 @@ def create_folders(
         structure: Union[dict, list] = domain_structure
 ):
     """
-    Setup a folder structure for a given domain
+    Create and setup a folder structure for a given domain.
 
     Parameters
     ----------

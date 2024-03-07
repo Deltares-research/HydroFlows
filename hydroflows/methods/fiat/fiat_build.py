@@ -1,4 +1,5 @@
 """Module/ Rule for building FIAT models."""
+import sys
 from pathlib import Path
 from typing import List
 
@@ -11,6 +12,7 @@ from hydroflows.templates import TEMPLATE_DIR
 from ..method import Method
 
 __all__ = ["FIATBuild"]
+PYTHON_PATH = Path(sys.executable).parent
 
 
 class Input(BaseModel):
@@ -25,7 +27,14 @@ class Params(BaseModel):
     config: Path = Path(TEMPLATE_DIR, "fiat_build.yml")
     data_libs: List[str] = [
         "artifact_data",
-        "c:/CODING/PY_DEV/HydroMT_FIAT/hydromt_fiat/data/hydromt_fiat_catalog_global.yml",
+        Path(
+            PYTHON_PATH,
+            "Lib", 
+            "site-packages",
+            "hydromt_fiat",
+            "data",
+            "hydromt_fiat_catalog_global.yml",
+        ).as_posix(),
     ]
     continent: str = "South America"
 
