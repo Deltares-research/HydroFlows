@@ -1,3 +1,7 @@
+# Temporary files
+cache/
+tmp/
+
 # Development
 .vscode/
 
@@ -40,6 +44,7 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+environment.yml
 
 
 # PyInstaller
