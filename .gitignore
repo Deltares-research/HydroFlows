@@ -1,3 +1,10 @@
+# Temporary files
+cache/
+tmp/
+
+# Development
+.vscode/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -37,6 +44,8 @@ var/
 *.egg-info/
 .installed.cfg
 *.egg
+environment.yml
+
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

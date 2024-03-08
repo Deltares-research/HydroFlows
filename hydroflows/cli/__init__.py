@@ -1,1 +1,1 @@
-"""Submodule for hydroflows CLI"""
+"""Submodule for hydroflows CLI."""

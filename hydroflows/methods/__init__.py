@@ -1,5 +1,6 @@
 """Submodule for hydroflows methods."""
 
+from .fiat import FIATBuild
 from .sfincs import SfincsBuild
 from .wflow import WflowBuild
 
@@ -8,5 +9,5 @@ from .wflow import WflowBuild
 METHODS = {
     "sfincs_build": SfincsBuild,
     "wflow_build": WflowBuild,
-    # add more methods here
+    "fiat_build": FIATBuild,
 }
