@@ -64,10 +64,9 @@ jobs:
 
       - name: Setup api
         run: |
-          export PATH=/usr/share/miniconda3/bin:$PATH
           cd docs
-          mamba run -n fiat_docs python api.py
-          mamba run -n fiat_docs python -m quartodoc interlinks
+          python api.py
+          python -m quartodoc interlinks
 
       - name: Generate docs
         run: |
