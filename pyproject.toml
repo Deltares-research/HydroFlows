@@ -47,10 +47,7 @@ dev = [
   "twine",       # needed to publish to pypi
 ]
 doc = [
-  "nbsphinx",                         # build notebooks in docs
-  "pydata-sphinx-theme",              # theme
-  "sphinx",                           # build docks
-  "sphinx_design",                    # doc layout
+  "quartodoc",
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
@@ -84,7 +81,7 @@ deps_not_in_conda = [
   "snakemake",
   "pulp",
   "pytest-lazy-fixtures",
-  "sphinx_design",
+  "quartodoc",
 ]
 
 [project.scripts]
