@@ -19,7 +19,7 @@ dependencies = [
   "hydromt_sfincs",           # hydromt plugin for sfincs models
   "hydromt_wflow",            # hydromt plugin for wflow models
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
-  "pulp==2.7.0",              # Snakemake's engine >= 2.8.x causes issues 
+  "pulp==2.7.0",              # Snakemake's engine >= 2.8.x causes issues
   "pydantic",                 # data validation
   "snakemake==7.32.4",        # Workflow manager, 8.x.x is bad
   "tomli",                    # parsing toml files
@@ -79,7 +79,13 @@ Source = "https://github.com/Deltares-research/HydroFlows"
 
 [tool.make_env]
 channels = ["conda-forge"]
-deps_not_in_conda = ["hydromt_fiat", "snakemake", "pulp", "sphinx_design"]
+deps_not_in_conda = [
+  "hydromt_fiat",
+  "snakemake",
+  "pulp",
+  "pytest-lazy-fixtures",
+  "sphinx_design",
+]
 
 [project.scripts]
 hydroflows = "hydroflows.cli.main:cli"
@@ -135,7 +141,7 @@ exclude = ["docs"]
 "tests/**" = ["D103", "D100", "D104"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
-"hydroflows/**/__init__.py" = ["F403"]
+"hydroflows/**/__init__.py" = ["F401", "F403"]
 "hydroflows/templates/*.py" = ["D103", "D100", "D104", "D205", "D400", "F403"]
 
 [tool.ruff.pydocstyle]
