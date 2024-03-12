@@ -15,15 +15,12 @@ dependencies = [
   "click",                    # CLI
   "geopandas",                # Reading vector data
   "hydromt>=0.9.4",           # hydromt core for setting up models
-  "hydromt_fiat@git+ssh://git@github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
   "hydromt_sfincs",           # hydromt plugin for sfincs models
   "hydromt_wflow",            # hydromt plugin for wflow models
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
-  "pulp==2.7.0",              # Snakemake's engine >= 2.8.x causes issues
   "pydantic",                 # data validation
-  "snakemake==7.32.4",        # Workflow manager, 8.x.x is bad
-  "tomli",                    # parsing toml files
-  "tomli-w",                  # writing toml files
+  "snakemake",                # Workflow manager, 8.x.x is bad
 ]
 
 requires-python = ">=3.9"
@@ -40,17 +37,14 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  "ruff",        # linting
-  "pre-commit",  # linting
+  # "flit",        # needed to publish to pypi
   "pip>=23.1.2", # needed for recursive dependencies
-  "flit",        # needed to publish to pypi
-  "twine",       # needed to publish to pypi
+  "pre-commit",  # linting
+  "ruff",        # linting
+  "tomli",       # parsing toml files
+  # "twine",       # needed to publish to pypi
 ]
 doc = [
-  "nbsphinx",                         # build notebooks in docs
-  "pydata-sphinx-theme",              # theme
-  "sphinx",                           # build docks
-  "sphinx_design",                    # doc layout
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
@@ -67,8 +61,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  "pytest-lazy-fixtures",  # tet on multiple fixtures
-  "xugrid",
+  # "pytest-lazy-fixtures",  # test on multiple fixtures
 ]
 
 full = ["hydroflows[io,extra,dev,test,doc,examples]"]
@@ -78,12 +71,10 @@ slim = ["hydroflows[io,extra,examples]"]
 Source = "https://github.com/Deltares-research/HydroFlows"
 
 [tool.make_env]
-channels = ["conda-forge"]
+channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
-  "snakemake",
-  "pulp",
-  "pytest-lazy-fixtures",
+  # "pytest-lazy-fixtures",
   "sphinx_design",
 ]
 
