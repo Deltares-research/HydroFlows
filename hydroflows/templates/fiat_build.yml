@@ -6,7 +6,7 @@ setup_region:
 setup_output:
   output_dir: output
   output_csv_name: output.csv
-  output_vector_name: spatial.gpkg 
+  output_vector_name: spatial.gpkg
 
 setup_vulnerability:
   vulnerability_fn: jrc_vulnerability_curves
