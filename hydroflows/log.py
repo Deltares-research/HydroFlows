@@ -1,23 +1,26 @@
-import sys
+"""Logging module of HydroFlows."""
 import logging
 import logging.handlers
 import os
-from . import __version__
+import sys
 from datetime import datetime
+
+from . import __version__
 
 timestr = datetime.now().strftime("%Y%m%dT%H%M%S")
 datestr = datetime.now().strftime("%Y%m%d")
 FMT = "%(asctime)s - %(name)s - %(module)s - %(levelname)s - %(message)s"
 
 
-def setuplog(
+def setuplog( # noqa: D103
     name: str = "hydroflows",
     path: str = None,
     log_level: int = 20,
     fmt: str = FMT,
     append: bool = True,
 ) -> logging.Logger:
-    f"""Set-up the logging on sys.stdout and file if path is given.
+    f"""Create the logging on sys.stdout and file if path is given.
+
     Parameters
     ----------
     name : str, optional
@@ -29,7 +32,9 @@ def setuplog(
     fmt : str, optional
         log message formatter, by default {FMT}
     append : bool, optional
-        Wether to append (True) or overwrite (False) to a logfile at path, by default True
+        Wether to append (True) or overwrite (False) to a logfile at path, \
+by default True
+
     Returns
     -------
     logging.Logger

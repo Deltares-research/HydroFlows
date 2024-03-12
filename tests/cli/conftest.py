@@ -1,6 +1,7 @@
 import functools
-import pytest
 import sys
+
+import pytest
 from click.testing import CliRunner
 
 
@@ -28,5 +29,3 @@ def cli_obj():
     class_.invoke = invoke_wrapper(class_.invoke)
     cli_runner = class_()
     return cli_runner
-
-

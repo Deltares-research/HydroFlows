@@ -29,7 +29,7 @@ class Params(BaseModel):
         "artifact_data",
         Path(
             PYTHON_PATH,
-            "Lib", 
+            "Lib",
             "site-packages",
             "hydromt_fiat",
             "data",

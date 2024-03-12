@@ -2,6 +2,7 @@
 import os
 
 import pytest
+
 from hydroflows.cli.main import cli
 
 
@@ -64,4 +65,3 @@ def test_cli_run_SUBCOMMAND(cli_obj, subcommand):
     assert os.path.isfile(log_file)
     # remove log file afterwards
     os.remove(log_file)
-

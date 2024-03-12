@@ -1,7 +1,7 @@
 # TODO move this into a cookiecutter template?
 # default nested folder structures for use in hydroflows
 
-""" 
+"""
 ├── .gitignore
 ├── environment.yml
 ├── README.md
@@ -30,7 +30,7 @@
 │   ├── wflow
 |   │   └── {region1}
 |   │       ├── staticmaps.nc
-|   │       ├── wflow_sbm_default.toml 
+|   │       ├── wflow_sbm_default.toml
 |   │       ├── hydromt_wflow.yaml
 |   │       └── simulations
 |   │           └── {sim1}

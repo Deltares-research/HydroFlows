@@ -1,12 +1,13 @@
-from typing import List
-from ..method import Method
-from ...templates import TEMPLATE_DIR
-
-from pydantic import BaseModel, FilePath
+"""SFINCS build methods."""
 from pathlib import Path
-from hydromt_sfincs import SfincsModel
-from hydromt.config import configread
+from typing import List
 
+from hydromt.config import configread
+from hydromt_sfincs import SfincsModel
+from pydantic import BaseModel, FilePath
+
+from ...templates import TEMPLATE_DIR
+from ..method import Method
 
 __all__ = ["SfincsBuild"]
 
@@ -17,22 +18,22 @@ class Output(BaseModel):
     sfincs_inp: Path
 
 class Params(BaseModel):
-    # optional parameter 
+    # optional parameter
     config: Path = Path(TEMPLATE_DIR, "sfincs_build.yaml")
     data_libs: List[str] = ["artifact_data"]
     res: float = 50.0
 
 
 class SfincsBuild(Method):
-    """
-    Rule for building Sfincs
-    """
+    """Rule for building Sfincs."""
+
     name: str = "sfincs_build"
     params: Params = Params() # optional parameters
     input: Input
     output: Output
 
     def run(self):
+        """Run the SFINCS build method."""
         # read the configuration
         opt = configread(self.params.config)
         # update placeholders in the config
