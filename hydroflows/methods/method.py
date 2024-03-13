@@ -7,26 +7,27 @@ All HydroFlow methods should inherit from this class and implement specific
 validators and a run method.
 """
 
+from pathlib import Path
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, FilePath
+from pydantic import BaseModel
 
 __all__ = ["Method"]
 
 # NOTE these are just examples
 # file1, file2 etc should be replaced by the actual inputs for the rule
 class Input(BaseModel):
-    file1: FilePath
-    file2: FilePath
+    file1: Path
+    file2: Path
 
 
 class Params(BaseModel):
-    name: str
-    arg1: int
+    name: str = 'test'
+    arg1: int = 1
 
 
 class Output(BaseModel):
-    file: FilePath
+    file: Path
 
 
 class Method(BaseModel):
@@ -34,7 +35,7 @@ class Method(BaseModel):
 
     input: Input
     output: Output
-    params: Params
+    params: Params = Params()
 
 
     def to_str(
@@ -61,4 +62,5 @@ class Method(BaseModel):
         """
         # NOTE: this should be implemented in the specific rule
         # it can use input, output and params, e.g. self.input.file1
-        raise NotImplementedError
+        # raise NotImplementedError
+        return 1
