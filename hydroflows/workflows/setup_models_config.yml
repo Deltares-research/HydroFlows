@@ -1,0 +1,3 @@
+ROOT: "C:/Users/tromp_wm/OneDrive - Stichting Deltares/Documents/HydroFlows/artifact_project_folder"
+REGION_FILE: "data/sfincs/input/artifact_region.geojson"
+REGION: "artifact_region"
