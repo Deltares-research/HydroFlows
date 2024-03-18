@@ -46,7 +46,7 @@ def _parse_profile(profile_str: str, opt_deps: dict, project_name: str) -> List[
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument("profile", default="dev", nargs="?")
+parser.add_argument("profile", default="full", nargs="?")
 parser.add_argument("--output", "-o", default="environment.yml")
 parser.add_argument("--channels", "-c", default=None)
 parser.add_argument("--name", "-n", default=None)
@@ -62,7 +62,7 @@ project_name = toml["project"]["name"]
 # specific conda_install settings
 install_config = toml["tool"].get("make_env", {})
 deps_not_in_conda = install_config.get("deps_not_in_conda", [])
-channels = install_config.get("channels", ["conda-forge"])
+channels = install_config.get("channels", ["conda-forge", "bioconda"])
 if args.channels is not None:
     channels.extend(args.channels.split(","))
     channels = list(set(channels))

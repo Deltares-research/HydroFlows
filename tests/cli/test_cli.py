@@ -2,6 +2,7 @@
 import os
 
 import pytest
+
 from hydroflows.cli.main import cli
 
 
@@ -25,43 +26,36 @@ def test_cli_run_help(cli_obj):
     )
     assert result.exit_code == 0
 
-
-
 @pytest.mark.parametrize(
-    "subcommand",
-    [
-        "SOME.SUBCOMMAND",
-        "OTHER.SUBCOMMAND",
-    ]
+        "params",  # test with and without optional params
+        [
+            [],
+            ['-p', 'arg1=2']
+        ]
 )
-def test_cli_run_SUBCOMMAND(cli_obj, subcommand):
+def test_cli_run_method(cli_obj, params):
+    inputs = [
+        '--input',
+        'file1=./file1.txt',
+        '-i',
+        'file2=./file2.txt',
+        ]
+    outputs = [
+        '--output',
+        'file=./output.txt',
+    ]
+
     result = cli_obj.invoke(
         cli, [
             'run',
-            subcommand,
-            '--input',
-            {
-                "file1": "/path/to/file1"
-            },
-            '--params',
-            {
-                "param1": 5,
-                "param2": True
-            },
-            '--output',
-            {
-                "file2": "/path/to/file2",
-                "file3": "/path/to/file3"
-            },
+            'test_method',
             '-v'
-        ],
+        ] + inputs + outputs + params,
         echo=True
     )
-
     assert result.exit_code == 0
     # check if log file appears
-    log_file = f"hydroflows_run_{subcommand}.log"
+    log_file = "hydroflows_run_test_method.log"
     assert os.path.isfile(log_file)
     # remove log file afterwards
     os.remove(log_file)
-

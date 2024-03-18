@@ -1,18 +1,21 @@
 import os
 from pathlib import Path
-from pytest import fixture
+
 import geopandas as gpd
+import pytest
 from shapely.geometry import Polygon
+
 from hydroflows.methods import SfincsBuild
 
-@fixture
+
+@pytest.fixture()
 def region():
     return gpd.GeoDataFrame(
         geometry=[Polygon([
-            [ 318650.0, 5040000.0 ], 
-            [ 316221.0, 5044767.0 ], 
-            [ 327359.0, 5050442.0 ], 
-            [ 329788.0, 5045675.0 ], 
+            [ 318650.0, 5040000.0 ],
+            [ 316221.0, 5044767.0 ],
+            [ 327359.0, 5050442.0 ],
+            [ 329788.0, 5045675.0 ],
             [ 318650.0, 5040000.0 ]
         ])],
         crs="EPSG:32633",
@@ -27,7 +30,7 @@ def test_sfincs_build(region, tmp_path):
     input = {
         "region": str(fn_region)
     }
-    
+
     fn_sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
     output = {
         "sfincs_inp": str(fn_sfincs_inp)
@@ -36,10 +39,3 @@ def test_sfincs_build(region, tmp_path):
     SfincsBuild(input=input, output=output).run()
 
     assert fn_sfincs_inp.exists()
-
-
-
-
-
-
-    
