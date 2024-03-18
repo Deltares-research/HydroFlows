@@ -2,9 +2,7 @@ import os
 from pathlib import Path
 
 import geopandas as gpd
-import numpy as np
 import pytest
-from hydromt.raster import full_from_transform
 from hydromt_wflow import WflowModel
 from shapely.geometry import Point
 
@@ -37,46 +35,47 @@ def test_wflow_build(sfincs_src_points, tmp_path):
 
     WflowBuild(input=input, output=output).run()
 
-    return fn_wflow_toml
+    assert fn_wflow_toml.exists()
 
 @pytest.fixture()
 def wflow_simple_root(tmp_path):
-    root = Path(tmp_path, 'wflow_simple')
+    root = Path(tmp_path, 'wflow_simple_test')
+
     mod = WflowModel(
-        root = root
+        root=root,
+        mode="w",
+        data_libs=["artifact_data"],
     )
-    transform = (0.0083333333, 0.0, 11.7783333333, 0.0, -0.0083333333, 46.69)
-    da = full_from_transform(
-        transform=transform,
-        shape=(106, 116),
-        nodata=0,
-        dtype=np.int32,
-        crs=4326
+
+    region = {
+        "subbasin": [12.2051, 45.8331],
+        "uparea": 30,
+    }
+
+    hydrography = mod.data_catalog.get_rasterdataset("merit_hydro")
+    hydrography["basins"] = hydrography["basins"].astype("uint32")
+
+    mod.setup_basemaps(
+        region=region,
+        hydrography_fn=hydrography,
     )
-    mod.set_grid(
-        da, 'wflow_subcatch'
-    )
+
     mod.write_grid()
     mod.write_config()
+
     return root
 
-
-def test_wflow_update_forcing(tpm_path, wflow_simple_root):
+def test_wflow_update_forcing(wflow_simple_root):
     toml_fn = Path(wflow_simple_root, 'wflow_sbm.toml')
     input = {
-        "wflow_toml_default": toml_fn
+        "wflow_toml_default": str(toml_fn)
     }
 
-    fn_wflow_toml_updated = Path(tpm_path, "model", "sims", "sim1", "wflow_sim1.toml")
+    fn_wflow_toml_updated = Path(wflow_simple_root, "sims", "sim1", "wflow_sim1.toml")
     output = {
-        "wflow_toml_updated": fn_wflow_toml_updated
+        "wflow_toml_updated": str(fn_wflow_toml_updated)
     }
 
-    params = {
-        "start_time": "2010-02-01T00:00:00",
-        "end_time": "2011-02-10T00:00:00",
-    }
-
-    WflowUpdateForcing(input=input, params=params, output=output).run()
+    WflowUpdateForcing(input=input, output=output).run()
 
     assert fn_wflow_toml_updated.exists()

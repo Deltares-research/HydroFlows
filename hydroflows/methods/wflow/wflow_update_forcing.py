@@ -24,8 +24,8 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    start_time: str
-    end_time: str
+    start_time: str = "2010-02-01T00:00:00"
+    end_time: str = "2010-02-10T00:00:00"
 
     timestep: int = 86400 # in seconds
 
