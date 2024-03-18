@@ -1,21 +1,29 @@
-from typing import List
-from ..method import Method
-from pydantic import BaseModel, FilePath
-from pathlib import Path
-
-from hydromt_wflow import WflowModel
-from hydromt.log import setuplog
+"""Wflow update forcing method."""
 import os
+from pathlib import Path
+from typing import List
+
+from hydromt.log import setuplog
+from hydromt_wflow import WflowModel
+from pydantic import BaseModel, FilePath
+
+from ..method import Method
 
 __all__ = ["WflowUpdateForcing"]
 
 class Input(BaseModel):
+    """Input parameters."""
+
     wflow_toml_default: FilePath
 
 class Output(BaseModel):
+    """Output parameters."""
+
     wflow_toml_updated: Path
 
 class Params(BaseModel):
+    """Parameters."""
+
     start_time: str
     end_time: str
 
@@ -29,19 +37,19 @@ class Params(BaseModel):
     pet_calc_method: str = "debruin"
 
 class WflowUpdateForcing(Method):
-    """
-    Rule for updating Wflow forcing
-    """
+    """Rule for updating Wflow forcing."""
+
     name: str = "wflow_update_forcing"
     params: Params = Params()
     input: Input
     output: Output
 
     def run(self):
+        """Run the WflowUpdateForcing method."""
         logger = setuplog("update", log_level=20)
 
         root = self.input.wflow_toml_default.parent
-    
+
         w = WflowModel(
             root=root,
             mode="r",
@@ -51,17 +59,16 @@ class WflowUpdateForcing(Method):
             ],
             logger=logger,
             )
-        
+
         w.read()
 
         sims_root = self.output.wflow_toml_updated.parent
 
-        # actually the path doesn't exist, but we create it every time. (ask Dirk)
         w.set_root(
         root=sims_root,
         mode="w+",
         )
-    
+
         w.setup_config(
             **{
             "starttime": self.params.start_time,
@@ -69,7 +76,7 @@ class WflowUpdateForcing(Method):
             "timestepsecs": self.params.timestep,
             "input.path_forcing": "forcing.nc"
             }
-        ) 
+        )
 
         w.setup_precip_forcing(
             precip_fn=self.params.precip_src,
@@ -84,7 +91,15 @@ class WflowUpdateForcing(Method):
             pet_method= self.params.pet_calc_method,
             skip_pet=False,
         )
-        
+
+        # add a netcdf output for the discharges
+        w.setup_config_output_timeseries(
+        mapname="wflow_gauges",
+        toml_output="netcdf",
+        header=["Q"],
+        param = ["lateral.river.q_av"],
+        )
+
         w.set_config("input.path_static", os.path.join(root, "staticmaps.nc"))
         w.write_config(config_name=os.path.basename(self.output.wflow_toml_updated))
         w.write_forcing()
