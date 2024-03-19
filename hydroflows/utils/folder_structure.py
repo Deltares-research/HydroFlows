@@ -6,9 +6,9 @@ import os
 from distutils.dir_util import copy_tree
 from pathlib import Path
 
-from ..templates import TEMPLATE_DIR
-
 __all__ = ["create_folders", "copy_templates"]
+
+TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 
 models = [
     "wflow",

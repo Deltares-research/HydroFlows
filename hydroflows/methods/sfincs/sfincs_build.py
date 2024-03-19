@@ -6,7 +6,7 @@ from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
 
-from .. import TEMPLATE_DIR
+from ...utils.folder_structure import TEMPLATE_DIR
 from ..method import Method
 
 __all__ = ["SfincsBuild"]
