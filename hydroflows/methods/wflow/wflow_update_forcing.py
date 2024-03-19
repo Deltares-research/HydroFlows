@@ -54,9 +54,7 @@ class WflowUpdateForcing(Method):
             root=root,
             mode="r",
             config_fn = self.input.wflow_toml_default,
-            data_libs = [
-                self.params.data_libs
-            ],
+            data_libs = self.params.data_libs,
             logger=logger,
             )
 
