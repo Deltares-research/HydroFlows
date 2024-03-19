@@ -14,11 +14,13 @@ optional
 """
 
 import os
+from pathlib import Path
 
 import click
 
 from .. import __version__, log
 from ..methods import METHODS
+from ..utils import copy_templates, create_folders
 
 
 # Copied from rasterio.rio.options
@@ -176,6 +178,16 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
             handler.close()
             logger.removeHandler(handler)
 
+@cli.command(short_help="Create a new project folder structure and copy templates")
+@click.argument(
+    "ROOT",
+    type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
+)
+@click.pass_context
+def init(ctx, root: Path) -> None:
+    """Initialize a new project."""
+    create_folders(root)
+    copy_templates(root)
 
 if __name__ == "__main__":
     cli()
