@@ -1,3 +1,11 @@
+# run a workflow
+
+from the project root folder using
+
+    ```bash
+    snakemake -s workflow/setup_models.smk --configfile workflow/snake_config/setup_models.yaml -c 1
+    ```
+
 # HydroFlows project template
 
 ├── README.md                               # this file
@@ -5,7 +13,7 @@
 |   ├── wflow
 |   └── sfincs
 ├── data                                    # data files
-│   ├── input
+│   ├── input                               # contains sfincs region file(s)
 │   └── output
 ├── models                                  # model instances
 │   ├── wflow                               # model instances
