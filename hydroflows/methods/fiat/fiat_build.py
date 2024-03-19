@@ -3,6 +3,7 @@ import os
 from pathlib import Path
 from typing import List
 
+import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
