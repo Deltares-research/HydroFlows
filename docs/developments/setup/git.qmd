@@ -66,10 +66,10 @@ git --version
 ```
 
 ## Pre-commit setup
-As pre-commit is automatically installed with the `full` developer enviroment and installed 
+As pre-commit is automatically installed with the `full` developer enviroment and installed
 via a single command it is quickly discussed here.
 
-When the 'hydroflows' enviroment is activated and while in the main directory of the repository, 
+When the 'hydroflows' enviroment is activated and while in the main directory of the repository,
 type the following command:
 
 ```bash

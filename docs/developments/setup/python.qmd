@@ -6,7 +6,7 @@ For HydroFlows the environment is simply created py using `Python` and `conda`/ 
 
 ## Create environment yaml
 The repository has a `make_env.py` script that creates a conda environment yaml
-based on the `pyproject.toml` file. 
+based on the `pyproject.toml` file.
 
 This simply done by typing the following in the command line
 ```cmd
@@ -22,7 +22,7 @@ python make_env.py full
 ```
 
 Here a 'full' environment is created with all the packages in the `pyproject.toml`.
-However if one only needs the dependencies to build the documentation, the argument 
+However if one only needs the dependencies to build the documentation, the argument
 'docs' van be provided.
 
 A list of all available options as presented below:
@@ -37,7 +37,7 @@ We recommend to create a `full` environment.
 
 ## Install conda/ mamba
 It is recommend to install conda/ mamba via the miniforge installer.
-This installer can be found [here](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download). 
+This installer can be found [here](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
 Download the version that is applicable for your machine.
 
 ### Windows
@@ -57,9 +57,9 @@ This package will be a tar archive (tarball).
 wget < miniforge3 package link >
 ```
 
-Unpack the package using `tar` at the preferred location. 
+Unpack the package using `tar` at the preferred location.
 ```bash
-tar -xvzf < miniforge3 package > 
+tar -xvzf < miniforge3 package >
 ```
 
 Head over to conda directory and find the conda binary to initialize conda for your shell (here bash).
