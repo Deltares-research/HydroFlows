@@ -1,3 +1,14 @@
+# Running the HydroFlows project template
+
+To create a project folder and execute a workflow, run the following steps:
+
+    ```bash
+    hydroflows init <root>
+    cd <root>
+    snakemake -s workflow/setup_models.smk --configfile .\workflow\snake_config\setup_models_config.yml -c 1
+    ```
+
+
 # HydroFlows project template
 
 ├── README.md                               # this file
