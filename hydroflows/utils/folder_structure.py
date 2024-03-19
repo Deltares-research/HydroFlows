@@ -10,24 +10,11 @@ __all__ = ["create_folders", "copy_templates"]
 
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 
-models = [
-    "wflow",
-    "sfincs",
-    "fiat"
-]
-
-folders = {
-    "bin": models,
-    "data": {m: ["input", "output"] for m in models},
-    "models": models,
-    "results": None,
-    "workflow": None,
-}
 
 
 def create_folders(
-        root: Path,
-        folders: dict = folders
+    root: Path,
+    models: list = ["wflow", "sfincs", "fiat"]
 ) -> None:
     """
     Create and setup a folder structure for a project.
@@ -36,19 +23,38 @@ def create_folders(
     ----------
     root : str, optional
         project root folder
+    models : list, optional
+        list of model names to create folders for
     """
+    folders = {
+        "bin": models,
+        "data": ["input", "output"],
+        "models": models,
+        "results": [],
+        "workflow": [
+            # "envs",
+            "hydromt_config",
+            # "methods",
+            # "notebooks",
+            "snake_config",
+            "scripts"
+        ],
+    }
+
+    def _makedir(root, subfolders) -> None:
+        if isinstance(subfolders, list):
+            if len(subfolders) > 0:
+                for sf in subfolders:
+                    os.makedirs(root / sf, exist_ok=True)
+            else:
+                os.makedirs(root, exist_ok=True)
+        elif isinstance(subfolders, dict):
+            for k, v in subfolders.items():
+                _makedir(root / k, v)
+
     # make sure root is a Path object
     root = Path(root)
-    # first create root folder
-    os.makedirs(root, exist_ok=True)
-    # create subfolders
-    for k, v in folders.items():
-        if v is None:
-            os.makedirs(root / k, exist_ok=True)
-        else:
-            for vv in v:
-                os.makedirs(root / k / vv, exist_ok=True)
-    # Done
+    _makedir(root, folders)
 
 def copy_templates(
         root: Path,
