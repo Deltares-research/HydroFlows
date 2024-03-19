@@ -18,7 +18,38 @@ import os
 import click
 
 from .. import __version__, log
+from ..methods import METHODS
 
+
+# Copied from rasterio.rio.options
+def _cb_key_val(ctx, param, value):
+    """Convert key-value pairs to dictionary.
+
+    click callback to validate `--opt KEY1=VAL1 --opt KEY2=VAL2` and collect
+    in a dictionary like the one below, which is what the CLI function receives.
+    If no value or `None` is received then an empty dictionary is returned.
+
+        {
+            'KEY1': 'VAL1',
+            'KEY2': 'VAL2'
+        }
+
+    Note: `==VAL` breaks this as `str.split('=', 1)` is used.
+    """
+    if not value:
+        return {}
+    else:
+        out = {}
+        for pair in value:
+            if '=' not in pair:
+                raise click.BadParameter(
+                    "Invalid syntax for KEY=VAL arg: {}".format(pair))
+            else:
+                k, v = pair.split('=', 1)
+                k = k.lower()
+                v = v.lower()
+                out[k] = None if v.lower() in ['none', 'null', 'nil', 'nada'] else v
+        return out
 
 def print_license(ctx, param, value):
     """Print the license for hydroflows."""
@@ -79,19 +110,22 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 opt_input = click.option(
     '-i',
     '--input',
-    type=dict,
+    multiple=True,
+    callback=_cb_key_val,
     required=True,
 )
 opt_output = click.option(
     '-o',
     '--output',
-    type=dict,
+    multiple=True,
+    callback=_cb_key_val,
     required=True,
 )
 opt_params = click.option(
     '-p',
     '--params',
-    type=dict,
+    multiple=True,
+    callback=_cb_key_val,
     required=False,
 )
 
@@ -118,15 +152,21 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
         log_level=log_level,
         append=append,
     )
+    if runner not in METHODS:
+        raise ValueError("Method not implemented")
     try:
+        # pdb.set_trace()
         logger.info(f"Input: {input}")
         logger.info(f"Parameters: {params}")
         logger.info(f"Output: {output}")
-        print(f"Input: {input}")
-        # close logger file
 
-        # raise NotImplementedError
-        # check if runner is available
+        if params:
+            method = METHODS[runner](input=input, output=output, params=params)
+        else:
+            method = METHODS[runner](input=input, output=output)
+
+        method.run()
+
     except Exception as e:
         logger.exception(e)  # catch and log errors
         raise
