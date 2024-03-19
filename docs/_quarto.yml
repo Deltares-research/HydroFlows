@@ -88,6 +88,11 @@ website:
         - developments/index.qmd
         - changelog.qmd
         - developments/guide.qmd
+        - file: developments/setup/index.qmd
+          contents:
+            - developments/setup/git.qmd
+            - developments/setup/python.qmd
+            - developments/setup/quarto.qmd
 
 format:
   html:
