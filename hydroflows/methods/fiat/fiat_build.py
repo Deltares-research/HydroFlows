@@ -7,8 +7,7 @@ from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.templates import TEMPLATE_DIR
-
+from .. import TEMPLATE_DIR
 from ..method import Method
 
 __all__ = ["FIATBuild"]
@@ -24,7 +23,7 @@ class Input(BaseModel):
 class Params(BaseModel):
     """FIAT build params."""
 
-    config: Path = Path(TEMPLATE_DIR, "fiat_build.yml")
+    config: Path = Path(TEMPLATE_DIR, "fiat_build.yaml")
     data_libs: List[str] = [
         "artifact_data",
         Path(

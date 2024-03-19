@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from ...templates import TEMPLATE_DIR
+from .. import TEMPLATE_DIR
 from ..method import Method
 
 __all__ = ["WflowBuild"]
