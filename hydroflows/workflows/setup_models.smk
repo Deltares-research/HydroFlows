@@ -13,11 +13,9 @@ rule all:
         wflow_toml = str(project_root / "models" / "wflow" / region_name / "wflow_sbm.toml"),
 
 rule setup_sfincs:
-    # Inputs as per hydroflows method implementation
     input:
         region = str(region_file)
 
-    # Outputs as per hydroflows method implementation
     output:
         sfincs_inp = str(project_root / "models" / "sfincs" / region_name / "sfincs.inp"),
         # This output is not defined in the method (it is not needed as an cli arguments), but is required to construct the desired DAG
@@ -29,11 +27,9 @@ rule setup_sfincs:
 
 
 rule setup_fiat:
-    # Inputs as per hydroflows method implementation
     input:
         region = str(region_file)
 
-    # Outputs as per hydroflows method implementation
     output:
         fiat_cfg = str(project_root / "models" / "fiat" / region_name / "settings.toml")
 
@@ -42,11 +38,9 @@ rule setup_fiat:
         "hydroflows run fiat_build -i region=\"{input.region}\" -o fiat_cfg=\"{output.fiat_cfg}\""
 
 rule setup_wflow:
-    # Inputs as per hydroflows method implementation
     input:
         sfincs_src_points = str(project_root / "models" / "sfincs" / region_name / "gis" / "src.geojson")
 
-    # Outputs as per hydroflows method implementation
     output:
         wflow_toml = str(project_root / "models" / "wflow" / region_name / "wflow_sbm.toml")
 
