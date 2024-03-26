@@ -44,6 +44,7 @@ dev = [
   # "twine",       # needed to publish to pypi
 ]
 doc = [
+  "quartodoc",
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
@@ -75,6 +76,7 @@ channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
   # "pytest-lazy-fixtures",
+  "quartodoc",
 ]
 
 [project.scripts]
