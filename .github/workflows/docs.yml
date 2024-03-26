@@ -71,7 +71,7 @@ jobs:
       - name: Generate docs
         run: |
           quarto render docs/ --execute
-          echo "DOC_VERSION=$(python -c 'from fiat import __version__ as v; print("dev" if "dev" in v else "v"+v.replace(".dev",""))')" >> $GITHUB_ENV
+          echo "DOC_VERSION=$(python -c 'from hydroflows import __version__ as v; print("dev" if "dev" in v else "v"+v.replace(".dev",""))')" >> $GITHUB_ENV
 
       - name: Upload to GitHub Pages
         if: ${{ github.event_name != 'pull_request' && !github.event.act }}
