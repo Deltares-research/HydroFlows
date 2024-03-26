@@ -14,6 +14,10 @@ from pydantic import BaseModel
 
 __all__ = ["Method"]
 
+# hydromt templates dir
+PACKAGE_ROOT = Path(__file__).parent.parent
+HYDROMT_CONFIG_DIR = PACKAGE_ROOT / "templates" / "workflow" / "hydromt_config"
+
 # NOTE these are just examples
 # file1, file2 etc should be replaced by the actual inputs for the rule
 class Input(BaseModel):
