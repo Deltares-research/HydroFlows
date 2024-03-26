@@ -3,7 +3,7 @@
 from .fiat import FIATBuild
 from .method import Method
 from .sfincs import SfincsBuild
-from .wflow import WflowBuild, WflowRun
+from .wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
 # registered methods
 
@@ -13,4 +13,5 @@ METHODS = {
     "fiat_build": FIATBuild,
     "test_method": Method,  # FIX ME: keep this method private for CLI testing,
     "wflow_run": WflowRun,
+    "wflow_update_forcing": WflowUpdateForcing,
 }
