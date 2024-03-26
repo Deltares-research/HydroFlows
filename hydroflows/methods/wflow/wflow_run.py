@@ -1,4 +1,5 @@
 """Wflow run method."""
+
 import subprocess
 from pathlib import Path
 
@@ -8,21 +9,25 @@ from ..method import Method
 
 __all__ = ["WflowRun"]
 
+
 class Input(BaseModel):
     """Input parameters."""
 
     wflow_toml: FilePath
+
 
 class Output(BaseModel):
     """Output parameters."""
 
     wflow_output_timeseries: Path
 
+
 class Params(BaseModel):
     """Parameters."""
 
     wflow_bin: Path
     julia_num_threads: int = 4
+
 
 class WflowRun(Method):
     """Rule for running a Wflow model."""
@@ -35,7 +40,7 @@ class WflowRun(Method):
     def run(self):
         """Run the WflowRun method."""
         # Set environment variable JULIA_NUM_THREADS
-        env = {'JULIA_NUM_THREADS': str(self.params.julia_num_threads)}
+        env = {"JULIA_NUM_THREADS": str(self.params.julia_num_threads)}
 
         # Path to the wflow_cli executable
         wflow_cli_path = self.params.wflow_bin
