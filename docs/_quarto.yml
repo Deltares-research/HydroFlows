@@ -146,3 +146,7 @@ quartodoc:
       contents:
         - name: WflowBuild
           children: embedded
+        - name: WflowRun
+          children: embedded
+        - name: WflowUpdateForcing
+          children: embedded
