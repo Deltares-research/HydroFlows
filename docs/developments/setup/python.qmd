@@ -9,7 +9,7 @@ The repository has a `make_env.py` script that creates a conda environment yaml
 based on the `pyproject.toml` file.
 
 This simply done by typing the following in the command line
-```cmd
+```bash
 python make_env.py
 ```
 
@@ -17,7 +17,7 @@ In the `pyproject.toml` file multiple variants of enviroments are provided which
 called upon in `make_env.py` by adding an argument to the command line command.
 
 E.g.
-```cmd
+```bash
 python make_env.py full
 ```
 
