@@ -19,6 +19,7 @@ class Input(BaseModel):
 class Output(BaseModel):
     """Output parameters."""
 
+    # TODO: should if this file is in the wflow toml
     wflow_output_timeseries: Path
 
 
