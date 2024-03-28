@@ -1,6 +1,8 @@
 """Wflow design hydrograph method."""
+import os
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -34,6 +36,8 @@ class Params(BaseModel):
 
     #return periods of interest
     rps: np.ndarray = np.array([1.01, 2, 5, 10, 20, 50, 100])
+
+    plot_fig: bool = False
 
     #duration for hydrograph
     ndays: int = 6
@@ -94,4 +98,41 @@ class WflowDesignHydro(Method):
                             wdw_size=self.params.ndays,
                             ).transpose(time_dim, 'peak', index_dim)
 
-        da_q_hydrograph.mean('peak') * da_rps
+        q_hydrograph = da_q_hydrograph.mean('peak') * da_rps
+
+        q_hydrograph.to_netcdf(self.output.design_hydrograph)
+
+        #save plots with fitted distributions
+        if self.params.plot_fig == True:
+
+            #create a folder to save the figs
+            root = self.output.design_hydrograph.parent
+            plots_folder = os.path.join(root, 'plots_eva')
+
+            if not os.path.exists(plots_folder):
+                os.makedirs(plots_folder)
+
+            #loop through all the stations and save fig
+            for station in da[index_dim].values:
+                _, ax = plt.subplots(1, 1, figsize=(7, 5))
+
+                extremes_rate = da_peaks.sel({index_dim: station}).extremes_rate.item()
+                dist = da_params.sel({index_dim: station}).distribution.item()
+
+                extremes.plot_return_values(
+                        da_peaks.sel({index_dim: station}),
+                        da_params.sel({index_dim: station}),
+                        dist,
+                        color="k",
+                        nsample=1000,
+                        rps=self.params.rps,
+                        extremes_rate=extremes_rate,
+                        ax=ax,)
+
+                ax.set_title(f"Station {station}")
+                ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
+                ax.set_xlabel("Return period [years]")
+
+                station_fig_path = os.path.join(plots_folder, f"{station}.png")
+
+                plt.savefig(station_fig_path, dpi=300, bbox_inches="tight")
