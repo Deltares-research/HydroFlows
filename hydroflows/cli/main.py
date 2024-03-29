@@ -49,7 +49,7 @@ def _cb_key_val(ctx, param, value):
             else:
                 k, v = pair.split('=', 1)
                 k = k.lower()
-                v = v.lower()
+                # v = v.lower()
                 out[k] = None if v.lower() in ['none', 'null', 'nil', 'nada'] else v
         return out
 
