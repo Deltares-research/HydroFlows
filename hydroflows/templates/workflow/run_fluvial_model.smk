@@ -13,7 +13,8 @@ rule update_wflow:
 
     params:
         start_time = "2010-02-03T00:00:00",
-        end_time = "2010-02-09T00:00:00"
+        end_time = "2010-02-09T00:00:00",
+
     output:
         wflow_toml = f"models/wflow/{region_name}/simulations/{run_name}/wflow_sbm.toml",
 
@@ -29,7 +30,7 @@ rule update_wflow:
 
 rule run_wflow:
     input:
-        wflow_toml = f"models/wflow/{region_name}/simulations/{run_name}/wflow_sbm.toml"
+        wflow_toml = rules.update_wflow.output.wflow_toml
 
     params:
         wflow_bin = f"bin/wflow/wflow_cli/bin/wflow_cli.exe"
@@ -45,8 +46,3 @@ rule run_wflow:
         -o wflow_output_timeseries={output.wflow_output_timeseries} \
         -p wflow_bin={params.wflow_bin}
         """
-
-# rule post_process_wflow:
-#     input:
-#     output:
-#     shell:
