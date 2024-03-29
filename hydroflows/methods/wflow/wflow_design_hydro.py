@@ -26,7 +26,7 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    #parameters for the get_peaks function
+    # parameters for the get_peaks function
     ev_type: str = "BM"
     min_dist_days: int = 7
     qthresh: float = 0.95
@@ -34,12 +34,12 @@ class Params(BaseModel):
     index_dim: str = 'Q_gauges'
     time_dim: str = 'time'
 
-    #return periods of interest
+    # return periods of interest
     rps: np.ndarray = np.array([1.01, 2, 5, 10, 20, 50, 100])
 
     plot_fig: bool = False
 
-    #duration for hydrograph
+    # duration for hydrograph
     ndays: int = 6
 
 class WflowDesignHydro(Method):
@@ -52,7 +52,7 @@ class WflowDesignHydro(Method):
 
     def run(self):
         """Run the Wflow design hydrograph method."""
-        #read the provided wflow time series
+        # read the provided wflow time series
         da = xr.open_dataarray(self.input.time_series_nc)
         time_dim = self.params.time_dim
         index_dim = self.params.index_dim
@@ -68,7 +68,7 @@ class WflowDesignHydro(Method):
         # sample size per year
         min_sample_size = pd.Timedelta(1, 'A') / dt * self.params.min_sample_perc
 
-        #specify the setting for extracting peaks
+        # specify the setting for extracting peaks
         kwargs = {
             "POT": dict(min_dist=min_dist,
                         qthresh=self.params.qthresh,
@@ -78,17 +78,17 @@ class WflowDesignHydro(Method):
                        min_sample_size=min_sample_size)
         }[self.params.ev_type]
 
-        #derive the peak
+        # derive the peak
         da_peaks = get_peaks(da, ev_type=self.params.ev_type,
                              time_dim=time_dim, **kwargs)
 
         #TODO reduce da_peaks to n year samples in case of POT
 
-        #specify and fit an EV distribution
+        # specify and fit an EV distribution
         da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type)
         da_params.load()
 
-        #calculate return values for specified rps/params
+        # calculate return values for specified rps/params
         da_rps = extremes.get_return_value(da_params, rps=self.params.rps).load()
         da_rps = da_rps.assign_coords(rps=np.round(self.params.rps).astype(int))
 
@@ -102,17 +102,17 @@ class WflowDesignHydro(Method):
 
         q_hydrograph.to_netcdf(self.output.design_hydrograph)
 
-        #save plots with fitted distributions
+        # save plots with fitted distributions
         if self.params.plot_fig == True:
 
-            #create a folder to save the figs
+            # create a folder to save the figs
             root = self.output.design_hydrograph.parent
             plots_folder = os.path.join(root, 'plots_eva')
 
             if not os.path.exists(plots_folder):
                 os.makedirs(plots_folder)
 
-            #loop through all the stations and save fig
+            # loop through all the stations and save fig
             for station in da[index_dim].values:
                 _, ax = plt.subplots(1, 1, figsize=(7, 5))
 

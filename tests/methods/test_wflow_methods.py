@@ -2,10 +2,13 @@ import os
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
+import pandas as pd
 import pytest
+import xarray as xr
 from shapely.geometry import Point
 
-from hydroflows.methods import WflowBuild
+from hydroflows.methods import WflowBuild, WflowDesignHydro
 
 
 @pytest.fixture()
@@ -35,3 +38,42 @@ def test_wflow_build(sfincs_src_points, tmp_path):
     WflowBuild(input=input, output=output).run()
 
     assert fn_wflow_toml.exists()
+
+@pytest.fixture()
+def time_series_nc():
+    # Generating datetime index
+    dates = pd.date_range(start='2000-01-01', end='2009-12-31', freq='D')
+
+    # Generating station IDs
+    stations = np.array(['1', '2'], dtype='<U1')
+
+    # Generating random discharge data for each station and date
+    data = np.random.rand(len(dates), len(stations)) * 100
+
+    # Creating the DataArray
+    discharge_data = xr.DataArray(data,
+                                   coords={'time': dates, 'Q_gauges': stations},
+                                   dims=['time', 'Q_gauges'],
+                                   name='discharge',
+                                   attrs={'long_name': 'discharge', 'units': 'm3/s'})
+
+    return discharge_data
+
+def test_wflow_design_hydro(time_series_nc, tmp_path):
+    # write time series to file
+    fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
+    os.makedirs(fn_time_series_nc.parent, exist_ok=True)
+    time_series_nc.to_netcdf(fn_time_series_nc)
+
+    input = {
+        "time_series_nc": str(fn_time_series_nc)
+    }
+
+    fn_design_hydrograph = Path(tmp_path, "model", "design_hydrograph.nc")
+
+    output = {
+        "design_hydrograph": str(fn_design_hydrograph)
+    }
+
+    WflowDesignHydro(input=input, output=output).run()
+    assert fn_design_hydrograph.exists()
