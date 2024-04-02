@@ -1,7 +1,6 @@
 """Module/ Rule for building FIAT models."""
 import os
 from pathlib import Path
-from typing import List
 
 import geopandas as gpd
 import hydromt_fiat
@@ -9,7 +8,8 @@ from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from ..method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.utils import decompose_cli_list
 
 __all__ = ["FIATBuild"]
 
@@ -30,7 +30,7 @@ class Params(BaseModel):
     """FIAT build params."""
 
     config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
-    data_libs: List[str] = ["artifact_data"]
+    data_libs: str = "'artifact_data'"
     continent: str = "South America"
 
 class Output(BaseModel):
@@ -58,12 +58,14 @@ class FIATBuild(Method):
                 "region": {"geom": region_gdf}
             }}
         )
+        # Create data_libs from parameter input string
+        data_libs = decompose_cli_list(self.params.data_libs)
         #Setup the model
         root = self.output.fiat_cfg.parent
         model = FiatModel(
             root = root,
             mode="w+",
-            data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
+            data_libs=[FIAT_DATA_PATH] + data_libs,
         )
         # Build the model
         model.build(opt=opt)

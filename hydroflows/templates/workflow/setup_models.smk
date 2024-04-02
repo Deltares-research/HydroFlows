@@ -1,9 +1,11 @@
 from pathlib import Path
 
+from hydroflows.utils import compose_cli_list
+
 # Unpack config
 region_file = config["REGION_FILE"]
 region_name = config["REGION"]
-# data_libs = config["DATA_LIBS"]
+data_libs = compose_cli_list(config["DATA_LIBS"])
 
 # Target rule
 rule all:
@@ -18,7 +20,7 @@ rule setup_sfincs:
 
     params:
         config = "workflow/hydromt_config/sfincs_build.yaml",
-        # data_libs = data_libs, # FIXME how to pass a list?
+        data_libs = data_libs, # FIXME how to pass a list?
         res = 100,
 
     output:
@@ -33,6 +35,7 @@ rule setup_sfincs:
         -i region={input.region} \
         -o sfincs_inp={output.sfincs_inp} \
         -p config={params.config} \
+        -p data_libs={params.data_libs} \
         -p res={params.res}
         """
 
@@ -43,7 +46,7 @@ rule setup_fiat:
 
     params:
         config = "workflow/hydromt_config/fiat_build.yaml",
-        # data_libs = data_libs, # FIXME how to pass a list?
+        data_libs = data_libs, # FIXME how to pass a list?
         continent = "europe",
 
     output:
@@ -56,6 +59,7 @@ rule setup_fiat:
         -i region={input.region} \
         -o fiat_cfg={output.fiat_cfg} \
         -p config={params.config} \
+        -p data_libs={params.data_libs} \
         -p continent={params.continent}
         """
 
