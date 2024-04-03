@@ -1,5 +1,6 @@
 """SFINCS build methods."""
 from pathlib import Path
+from typing import List
 
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
@@ -17,7 +18,7 @@ class Output(BaseModel):
 
 class Params(ParamsHydromt):
     # optional parameter
-    data_libs: list[str] = ['artifact_data']
+    data_libs: List[str] = ['artifact_data']
     config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yaml")
     res: float = 50.0
 

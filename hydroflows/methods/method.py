@@ -32,7 +32,7 @@ class Params(BaseModel):
 
 
 class ParamsHydromt(BaseModel):
-    data_libs: list[str] = Field(default_factory=list)
+    data_libs: List[str] = Field(default_factory=list)
 
     @validator("data_libs", pre=True)
     def split(cls, v: object) -> object:

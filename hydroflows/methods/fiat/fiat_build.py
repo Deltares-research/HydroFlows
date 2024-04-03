@@ -1,6 +1,7 @@
 """Module/ Rule for building FIAT models."""
 import os
 from pathlib import Path
+from typing import List
 
 import geopandas as gpd
 import hydromt_fiat
@@ -29,7 +30,7 @@ class Params(ParamsHydromt):
     """FIAT build params."""
 
     config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
-    data_libs: str = "'artifact_data'"
+    data_libs: List[str] = ['artifact_data']
     continent: str = "South America"
 
 class Output(BaseModel):
