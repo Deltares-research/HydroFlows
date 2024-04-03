@@ -12,7 +12,11 @@ def test_sfincs_build(sfincs_region_path , tmp_path):
     output = {
         "sfincs_inp": str(fn_sfincs_inp)
     }
+    params = {
+        "data_libs": "artifact_data",
+        "res": 50.0
+    }
 
-    SfincsBuild(input=input, output=output).run()
+    SfincsBuild(input=input, output=output, params=params).run()
 
     assert fn_sfincs_inp.exists()
