@@ -34,7 +34,7 @@ class WflowRun(Method):
     """Rule for running a Wflow model."""
 
     name: str = "wflow_run"
-    params: Params = Params()
+    params: Params
     input: Input
     output: Output
 
