@@ -36,69 +36,69 @@ class SfincsRun(Method):
     """Rule for running a SFINCS model."""
 
     name: str = "sfincs_run"
-    params: Params = Params()
+    params: Params # params.sfincs_exe required
     input: Input
     output: Output
 
 
-def run(self) -> None:
-    """Run the SFINCS model."""
-    # make sure model_root is an absolute path
-    model_root = self.input.sfincs_inp.parent.resolve()
+    def run(self) -> None:
+        """Run the SFINCS model."""
+        # make sure model_root is an absolute path
+        model_root = self.input.sfincs_inp.parent.resolve()
 
-    # set command to run depending on OS and VM
-    if self.params.sfincs_exe is not None and sys.platform == "win32":
-        sfincs_exe = self.params.sfincs_exe.resolve()
-        cmd = [str(sfincs_exe)]
-    elif self.params.vm is not None:
-        vm = self.params.vm
-        docker_tag = self.params.docker_tag
-        if vm == "docker":
-            cmd = [
-                "docker",
-                "run",
-                f"-v{model_root}://data",
-                f"deltares/sfincs-cpu:{docker_tag}",
-            ]
-        elif vm == "singularity":
-            cmd = [
-                "singularity",
-                "run",
-                f"-B{model_root}:/data",
-                "--nv",
-                f"docker://deltares/sfincs-cpu:{docker_tag}",
-            ]
-    else:
-        if sys.platform == "win32":
-            raise ValueError("sfince_exe must be specified for Windows")
+        # set command to run depending on OS and VM
+        if self.params.sfincs_exe is not None and sys.platform == "win32":
+            sfincs_exe = self.params.sfincs_exe.resolve()
+            cmd = [str(sfincs_exe)]
+        elif self.params.vm is not None:
+            vm = self.params.vm
+            docker_tag = self.params.docker_tag
+            if vm == "docker":
+                cmd = [
+                    "docker",
+                    "run",
+                    f"-v{model_root}://data",
+                    f"deltares/sfincs-cpu:{docker_tag}",
+                ]
+            elif vm == "singularity":
+                cmd = [
+                    "singularity",
+                    "run",
+                    f"-B{model_root}:/data",
+                    "--nv",
+                    f"docker://deltares/sfincs-cpu:{docker_tag}",
+                ]
         else:
-            raise ValueError("vm must be specified for Linux or macOS")
+            if sys.platform == "win32":
+                raise ValueError("sfince_exe must be specified for Windows")
+            else:
+                raise ValueError("vm must be specified for Linux or macOS")
 
-    # print(f"Running SFINCS model in {model_root} with command:")
-    # print(f">> {' '.join(cmd)}\n")
+        # print(f"Running SFINCS model in {model_root} with command:")
+        # print(f">> {' '.join(cmd)}\n")
 
-    # run & write log file
-    with subprocess.Popen(
-        cmd,
-        cwd=model_root,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        universal_newlines=True,  # get string output instead of bytes
-    ) as proc:
-        with open(model_root / "sfincs_log.txt", "w") as f:
-            for line in proc.stdout:
-                f.write(line)
-            for line in proc.stderr:
-                f.write(line)
-        proc.wait()
-        return_code = proc.returncode
+        # run & write log file
+        with subprocess.Popen(
+            cmd,
+            cwd=model_root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            universal_newlines=True,  # get string output instead of bytes
+        ) as proc:
+            with open(model_root / "sfincs_log.txt", "w") as f:
+                for line in proc.stdout:
+                    f.write(line)
+                for line in proc.stderr:
+                    f.write(line)
+            proc.wait()
+            return_code = proc.returncode
 
-    # check return code
-    if vm is not None and return_code == 127:
-        raise RuntimeError(
-            f"{vm} not found. Make sure it is installed, running and added to PATH."
-        )
-    elif return_code != 0:
-        raise RuntimeError(f"SFINCS run failed with return code {return_code}")
+        # check return code
+        if self.params.vm is not None and return_code == 127:
+            raise RuntimeError(
+                f"{vm} not found. Make sure it is installed, running and added to PATH."
+            )
+        elif return_code != 0:
+            raise RuntimeError(f"SFINCS run failed with return code {return_code}")
 
-    return None
+        return None
