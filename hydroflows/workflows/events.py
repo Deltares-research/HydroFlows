@@ -2,7 +2,7 @@
 
 
 from pathlib import Path
-from typing import Any, List, Literal, Optional
+from typing import Any, List, Literal, Optional, Union
 
 import yaml
 from pydantic import (
@@ -95,9 +95,16 @@ class EventCatalog(BaseModel):
         """Get an event by name as a dictionary."""
         event = self.get_event(name)
         if event is not None:
-            return event.model_dump()
+            return event.model_dump(mode='json', round_trip=True, exclude_none=True)
         return {}
 
-    def add_event(self, event: Event) -> None:
+    @property
+    def event_names(self) -> list[str]:
+        """Return a list of event names."""
+        return [event.name for event in self.events]
+
+    def add_event(self, event: Union[Event, dict]) -> None:
         """Add an event."""
+        if isinstance(event, dict):
+            event = Event(**event)
         self.events.append(event)

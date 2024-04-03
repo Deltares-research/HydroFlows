@@ -47,6 +47,7 @@ def test_event_catalog(test_data_dir):
     event = event_catalog.get_event('p_rp050')
     assert isinstance(event, Event)
     assert event.name == 'p_rp050'
+    assert event_catalog.event_names == ['p_rp050', 'p_rp010']
     assert isinstance(event.drivers, list)
     assert event.drivers[0].path.is_absolute()
     assert event.drivers[0].path.exists()
