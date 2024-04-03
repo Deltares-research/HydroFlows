@@ -46,3 +46,22 @@ rule run_wflow:
         -o wflow_output_timeseries={output.wflow_output_timeseries} \
         -p wflow_bin={params.wflow_bin}
         """
+
+rule hydrograph:
+    input:
+        time_series_nc = rules.run_wflow.output.wflow_output_timeseries
+
+    params:
+        plot_fig = True
+
+    output:
+        design_hydrograph = f"data/output/{region_name}/{run_name}/hydrograph.nc"
+
+    shell:
+        """
+        hydroflows run \
+        wflow_design_hydro \
+        -i time_series_nc={input.time_series_nc} \
+        -o design_hydrograph={ouput.design_hydrograph} \
+        -p plot_fig={params.plot_fig}
+        """
