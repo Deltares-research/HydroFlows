@@ -1,0 +1,84 @@
+---
+title: Setting up python environment
+---
+
+For HydroFlows the environment is simply created py using `Python` and `conda`/ `mamba`.
+
+## Create environment yaml
+The repository has a `make_env.py` script that creates a conda environment yaml
+based on the `pyproject.toml` file.
+
+This simply done by typing the following in the command line
+```bash
+python make_env.py
+```
+
+In the `pyproject.toml` file multiple variants of enviroments are provided which can be
+called upon in `make_env.py` by adding an argument to the command line command.
+
+E.g.
+```bash
+python make_env.py full
+```
+
+Here a 'full' environment is created with all the packages in the `pyproject.toml`.
+However if one only needs the dependencies to build the documentation, the argument
+'docs' van be provided.
+
+A list of all available options as presented below:
+- `dev`; The basics for developing and shipping
+- `doc`; to build documentation
+- `examples`; to run the examples
+- `min`; Nothing but the necessary packages
+- `full`; the full developer environment
+- `slim`; a minimalistic developer environment
+
+We recommend to create a `full` environment.
+
+## Install conda/ mamba
+It is recommend to install conda/ mamba via the miniforge installer.
+This installer can be found [here](https://github.com/conda-forge/miniforge?tab=readme-ov-file#download).
+Download the version that is applicable for your machine.
+
+### Windows
+For Windows users this will be the x86-64 installer for Windows.
+Run the installer and go thourgh all the install pages.
+
+On the page of selecting the installation directory, it is recommended to install directly under your main drive.
+If that is e.g. the `C:\` drive, choose the `C:\miniforge3` directory.
+If the directory is not yet created, create it before moving on from this stage.
+
+On the page where is ask to add conda to path, add conda to path.
+
+### Linux
+For linux download package that correspond with your machine's architecture (in most cases `x86-64`).
+This package will be a tar archive (tarball).
+```bash
+wget < miniforge3 package link >
+```
+
+Unpack the package using `tar` at the preferred location.
+```bash
+tar -xvzf < miniforge3 package >
+```
+
+Head over to conda directory and find the conda binary to initialize conda for your shell (here bash).
+```bash
+conda init
+source ~/.bashrc
+```
+
+## Creating the python enviroment
+Creating the python environment is simply done by running the following command.
+
+```bash
+mamba env create -f environment.yml
+```
+
+Make sure the current directory is set to the repository directory.
+
+Now the developer enviroment is installed called `hydroflows`.
+This environment should be listed when executing this command:
+```bash
+mamba env list
+```
