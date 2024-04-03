@@ -1,0 +1,13 @@
+version: v0.1
+
+events:
+  - name: p_rp050
+    drivers:
+      - type: rainfall
+        path: p_rp050.csv
+    probability: 0.02
+  - name: p_rp010
+    drivers:
+      - type: rainfall
+        path: p_rp010.csv
+    probability: 0.1
