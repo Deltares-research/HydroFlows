@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from ..method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method, ParamsHydromt
 
 __all__ = ["WflowBuild"]
 
@@ -22,7 +22,7 @@ class Output(BaseModel):
 
     wflow_toml: Path
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """Parameters."""
 
     # optional parameters

@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from ..method import Method
+from hydroflows.methods.method import Method, ParamsHydromt
 
 __all__ = ["WflowUpdateForcing"]
 
@@ -25,7 +25,7 @@ class Output(BaseModel):
     wflow_toml: Path
 
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """Parameters."""
 
     start_time: str = "2010-02-01T00:00:00"

@@ -10,13 +10,14 @@ validators and a run method.
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validator
 
 __all__ = ["Method"]
 
 # hydromt templates dir
 PACKAGE_ROOT = Path(__file__).parent.parent
 HYDROMT_CONFIG_DIR = PACKAGE_ROOT / "templates" / "workflow" / "hydromt_config"
+
 
 # NOTE these are just examples
 # file1, file2 etc should be replaced by the actual inputs for the rule
@@ -26,8 +27,26 @@ class Input(BaseModel):
 
 
 class Params(BaseModel):
-    name: str = 'test'
+    name: str = "test"
     arg1: int = 1
+
+
+class ParamsHydromt(BaseModel):
+    data_libs: list[str] = Field(default_factory=list)
+
+    @validator("data_libs", pre=True)
+    def split(cls, v: object) -> object:
+        """Split comma and space seperated string to list."""
+        if isinstance(v, str):
+            v = v.strip()
+            if v == "":
+                vlist = []
+            elif "," in v:
+                vlist = v.split(",")
+            else:
+                vlist = v.split()
+            return [v.strip() for v in vlist]
+        return v
 
 
 class Output(BaseModel):
@@ -41,11 +60,8 @@ class Method(BaseModel):
     output: Output
     params: Params = Params()
 
-
     def to_str(
-        self,
-        format: str ="snakemake",
-        wildcards: Optional[Dict[str, List]] = {}
+        self, format: str = "snakemake", wildcards: Optional[Dict[str, List]] = {}
     ):
         """Parse rule to a string, suitable for a certain language.
 

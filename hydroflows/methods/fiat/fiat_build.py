@@ -8,8 +8,7 @@ from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
-from hydroflows.utils import decompose_cli_list
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method, ParamsHydromt
 
 __all__ = ["FIATBuild"]
 
@@ -26,7 +25,7 @@ class Input(BaseModel):
     region: FilePath
 
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """FIAT build params."""
 
     config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
@@ -58,14 +57,12 @@ class FIATBuild(Method):
                 "region": {"geom": region_gdf}
             }}
         )
-        # Create data_libs from parameter input string
-        data_libs = decompose_cli_list(self.params.data_libs)
         #Setup the model
         root = self.output.fiat_cfg.parent
         model = FiatModel(
             root = root,
             mode="w+",
-            data_libs=[FIAT_DATA_PATH] + data_libs,
+            data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
         # Build the model
         model.build(opt=opt)
