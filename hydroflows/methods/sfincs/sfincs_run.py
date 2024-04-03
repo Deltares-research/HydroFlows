@@ -74,23 +74,14 @@ class SfincsRun(Method):
             else:
                 raise ValueError("vm must be specified for Linux or macOS")
 
-        # print(f"Running SFINCS model in {model_root} with command:")
-        # print(f">> {' '.join(cmd)}\n")
-
         # run & write log file
-        with subprocess.Popen(
-            cmd,
-            cwd=model_root,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            universal_newlines=True,  # get string output instead of bytes
-        ) as proc:
-            with open(model_root / "sfincs_log.txt", "w") as f:
-                for line in proc.stdout:
-                    f.write(line)
-                for line in proc.stderr:
-                    f.write(line)
-            proc.wait()
+        with open(model_root / "sfincs_log.txt", "w") as f:
+            proc = subprocess.run(
+                cmd,
+                cwd=model_root,
+                stdout=f,
+                stderr=f,
+            )
             return_code = proc.returncode
 
         # check return code
