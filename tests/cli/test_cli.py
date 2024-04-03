@@ -30,7 +30,7 @@ def test_cli_run_help(cli_obj):
         "params",  # test with and without optional params
         [
             [],
-            ['-p', 'arg1=2']
+            ['-p', 'data_libs=artifact_data'],
         ]
 )
 def test_cli_run_method(cli_obj, params):

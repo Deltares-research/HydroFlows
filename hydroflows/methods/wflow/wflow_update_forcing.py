@@ -8,7 +8,8 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import Method, ParamsHydromt
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import Method
 
 __all__ = ["WflowUpdateForcing"]
 

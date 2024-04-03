@@ -6,7 +6,8 @@ from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method, ParamsHydromt
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["SfincsBuild"]
 
@@ -27,7 +28,7 @@ class SfincsBuild(Method):
     """Rule for building Sfincs."""
 
     name: str = "sfincs_build"
-    params: Params
+    params: Params = Params() # optional parameters
     input: Input
     output: Output
 
