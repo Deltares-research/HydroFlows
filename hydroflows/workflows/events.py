@@ -1,6 +1,5 @@
 """Defines the Event class which is a breakpoint between workflows."""
 
-
 from pathlib import Path
 from typing import Any, List, Literal, Optional, Union
 
@@ -13,13 +12,13 @@ from pydantic import (
     model_validator,
 )
 
-__all__ = ['EventCatalog']
+__all__ = ["EventCatalog"]
 
 
 class Driver(BaseModel):
     """A driver for the event."""
 
-    type: Literal['water_level', 'discharge', 'rainfall']
+    type: Literal["water_level", "discharge", "rainfall"]
     path: Path
 
 
@@ -30,7 +29,7 @@ class Event(BaseModel):
     drivers: List[Driver]
     probability: Optional[float] = None
 
-    @field_validator('drivers', mode='before')
+    @field_validator("drivers", mode="before")
     @classmethod
     def _set_drivers(cls, value: Any) -> List[Driver]:
         if isinstance(value, list):
@@ -41,19 +40,19 @@ class Event(BaseModel):
 class EventCatalog(BaseModel):
     """A dictionary of event configurations."""
 
-    version: str = 'v0.1'
+    version: str = "v0.1"
     root: Optional[DirectoryPath] = None
     events: List[Event]
 
-    @field_validator('events', mode='before')
+    @field_validator("events", mode="before")
     @classmethod
     def _set_events(cls, value: Any) -> List[Event]:
         if isinstance(value, list):
             return [Event(**event) for event in value]
         return value
 
-    @model_validator(mode='after')
-    def _check_paths(self) -> 'EventCatalog':
+    @model_validator(mode="after")
+    def _check_paths(self) -> "EventCatalog":
         root = self.root or Path.cwd()
         for event in self.events:
             for driver in event.drivers:
@@ -64,24 +63,22 @@ class EventCatalog(BaseModel):
                     raise IOError(err)
         return self
 
-
     @classmethod
-    def from_yaml(cls, path: FilePath) -> 'EventCatalog':
+    def from_yaml(cls, path: FilePath) -> "EventCatalog":
         """Create an EventCatalog from a YAML file."""
-        with open(path, 'r') as file:
+        with open(path, "r") as file:
             yml_dict = yaml.safe_load(file)
-        if 'root' not in yml_dict:
-            yml_dict['root'] = Path(path).parent
+        if "root" not in yml_dict:
+            yml_dict["root"] = Path(path).parent
         return cls(**yml_dict)
 
     def to_dict(self) -> dict:
         """Return the EventCatalog as a dictionary."""
-        return self.model_dump(mode='json', round_trip=True, exclude_none=True)
-
+        return self.model_dump(mode="json", round_trip=True, exclude_none=True)
 
     def to_yaml(self, path: FilePath) -> None:
         """Write the EventCatalog to a YAML file."""
-        with open(path, 'w') as file:
+        with open(path, "w") as file:
             yaml.safe_dump(self.to_dict(), file, sort_keys=False)
 
     def get_event(self, name: str) -> Optional[Event]:
@@ -95,7 +92,7 @@ class EventCatalog(BaseModel):
         """Get an event by name as a dictionary."""
         event = self.get_event(name)
         if event is not None:
-            return event.model_dump(mode='json', round_trip=True, exclude_none=True)
+            return event.model_dump(mode="json", round_trip=True, exclude_none=True)
         return {}
 
     @property
