@@ -52,7 +52,7 @@ class FIATUpdateHazard(Method):
         da = open_raster(self.input.hazard_map)
         # Setup a region
         region = gpd.GeoDataFrame(
-            geometry=box(model.exposure.bounding_box()),
+            geometry=[box(*model.exposure.bounding_box())],
         )
         region = region.set_crs(model.exposure.crs)
         # Clip the hazard data with a small buffer

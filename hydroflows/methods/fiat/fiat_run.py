@@ -27,11 +27,11 @@ class Output(BaseModel):
     fiat_out: Path
 
 
-class FIATrun(Method):
+class FIATRun(Method):
     """Method for running a FIAT model."""
 
     name: str = "fiat_run"
-    params: Params = Params()
+    params: Params
     input: Input
     output: Output
 
