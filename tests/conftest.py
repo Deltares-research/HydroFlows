@@ -19,7 +19,7 @@ def tmp_csv(tmpdir):
 
 @pytest.fixture(scope="session")
 def test_data_dir() -> Path:
-    return Path(__file__).parent / "data"
+    return Path(__file__).parent / "_data"
 
 
 @pytest.fixture()
