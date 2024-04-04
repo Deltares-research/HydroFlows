@@ -18,9 +18,15 @@ from pathlib import Path
 
 import click
 
-from .. import __version__, log
-from ..methods import METHODS
-from ..utils import copy_templates, create_folders
+from hydroflows import __version__, log
+from hydroflows.methods import METHODS
+from hydroflows.utils import (
+    adjust_config,
+    check_file_path,
+    copy_single_file,
+    copy_templates,
+    create_folders,
+)
 
 
 # Copied from rasterio.rio.options
@@ -115,6 +121,7 @@ opt_input = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=True,
+    help="Set required input file(s) for the method",
 )
 opt_output = click.option(
     '-o',
@@ -122,6 +129,7 @@ opt_output = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=True,
+    help="Specify the output of the method"
 )
 opt_params = click.option(
     '-p',
@@ -129,6 +137,7 @@ opt_params = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=False,
+    help="Set the parameters for the method",
 )
 
 @cli.command(short_help="Run a method with set inputs, outputs and parameters")
@@ -178,16 +187,59 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
             handler.close()
             logger.removeHandler(handler)
 
+
+opt_region = click.option(
+    "-r",
+    "--region",
+    required=False,
+    callback=check_file_path,
+    type=str,
+    help="Path to a model region vector file",
+)
+
+opt_config = click.option(
+    "-c",
+    "--config",
+    required=False,
+    callback=check_file_path,
+    help="Path to a custom configurations file",
+)
+
 @cli.command(short_help="Create a new project folder structure and copy templates")
 @click.argument(
     "ROOT",
     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
 )
+@opt_region
+@opt_config
 @click.pass_context
-def init(ctx, root: Path) -> None:
+def init(
+    ctx,
+    root: Path,
+    region: Path | None,
+    config: Path | None,
+) -> None:
     """Initialize a new project."""
     create_folders(root)
     copy_templates(root)
+    # Work with extra input on initialization
+    cfg_kwargs = {}
+    if region is not None:
+        cfg_kwargs["REGION_FILE"] = Path(
+            root,
+            "data",
+            "input",
+            region.name,
+        ).as_posix()
+        cfg_kwargs["REGION"] = region.stem
+        copy_single_file(region, cfg_kwargs["REGION_FILE"])
+    # Adjusting the config file i
+    adjust_config(
+        Path(root, "workflow", "snake_config", "setup_models_config.yml"),
+        extra=config,
+        **cfg_kwargs,
+    )
+
 
 if __name__ == "__main__":
     cli()
