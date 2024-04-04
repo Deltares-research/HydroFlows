@@ -3,7 +3,7 @@ from pathlib import Path
 # Unpack config
 region_file = config["REGION_FILE"]
 region_name = config["REGION"]
-# data_libs = config["DATA_LIBS"]
+data_libs = config["DATA_LIBS"]
 
 # Target rule
 rule all:
@@ -18,7 +18,7 @@ rule setup_sfincs:
 
     params:
         config = "workflow/hydromt_config/sfincs_build.yaml",
-        # data_libs = data_libs, # FIXME how to pass a list?
+        data_libs = data_libs,
         res = 100,
 
     output:
@@ -33,6 +33,7 @@ rule setup_sfincs:
         -i region={input.region} \
         -o sfincs_inp={output.sfincs_inp} \
         -p config={params.config} \
+        -p data_libs="{params.data_libs}" \
         -p res={params.res}
         """
 
@@ -43,7 +44,7 @@ rule setup_fiat:
 
     params:
         config = "workflow/hydromt_config/fiat_build.yaml",
-        # data_libs = data_libs, # FIXME how to pass a list?
+        data_libs = data_libs,
         continent = "europe",
 
     output:
@@ -56,6 +57,7 @@ rule setup_fiat:
         -i region={input.region} \
         -o fiat_cfg={output.fiat_cfg} \
         -p config={params.config} \
+        -p data_libs="{params.data_libs}" \
         -p continent={params.continent}
         """
 
@@ -65,7 +67,7 @@ rule setup_wflow:
 
     params:
         config = "workflow/hydromt_config/wflow_build.yaml",
-        # data_libs = data_libs, # FIXME how to pass a list?
+        data_libs = data_libs,
 
     output:
         wflow_toml = f"models/wflow/{region_name}/wflow_sbm.toml"
@@ -77,4 +79,5 @@ rule setup_wflow:
         -i sfincs_src_points={input.sfincs_src_points} \
         -o wflow_toml={output.wflow_toml} \
         -p config={params.config} \
+        -p data_libs="{params.data_libs}"
         """
