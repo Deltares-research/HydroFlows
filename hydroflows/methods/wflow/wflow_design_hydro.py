@@ -9,6 +9,7 @@ import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
+#from hydroflows.workflows.events import EventCatalog
 from ..method import Method
 
 __all__ = ["WflowDesignHydro"]
@@ -21,7 +22,7 @@ class Input(BaseModel):
 class Output(BaseModel):
     """Output parameters."""
 
-    design_hydrograph: Path
+    event_catalog: Path
 
 class Params(BaseModel):
     """Parameters."""
@@ -37,7 +38,7 @@ class Params(BaseModel):
     # return periods of interest
     rps: np.ndarray = np.array([1.01, 2, 5, 10, 20, 50, 100])
 
-    plot_fig: bool = False
+    plot_fig: bool = True
 
     # duration for hydrograph
     ndays: int = 6
@@ -100,14 +101,41 @@ class WflowDesignHydro(Method):
 
         q_hydrograph = da_q_hydrograph.mean('peak') * da_rps
 
-        q_hydrograph.to_netcdf(self.output.design_hydrograph)
+        dt0 = pd.to_datetime("2020-01-01")
+        time_delta = pd.to_timedelta(q_hydrograph['time'], unit='d').round('10min')
+        q_hydrograph['time'] = dt0 + time_delta
+        q_hydrograph = q_hydrograph.reset_coords(drop=True)
+
+        root = self.input.time_series_nc.parent
+        design_events_fn = os.path.join(root, "design_events")
+        if not os.path.exists(design_events_fn):
+            os.makedirs(design_events_fn)
+
+        events_list = []
+        for rp in q_hydrograph.rps.values:
+            # save p_rp as csv files
+            events_fn = os.path.join(design_events_fn, f"q_rp{int(rp):03d}.csv")
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
+
+            event = {
+                "name": f"q_rp{int(rp):03d}",
+                "forcings": [{"type": "discharge", "path": f"q_rp{int(rp):03d}.csv"}],
+                "probability": 1/rp
+             }
+            events_list.append(event)
+
+        # make a data catalog
+        # event_catalog = EventCatalog(
+        #    root=self.output.event_catalog.parent,
+        #    events=events_list,
+        # )
+
+        # event_catalog.to_yaml(
+        #     self.output.event_catalog)
 
         # save plots with fitted distributions
-        if self.params.plot_fig == True:
-
-            # create a folder to save the figs
-            root = self.output.design_hydrograph.parent
-            plots_folder = os.path.join(root, 'plots_eva')
+        if self.params.plot_fig:
+            plots_folder = os.path.join(design_events_fn, 'figs')
 
             if not os.path.exists(plots_folder):
                 os.makedirs(plots_folder)
