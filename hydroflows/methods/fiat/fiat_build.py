@@ -9,7 +9,8 @@ from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from ..method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["FIATBuild"]
 
@@ -26,11 +27,11 @@ class Input(BaseModel):
     region: FilePath
 
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """FIAT build params."""
 
     config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
-    data_libs: List[str] = ["artifact_data"]
+    data_libs: List[str] = ['artifact_data']
     continent: str = "South America"
 
 class Output(BaseModel):
