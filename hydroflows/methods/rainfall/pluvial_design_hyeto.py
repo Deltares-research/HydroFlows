@@ -108,12 +108,16 @@ class PluvialDesignHyeto(Method):
         p_hyetograph['time'] = dt0 + time_delta
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
-        root = self.output.out_dir.parent
+        root = self.input.time_series_nc.parent
+        design_events_fn = os.path.join(root, "design_events")
+        if not os.path.exists(design_events_fn):
+            os.makedirs(design_events_fn)
+
         events_list = []
         for rp in p_hyetograph.rps.values:
             # save p_rp as csv files
-            fn_events = os.path.join(root, f"p_rp{int(rp):03d}.csv")
-            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(fn_events)
+            events_fn = os.path.join(design_events_fn, f"p_rp{int(rp):03d}.csv")
+            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
 
             event = {
                 "name": f"p_rp{int(rp):03d}",
@@ -121,16 +125,17 @@ class PluvialDesignHyeto(Method):
                 "probability": 1/rp
              }
             events_list.append(event)
+
         # make a data catalog
-        #event_catalog = EventCatalog(
-        #    root=root,
+        # event_catalog = EventCatalog(
+        #    root=self.output.event_catalog.parent,
         #    events=events_list,
-        #)
+        # )
 
         # save plots
         if self.params.plot_fig:
             # create a folder to save the figs
-            fn_plots = os.path.join(root, 'plots')
+            fn_plots = os.path.join(design_events_fn, 'figs')
 
             if not os.path.exists(fn_plots):
                 os.makedirs(fn_plots)
@@ -140,7 +145,7 @@ class PluvialDesignHyeto(Method):
             df = ds_idf["return_values"].rename(
                 {"rps": "Return period\n[year]"}
                 ).to_pandas()
-            df.plot(ax=ax)#, cmap="viridis")
+            df.plot(ax=ax)
             ax.set_ylabel("rainfall intensity [mm/hour]")
             ax.set_xlabel("event duration [hour]")
             ax.set_title("Rainfall IDF curves")
