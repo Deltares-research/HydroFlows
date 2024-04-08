@@ -132,6 +132,9 @@ class PluvialDesignHyeto(Method):
         #    events=events_list,
         # )
 
+        # event_catalog.to_yaml(
+        #     self.output.event_catalog)
+
         # save plots
         if self.params.plot_fig:
             # create a folder to save the figs
