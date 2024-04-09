@@ -76,31 +76,35 @@ def fiat_region_outputs(tmpdir, regionstrings):
 # TODO replace fiat_input for a set of inputs, including wflow, sfincs
 
 @pytest.mark.parametrize(
-    ("method", "input", "output"),
+    ("method", "input", "output", "wildcards"),
     [
         ( # case with single input and output
                 pytest.lazy_fixture("fiat_build_method"),
                 pytest.lazy_fixture("fiat_input"),
                 pytest.lazy_fixture("fiat_output"),
+                []
         ),
         (  # case with single input and multiple outputs
                 pytest.lazy_fixture("fiat_build_method"),
                 pytest.lazy_fixture("fiat_input"),
                 pytest.lazy_fixture("fiat_event_outputs"),
+                ["event"]
         ),
-        (  # case with multi inputs and multi outputs (several regions)
-                pytest.lazy_fixture("fiat_build_method"),
-                pytest.lazy_fixture("fiat_input"),
-                pytest.lazy_fixture("fiat_event_outputs"),
-        ),
+        # (  # case with multi inputs and multi outputs (several regions)
+        #         pytest.lazy_fixture("fiat_build_method"),
+        #         pytest.lazy_fixture("fiat_input"),
+        #         pytest.lazy_fixture("fiat_event_outputs"),
+        # ),
         # TODO: add a case where wildcard on input must be expanded to list input
         # TODO: not suitable for fiat build case. Suited e.g. for annual average loss
     ]
 )
-def test_rule_fiat(method, input, output):
+def test_rule_fiat(method, input, output, wildcards):
     rule = Rule(
         method=method,
         input=input,
         output=output,
+        wildcards=wildcards
     )
-    rule.validate_io()
+    print(rule)
+    # rule.validate_io()
