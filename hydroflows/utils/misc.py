@@ -10,7 +10,20 @@ def adjust_config(
     extra: Path | None = None,
     **kwargs,
 ):
-    """Adjust the config based on extra input."""
+    """Adjust the config based on extra input.
+
+    Fairly simple way of merging two config files. This will become \
+more sophisticated on a later date.
+
+    Parameters
+    ----------
+    config : Path | str
+        Path to the current config file.
+    extra : Path | None, optional
+        Path to the users file with custom settings.
+    kwargs : dict
+        Extra separate entries to be included.
+    """
     with open(config, "r") as _r:
         cfg = yaml.safe_load(_r)
 
@@ -21,24 +34,12 @@ def adjust_config(
             cfg.update(ext)
 
     # Update with the kwargs
+    # TODO find a better way of resolving this.
     cfg.update(kwargs)
 
     # Write it back to the drive
     with open(config, "w") as _w:
         yaml.dump(cfg, _w, sort_keys=False)
-
-
-def check_file_path(ctx, _, path):
-    """Check the file path in a cli friendly way."""
-    if path is None:
-        return
-    root = Path.cwd()
-    path = Path(path)
-    if not path.is_absolute():
-        path = Path(root, path)
-    if not (path.is_file() | path.is_dir()):
-        raise FileNotFoundError(f"{str(path)} is not a valid path")
-    return path
 
 
 def copy_single_file(

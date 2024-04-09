@@ -224,13 +224,12 @@ def init(
     cfg_kwargs = {}
     if region is not None:
         cfg_kwargs["REGION_FILE"] = Path(
-            root,
             "data",
             "input",
             region.name,
         ).as_posix()
         cfg_kwargs["REGION"] = region.stem
-        copy_single_file(region, cfg_kwargs["REGION_FILE"])
+        copy_single_file(region, Path(root, cfg_kwargs["REGION_FILE"]))
     # Adjusting the config file i
     adjust_config(
         Path(root, "workflow", "snake_config", "setup_models_config.yml"),
