@@ -101,11 +101,11 @@ def test_wflow_design_hydro(time_series_nc, tmp_path):
         "time_series_nc": str(fn_time_series_nc)
     }
 
-    fn_design_hydrograph = Path(tmp_path, "model", "design_hydrograph.nc")
+    fn_data_catalog = Path(tmp_path, "config", "catalog.yml")
 
     output = {
-        "design_hydrograph": str(fn_design_hydrograph)
+        "event_catalog": str(fn_data_catalog)
     }
 
     WflowDesignHydro(input=input, output=output).run()
-    assert fn_design_hydrograph.exists()
+    assert fn_data_catalog.exists()
