@@ -201,7 +201,7 @@ opt_config = click.option(
     "-c",
     "--config",
     required=False,
-    callback=check_file_path,
+    type=click.Path(exists=True, file_okay=True, path_type=pathlib.Path),
     help="Path to a custom SnakeMake configurations file",
 )
 
