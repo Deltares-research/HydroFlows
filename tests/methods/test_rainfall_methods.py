@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from hydroflows.methods import PluvialDesignHyeto
+from hydroflows.methods import GetERA5Rainfall, PluvialDesignHyeto
 
 
 @pytest.fixture()
@@ -46,4 +46,14 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
     }
 
     PluvialDesignHyeto(input=input, output=output).run()
-    assert fn_data_catalog
+    assert fn_data_catalog.exists()
+
+def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
+    input = {"sfincs_region": str(sfincs_region_path)}
+
+    fn_time_series = Path(tmp_path, "ERA5", "era5_data.nc")
+
+    output = {"time_series_nc": str(fn_time_series)}
+
+    GetERA5Rainfall(input=input, output=output).run()
+    assert fn_time_series.exists()
