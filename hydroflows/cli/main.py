@@ -202,7 +202,7 @@ opt_config = click.option(
     "--config",
     required=False,
     callback=check_file_path,
-    help="Path to a custom configurations file",
+    help="Path to a custom SnakeMake configurations file",
 )
 
 @cli.command(short_help="Create a new project folder structure and copy templates")
