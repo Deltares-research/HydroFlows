@@ -14,15 +14,14 @@ def precip_time_series_nc():
     # Generating datetime index
     dates = pd.date_range(start='2000-01-01', end='2009-12-31', freq='h')
 
-    # Generating station ID
-    index = np.array(['1'], dtype='<U1')
-
+    # set a seed for reproducibility
+    np.random.seed(0)
     # Generating random rainfall data
-    data = np.random.rand(len(dates), len(index))
+    data = np.random.rand(len(dates))
 
     da = xr.DataArray(
         data,
-        dims=('time', 'index'),
+        dims=('time'),
         coords={'time': dates},
         name='tp',
         attrs={'long_name': 'Total precipitation', 'units': 'mm'}
@@ -55,9 +54,9 @@ def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
     output = {"time_series_nc": str(fn_time_series)}
 
     params = {
-        "start_date": "2000-1-1",
+        "start_date": "2000-01-01",
         "end_date": "2010-12-31"
-        }
+    }
 
     GetERA5Rainfall(input=input, output=output, params=params).run()
     assert fn_time_series.exists()

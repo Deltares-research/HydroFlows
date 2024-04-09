@@ -5,10 +5,10 @@ from pathlib import Path
 
 import geopandas as gpd
 import xarray as xr
-from functions import get_era5_open_meteo
 from pydantic import BaseModel, FilePath
 
-from ..method import Method
+from hydroflows.methods.method import Method
+from hydroflows.methods.rainfall.functions import get_era5_open_meteo
 
 
 class Input(BaseModel):

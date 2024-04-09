@@ -8,7 +8,7 @@ scenario_name = config["SCENARIO"]
 # Target rule
 rule all:
     input:
-        event_catalog = f"interim/{region_name}/rainfall/{scenario_name}/design_events.yml"
+        event_catalog = f"interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
 
 rule get_ERA5_rainfall:
     input:
@@ -35,10 +35,10 @@ rule get_design_events:
     input:
         time_series_nc = rules.get_ERA5_rainfall.output.time_series_nc
 
-    params:
+    # params: # TODO add params like RPS (requires issue #82)
 
     output:
-        event_catalog = f"interim/{region_name}/rainfall/{scenario_name}/design_events.yml"
+        event_catalog = f"interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
 
     shell:
         """
