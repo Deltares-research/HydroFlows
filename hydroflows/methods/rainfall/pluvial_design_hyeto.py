@@ -7,13 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from functions import eva_idf, get_hyetograph
 from hydromt.stats import extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
+from hydroflows.methods.method import Method
+from hydroflows.methods.rainfall.functions import eva_idf, get_hyetograph
 from hydroflows.workflows.events import EventCatalog
-
-from ..method import Method
 
 __all__ = ["PluvialDesignHyeto"]
 
