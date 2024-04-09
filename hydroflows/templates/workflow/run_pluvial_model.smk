@@ -15,8 +15,8 @@ rule get_ERA5_rainfall:
         sfincs_region = region_file
 
     params:
-        start_date = datetime.strptime("2010-02-03", "%Y-%m-%d"),
-        end_date = datetime.strptime("2010-02-09", "%Y-%m-%d"),
+        start_date = "2010-02-03",
+        end_date = "2010-02-09",
 
     output:
         time_series_nc = "input/forcing_data/era5_rainfall.nc"
