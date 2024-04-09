@@ -54,6 +54,9 @@ class FIATBuild(Method):
         opt = configread(self.params.config)
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix()).to_crs(4326)
+        # Select only geometry in case gdf contains more columns
+        # Hydromt-fiat selects first column for geometry when fetching OSM
+        region_gdf = region_gdf[['geometry']]
         opt.update(
             {"setup_region": {
                 "region": {"geom": region_gdf}
