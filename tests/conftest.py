@@ -4,6 +4,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pytest
+from hydromt_sfincs import SfincsModel
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
@@ -60,3 +61,15 @@ def sfincs_src_points():
         ],
         crs="EPSG:32633",
     )
+
+@pytest.fixture()
+def sfincs_model(test_data_dir):
+    root = test_data_dir/"sfincs_model"
+
+    sf = SfincsModel(
+        root=root,
+        mode="w",
+        data_libs=["artifact_data"]
+    )
+
+    return sf

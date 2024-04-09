@@ -32,7 +32,7 @@ class SfincsUpdateForcing(Method):
     """Method for updating SFINCS forcing."""
 
     name: str = "sfincs_update_forcing"
-    params: Params = Params()
+    params: Params
     input: Input
     output: Output
 

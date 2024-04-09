@@ -21,14 +21,15 @@ def test_sfincs_build(sfincs_region_path , tmp_path):
 
     assert fn_sfincs_inp.exists()
 
-def test_sfincs_update(sfincs_test_root):
-    input = {"sfincs_inp": f"{sfincs_test_root}/sfincs.inp"}
+def test_sfincs_update(test_data_dir, sfincs_model):
 
-    fn_sfincs_event_inp = Path(sfincs_test_root, "scenario", "event", "sfincs.inp")
+    input = {"sfincs_inp": f"{sfincs_model.root}/sfincs.inp"}
+
+    fn_sfincs_event_inp = Path(sfincs_model.root, "scenario", "event", "sfincs.inp")
     output = {"sfincs_inp": str(fn_sfincs_event_inp)}
     params = {
-        "event_file": "",
-        "event_name": ""
+        "event_file": str(test_data_dir/"events.yml"),
+        "event_name": "p_rp050"
     }
 
     SfincsUpdateForcing(input=input, output=output, params=params).run()
