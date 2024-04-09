@@ -1,5 +1,9 @@
 """Functions for the pluvial design hyetographs."""
+from datetime import datetime
+
 import numpy as np
+import pandas as pd
+import requests
 import xarray as xr
 
 
@@ -105,3 +109,43 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     pevent["time"] = xr.IndexVariable("time", (t[1 : length + 1] - t0))
     pevent.attrs.update(**da_idf.attrs)
     return pevent
+
+def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variables):
+    """Return ERA5 rainfall.
+
+    Return a df with ERA5 raifall data a specific point location.
+    using an API
+
+    Parameters
+    ----------
+    lat : (float)
+        Latitude coordinate.
+    lon : (float)
+        Longitude coordinate.
+    start_date : (str)
+        Start date for data download
+    end_date : (str)
+        End date for data download
+    variables : (str)
+        Variable to download
+    """
+    base_url = r"https://archive-api.open-meteo.com/v1/archive"
+    start_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = start_date.strftime("%Y-%m-%d")
+    url = f"{base_url}?latitude={lat}&longitude={lon}" \
+      f"&start_date={start_date_str}&end_date={end_date_str}" \
+      f"&hourly={variables}"
+    response = requests.get(url)
+
+    # Check if request was successful
+    if response.status_code == 200:
+        # Parse response as JSON
+        data = response.json()
+        # make a df
+        df = pd.DataFrame(data['hourly']).set_index('time')
+        df.index = pd.to_datetime(df.index)
+        return df
+    else:
+        # If request failed, return None
+        print(f"Request failed with status code {response.status_code}")
+        return None
