@@ -30,7 +30,7 @@ class Output(BaseModel):
 
 
 class Method(BaseModel):
-    """Base rule for all methods. Must be extended for rule-specific tasks."""
+    """Base method for all methods. Must be extended for rule-specific tasks."""
 
     input: Input
     output: Output
@@ -39,13 +39,12 @@ class Method(BaseModel):
 
     def to_str(
         self,
-        format: str ="snakemake",
         wildcards: Optional[Dict[str, List]] = {}
     ):
         """Parse rule to a string, suitable for a certain language.
 
-        Returns
-        -------
+        Parameters
+        ----------
         format : str
             selected format for output
         wildcards : Dict[str, List], optional
