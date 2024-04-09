@@ -192,8 +192,7 @@ opt_region = click.option(
     "-r",
     "--region",
     required=False,
-    callback=check_file_path,
-    type=str,
+    type=click.Path(exists=True, file_okay=True, path_type=pathlib.Path),
     help="Path to a model region vector file",
 )
 
