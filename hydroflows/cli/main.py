@@ -22,7 +22,6 @@ from hydroflows import __version__, log
 from hydroflows.methods import METHODS
 from hydroflows.utils import (
     adjust_config,
-    check_file_path,
     copy_single_file,
     copy_templates,
     create_folders,
@@ -192,7 +191,7 @@ opt_region = click.option(
     "-r",
     "--region",
     required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=pathlib.Path),
+    type=click.Path(exists=True, file_okay=True, path_type=Path),
     help="Path to a model region vector file",
 )
 
@@ -200,7 +199,7 @@ opt_config = click.option(
     "-c",
     "--config",
     required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=pathlib.Path),
+    type=click.Path(exists=True, file_okay=True, path_type=Path),
     help="Path to a custom SnakeMake configurations file",
 )
 
