@@ -24,17 +24,15 @@ To create a project folder and execute a workflow, run the following steps:
 |   |   |   ├── gtsm_waterlevels.nc
 │   ├── interim                             # all preprocessed data and intermediate results
 |   |   |── {region1}
-|   |       |── rainfall
-|   |       |   ├── {scenario}              # e.g. historical
-|   |       |       ├── rainfall_rpXXX.csv
-|   |       |       └── design_events.yml
-|   |       |── discharge
-|   |       |   ├── {scenario}              # e.g. historical
-|   |       |       ├── discharge_rpXXX.csv
-|   |       |       └── design_events.yml
-|   |       |── coastal_waterlevels
-|   |           ├── {scenario}              # e.g. historical
-|   |               ├── waterlevels_rpXXX.csv
+|   |       ├── {scenario}              # e.g. historical
+|   |           |── rainfall
+|   |           |   ├── rainfall_{event}.csv
+|   |           |   └── design_events.yml
+|   |           |── discharge
+|   |           |   ├── discharge_{event}.csv
+|   |           |   └── design_events.yml
+|   |           |── coastal_waterlevels
+|   |               ├── waterlevels_{event}.csv
 |   |               └── design_events.yml
 │   └── output                              # model output data (not sure we need this as we save output with simulations?)
 ├── models                                  # model instances
@@ -54,7 +52,7 @@ To create a project folder and execute a workflow, run the following steps:
 |   │       ├── sfincs.inp
 |   │       └── simulations
 |   │           └── {scenario}
-|   │               └── {event1}
+|   │               └── {event}
 |   │                   ├── sfincs.xxx
 |   │                   └── sfincs.inp
 │   └── fiat
@@ -72,7 +70,8 @@ To create a project folder and execute a workflow, run the following steps:
 |   └── {region1}
 |       |── hazard
 |       |   ├── {scenario}              # e.g. historical
-|       |       |── flood_depth_pluvial_rpXXX.tif
+|       |       |── flood_depth_{event}.tif
+|       |       |── hazard_maps.yml
 |       |── impacts
 |       |── risk
 |       |   ├── {scenario}
