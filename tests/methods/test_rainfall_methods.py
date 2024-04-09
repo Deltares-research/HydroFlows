@@ -52,9 +52,12 @@ def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
     input = {"sfincs_region": str(sfincs_region_path)}
 
     fn_time_series = Path(tmp_path, "era5_data.nc")
-
-
     output = {"time_series_nc": str(fn_time_series)}
 
-    GetERA5Rainfall(input=input, output=output).run()
+    params = {
+        "start_date": "2000-1-1",
+        "end_date": "2010-12-31"
+        }
+
+    GetERA5Rainfall(input=input, output=output, params=params).run()
     assert fn_time_series.exists()
