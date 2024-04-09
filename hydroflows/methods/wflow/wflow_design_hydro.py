@@ -1,6 +1,7 @@
 """Wflow design hydrograph method."""
 import os
 from pathlib import Path
+from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -28,7 +29,7 @@ class Params(BaseModel):
     """Parameters."""
 
     # parameters for the get_peaks function
-    ev_type: str = "BM"
+    ev_type: str = "POT"
     min_dist_days: int = 7
     qthresh: float = 0.95
     min_sample_perc: int = 80
@@ -36,7 +37,7 @@ class Params(BaseModel):
     time_dim: str = 'time'
 
     # return periods of interest
-    rps: np.ndarray = np.array([1.01, 2, 5, 10, 20, 50, 100])
+    rps: List[int] = [1.01, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
@@ -89,9 +90,12 @@ class WflowDesignHydro(Method):
         da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type)
         da_params.load()
 
+        # convert rps list to an array
+        rps= np.array(self.params.rps)
+
         # calculate return values for specified rps/params
-        da_rps = extremes.get_return_value(da_params, rps=self.params.rps).load()
-        da_rps = da_rps.assign_coords(rps=np.round(self.params.rps).astype(int))
+        da_rps = extremes.get_return_value(da_params, rps=rps).load()
+        da_rps = da_rps.assign_coords(rps=np.round(rps).astype(int))
 
         da_q_hydrograph = design_events.get_peak_hydrographs(
                             da,
@@ -106,15 +110,12 @@ class WflowDesignHydro(Method):
         q_hydrograph['time'] = dt0 + time_delta
         q_hydrograph = q_hydrograph.reset_coords(drop=True)
 
-        root = self.input.time_series_nc.parent
-        design_events_fn = os.path.join(root, "design_events")
-        if not os.path.exists(design_events_fn):
-            os.makedirs(design_events_fn)
+        root = self.output.event_catalog.parent
 
         events_list = []
         for rp in q_hydrograph.rps.values:
             # save p_rp as csv files
-            events_fn = os.path.join(design_events_fn, f"q_rp{int(rp):03d}.csv")
+            events_fn = os.path.join(root, f"q_rp{int(rp):03d}.csv")
             q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
 
             event = {
@@ -126,7 +127,7 @@ class WflowDesignHydro(Method):
 
         # make a data catalog
         # event_catalog = EventCatalog(
-        #    root=self.output.event_catalog.parent,
+        #    root=root,
         #    events=events_list,
         # )
 
@@ -135,7 +136,7 @@ class WflowDesignHydro(Method):
 
         # save plots with fitted distributions
         if self.params.plot_fig:
-            plots_folder = os.path.join(design_events_fn, 'figs')
+            plots_folder = os.path.join(root, 'figs')
 
             if not os.path.exists(plots_folder):
                 os.makedirs(plots_folder)
@@ -153,7 +154,7 @@ class WflowDesignHydro(Method):
                         dist,
                         color="k",
                         nsample=1000,
-                        rps=self.params.rps,
+                        rps=rps,
                         extremes_rate=extremes_rate,
                         ax=ax,)
 

@@ -101,7 +101,7 @@ def test_wflow_design_hydro(time_series_nc, tmp_path):
         "time_series_nc": str(fn_time_series_nc)
     }
 
-    fn_data_catalog = Path(tmp_path, "config", "catalog.yml")
+    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
 
     output = {
         "event_catalog": str(fn_data_catalog)
