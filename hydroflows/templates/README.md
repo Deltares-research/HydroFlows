@@ -23,19 +23,20 @@ To create a project folder and execute a workflow, run the following steps:
 |   |   |   ├── era5_rainfall.nc
 |   |   |   ├── gtsm_waterlevels.nc
 │   ├── interim                             # all preprocessed data and intermediate results
-|       └── {region1}
-|           |── rainfall
-|           |   ├── {scenario}              # e.g. historical
-|           |       ├── rainfall_rpXXX.csv
-|           |       └── design_events.yml
-|           |── discharge
-|           |   ├── {scenario}              # e.g. historical
-|           |       ├── discharge_rpXXX.csv
-|           |       └── design_events.yml
-|           |── coastal_waterlevels
-|               ├── {scenario}              # e.g. historical
-|                   ├── waterlevels_rpXXX.csv
-|                   └── design_events.yml
+|   |   |── {region1}
+|   |       |── rainfall
+|   |       |   ├── {scenario}              # e.g. historical
+|   |       |       ├── rainfall_rpXXX.csv
+|   |       |       └── design_events.yml
+|   |       |── discharge
+|   |       |   ├── {scenario}              # e.g. historical
+|   |       |       ├── discharge_rpXXX.csv
+|   |       |       └── design_events.yml
+|   |       |── coastal_waterlevels
+|   |           ├── {scenario}              # e.g. historical
+|   |               ├── waterlevels_rpXXX.csv
+|   |               └── design_events.yml
+│   └── output                              # model output data (not sure we need this as we save output with simulations?)
 ├── models                                  # model instances
 │   ├── wflow                               # model instances
 |   │   └── {region1}
@@ -45,6 +46,7 @@ To create a project folder and execute a workflow, run the following steps:
 |   │       └── simulations                 # model simulations
 |   │           └── {scenario}
 |   │               ├── wflow_sim1.toml
+|   │               ├── forcing.nc
 |   │               └── output.nc
 │   ├── sfincs                              # model instances
 |   │   └── {region1}
