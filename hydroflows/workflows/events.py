@@ -42,14 +42,14 @@ class Forcing(BaseModel):
     data: Optional[Any] = Field(None, exclude=True)
     time_range: Optional[List[datetime]] = Field(None, exclude=True)
 
-    def read_data(self, root: Optional[Path] = None) -> Any:
+    def read_data(self, root: Optional[Path] = None, **kwargs) -> Any:
         """Read the data."""
         # update and check path
         self._set_path_absolute(root)
         self._check_path_exists()
         # read data
         if self.path.suffix == ".csv":
-            return self.read_csv()
+            return self.read_csv(**kwargs)
         else:
             # placeholder for other file types
             raise NotImplementedError(f"File type {self.path.suffix} not supported.")
@@ -58,7 +58,9 @@ class Forcing(BaseModel):
         """Read the CSV file."""
         # read csv; check for datetime index
         # TODO: we could use pandera for more robust data validation
-        df = pd.read_csv(self.path, index_col=index_col, parse_dates=parse_dates)
+        df = pd.read_csv(
+            self.path, index_col=index_col, parse_dates=parse_dates, **kwargs
+        )
         if not df.index.dtype == "datetime64[ns]":
             raise ValueError(f"Index of {self.path} is not datetime.")
         self.data = df.sort_index()  # make sure it is sorted
@@ -120,7 +122,8 @@ class Event(BaseModel):
     @field_validator("forcings", mode="before")
     @classmethod
     def _set_forcings(cls, value: Any) -> List[Forcing]:
-        if isinstance(value, list):
+        # if list of dictionaries, convert to list of Forcing
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
             return [Forcing(**forcing) for forcing in value]
         return value
 
@@ -191,7 +194,8 @@ class EventCatalog(BaseModel):
     @field_validator("events", mode="before")
     @classmethod
     def _set_events(cls, value: Any) -> List[Event]:
-        if isinstance(value, list):
+        # if list of dictionaries, convert to list of Event
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
             return [Event(**event) for event in value]
         return value
 
@@ -209,15 +213,19 @@ class EventCatalog(BaseModel):
             yml_dict["root"] = Path(path).parent
         return cls(**yml_dict)
 
-    # def set_forcing_paths_relative_to_root
+    def set_forcing_paths_relative_to_root(self) -> None:
+        """Set all forcing paths relative to root."""
+        if self.root is None:
+            return
+        for event in self.events:
+            for forcing in event.forcings:
+                forcing._set_path_relative(self.root)
 
     def to_dict(self, relative_paths=False, **kwargs) -> dict:
         """Return the EventCatalog as a dictionary."""
         # set all forcing paths relative to root
-        if relative_paths and self.root is not None:
-            for event in self.events:
-                for forcing in event.forcings:
-                    forcing._set_path_relative(self.root)
+        if relative_paths:
+            self.set_forcing_paths_relative_to_root()
         kwargs = {**SERIALIZATION_KWARGS, **kwargs}
         return self.model_dump(**kwargs)
 
