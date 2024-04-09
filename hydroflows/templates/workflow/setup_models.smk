@@ -24,7 +24,7 @@ rule setup_sfincs:
     output:
         sfincs_inp = f"models/sfincs/{region_name}/sfincs.inp",
         # This output is not defined in the method (it is not needed as an cli arguments), but is required to construct the desired DAG
-        sfincs_src_points = f"models/sfincs/{region_name}/gis/src.geojson"
+        sfincs_region = f"models/sfincs/{region_name}/gis/region.geojson"
 
     shell:
         """
@@ -40,7 +40,7 @@ rule setup_sfincs:
 
 rule setup_fiat:
     input:
-        region = region_file
+        region = rules.setup_sfincs.output.sfincs_region
 
     params:
         config = "workflow/hydromt_config/fiat_build.yaml",
@@ -63,7 +63,7 @@ rule setup_fiat:
 
 rule setup_wflow:
     input:
-        sfincs_src_points = f"models/sfincs/{region_name}/gis/src.geojson"
+        sfincs_region = rules.setup_sfincs.output.sfincs_region
 
     params:
         config = "workflow/hydromt_config/wflow_build.yaml",
@@ -76,7 +76,7 @@ rule setup_wflow:
         """
         hydroflows run \
         wflow_build \
-        -i sfincs_src_points={input.sfincs_src_points} \
+        -i sfincs_region={input.sfincs_region} \
         -o wflow_toml={output.wflow_toml} \
         -p config={params.config} \
         -p data_libs="{params.data_libs}"
