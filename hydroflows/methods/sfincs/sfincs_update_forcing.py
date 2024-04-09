@@ -3,12 +3,11 @@
 # from datetime.datetime import strftime
 from pathlib import Path
 
-import pandas as pd
-import yaml
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
 
 from ...utils import make_relative_paths
+from ...workflows.events import EventCatalog
 from ..method import Method
 
 __all__ = ["SfincsUpdateForcing"]
@@ -39,14 +38,17 @@ class SfincsUpdateForcing(Method):
 
     def run(self):
         """Run update SFINCS method."""
+        # Unpack Input, Output, Params
         root = self.input.sfincs_inp
         out_root = self.output.sfincs_inp
         event_file = self.params.event_file
+        event_name = self.params.event_name
 
-        with open(event_file, 'r') as f:
-            event_dict = yaml.load(f, Loader=yaml.FullLoader)
-        event = event_dict[self.params.event_name]
+        # Fetch event from event catalog
+        event_catalog = EventCatalog.from_yaml(event_file)
+        event = event_catalog.get_event_data(event_name)
 
+        # Init sfincs and update root, config
         sf = SfincsModel(
             root=root,
             mode='r',
@@ -55,33 +57,40 @@ class SfincsUpdateForcing(Method):
         sf.set_root(out_root, mode='w+')
         config = make_relative_paths(sf.config, root, out_root)
 
-        df = pd.read_csv(event['file'])
-        tstart, tstop = df.index[0], df.index[-1]
-
         config.update({
-            "tstart": tstart.strftime("%Y%m%d %H%M%S"),
-            "tstop": tstop.strftime("%Y%m%d %H%M%S")
+            "tstart": event.time_range[0].strftime("%Y%m%d %H%M%S"),
+            "tstop": event.time_range[1].strftime("%Y%m%d %H%M%S"),
             })
-        match event['type']:
-            case "discharge":
-                sf.setup_discharge_forcing(
-                    timeseries=df,
-                    merge=False
-                )
-                config.update({"disfile": "sfincs.dis"})
-            case "precipitation":
-                sf.setup_precip_forcing(
-                    timeseries=df,
-                    merge=False
-                )
-                config.update({"precipfile": "sfincs.precip"})
-            case "waterlevel":
-                sf.setup_waterlevel_forcing(
-                    timeseries=df,
-                    merge=False
-                )
-                config.update({"bzsfile": "sfincs.bzs"})
 
+        # Set forcings, config
+        for forcing in event.forcings:
+
+            df = forcing.data
+
+            match forcing.type:
+
+                case "water_level":
+                    sf.setup_waterlevel_forcing(
+                        timeseries=df,
+                        merge=False,
+                    )
+                    config.update({"bzsfile": "sfincs.bzs"})
+
+                case "discharge":
+                    sf.setup_discharge_forcing(
+                        timeseries=df,
+                        merge=False,
+                    )
+                    config.update({"disfile": "sfincs.dis"})
+
+                case "rainfall":
+                    sf.setup_precip_forcing(
+                        timeseries=df,
+                        merge=False,
+                    )
+                    config.update({"precipfile": "sfincs.precip"})
+
+        # Write forcing, config
         sf.write_forcing()
         sf.setup_config(config)
         sf.write_config()
