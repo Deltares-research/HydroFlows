@@ -11,7 +11,8 @@ from functions import eva_idf, get_hyetograph
 from hydromt.stats import extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
-#from hydroflows.workflows.events import EventCatalog
+from hydroflows.workflows.events import EventCatalog
+
 from ..method import Method
 
 __all__ = ["PluvialDesignHyeto"]
@@ -130,13 +131,13 @@ class PluvialDesignHyeto(Method):
             events_list.append(event)
 
         # make a data catalog
-        # event_catalog = EventCatalog(
-        #    root=root,
-        #    events=events_list,
-        # )
+        event_catalog = EventCatalog(
+           root=root,
+           events=events_list,
+        )
 
-        # event_catalog.to_yaml(
-        #     self.output.event_catalog)
+        event_catalog.to_yaml(
+            self.output.event_catalog)
 
         # save plots
         if self.params.plot_fig:
