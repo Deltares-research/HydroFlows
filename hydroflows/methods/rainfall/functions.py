@@ -113,7 +113,7 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
 def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variables):
     """Return ERA5 rainfall.
 
-    Return a df with ERA5 raifall data a specific point location.
+    Return a df with ERA5 raifall data at specific point location.
     using an API
 
     Parameters
@@ -131,7 +131,7 @@ def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variab
     """
     base_url = r"https://archive-api.open-meteo.com/v1/archive"
     start_date_str = start_date.strftime("%Y-%m-%d")
-    end_date_str = start_date.strftime("%Y-%m-%d")
+    end_date_str = end_date.strftime("%Y-%m-%d")
     url = f"{base_url}?latitude={lat}&longitude={lon}" \
       f"&start_date={start_date_str}&end_date={end_date_str}" \
       f"&hourly={variables}"

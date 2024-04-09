@@ -39,7 +39,7 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
         "time_series_nc": str(fn_time_series_nc)
     }
 
-    fn_data_catalog = Path(tmp_path, "config", "catalog.yml")
+    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
 
     output = {
         "event_catalog": str(fn_data_catalog)
@@ -51,7 +51,8 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
 def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
     input = {"sfincs_region": str(sfincs_region_path)}
 
-    fn_time_series = Path(tmp_path, "ERA5", "era5_data.nc")
+    fn_time_series = Path(tmp_path, "era5_data.nc")
+
 
     output = {"time_series_nc": str(fn_time_series)}
 
