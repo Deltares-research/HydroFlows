@@ -39,7 +39,7 @@ class Params(BaseModel):
     time_dim: str = 'time'
 
     # return periods of interest
-    rps: np.ndarray = np.array([1.001, 2, 5, 10, 20, 50, 100])
+    rps: List[int] = [1.001, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
@@ -55,6 +55,9 @@ class PluvialDesignHyeto(Method):
         """Run the Pluvial design hyetograph method."""
         da = xr.open_dataarray(self.input.time_series_nc)
         time_dim = self.params.time_dim
+        if da.ndim > 1 or time_dim not in da.dims:
+            raise ValueError()
+
 
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
         min_dist = int(pd.Timedelta(self.params.min_dist_days, 'd') / dt)
@@ -80,9 +83,12 @@ class PluvialDesignHyeto(Method):
         da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type)
         da_params.load()
 
+        # convert rps list to an array
+        rps= np.array(self.params.rps)
+
         # calculate return values for specified rps/params
-        da_rps = extremes.get_return_value(da_params, rps=self.params.rps).load()
-        da_rps = da_rps.assign_coords(rps=np.round(self.params.rps).astype(int))
+        da_rps = extremes.get_return_value(da_params, rps=rps).load()
+        da_rps = da_rps.assign_coords(rps=np.round(rps).astype(int))
 
         # specify the max event duration
         event_duration = self.params.durations[-1]
@@ -92,10 +98,10 @@ class PluvialDesignHyeto(Method):
                 da,
                 ev_type=self.params.ev_type,
                 durations=self.params.durations,
-                rps=self.params.rps,
+                rps=rps,
         )
 
-        ds_idf = ds_idf.assign_coords(rps=np.round(self.params.rps).astype(int))
+        ds_idf = ds_idf.assign_coords(rps=np.round(rps).astype(int))
 
         # Get design events hyetogrpah for each return period
         p_hyetograph = get_hyetograph(
@@ -108,15 +114,12 @@ class PluvialDesignHyeto(Method):
         p_hyetograph['time'] = dt0 + time_delta
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
-        root = self.input.time_series_nc.parent
-        design_events_fn = os.path.join(root, "design_events")
-        if not os.path.exists(design_events_fn):
-            os.makedirs(design_events_fn)
+        root = self.output.event_catalog.parent
 
         events_list = []
         for rp in p_hyetograph.rps.values:
             # save p_rp as csv files
-            events_fn = os.path.join(design_events_fn, f"p_rp{int(rp):03d}.csv")
+            events_fn = os.path.join(root, f"p_rp{int(rp):03d}.csv")
             p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
 
             event = {
@@ -128,7 +131,7 @@ class PluvialDesignHyeto(Method):
 
         # make a data catalog
         # event_catalog = EventCatalog(
-        #    root=self.output.event_catalog.parent,
+        #    root=root,
         #    events=events_list,
         # )
 
@@ -138,7 +141,7 @@ class PluvialDesignHyeto(Method):
         # save plots
         if self.params.plot_fig:
             # create a folder to save the figs
-            fn_plots = os.path.join(design_events_fn, 'figs')
+            fn_plots = os.path.join(root, 'figs')
 
             if not os.path.exists(fn_plots):
                 os.makedirs(fn_plots)
