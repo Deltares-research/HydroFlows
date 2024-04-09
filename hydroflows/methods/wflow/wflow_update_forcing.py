@@ -8,7 +8,8 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from ..method import Method
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import Method
 
 __all__ = ["WflowUpdateForcing"]
 
@@ -25,7 +26,7 @@ class Output(BaseModel):
     wflow_toml: Path
 
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """Parameters."""
 
     start_time: str = "2010-02-01T00:00:00"
@@ -63,7 +64,6 @@ class WflowUpdateForcing(Method):
             logger=logger,
         )
 
-
         w.setup_config(
             **{
                 "starttime": self.params.start_time,
@@ -87,7 +87,6 @@ class WflowUpdateForcing(Method):
             skip_pet=False,
         )
 
-
         # add a netcdf output for the discharges
         w.setup_config_output_timeseries(
             mapname="wflow_gauges",
@@ -95,7 +94,6 @@ class WflowUpdateForcing(Method):
             header=["Q"],
             param=["lateral.river.q_av"],
         )
-
 
         if self.output.wflow_toml.is_relative_to(root):
             rel_dir = Path(os.path.relpath(root, self.output.wflow_toml.parent))
