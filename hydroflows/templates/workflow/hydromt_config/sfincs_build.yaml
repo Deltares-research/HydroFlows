@@ -14,16 +14,16 @@ setup_mask_bounds:
   btype: waterlevel
   zmax: 0
 
-setup_subgrid:
-  datasets_dep:
-    - elevtn: merit_hydro  # FIXME change to fabdem
-      zmin: 0.001 # FIXME use land mask
-    - elevtn: gebco
-  datasets_rgh:
-    - lulc: vito
-  write_dep_tif: True
-  nr_subgrid_pixels: 5
-  nbins: 8
+# setup_subgrid:
+#   datasets_dep:
+#     - elevtn: merit_hydro  # FIXME change to fabdem
+#       zmin: 0.001 # FIXME use land mask
+#     - elevtn: gebco
+#   datasets_rgh:
+#     - lulc: vito
+#   write_dep_tif: True
+#   nr_subgrid_pixels: 5
+#   nbins: 8
 
 setup_river_inflow:
   hydrography: merit_hydro
