@@ -7,35 +7,27 @@ All HydroFlow methods should inherit from this class and implement specific
 validators and a run method.
 """
 
+from pathlib import Path
 from typing import Dict, List, Optional
 
-from pydantic import BaseModel, FilePath
+from pydantic import BaseModel
+
+from hydroflows.methods._validators import ParamsHydromt
 
 __all__ = ["Method"]
 
-# NOTE these are just examples
-# file1, file2 etc should be replaced by the actual inputs for the rule
-class Input(BaseModel):
-    file1: FilePath
-    file2: FilePath
-
-
-class Params(BaseModel):
-    name: str
-    arg1: int
-
-
-class Output(BaseModel):
-    file: FilePath
+# hydromt templates dir
+PACKAGE_ROOT = Path(__file__).parent.parent
+HYDROMT_CONFIG_DIR = PACKAGE_ROOT / "templates" / "workflow" / "hydromt_config"
 
 
 class Method(BaseModel):
     """Base method for all methods. Must be extended for rule-specific tasks."""
 
-    input: Input
-    output: Output
-    params: Params
-
+    # use pydantic models to (de)serialize the input, output and params
+    input: BaseModel
+    output: BaseModel
+    params: BaseModel = ParamsHydromt()  # optional
 
     def to_str(
         self,
@@ -60,4 +52,5 @@ class Method(BaseModel):
         """
         # NOTE: this should be implemented in the specific rule
         # it can use input, output and params, e.g. self.input.file1
-        raise NotImplementedError
+        # raise NotImplementedError
+        return 1

@@ -1,0 +1,79 @@
+---
+title: Install git
+---
+
+Depending on your machine download the appropriate git version form the [git website](https://git-scm.com/downloads).
+
+### Windows
+On Windows git is easily on windows by running the downloaded installer.
+
+Once installed it is necessary that git is added to path.
+This is done via the 'environment variables' screen.
+Adding to path is necessary for git to be found by application and from the command line.
+
+Once installed and added to path check via:
+```bash
+git --version
+```
+
+### Linux
+On most linux distros (if not all) git is available via the package manager and default repositories.
+This means that not much more work is needed before simply installing git via the package manager.
+
+On Debian/ Ubuntu this would look like:
+```bash
+sudo apt install git
+```
+
+Again verify the install via:
+```bash
+git --version
+```
+
+A second option is to install git from a tar archive.
+The newest (and many older) versions are found [here](https://mirrors.edge.kernel.org/pub/software/scm/git/).
+
+::: {.callout-note}
+Make sure this is within a directory that make sense for the application to be. E.g. `< home >/apps`
+:::
+
+Download the wanted version:
+```bash
+wget < link tot tar archive >
+```
+
+And unpack it using `tar`:
+```bash
+tar -xvzf < tar archive >
+```
+
+To add it to path type the following commands:
+```bash
+# Go to the home directory
+cd
+# Create a bin dir (if not there)
+mkdir bin
+# create a simlink
+ln -s < path to git binary > ~/bin/git
+# Add bin directory to path (if not already done)
+( echo ""; echo 'export PATH=$PATH:~/bin\n' ; echo "" ) >> ~/.profile
+source ~/.profile
+```
+
+Again check the installation:
+```bash
+git --version
+```
+
+## Pre-commit setup
+As pre-commit is automatically installed with the `full` developer enviroment and installed
+via a single command it is quickly discussed here.
+
+When the 'hydroflows' enviroment is activated and while in the main directory of the repository,
+type the following command:
+
+```bash
+pre-commit install
+```
+
+That's it. Now it will run pre-commit everything a commit is made.

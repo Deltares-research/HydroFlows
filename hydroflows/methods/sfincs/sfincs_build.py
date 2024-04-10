@@ -6,8 +6,8 @@ from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
 
-from ...templates import TEMPLATE_DIR
-from ..method import Method
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["SfincsBuild"]
 
@@ -17,10 +17,10 @@ class Input(BaseModel):
 class Output(BaseModel):
     sfincs_inp: Path
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     # optional parameter
-    config: Path = Path(TEMPLATE_DIR, "sfincs_build.yaml")
-    data_libs: List[str] = ["artifact_data"]
+    data_libs: List[str] = ['artifact_data']
+    config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yaml")
     res: float = 50.0
 
 
