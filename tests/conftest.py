@@ -1,10 +1,10 @@
 # fixtures with input and output files and folders
 
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
 import pytest
-from hydromt_sfincs import SfincsModel
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
@@ -62,14 +62,12 @@ def sfincs_src_points():
         crs="EPSG:32633",
     )
 
-@pytest.fixture()
-def sfincs_model(test_data_dir):
-    root = test_data_dir/"sfincs_model"
-
-    sf = SfincsModel(
-        root=root,
-        mode="w",
-        data_libs=["artifact_data"]
-    )
-
-    return sf
+@pytest.fixture(scope="function")  # noqa: PT003
+def sfincs_tmp_model_root(test_data_dir, tmpdir):
+    """Return a temporary directory with a copy of the sfincs model."""
+    # copy the sfincs model to a temporary directory
+    sfincs_model_root_tmp = tmpdir / "sfincs_model"
+    # copy
+    sfincs_model_root = test_data_dir / "sfincs_model"
+    shutil.copytree(sfincs_model_root, sfincs_model_root_tmp)
+    return sfincs_model_root_tmp

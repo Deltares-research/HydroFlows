@@ -2,22 +2,31 @@
 
 import os
 from os.path import isfile, join
+from pathlib import Path
 
 
-def make_relative_paths(config, model_root, new_root):
-    """Return dict with paths to the new model new root."""
+def make_relative_paths(config: dict, src: Path, dst: Path) -> dict:
+    """Return a config where existing file paths are replaced with relative paths.
+
+    Parameters
+    ----------
+    config : dict
+        Dictionary with config parameters including file paths.
+    src, dst : Path
+        Source and destination paths.
+    """
     config_kwargs = dict()
     commonpath = ''
-    if os.path.splitdrive(model_root)[0] == os.path.splitdrive(new_root)[0]:
-        commonpath = os.path.commonpath([model_root, new_root])
+    if os.path.splitdrive(src)[0] == os.path.splitdrive(dst)[0]:
+        commonpath = os.path.commonpath([src, dst])
     if os.path.basename(commonpath) == '':
-        raise ValueError("model_root and new_root must have a common path")
-    relpath = os.path.relpath(commonpath, new_root)
+        raise ValueError("src and dst must have a common path")
+    relpath = os.path.relpath(commonpath, dst)
     for k, v in config.items():
         if (
-            isinstance(v, str) and
-            isfile(join(model_root, v)) and
-             not isfile((join(new_root, v)))
+            isinstance(v, (str, Path)) and
+            isfile(join(src, v)) and
+             not isfile((join(dst, v)))
         ):
             config_kwargs[k] = join(relpath, v)
     return config_kwargs
