@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from hydroflows.methods import SfincsBuild, SfincsUpdateForcing
+from hydroflows.methods import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 
 
 def test_sfincs_build(sfincs_region_path , tmp_path):
@@ -34,3 +34,34 @@ def test_sfincs_update(test_data_dir, sfincs_tmp_model_root):
     SfincsUpdateForcing(input=input, output=output, params=params).run()
 
     assert fn_sfincs_event_inp.is_file()
+
+def test_sincs_postprocess(test_data_dir, sfincs_tmp_model_root):
+    fn_sfincs_event_inp = Path(
+        sfincs_tmp_model_root,
+        "scenario",
+        "event_postprocess",
+        "sfincs.inp"
+    )
+    fn_sfincs_dep = Path(
+        sfincs_tmp_model_root,
+        "gis",
+        "dep.tif"
+    )
+    fn_sfincs_inun_tif = Path(
+        sfincs_tmp_model_root,
+        "scenario",
+        "event_postprocess",
+        "event.tif"
+    )
+
+    input = {
+        "sfincs_inp": str(fn_sfincs_event_inp),
+        "sfincs_dep": str(fn_sfincs_dep),
+    }
+    output = {
+        "sfincs_inun": str(fn_sfincs_inun_tif)
+    }
+
+    SfincsPostprocess(input=input, output=output).run()
+
+    assert fn_sfincs_inun_tif.is_file()
