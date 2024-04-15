@@ -1,7 +1,6 @@
 """Pluvial design hyetograph method."""
 import os
 from pathlib import Path
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +9,7 @@ import xarray as xr
 from hydromt.stats import extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
+from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.methods.method import Method
 from hydroflows.methods.rainfall.functions import eva_idf, get_hyetograph
 from hydroflows.workflows.events import EventCatalog
@@ -30,7 +30,7 @@ class Params(BaseModel):
     """Parameters."""
 
     # durations for IDF
-    durations: List[int] = [1, 2, 3, 6, 12, 24, 36, 48]
+    durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
 
     min_dist_days: int = 0
     ev_type: str = "BM"
@@ -39,7 +39,7 @@ class Params(BaseModel):
     time_dim: str = 'time'
 
     # return periods of interest
-    rps: List[int] = [1.001, 2, 5, 10, 20, 50, 100]
+    rps: ListOfFloat = [1.001, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
