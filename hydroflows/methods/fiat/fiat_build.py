@@ -1,18 +1,24 @@
 """Module/ Rule for building FIAT models."""
-import sys
+import os
 from pathlib import Path
 from typing import List
 
+import geopandas as gpd
+import hydromt_fiat
 from hydromt.config import configread
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.templates import TEMPLATE_DIR
-
-from ..method import Method
+from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["FIATBuild"]
-PYTHON_PATH = Path(sys.executable).parent
+
+FIAT_DATA_PATH = Path(
+    os.path.dirname(hydromt_fiat.__file__),
+    "data",
+    "hydromt_fiat_catalog_global.yml",
+).as_posix()
 
 
 class Input(BaseModel):
@@ -21,23 +27,12 @@ class Input(BaseModel):
     region: FilePath
 
 
-class Params(BaseModel):
+class Params(ParamsHydromt):
     """FIAT build params."""
 
-    config: Path = Path(TEMPLATE_DIR, "fiat_build.yml")
-    data_libs: List[str] = [
-        "artifact_data",
-        Path(
-            PYTHON_PATH,
-            "Lib",
-            "site-packages",
-            "hydromt_fiat",
-            "data",
-            "hydromt_fiat_catalog_global.yml",
-        ).as_posix(),
-    ]
+    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
+    data_libs: List[str] = ['artifact_data']
     continent: str = "South America"
-
 
 class Output(BaseModel):
     """Output FIAT build params."""
@@ -58,9 +53,13 @@ class FIATBuild(Method):
         # Read template config
         opt = configread(self.params.config)
         # Add additional information
+        region_gdf = gpd.read_file(self.input.region.as_posix()).to_crs(4326)
+        # Select only geometry in case gdf contains more columns
+        # Hydromt-fiat selects first column for geometry when fetching OSM
+        region_gdf = region_gdf[['geometry']]
         opt.update(
             {"setup_region": {
-                "region": {"geom": self.input.region.as_posix()}
+                "region": {"geom": region_gdf}
             }}
         )
         #Setup the model
@@ -68,7 +67,7 @@ class FIATBuild(Method):
         model = FiatModel(
             root = root,
             mode="w+",
-            data_libs=self.params.data_libs,
+            data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
         # Build the model
         model.build(opt=opt)

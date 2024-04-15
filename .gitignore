@@ -1,6 +1,7 @@
 # Temporary files
 cache/
 tmp/
+sandbox/
 
 # Development
 .vscode/
