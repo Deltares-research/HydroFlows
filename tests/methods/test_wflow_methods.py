@@ -73,23 +73,26 @@ def test_wflow_update_forcing(wflow_simple_root):
 
 @pytest.fixture()
 def time_series_nc():
-    # Generating datetime index
-    dates = pd.date_range(start='2000-01-01', end='2009-12-31', freq='D')
+    rng = np.random.default_rng(12345)
+    normal = pd.DataFrame(
+        rng.random(size=(365 * 100, 2)) * 100,
+        index=pd.date_range(start="2020-01-01", periods=365 * 100, freq="1D"),
+    )
+    ext = rng.gumbel(loc=100, scale=25, size=(200, 2))  # Create extremes
+    for i in range(2):
+        normal.loc[normal.nlargest(200, i).index, i] = ext[:, i].reshape(-1)
+    da = xr.DataArray(
+        data=normal.values,
+        dims=("time", "Q_gauges"),
+        coords={
+            "time": pd.date_range(start="2000-01-01", periods=365 * 100, freq="D"),
+            "Q_gauges": ["1", "2"],
+        },
+        attrs=dict(_FillValue=-9999),
+    )
+    da.raster.set_crs(4326)
 
-    # Generating station IDs
-    stations = np.array(['1', '2'], dtype='<U1')
-
-    # Generating random discharge data for each station and date
-    data = np.random.rand(len(dates), len(stations)) * 100
-
-    # Creating the DataArray
-    discharge_data = xr.DataArray(data,
-                                   coords={'time': dates, 'Q_gauges': stations},
-                                   dims=['time', 'Q_gauges'],
-                                   name='discharge',
-                                   attrs={'long_name': 'discharge', 'units': 'm3/s'})
-
-    return discharge_data
+    return da
 
 def test_wflow_design_hydro(time_series_nc, tmp_path):
     # write time series to file

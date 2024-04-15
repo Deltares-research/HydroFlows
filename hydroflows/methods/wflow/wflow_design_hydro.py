@@ -1,7 +1,6 @@
 """Wflow design hydrograph method."""
 import os
 from pathlib import Path
-from typing import List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,8 +9,9 @@ import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
-#from hydroflows.workflows.events import EventCatalog
-from ..method import Method
+from hydroflows._typing import ListOfFloat
+from hydroflows.methods.method import Method
+from hydroflows.workflows.events import EventCatalog
 
 __all__ = ["WflowDesignHydro"]
 
@@ -29,7 +29,7 @@ class Params(BaseModel):
     """Parameters."""
 
     # parameters for the get_peaks function
-    ev_type: str = "POT"
+    ev_type: str = "BM"
     min_dist_days: int = 7
     qthresh: float = 0.95
     min_sample_perc: int = 80
@@ -37,7 +37,7 @@ class Params(BaseModel):
     time_dim: str = 'time'
 
     # return periods of interest
-    rps: List[int] = [1.01, 2, 5, 10, 20, 50, 100]
+    rps: ListOfFloat = [1.01, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
@@ -68,7 +68,7 @@ class WflowDesignHydro(Method):
         min_dist = int(pd.Timedelta(self.params.min_dist_days, 'd') / dt)
 
         # sample size per year
-        min_sample_size = pd.Timedelta(1, 'A') / dt * self.params.min_sample_perc
+        min_sample_size = pd.Timedelta(1, 'A') / dt * (self.params.min_sample_perc / 100)  # noqa: E501
 
         # specify the setting for extracting peaks
         kwargs = {
@@ -126,20 +126,20 @@ class WflowDesignHydro(Method):
             events_list.append(event)
 
         # make a data catalog
-        # event_catalog = EventCatalog(
-        #    root=root,
-        #    events=events_list,
-        # )
+        event_catalog = EventCatalog(
+            root=root,
+            events=events_list,
+        )
 
-        # event_catalog.to_yaml(
-        #     self.output.event_catalog)
+        event_catalog.to_yaml(
+             self.output.event_catalog)
 
         # save plots with fitted distributions
         if self.params.plot_fig:
-            plots_folder = os.path.join(root, 'figs')
+            fn_plots = os.path.join(root, 'figs')
 
-            if not os.path.exists(plots_folder):
-                os.makedirs(plots_folder)
+            if not os.path.exists(fn_plots):
+                os.makedirs(fn_plots)
 
             # loop through all the stations and save fig
             for station in da[index_dim].values:
@@ -162,6 +162,6 @@ class WflowDesignHydro(Method):
                 ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
                 ax.set_xlabel("Return period [years]")
 
-                station_fig_path = os.path.join(plots_folder, f"{station}.png")
+                station_fig_path = os.path.join(fn_plots, f"{station}.png")
 
                 plt.savefig(station_fig_path, dpi=300, bbox_inches="tight")
