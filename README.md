@@ -42,7 +42,7 @@ The CLI is the recommended way to start a new project and run workflows, while t
 To create a new project directory, run:
 
 ```bash
-hydroflows init <project_dir>
+hydroflows init <project_dir> --region <region_file> --config <config_file>
 ```
 
 This will create a new project directory with a default configuration file and a directory structure for input and output data.
@@ -50,5 +50,5 @@ To run a workflow in the project directory with snakemake, run:
 
 ```bash
 cd <project_dir>
-snakemake -s workflow/<workflow_name>.smk --configfile workflow/snake_config/config.yml -c 1 --verbose
+snakemake -s workflow/<workflow_name>.smk -c 1 --verbose
 ```
