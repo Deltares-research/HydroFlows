@@ -15,7 +15,7 @@ def test_fiat_build(tmpdir, sfincs_region_path):
     }
 
     # Setup the rule
-    rule =  FIATBuild(input=input, output=output)
+    rule = FIATBuild(input=input, output=output)
     rule.run()
 
     assert fn_fiat_cfg.exists()

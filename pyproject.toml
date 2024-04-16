@@ -62,7 +62,6 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  # "pytest-lazy-fixtures",  # test on multiple fixtures
 ]
 
 full = ["hydroflows[io,extra,dev,test,doc,examples]"]
