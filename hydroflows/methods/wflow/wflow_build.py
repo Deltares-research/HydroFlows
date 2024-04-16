@@ -1,14 +1,13 @@
 """Wflow build method."""
 
 from pathlib import Path
-from typing import List
 
 from hydromt.config import configread
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods._validators import ParamsHydromt
+from hydroflows._typing import ListOfStr
 from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["WflowBuild"]
@@ -26,12 +25,12 @@ class Output(BaseModel):
     wflow_toml: Path
 
 
-class Params(ParamsHydromt):
+class Params(BaseModel):
     """Parameters."""
 
     # optional parameters
     config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yaml")
-    data_libs: List[str] = ["artifact_data"]
+    data_libs: ListOfStr = ["artifact_data"]
     upstream_area: int = 30
 
 

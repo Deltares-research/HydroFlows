@@ -1,14 +1,14 @@
 """Wflow update forcing method."""
 
 import os
+from datetime import datetime
 from pathlib import Path
-from typing import List
 
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods._validators import ParamsHydromt
+from hydroflows._typing import ListOfStr
 from hydroflows.methods.method import Method
 
 __all__ = ["WflowUpdateForcing"]
@@ -26,15 +26,15 @@ class Output(BaseModel):
     wflow_toml: Path
 
 
-class Params(ParamsHydromt):
+class Params(BaseModel):
     """Parameters."""
 
-    start_time: str = "2010-02-01T00:00:00"
-    end_time: str = "2010-02-10T00:00:00"
+    start_time: datetime = datetime(2010,2,1,0,0,0)
+    end_time: datetime = datetime(2010,2,10,0,0,0)
 
     timestep: int = 86400  # in seconds
 
-    data_libs: List[str] = ["artifact_data"]
+    data_libs: ListOfStr = ["artifact_data"]
 
     precip_src: str = "era5"
     temp_pet_src: str = "era5"
@@ -64,10 +64,11 @@ class WflowUpdateForcing(Method):
             logger=logger,
         )
 
+        fmt = "%Y-%m-%dT%H:%M:%S"  # wflow toml datetime format
         w.setup_config(
             **{
-                "starttime": self.params.start_time,
-                "endtime": self.params.end_time,
+                "starttime": self.params.start_time.strftime(fmt),
+                "endtime": self.params.end_time.strftime(fmt),
                 "timestepsecs": self.params.timestep,
                 "input.path_forcing": "forcing.nc",
             }
