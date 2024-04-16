@@ -5,7 +5,7 @@ scenario_name = config["SCENARIO"]
 # Target rule
 rule all:
     input:
-        event_catalog = f"interim/{region_name}/{scenario_name}/discharge/design_events.yml"
+        event_catalog = f"data/interim/{region_name}/{scenario_name}/discharge/design_events.yml"
 
 rule wflow_update_forcing:
     input:
@@ -54,7 +54,7 @@ rule get_design_events:
     # params: # TODO add params like RPS
 
     output:
-        event_catalog = f"interim/{region_name}/{scenario_name}/discharge/design_events.yml"
+        event_catalog = f"data/interim/{region_name}/{scenario_name}/discharge/design_events.yml"
 
     shell:
         """
