@@ -21,6 +21,7 @@ class Params(BaseModel):
     """FIAT update params."""
 
     map_type: str = "water_depth"
+    var: str = "zsmax"
 
 
 class Output(BaseModel):
@@ -65,6 +66,7 @@ class FIATUpdateHazard(Method):
         model.setup_hazard(
             da,
             map_type=self.params.map_type,
+            var=self.params.var,
         )
 
         ## Warning!! code below is again necessary

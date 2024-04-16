@@ -48,7 +48,7 @@ class FIATRun(Method):
             "run",
             fiat_cfg_path,
             "-t",
-            threads,
+            str(threads),
         ]
 
         # Execute the rule
