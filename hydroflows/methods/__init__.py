@@ -16,6 +16,6 @@ METHODS = {
     "wflow_run": WflowRun,
     "wflow_update_forcing": WflowUpdateForcing,
     "sfincs_update_forcing": SfincsUpdateForcing,
-    "pluvial_design_hyeto": PluvialDesignEvents,
+    "pluvial_design_events": PluvialDesignEvents,
     "get_ERA5_rainfall": GetERA5Rainfall,
 }

@@ -45,5 +45,5 @@ rule pluvial_design_events:
         hydroflows run \
         pluvial_design_events \
         -i time_series_nc={input.time_series_nc} \
-        -o event_catalog={output.event_catalog} \
+        -o event_catalog={output.event_catalog}
         """
