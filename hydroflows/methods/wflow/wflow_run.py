@@ -47,7 +47,7 @@ class WflowRun(Method):
         wflow_cli_path = self.params.wflow_bin
 
         # Command to run wflow_cli with the TOML file
-        command = [wflow_cli_path, self.input.wflow_toml]
+        command = [str(wflow_cli_path), str(self.input.wflow_toml)]
 
         # Call the executable using subprocess
         subprocess.run(command, env=env, check=True)
