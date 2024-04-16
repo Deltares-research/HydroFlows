@@ -6,10 +6,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from hydromt.stats import extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
-from hydroflows._typing import ListOfFloat, ListOfInt
+from hydroflows._typing import ListOfInt
 from hydroflows.methods.method import Method
 from hydroflows.methods.rainfall.functions import eva_idf, get_hyetograph
 from hydroflows.workflows.events import EventCatalog
@@ -60,20 +59,10 @@ class PluvialDesignHyeto(Method):
 
 
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
-        min_dist = int(pd.Timedelta(self.params.min_dist_days, 'd') / dt)
+        int(pd.Timedelta(self.params.min_dist_days, 'd') / dt)
 
         # sample size per year
         min_sample_size = pd.Timedelta(1, 'A') / dt * self.params.min_sample_perc
-
-        # specify the setting for extracting peaks
-        kwargs = {
-            "POT": dict(min_dist=min_dist,
-                        qthresh=self.params.qthresh,
-                        period='year'),
-            "BM": dict(min_dist=min_dist,
-                       period='year',
-                       min_sample_size=min_sample_size)
-        }[self.params.ev_type]
 
         # convert rps list to an array with min value to avoid infs
         rps= np.max(1.001, self.params.rps)
@@ -82,10 +71,12 @@ class PluvialDesignHyeto(Method):
 
         # fit distribution per duration
         ds_idf = eva_idf(
-                da,
-                ev_type=self.params.ev_type,
-                durations=self.params.durations,
-                rps=rps,
+            da,
+            ev_type=self.params.ev_type,
+            durations=self.params.durations,
+            rps=rps,
+            qthresh=self.params.qthresh,
+            min_sample_size=min_sample_size
         )
 
         ds_idf = ds_idf.assign_coords(rps=np.round(rps).astype(int))
