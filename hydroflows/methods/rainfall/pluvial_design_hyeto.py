@@ -39,7 +39,7 @@ class Params(BaseModel):
     time_dim: str = 'time'
 
     # return periods of interest
-    rps: ListOfFloat = [1.001, 2, 5, 10, 20, 50, 100]
+    rps: ListOfInt= [1, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
@@ -75,21 +75,8 @@ class PluvialDesignHyeto(Method):
                        min_sample_size=min_sample_size)
         }[self.params.ev_type]
 
-        # derive the peak
-        da_peaks = get_peaks(da, ev_type=self.params.ev_type,
-                             time_dim=time_dim, **kwargs)
-
-        # specify and fit an EV distribution
-        da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type)
-        da_params.load()
-
-        # convert rps list to an array
-        rps= np.array(self.params.rps)
-
-        # calculate return values for specified rps/params
-        da_rps = extremes.get_return_value(da_params, rps=rps).load()
-        da_rps = da_rps.assign_coords(rps=np.round(rps).astype(int))
-
+        # convert rps list to an array with min value to avoid infs
+        rps= np.max(1.001, self.params.rps)
         # specify the max event duration
         event_duration = self.params.durations[-1]
 
