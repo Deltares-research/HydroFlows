@@ -8,18 +8,18 @@ scenario_name = config["SCENARIO"]
 # Target rule
 rule all:
     input:
-        event_catalog = f"interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
+        event_catalog = f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
 
 rule get_ERA5_rainfall:
     input:
         sfincs_region = region_file
 
     params:
-        start_date = "2010-02-03",
-        end_date = "2010-02-09",
+        start_date = "1990-01-01",
+        end_date = "2023-12-31",
 
     output:
-        time_series_nc = "input/forcing_data/era5_rainfall.nc"
+        time_series_nc = "data/input/forcing_data/era5_rainfall.nc"
 
     shell:
         """
@@ -38,7 +38,7 @@ rule get_design_events:
     # params: # TODO add params like RPS (requires issue #82)
 
     output:
-        event_catalog = f"interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
+        event_catalog = f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
 
     shell:
         """
