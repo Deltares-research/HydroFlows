@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 import yaml
 
-from hydroflows.methods import GetERA5Rainfall, PluvialDesignHyeto
+from hydroflows.methods import GetERA5Rainfall, PluvialDesignEvents
 
 
 @pytest.fixture()
@@ -45,7 +45,7 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
 
     output = {"event_catalog": str(fn_data_catalog)}
 
-    PluvialDesignHyeto(input=input, params=params, output=output).run()
+    PluvialDesignEvents(input=input, params=params, output=output).run()
     assert fn_data_catalog.exists()
 
     with open(fn_data_catalog, "r") as f:
