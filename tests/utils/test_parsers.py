@@ -1,15 +1,15 @@
 import pytest
 
-from hydroflows.methods._validators import ParamsHydromt
+from hydroflows.utils.parsers import str_to_list
 
 
 @pytest.mark.parametrize(
-    ("data_libs", "data_libs_list"),
+    ("str_list", "parsed_list"),
     [
         ("", []),
-        (["a", "b"], ["a", "b"]),
         ("a,b, c", ["a", "b", "c"]),
         ("a", ["a"]),
+        ("[a, b]", ["a", "b"]),
         ("a b", ["a", "b"]),
         ("a, 'b'", ["a", "b"]),
         # comma seperated, comma and space in quotes
@@ -19,7 +19,6 @@ from hydroflows.methods._validators import ParamsHydromt
     ],
 
 )
-def test_hydromt_params(data_libs, data_libs_list):
+def test_hydromt_params(str_list, parsed_list):
     """Test ParamsHydromt."""
-    params = ParamsHydromt(data_libs=data_libs)
-    assert params.data_libs == data_libs_list
+    assert str_to_list(str_list) == parsed_list

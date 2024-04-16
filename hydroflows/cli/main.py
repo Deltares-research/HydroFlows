@@ -146,7 +146,6 @@ opt_params = click.option(
 def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
     """Run a method with set inputs, outputs and parameters."""
     append = not overwrite
-    # print(overwrite)
     log_level = max(10, 30 - 10 * (verbose - quiet))
     logger = log.setuplog(
         f"run_{runner}",
@@ -155,9 +154,8 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
         append=append,
     )
     if runner not in METHODS:
-        raise ValueError("Method not implemented")
+        raise ValueError(f"Method {runner} not implemented")
     try:
-        # pdb.set_trace()
         logger.info(f"Input: {input}")
         logger.info(f"Parameters: {params}")
         logger.info(f"Output: {output}")
