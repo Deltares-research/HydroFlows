@@ -8,11 +8,8 @@ validators and a run method.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from pydantic import BaseModel
-
-from hydroflows.methods._validators import ParamsHydromt
 
 __all__ = ["Method"]
 
@@ -20,30 +17,19 @@ __all__ = ["Method"]
 PACKAGE_ROOT = Path(__file__).parent.parent
 HYDROMT_CONFIG_DIR = PACKAGE_ROOT / "templates" / "workflow" / "hydromt_config"
 
+class BaseParams(BaseModel):
+    """Base rule for all parameters. Must be extended for rule-specific tasks."""
+
+    pass
+
 
 class Method(BaseModel):
     """Base method for all methods. Must be extended for rule-specific tasks."""
 
-    # use pydantic models to (de)serialize the input, output and params
+    # use pydantic models to (de)serialize/validate the input, output and params
     input: BaseModel
     output: BaseModel
-    params: BaseModel = ParamsHydromt()  # optional
-
-    def to_str(
-        self,
-        wildcards: Optional[Dict[str, List]] = {}
-    ):
-        """Parse rule to a string, suitable for a certain language.
-
-        Parameters
-        ----------
-        format : str
-            selected format for output
-        wildcards : Dict[str, List], optional
-            expansion of wildcards for given inputs or outputs
-
-        """
-        raise NotImplementedError
+    params: BaseParams = BaseParams()  # initialize when *all* parameters are optional
 
     def run(self) -> None:
         """Implement the rule logic here.

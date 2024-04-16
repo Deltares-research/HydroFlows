@@ -15,12 +15,18 @@ optional
 
 import os
 from pathlib import Path
+from typing import Optional
 
 import click
 
-from .. import __version__, log
-from ..methods import METHODS
-from ..utils import copy_templates, create_folders
+from hydroflows import __version__, log
+from hydroflows.methods import METHODS
+from hydroflows.utils import (
+    adjust_config,
+    copy_single_file,
+    copy_templates,
+    create_folders,
+)
 
 
 # Copied from rasterio.rio.options
@@ -115,6 +121,7 @@ opt_input = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=True,
+    help="Set required input file(s) for the method",
 )
 opt_output = click.option(
     '-o',
@@ -122,6 +129,7 @@ opt_output = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=True,
+    help="Specify the output of the method"
 )
 opt_params = click.option(
     '-p',
@@ -129,6 +137,7 @@ opt_params = click.option(
     multiple=True,
     callback=_cb_key_val,
     required=False,
+    help="Set the parameters for the method",
 )
 
 @cli.command(short_help="Run a method with set inputs, outputs and parameters")
@@ -146,7 +155,6 @@ opt_params = click.option(
 def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
     """Run a method with set inputs, outputs and parameters."""
     append = not overwrite
-    # print(overwrite)
     log_level = max(10, 30 - 10 * (verbose - quiet))
     logger = log.setuplog(
         f"run_{runner}",
@@ -155,9 +163,8 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
         append=append,
     )
     if runner not in METHODS:
-        raise ValueError("Method not implemented")
+        raise ValueError(f"Method {runner} not implemented")
     try:
-        # pdb.set_trace()
         logger.info(f"Input: {input}")
         logger.info(f"Parameters: {params}")
         logger.info(f"Output: {output}")
@@ -178,16 +185,57 @@ def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
             handler.close()
             logger.removeHandler(handler)
 
+
+opt_region = click.option(
+    "-r",
+    "--region",
+    required=False,
+    type=click.Path(exists=True, file_okay=True, path_type=Path),
+    help="Path to a model region vector file",
+)
+
+opt_config = click.option(
+    "-c",
+    "--config",
+    required=False,
+    type=click.Path(exists=True, file_okay=True, path_type=Path),
+    help="Path to a custom SnakeMake configurations file",
+)
+
 @cli.command(short_help="Create a new project folder structure and copy templates")
 @click.argument(
     "ROOT",
     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
 )
+@opt_region
+@opt_config
 @click.pass_context
-def init(ctx, root: Path) -> None:
+def init(
+    ctx,
+    root: Path,
+    region: Optional[Path] = None,
+    config: Optional[Path] = None,
+) -> None:
     """Initialize a new project."""
     create_folders(root)
     copy_templates(root)
+    # Work with extra input on initialization
+    cfg_kwargs = {}
+    if region is not None:
+        cfg_kwargs["REGION_FILE"] = Path(
+            "data",
+            "input",
+            region.name,
+        ).as_posix()
+        cfg_kwargs["REGION"] = region.stem
+        copy_single_file(region, Path(root, cfg_kwargs["REGION_FILE"]))
+    # Adjusting the config file i
+    adjust_config(
+        Path(root, "workflow", "snake_config", "setup_models_config.yml"),
+        extra=config,
+        **cfg_kwargs,
+    )
+
 
 if __name__ == "__main__":
     cli()
