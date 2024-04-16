@@ -1,4 +1,4 @@
-"""Functions for the pluvial design hyetographs."""
+"""Functions for the pluvial design events."""
 from datetime import datetime
 
 import numpy as np

@@ -31,11 +31,11 @@ rule get_ERA5_rainfall:
         -p end_date={params.end_date}
         """
 
-rule get_design_events:
+rule pluvial_design_events:
     input:
         time_series_nc = rules.get_ERA5_rainfall.output.time_series_nc
 
-    # params: # TODO add params like RPS (requires issue #82)
+    # params: # TODO add params like RPS
 
     output:
         event_catalog = f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
@@ -43,7 +43,7 @@ rule get_design_events:
     shell:
         """
         hydroflows run \
-        pluvial_design_hyeto \
+        pluvial_design_events \
         -i time_series_nc={input.time_series_nc} \
         -o event_catalog={output.event_catalog} \
         """

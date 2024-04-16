@@ -1,4 +1,4 @@
-"""Pluvial design hyetograph method."""
+"""Pluvial design events method."""
 
 import os
 from pathlib import Path
@@ -14,7 +14,7 @@ from hydroflows.methods.method import Method
 from hydroflows.methods.rainfall.functions import eva_idf, get_hyetograph
 from hydroflows.workflows.events import EventCatalog
 
-__all__ = ["PluvialDesignHyeto"]
+__all__ = ["PluvialDesignEvents"]
 
 
 class Input(BaseModel):
@@ -47,16 +47,16 @@ class Params(BaseModel):
     plot_fig: bool = True
 
 
-class PluvialDesignHyeto(Method):
-    """Rule for creating pluvial design hyetograph."""
+class PluvialDesignEvents(Method):
+    """Rule for generating pluvial design events."""
 
-    name: str = "pluvial_design_hyeto"
+    name: str = "pluvial_design_events"
     params: Params = Params()  # optional parameters
     input: Input
     output: Output
 
     def run(self):
-        """Run the Pluvial design hyetograph method."""
+        """Run the Pluvial design events method."""
         da = xr.open_dataarray(self.input.time_series_nc)
         time_dim = self.params.time_dim
         if da.ndim > 1 or time_dim not in da.dims:
@@ -85,7 +85,7 @@ class PluvialDesignHyeto(Method):
 
         ds_idf = ds_idf.assign_coords(rps=self.params.rps)
 
-        # Get design events hyetogrpah for each return period
+        # Get design events hyetograph for each return period
         p_hyetograph = get_hyetograph(
             ds_idf["return_values"], dt=1, length=event_duration
         )
