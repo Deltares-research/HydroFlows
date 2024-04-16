@@ -1,13 +1,14 @@
 import re
 from typing import List
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class ParamsHydromt(BaseModel):
     data_libs: List[str] = Field(default_factory=list)
 
-    @validator("data_libs", pre=True)
+    @field_validator("data_libs", mode="before")
+    @classmethod
     def split(cls, v: object) -> object:
         """Split comma and space seperated string to list."""
         if isinstance(v, str):
@@ -18,8 +19,7 @@ class ParamsHydromt(BaseModel):
                 # split by space but not inside quotes
                 regex = r"[^\s\"']+|\"([^\"]*)\"|'([^']*)'"
             vlist = [
-                m.group(1) or m.group(2) or m.group(0)
-                for m in re.finditer(regex, v)
+                m.group(1) or m.group(2) or m.group(0) for m in re.finditer(regex, v)
             ]
             # strip whitespace and quotes from values
             return [v.strip("'\" ") for v in vlist]
