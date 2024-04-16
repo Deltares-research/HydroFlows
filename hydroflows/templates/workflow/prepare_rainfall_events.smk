@@ -1,9 +1,10 @@
-from datetime import datetime
+configfile: "workflow/snake_config/config.yaml"
 
 # Unpack config
 region_file = config["REGION_FILE"]
 region_name = config["REGION"]
 scenario_name = config["SCENARIO"]
+rps = config["RPS"]
 
 # Target rule
 rule all:
@@ -35,7 +36,8 @@ rule pluvial_design_events:
     input:
         time_series_nc = rules.get_ERA5_rainfall.output.time_series_nc
 
-    # params: # TODO add params like RPS
+    params:
+        rps = rps
 
     output:
         event_catalog = f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
@@ -45,5 +47,6 @@ rule pluvial_design_events:
         hydroflows run \
         pluvial_design_events \
         -i time_series_nc={input.time_series_nc} \
+        -p rps="{params.rps}" \
         -o event_catalog={output.event_catalog}
         """
