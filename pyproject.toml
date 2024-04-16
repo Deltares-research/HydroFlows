@@ -58,10 +58,13 @@ extra = [
 io = [
 ]
 test = [
+  "pooch",          # test data fetching
+  "requests",       # test data fetching
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
+
 ]
 
 full = ["hydroflows[io,extra,dev,test,doc,examples]"]
@@ -74,7 +77,6 @@ Source = "https://github.com/Deltares-research/HydroFlows"
 channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
-  # "pytest-lazy-fixtures",
   "quartodoc",
 ]
 

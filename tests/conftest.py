@@ -4,10 +4,59 @@ import shutil
 from pathlib import Path
 
 import geopandas as gpd
+import pooch
 import pytest
+from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
+
+
+@pytest.fixture(scope="session")
+def test_data_dir() -> Path:
+    return Path(__file__).parent / "_data"
+
+
+@pytest.fixture(scope="session")
+def test_data() -> Path:
+    """Create a pooch registry for the test data."""
+    path = Path(__file__).parent / "_remote_data"
+    # get registry from remote to make sure it matches the data
+    try:
+        base_url = "https://github.com/Deltares-research/HydroFlows/releases/download/test-data"
+        _ = pooch.retrieve(
+            url=f"{base_url}/registry.txt",
+            known_hash=None,
+            path=path,
+            fname="registry.txt",
+        )
+    except HTTPError:
+        base_url = str(path / "data")
+        pass
+    # create registry
+    test_data = pooch.create(
+        # Use the default cache folder for the operating system
+        path=path / "data",
+        base_url=base_url,
+        registry=None,
+    )
+    test_data.load_registry(path / "registry.txt")
+    return test_data
+
+
+@pytest.fixture(scope="session")
+def rio_test_data(test_data) -> str:
+    paths = test_data.fetch(
+        "rio_data_catalog.zip", processor=pooch.Unzip(extract_dir="rio_data_catalog")
+    )
+    # return the path to the data catalog file
+    path = Path(paths[0]).parent / "data_catalog.yml"
+    assert path.is_file()
+    return str(path)
+
+@pytest.fixture(scope="session")
+def rio_region_path(test_data_dir) -> str:
+    return str(test_data_dir / "rio_region.geojson")
 
 
 @pytest.fixture()
@@ -18,9 +67,6 @@ def tmp_csv(tmpdir):
     return csv_file
 
 
-@pytest.fixture(scope="session")
-def test_data_dir() -> Path:
-    return Path(__file__).parent / "_data"
 
 
 @pytest.fixture()
@@ -61,6 +107,7 @@ def sfincs_src_points():
         ],
         crs="EPSG:32633",
     )
+
 
 @pytest.fixture(scope="function")  # noqa: PT003
 def sfincs_tmp_model_root(test_data_dir, tmpdir):
