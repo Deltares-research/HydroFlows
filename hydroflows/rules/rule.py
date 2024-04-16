@@ -12,11 +12,11 @@ from typing import Dict, Optional, Type
 
 from pydantic import BaseModel, model_validator
 
-from ..methods.method import Method
+from hydroflows.methods.method import Method
+
+__all__ = ["Rule"]
 
 FMT = ["snakemake"]
-
-
 
 class Rule(BaseModel):
     """Define relationships between inputs and outputs.
