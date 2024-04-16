@@ -23,7 +23,7 @@ To create a project folder and execute a workflow, run the following steps:
 |   |   |   ├── era5_rainfall.nc
 |   |   |   ├── gtsm_waterlevels.nc
 │   ├── interim                             # all preprocessed data and intermediate results
-|   |   |── {region1}
+|   |   |── {region}
 |   |       ├── {scenario}              # e.g. historical
 |   |           |── rainfall
 |   |           |   ├── rainfall_{event}.csv
@@ -37,7 +37,7 @@ To create a project folder and execute a workflow, run the following steps:
 │   └── output                              # model output data (not sure we need this as we save output with simulations?)
 ├── models                                  # model instances
 │   ├── wflow                               # model instances
-|   │   └── {region1}
+|   │   └── {region}
 |   │       ├── staticmaps.nc
 |   │       ├── wflow_sbm_default.toml
 |   │       ├── hydromt_wflow.yaml
@@ -47,7 +47,7 @@ To create a project folder and execute a workflow, run the following steps:
 |   │               ├── forcing.nc
 |   │               └── output.nc
 │   ├── sfincs                              # model instances
-|   │   └── {region1}
+|   │   └── {region}
 |   │       ├── sfincs.xxx
 |   │       ├── sfincs.inp
 |   │       └── simulations
@@ -56,7 +56,7 @@ To create a project folder and execute a workflow, run the following steps:
 |   │                   ├── sfincs.xxx
 |   │                   └── sfincs.inp
 │   └── fiat
-|       └── {region1}
+|       └── {region}
 |           ├── exposure
 |           ├── vulnerability
 |           ├── settings.toml
@@ -67,7 +67,7 @@ To create a project folder and execute a workflow, run the following steps:
 |                   |── impact
 |                   └── risk
 ├── results                                 # postprocessed model end results
-|   └── {region1}
+|   └── {region}
 |       |── hazard
 |       |   ├── {scenario}              # e.g. historical
 |       |       |── flood_depth_{event}.tif
