@@ -214,8 +214,8 @@ opt_config = click.option(
 def init(
     ctx,
     root: Path,
-    region: Path | None,
-    config: Path | None,
+    region: Optional[Path] = None,
+    config: Optional[Path] = None,
 ) -> None:
     """Initialize a new project."""
     create_folders(root)
