@@ -9,7 +9,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import BaseModel, FilePath
 
-from hydroflows._typing import ListOfInt
+from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.methods.method import Method
 from hydroflows.methods.rainfall.functions import eva_idf, get_hyetograph
 from hydroflows.workflows.events import EventCatalog
@@ -42,7 +42,7 @@ class Params(BaseModel):
     time_dim: str = "time"
 
     # return periods of interest
-    rps: ListOfInt = [1, 2, 5, 10, 20, 50, 100]
+    rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
 
     plot_fig: bool = True
 
@@ -100,14 +100,15 @@ class PluvialDesignEvents(Method):
         os.makedirs(root, exist_ok=True)
 
         events_list = []
-        for rp in p_hyetograph.rps.values:
+        for i, rp in enumerate(p_hyetograph.rps.values):
             # save p_rp as csv files
-            events_fn = os.path.join(root, f"p_rp{int(rp):03d}.csv")
+            name = f"p_event{int(i+1):02d}"
+            events_fn = Path(root, f"{name}.csv")
             p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
 
             event = {
-                "name": f"p_rp{int(rp):03d}",
-                "forcings": [{"type": "rainfall", "path": f"p_rp{int(rp):03d}.csv"}],
+                "name": name,
+                "forcings": [{"type": "rainfall", "path": f"{name}.csv"}],
                 "probability": 1 / rp,
             }
             events_list.append(event)
