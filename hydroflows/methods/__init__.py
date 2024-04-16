@@ -2,7 +2,7 @@
 
 from .fiat import FIATBuild
 from .method import Method
-from .sfincs import SfincsBuild, SfincsUpdateForcing
+from .sfincs import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
 # registered methods

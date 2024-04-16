@@ -35,7 +35,7 @@ def test_sfincs_update(test_data_dir, sfincs_tmp_model_root):
 
     assert fn_sfincs_event_inp.is_file()
 
-def test_sincs_postprocess(test_data_dir, sfincs_tmp_model_root):
+def test_sfincs_postprocess(test_data_dir, sfincs_tmp_model_root):
     fn_sfincs_event_inp = Path(
         sfincs_tmp_model_root,
         "scenario",
