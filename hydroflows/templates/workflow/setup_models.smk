@@ -7,6 +7,7 @@ data_libs = config["DATA_LIBS"]
 continent = config["CONTINENT"]
 river_upa = config["RIVER_UPA"]
 plot_fig = config["PLOT_FIG"]
+continent = config["CONTINENT"]
 
 # Target rule
 rule all:
@@ -72,8 +73,8 @@ rule setup_wflow:
     params:
         config = "workflow/hydromt_config/wflow_build.yaml",
         data_libs = data_libs,
-        gauges = f"models/sfincs/{region_name}/gis/src.geojson",
-        upstream_area = river_upa
+        upstream_area = river_upa,
+        gauges = f"models/sfincs/{region_name}/gis/src.geojson"
 
     output:
         wflow_toml = f"models/wflow/{region_name}/wflow_sbm.toml"
