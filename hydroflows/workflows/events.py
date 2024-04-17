@@ -47,7 +47,8 @@ class Forcing(BaseModel):
     def read_data(self, root: Optional[Path] = None, **kwargs) -> Any:
         """Read the data."""
         # update and check path
-        self._set_path_absolute(root)
+        if root:
+            self._set_path_absolute(root)
         self._check_path_exists()
         # read data
         if self.path.suffix == ".csv":
@@ -265,6 +266,25 @@ class Event(BaseModel):
                 )
 
 
+class Roots(BaseModel):
+    """Dictionary of directories for event files.
+
+    Parameters
+    ----------
+    root_forcings : Optional[DirectoryPath]
+        Root directory for forcing data.
+    root_hazards : Optional[DirectoryPath]
+        Root directory for hazard data.
+    root_impacts : Optional[DirectoryPath]
+        Root directory for impact data.
+
+    """
+
+    root_forcings: Optional[DirectoryPath] = None
+    root_hazards: Optional[DirectoryPath] = None
+    root_impacts: Optional[DirectoryPath] = None
+
+
 class EventCatalog(BaseModel):
     """A dictionary of event configurations.
 
@@ -272,8 +292,8 @@ class EventCatalog(BaseModel):
     ----------
     version : str
         The version of the event catalog.
-    root : Path, optional
-        The root directory for the event catalog.
+    roots : Roots
+        The root directories for forcings, hazards and impacts for the event catalog.
     events : List[Event]
         The list of events. Each event is a dictionary with the structure
         as defined in :class:`Event`.
@@ -305,7 +325,8 @@ class EventCatalog(BaseModel):
     """
 
     version: str = "v0.1"
-    root: Optional[DirectoryPath] = None
+    roots: Optional[Roots] = Roots()
+    # root: Optional[DirectoryPath] = None
     events: List[Event]
 
     @field_validator("events", mode="before")
@@ -326,17 +347,24 @@ class EventCatalog(BaseModel):
         """Create an EventCatalog from a YAML file."""
         with open(path, "r") as file:
             yml_dict = yaml.safe_load(file)
-        if "root" not in yml_dict:  # set root to parent of path
-            yml_dict["root"] = Path(path).parent
+        if "roots" not in yml_dict:  # set root to parent of path
+            yml_dict["roots"] = Roots(**{
+                "root_forcings": Path(path).parent,
+                "root_hazards": Path(path).parent,
+                "root_impacts": Path(path).parent,
+            })
+        else:
+            yml_dict["roots"] = Roots(**yml_dict["roots"])
         return cls(**yml_dict)
 
     def set_forcing_paths_relative_to_root(self) -> None:
         """Set all forcing paths relative to root."""
-        if self.root is None:
+        if self.roots is None:
             return
-        for event in self.events:
-            for forcing in event.forcings:
-                forcing._set_path_relative(self.root)
+        if self.roots.root_forcings is not None:
+            for event in self.events:
+                for forcing in event.forcings:
+                    forcing._set_path_relative(self.roots.root_forcings)
 
     def to_dict(self, relative_paths=False, **kwargs) -> dict:
         """Return the EventCatalog as a dictionary."""
@@ -351,8 +379,16 @@ class EventCatalog(BaseModel):
         # serialize
         yaml_dict = self.to_dict(relative_paths=True)
         # remove root if parent of path
-        if "root" in yaml_dict and Path(yaml_dict["root"]) == Path(path).parent:
-            del yaml_dict["root"]
+        if "roots" in yaml_dict:
+            for k in ["root_forcings", "root_hazards", "root_impacts"]:
+                # remove all paths
+                if k in yaml_dict["roots"]:
+                    if Path(yaml_dict["roots"][k]) == Path(path).parent:
+                        del yaml_dict["roots"][k]
+            # if roots is an empty dict, then remove alltogether
+            if not yaml_dict["roots"]:
+                del yaml_dict["roots"]
+
         # write to file
         with open(path, "w") as file:
             yaml.safe_dump(yaml_dict, file, sort_keys=False)
@@ -421,7 +457,7 @@ class EventCatalog(BaseModel):
         # load data
         for forcing in event.forcings:
             if forcing.data is None:
-                forcing.read_data(self.root)
+                forcing.read_data(self.roots.root_forcings)
         # set time range
         if event.time_range is None:
             event.set_time_range_from_forcings()
