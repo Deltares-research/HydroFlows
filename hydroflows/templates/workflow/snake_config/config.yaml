@@ -1,5 +1,6 @@
 REGION_FILE: "data/input/test_region.geojson"
 REGION: "test_region"
+CONTINENT: "south_america"
 
 DATA_LIBS: ["artifact_data"]
 

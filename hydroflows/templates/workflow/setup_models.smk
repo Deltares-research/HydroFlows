@@ -4,6 +4,7 @@ configfile: "workflow/snake_config/config.yaml"
 region_file = config["REGION_FILE"]
 region_name = config["REGION"]
 data_libs = config["DATA_LIBS"]
+continent = config["CONTINENT"]
 
 # Target rule
 rule all:
@@ -45,7 +46,7 @@ rule setup_fiat:
     params:
         config = "workflow/hydromt_config/fiat_build.yaml",
         data_libs = data_libs,
-        continent = "europe",
+        continent = continent,
 
     output:
         fiat_cfg = f"models/fiat/{region_name}/settings.toml"
@@ -63,11 +64,12 @@ rule setup_fiat:
 
 rule setup_wflow:
     input:
-        sfincs_region = rules.setup_sfincs.output.sfincs_region
+        region = rules.setup_sfincs.output.sfincs_region
 
     params:
         config = "workflow/hydromt_config/wflow_build.yaml",
         data_libs = data_libs,
+        gauges = f"models/sfincs/{region_name}/gis/src.geojson"
 
     output:
         wflow_toml = f"models/wflow/{region_name}/wflow_sbm.toml"
@@ -76,7 +78,7 @@ rule setup_wflow:
         """
         hydroflows run \
         wflow_build \
-        -i sfincs_region={input.sfincs_region} \
+        -i region={input.region} \
         -o wflow_toml={output.wflow_toml} \
         -p config={params.config} \
         -p data_libs="{params.data_libs}"
