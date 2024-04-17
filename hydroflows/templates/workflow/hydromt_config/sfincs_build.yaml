@@ -27,6 +27,10 @@ setup_subgrid:
     - elevtn: gebco  # add bathymetry; used to avoid extrapolation
   datasets_rgh:
     - lulc: esa_worldcover
+  # TODO prepare river bathymetry dasaset based on grit
+  # datasets_riv:
+  #   - centerlines: grit
+  #     manning': 0.035
   write_dep_tif: True
   nr_subgrid_pixels: 5  # 20m resolution
   nbins: 8

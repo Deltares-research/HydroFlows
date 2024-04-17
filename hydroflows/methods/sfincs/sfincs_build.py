@@ -59,7 +59,6 @@ class SfincsBuild(Method):
         )
         # build the model
         sf.build(opt=opt)
-        sf.write_grid(['dep']) # make sure to also write the dep grid
 
         # write the opt as yaml
         configwrite(root / 'sfincs_build.yaml', opt)
