@@ -18,45 +18,44 @@ def test_data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
-def test_data() -> Path:
-    """Create a pooch registry for the test data."""
-    path = Path(__file__).parent / "_remote_data"
-    # get registry from remote to make sure it matches the data
-    try:
+def large_test_data() -> pooch.Pooch:
+    """Return a pooch for large test test data."""
+    path = Path(__file__).parent / "_large_data"
+    try:  # get registry from remote
         base_url = "https://github.com/Deltares-research/HydroFlows/releases/download/test-data"
-        _ = pooch.retrieve(
+        pooch.retrieve(
             url=f"{base_url}/registry.txt",
             known_hash=None,
             path=path,
             fname="registry.txt",
         )
-    except HTTPError:
+    except HTTPError:  # create registry from local cached data
         base_url = str(path / "data")
-        pass
-    # create registry
-    test_data = pooch.create(
-        # Use the default cache folder for the operating system
+        pooch.make_registry(base_url, str(path / "registry.txt"), recursive=False)
+    # create a Pooch instance for the large test data
+    large_test_data = pooch.create(
         path=path / "data",
         base_url=base_url,
         registry=None,
     )
-    test_data.load_registry(path / "registry.txt")
-    return test_data
+    large_test_data.load_registry(path / "registry.txt")
+    return large_test_data
 
 
 @pytest.fixture(scope="session")
-def rio_test_data(test_data) -> str:
-    paths = test_data.fetch(
+def rio_test_data(large_test_data) -> Path:
+    """Return the path to the rio data catalog."""
+    paths = large_test_data.fetch(
         "rio_data_catalog.zip", processor=pooch.Unzip(extract_dir="rio_data_catalog")
     )
-    # return the path to the data catalog file
     path = Path(paths[0]).parent / "data_catalog.yml"
     assert path.is_file()
-    return str(path)
+    return path
+
 
 @pytest.fixture(scope="session")
-def rio_region_path(test_data_dir) -> str:
-    return str(test_data_dir / "rio_region.geojson")
+def rio_region(test_data_dir) -> Path:
+    return test_data_dir / "rio_region.geojson"
 
 
 @pytest.fixture()
@@ -65,8 +64,6 @@ def tmp_csv(tmpdir):
     csv_file = tmpdir.join("file.csv")
     csv_file.write("")
     return csv_file
-
-
 
 
 @pytest.fixture()

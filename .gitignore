@@ -111,4 +111,5 @@ bin/
 .vscode
 
 # large test data
-tests/_remote_data/data
+tests/_large_data/data
+tests/_large_data/registry.txt
