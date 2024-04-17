@@ -1,4 +1,4 @@
-from pathlib import Path
+configfile: "workflow/snake_config/config.yaml"
 
 # Unpack config
 region_file = config["REGION_FILE"]

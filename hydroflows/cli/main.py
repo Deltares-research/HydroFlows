@@ -231,7 +231,7 @@ def init(
         copy_single_file(region, Path(root, cfg_kwargs["REGION_FILE"]))
     # Adjusting the config file i
     adjust_config(
-        Path(root, "workflow", "snake_config", "setup_models_config.yml"),
+        Path(root, "workflow", "snake_config", "config.yml"),
         extra=config,
         **cfg_kwargs,
     )
