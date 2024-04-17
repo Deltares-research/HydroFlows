@@ -11,6 +11,7 @@ To create a project folder and execute a workflow, run the following steps:
 
 # HydroFlows project template
 
+```
 ├── README.md                               # this file
 ├── bin                                     # model binaries
 |   ├── wflow
@@ -98,3 +99,4 @@ To create a project folder and execute a workflow, run the following steps:
 |   │   └── script2.R
 |   ├── run_wflow.smk
 |   └── setup_models.smk
+```
