@@ -8,22 +8,18 @@ def test_sfincs_build(rio_region, rio_test_data, tmp_path):
         "region": str(rio_region)
     }
 
-    sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
-    sfincs_region = Path(tmp_path, "model", "gis", "region.geojson")
+    fn_sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
     output = {
-        "sfincs_inp": str(sfincs_inp),
-        "sfincs_region": str(sfincs_region)
+        "sfincs_inp": str(fn_sfincs_inp)
     }
     params = {
         "data_libs": str(rio_test_data),
-        "res": 100.0,
-        "river_upa": 10.0
+        "res": 50.0
     }
 
     SfincsBuild(input=input, output=output, params=params).run()
 
-    assert sfincs_inp.exists()
-    assert sfincs_region.exists()
+    assert fn_sfincs_inp.exists()
 
 def test_sfincs_update(test_data_dir, sfincs_tmp_model_root):
     input = {

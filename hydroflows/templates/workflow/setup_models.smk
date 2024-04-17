@@ -5,8 +5,6 @@ region_file = config["REGION_FILE"]
 region_name = config["REGION"]
 data_libs = config["DATA_LIBS"]
 continent = config["CONTINENT"]
-river_upa = config["RIVER_UPA"]
-plot_fig = config["PLOT_FIG"]
 
 # Target rule
 rule all:
@@ -23,11 +21,10 @@ rule setup_sfincs:
         config = "workflow/hydromt_config/sfincs_build.yaml",
         data_libs = data_libs,
         res = 100,
-        river_upa = river_upa,
-        plot_fig = plot_fig
 
     output:
         sfincs_inp = f"models/sfincs/{region_name}/sfincs.inp",
+        # This output is not defined in the method (it is not needed as an cli arguments), but is required to construct the desired DAG
         sfincs_region = f"models/sfincs/{region_name}/gis/region.geojson"
 
     shell:
@@ -72,8 +69,7 @@ rule setup_wflow:
     params:
         config = "workflow/hydromt_config/wflow_build.yaml",
         data_libs = data_libs,
-        gauges = f"models/sfincs/{region_name}/gis/src.geojson",
-        upstream_area = river_upa
+        gauges = f"models/sfincs/{region_name}/gis/src.geojson"
 
     output:
         wflow_toml = f"models/wflow/{region_name}/wflow_sbm.toml"
