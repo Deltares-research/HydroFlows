@@ -81,5 +81,6 @@ rule setup_wflow:
         -i region={input.region} \
         -o wflow_toml={output.wflow_toml} \
         -p config={params.config} \
-        -p data_libs="{params.data_libs}"
+        -p data_libs="{params.data_libs}" \
+        -p gauges={params.gauges}
         """
