@@ -36,11 +36,15 @@ def wflow_simple_root(tmp_path):
     return root
 
 
-
 def test_wflow_build(rio_region, rio_test_data, tmp_path):
     input = {"region": str(rio_region)}
 
-    params = {"data_libs": [str(rio_test_data)], "gauges": None}
+    params = {
+        "data_libs": [str(rio_test_data)],
+        "gauges": None,
+        "upstream_area": 10,
+        "plot_fig": False,
+    }
 
     fn_wflow_toml = Path(tmp_path, "model", "wflow.toml")
     output = {"wflow_toml": str(fn_wflow_toml)}

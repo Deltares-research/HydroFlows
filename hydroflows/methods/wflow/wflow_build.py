@@ -3,13 +3,14 @@
 from pathlib import Path
 from typing import Optional
 
-from hydromt.config import configread
+from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfStr
 from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.methods.wflow.wflow_utils import plot_basemap
 
 __all__ = ["WflowBuild"]
 
@@ -34,6 +35,7 @@ class Params(BaseModel):
     data_libs: ListOfStr = ["artifact_data"]
     gauges: Optional[Path] = None
     upstream_area: int = 30
+    plot_fig: bool = True
 
 
 class WflowBuild(Method):
@@ -60,12 +62,16 @@ class WflowBuild(Method):
 
         # specify region
         region = {
-            "subbasin": self.input.region,
+            "subbasin": str(self.input.region),
             "uparea": self.params.upstream_area,
         }
 
         # read the configuration
         opt = configread(self.params.config)
+
+        # update placeholders in the config
+        opt["setup_basemaps"].update(region=region)
+        opt["setup_rivers"].update(river_upa=self.params.upstream_area)
 
         # for reservoirs, lakes and glaciers: check if data is available
         for key in ["reservoirs", "lakes", "glaciers"]:
@@ -89,4 +95,11 @@ class WflowBuild(Method):
             opt.update(step)
 
         # build the model
-        w.build(region=region, opt=opt)
+        w.build(opt=opt)
+
+        # write the configuration
+        configwrite(root / "wflow_build.yaml", opt)
+
+        # plot basemap
+        if self.params.plot_fig:
+            _ = plot_basemap(w, fn_out="wflow_basemap.png")

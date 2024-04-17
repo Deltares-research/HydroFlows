@@ -73,7 +73,8 @@ rule setup_wflow:
         config = "workflow/hydromt_config/wflow_build.yaml",
         data_libs = data_libs,
         gauges = f"models/sfincs/{region_name}/gis/src.geojson",
-        upstream_area = river_upa
+        upstream_area = river_upa,
+        plot_fig = plot_fig
 
     output:
         wflow_toml = f"models/wflow/{region_name}/wflow_sbm.toml"
@@ -86,5 +87,7 @@ rule setup_wflow:
         -o wflow_toml={output.wflow_toml} \
         -p config={params.config} \
         -p data_libs="{params.data_libs}" \
-        -p gauges={params.gauges}
+        -p gauges={params.gauges} \
+        -p upstream_area={params.upstream_area} \
+        -p plot_fig={params.plot_fig}
         """
