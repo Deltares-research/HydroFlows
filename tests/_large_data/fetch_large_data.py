@@ -6,7 +6,7 @@ if __name__ == "__main__":
     path = Path(__file__).parent
     # get registry from remote to make sure it matches the data
     base_url = (
-        "https://github.com/Deltares-research/HydroFlows/releases/download/test-data"
+        r"https://github.com/Deltares-research/hydroflows-data/releases/download/data"
     )
     _ = pooch.retrieve(
         url=f"{base_url}/registry.txt",

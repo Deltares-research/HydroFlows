@@ -1,6 +1,6 @@
 # large test data
 
-Large test data is not included in the repository. It is stored as artifact data to the [test-data release](https://github.com/Deltares-research/HydroFlows/releases/tag/test-data) on GitHub. The large test data is downloaded automatically using fixtures when running the tests and stored in the `tests/_large_data/data` directory. This directory is ignored by git.
+Large test data is not included in the repository. It is stored in the [hydroflows-data](https://github.com/Deltares-research/hydroflows-data) as artifact data to the [data release](https://github.com/Deltares-research/hydroflows-data/releases/tag/data). The large test data is downloaded automatically using fixtures when running the tests and stored in the `tests/_large_data/data` directory. This directory is ignored by git.
 
 ## update large test data
 
@@ -17,5 +17,5 @@ After that, create a new `tests/_large_data/registry.txt` file by running:
 python make_registry.py
 ```
 
-Finally, update the added/modified data, including the registry.txt file in the artifact data of the [test-data release](https://github.com/Deltares-research/HydroFlows/releases/tag/test-data).
+Finally, update the added/modified data, including the registry.txt file in the artifact data.
 This can be done by pressing the "Edit" button on the release page and uploading the new data.

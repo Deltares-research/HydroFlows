@@ -22,16 +22,18 @@ def large_test_data() -> pooch.Pooch:
     """Return a pooch for large test test data."""
     path = Path(__file__).parent / "_large_data"
     try:  # get registry from remote
-        base_url = "https://github.com/Deltares-research/HydroFlows/releases/download/test-data"
-        pooch.retrieve(
+        base_url = r"https://github.com/Deltares-research/hydroflows-data/releases/download/data"
+        registry_file = pooch.retrieve(
             url=f"{base_url}/registry.txt",
             known_hash=None,
             path=path,
             fname="registry.txt",
         )
-    except HTTPError:  # create registry from local cached data
+    except HTTPError:  # use cached registry
         base_url = str(path / "data")
-        pooch.make_registry(base_url, str(path / "registry.txt"), recursive=False)
+        registry_file = path / "registry.txt"
+    if not Path(registry_file).is_file():
+        raise FileNotFoundError(f"Registry file not found: {registry_file}")
     # create a Pooch instance for the large test data
     large_test_data = pooch.create(
         path=path / "data",
@@ -43,10 +45,11 @@ def large_test_data() -> pooch.Pooch:
 
 
 @pytest.fixture(scope="session")
-def rio_test_data(large_test_data) -> Path:
+def rio_test_data(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio data catalog."""
     paths = large_test_data.fetch(
-        "rio_data_catalog.zip", processor=pooch.Unzip(extract_dir="rio_data_catalog")
+        "rio_data_catalog.zip",
+        processor=pooch.Unzip(extract_dir="rio_data_catalog"),
     )
     path = Path(paths[0]).parent / "data_catalog.yml"
     assert path.is_file()
