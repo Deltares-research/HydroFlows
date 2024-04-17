@@ -4,7 +4,9 @@ import shutil
 from pathlib import Path
 
 import geopandas as gpd
+import numpy as np
 import pytest
+import rasterio
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
@@ -16,6 +18,68 @@ def tmp_csv(tmpdir):
     csv_file = tmpdir.join("file.csv")
     csv_file.write("")
     return csv_file
+
+@pytest.fixture()
+def tmp_geojson(tmpdir):
+    """Create a temporary GeoJSON file."""
+    geojson_file = tmpdir.join("file.geojson")
+    ids = ["id_1", "id_2", "id_3"]
+    xs = [0, 1, 2]
+    ys = [0, 1, 2]
+    sizes = [10, 20, 30]  # Size of the polygons (in meters)
+
+
+    # Create a GeoDataFrame from the data
+    polygons = []
+    for x, y, size in zip(xs, ys, sizes):
+        half_size = size / 2
+        vertices = [
+            (x - half_size, y - half_size),
+            (x + half_size, y - half_size),
+            (x + half_size, y + half_size),
+            (x - half_size, y + half_size),
+            (x - half_size, y - half_size)  # Close the polygon
+        ]
+        polygon = Polygon(vertices)
+        polygons.append(polygon)
+
+    gdf = gpd.GeoDataFrame(
+        {"ID": ids},
+        geometry=polygons,
+        crs='EPSG:32735'  # somewhere over southern africa
+    )
+
+    # Write the GeoDataFrame to a GeoJSON file
+    gdf.to_file(geojson_file, driver='GeoJSON')
+    return geojson_file
+
+
+
+
+@pytest.fixture()
+def tmp_tif(tmpdir):
+    """Create a temporary tif file."""
+    tif_file = tmpdir.join("file.tif")
+
+    # Define some parameters
+    width = 100
+    height = 100
+    dtype = np.uint8
+    crs = 'EPSG:4326'  # WGS84 coordinate reference system
+    transform = rasterio.transform.from_origin(0, 0, 0.01, 0.01) # some random transform
+
+    # Generate some random data
+    data = np.random.randint(0, 255, (height, width), dtype=dtype)
+
+    # Write the data to a GeoTIFF file
+    with rasterio.open(
+        str(tif_file), 'w', driver='GTiff',
+        width=width, height=height, count=1,
+        dtype=dtype, crs=crs, transform=transform
+    ) as dst:
+        dst.write(data, 1)
+    # dst.close()
+    return tif_file
 
 
 @pytest.fixture(scope="session")

@@ -4,7 +4,9 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Literal, Optional, Union
 
+import geopandas as gpd
 import pandas as pd
+import xarray as xr
 import yaml
 from pydantic import (
     BaseModel,
@@ -85,6 +87,95 @@ class Forcing(BaseModel):
             raise IOError(f"Forcing {self.path} does not exist.")
 
 
+class Hazard(BaseModel):
+    """A hazard map related to an event.
+
+    Hazard maps are stored in GeoTIFF raster files and can be embodied by several
+    variables, e.g. depth, velocity, rise rate.
+
+    Parameters
+    ----------
+    type : Literal["depth", "velocity", "rise_rate"]
+        The type of the forcing.
+    path : Path
+        The path to the hazard data layer (GeoTIFF).
+    data : Any, optional
+        The data for the hazard, by default None.
+        This is excluded from serialization.
+
+    """
+
+    type: Literal["depth", "velocity", "rise_rate"]
+    path: Path
+    # Excl from serialization
+    data: Optional[Any] = Field(None, exclude=True)
+    timestamp: Optional[datetime] = Field(None, exclude=True)
+
+    def read_data(self, **kwargs) -> Any:
+        """Read the data."""
+        # check path
+        self._check_path_exists()
+        # read data
+        if not self.path.suffix == ".tif":
+            # placeholder for other file types
+            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
+        return xr.open_dataset(self.path, **kwargs)
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Hazard data {self.path} does not exist.")
+
+
+class Impact(BaseModel):
+    """An impact map related to an event.
+
+    Impact maps are stored in GeoTIFF raster files or vector files and can be
+    embodied by several variables, e.g. damage, affected with several
+    arbitrary subcategories such as "content", "building", "infrastructure",
+    "population"
+
+    Parameters
+    ----------
+    type : Literal["damage", "affected"]
+        The type of the impact.
+    category : Optional[str] : category of the impact (e.g. "building", "content",
+        "population", "infrstructure". To be defined by user.
+    path : Path
+        The path to the hazard data layer (GeoTIFF).
+    data : Any, optional
+        The data for the hazard, by default None.
+        This is excluded from serialization.
+
+    """
+
+    type: Literal["damage", "affected"]  # can be extended
+    category: Optional[str] = None
+    path: Path
+    # Excl from serialization
+    data: Optional[Any] = Field(None, exclude=True)
+    timestamp: Optional[datetime] = Field(None, exclude=True)
+
+    def read_data(self, **kwargs) -> Any:
+        """Read the data."""
+        # check path
+        self._check_path_exists()
+        # read data
+        if self.path.suffix == ".tif":
+            # placeholder for other file types
+            return xr.open_dataset(self.path, **kwargs)
+        elif self.path.suffix in [".gpkg", "geojson"]:
+            # attempt to load as GeoDataSet
+            return gpd.read_file(self.path, **kwargs)
+        else:
+            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Impact data {self.path} does not exist.")
+
+
 class Event(BaseModel):
     """A model event.
 
@@ -95,6 +186,12 @@ class Event(BaseModel):
     forcings : List[Forcing]
         The list of forcings for the event. Each forcing is a dictionary with
         the structure as defined in :class:`Forcing`.
+    hazards : Optional[List[Hazard]]
+        The list of hazard outputs for the event. Each hazard is a dictionary with
+        the structure as defined in :class:`Hazard`.
+    impacts : Optional[List[Impact]]
+        The list of impact outputs for the event. Each impact is a dictionary with
+        the structure as defined in :class:`Impact`.
     probability : float, optional
         The probability of the event, by default None.
     time_range : List[datetime], optional
@@ -116,8 +213,11 @@ class Event(BaseModel):
 
     name: str
     forcings: List[Forcing]
+    hazards: Optional[List[Hazard]] = None
+    impacts: Optional[List[Impact]] = None
     probability: Optional[float] = None
     time_range: Optional[List[datetime]] = None
+
 
     @field_validator("forcings", mode="before")
     @classmethod
@@ -126,6 +226,23 @@ class Event(BaseModel):
         if isinstance(value, list) and all(isinstance(f, dict) for f in value):
             return [Forcing(**forcing) for forcing in value]
         return value
+
+    @field_validator("hazards", mode="before")
+    @classmethod
+    def _set_hazards(cls, value: Any) -> List[Hazard]:
+        # if list of dictionaries, convert to list of Forcing
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
+            return [Hazard(**hazard) for hazard in value]
+        return value
+
+    @field_validator("impacts", mode="before")
+    @classmethod
+    def _set_impacts(cls, value: Any) -> List[Impact]:
+        # if list of dictionaries, convert to list of Forcing
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
+            return [Impact(**impact) for impact in value]
+        return value
+
 
     def to_dict(self, **kwargs) -> dict:
         """Return the Event as a dictionary."""

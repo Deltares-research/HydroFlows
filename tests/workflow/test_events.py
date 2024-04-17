@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from hydroflows.workflows.events import Event, EventCatalog, Forcing
+from hydroflows.workflows.events import Event, EventCatalog, Forcing, Hazard, Impact
 
 
 def test_forcings(tmp_csv):
@@ -29,7 +29,7 @@ def test_event(tmp_csv):
     assert event.probability == 0.5
 
 
-def test_event_catalog(test_data_dir):
+def test_forcing_event_catalog(test_data_dir):
     event_catalog = EventCatalog(
         root=test_data_dir,
         events=[
@@ -60,6 +60,31 @@ def test_event_catalog(test_data_dir):
     events_dict = event_catalog.to_dict(relative_paths=True)
     assert not Path(events_dict["events"][0]["forcings"][0]["path"]).is_absolute()
     assert not event.forcings[0].path.is_absolute()
+
+
+def test_hazard(tmp_tif):
+    """Test the Forcing class."""
+    hazard = Hazard(type="depth", path=str(tmp_tif))
+    assert hazard.type == "depth"
+    assert hazard.path == tmp_tif
+
+    with pytest.raises(ValidationError):
+        Forcing(type="unsupported_variable", path=tmp_tif)
+
+
+@pytest.mark.parametrize(
+    "file", ["tmp_tif", "tmp_geojson"]
+)
+def test_impact(file, request):
+    file = request.getfixturevalue(file)
+    """Test the Forcing class."""
+    impact = Impact(type="affected", path=str(file))
+    assert impact.type == "affected"
+    assert impact.path == file
+
+    with pytest.raises(ValidationError):
+        Forcing(type="unsupported_variable", path=file)
+
 
 
 def test_event_catalog_io(event_catalog, tmpdir):
