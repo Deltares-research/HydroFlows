@@ -47,14 +47,24 @@ def large_test_data() -> pooch.Pooch:
 @pytest.fixture(scope="session")
 def rio_test_data(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio data catalog."""
-    paths = large_test_data.fetch(
+    _ = large_test_data.fetch(
         "rio_data_catalog.zip",
         processor=pooch.Unzip(extract_dir="rio_data_catalog"),
     )
-    path = Path(paths[0]).parent / "data_catalog.yml"
+    path = large_test_data.path / "rio_data_catalog" / "data_catalog.yml"
     assert path.is_file()
     return path
 
+@pytest.fixture(scope="session")
+def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
+    """Return the path to the rio wflow model config file."""
+    _ = large_test_data.fetch(
+        "rio_wflow_model.zip",
+        processor=pooch.Unzip(extract_dir="rio_wflow_model"),
+    )
+    path = large_test_data.path / "rio_wflow_model" / "wflow.toml"
+    assert path.is_file()
+    return path
 
 @pytest.fixture(scope="session")
 def rio_region(test_data_dir) -> Path:

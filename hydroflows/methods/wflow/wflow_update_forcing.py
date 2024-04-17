@@ -29,15 +29,15 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    start_time: datetime = datetime(2010,2,1,0,0,0)
-    end_time: datetime = datetime(2010,2,10,0,0,0)
+    start_time: datetime = datetime(2020,2,1,0,0,0)
+    end_time: datetime = datetime(2020,2,10,0,0,0)
 
     timestep: int = 86400  # in seconds
 
     data_libs: ListOfStr = ["artifact_data"]
 
-    precip_src: str = "era5"
-    temp_pet_src: str = "era5"
+    precip_src: str = "era5_daily_zarr"
+    temp_pet_src: str = "era5_daily_zarr"
     dem_forcing_src: str = "era5_orography"
     pet_calc_method: str = "debruin"
 

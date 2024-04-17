@@ -1,39 +1,7 @@
+import shutil
 from pathlib import Path
 
-import pytest
-from hydromt_wflow import WflowModel
-
 from hydroflows.methods import WflowBuild, WflowUpdateForcing
-
-
-@pytest.fixture()
-def wflow_simple_root(tmp_path):
-    root = Path(tmp_path, "wflow_simple_test")
-
-    mod = WflowModel(
-        root=root,
-        mode="w",
-        data_libs=["artifact_data"],
-    )
-
-    region = {
-        "subbasin": [12.2051, 45.8331],
-        "uparea": 30,
-    }
-
-    # TODO: see if we can simplify this
-    hydrography = mod.data_catalog.get_rasterdataset("merit_hydro")
-    hydrography["basins"] = hydrography["basins"].astype("uint32")
-
-    mod.setup_basemaps(
-        region=region,
-        hydrography_fn=hydrography,
-    )
-
-    mod.write_grid()
-    mod.write_config()
-
-    return root
 
 
 def test_wflow_build(rio_region, rio_test_data, tmp_path):
@@ -58,13 +26,16 @@ def test_wflow_build(rio_region, rio_test_data, tmp_path):
     # assert fn_geoms.exists()
 
 
-def test_wflow_update_forcing(wflow_simple_root):
-    toml_fn = Path(wflow_simple_root, "wflow_sbm.toml")
-    input = {"wflow_toml": str(toml_fn)}
+def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
+    # copy the wflow model to the tmp_path
+    root = tmp_path / "model"
+    shutil.copytree(rio_wflow_model.parent, root)
+    fn_wflow_toml_updated = Path(root, "sims", "sim1", "wflow_sim1.toml")
 
-    fn_wflow_toml_updated = Path(wflow_simple_root, "sims", "sim1", "wflow_sim1.toml")
+    input = {"wflow_toml": str(root / rio_wflow_model.name)}
+    params = {"data_libs": [str(rio_test_data)]}
     output = {"wflow_toml": str(fn_wflow_toml_updated)}
 
-    WflowUpdateForcing(input=input, output=output).run()
+    WflowUpdateForcing(input=input, params=params, output=output).run()
 
     assert fn_wflow_toml_updated.exists()
