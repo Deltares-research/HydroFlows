@@ -3,8 +3,8 @@
 from .fiat import FIATBuild
 from .hazard_catalog import HazardCatalog
 from .method import Method
-from .sfincs import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from .rainfall import GetERA5Rainfall, PluvialDesignEvents
+from .sfincs import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
 # registered methods
