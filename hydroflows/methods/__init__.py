@@ -1,8 +1,7 @@
 """Submodule for hydroflows methods."""
 
-from hazard_catalog import HazardCatalog
-
 from .fiat import FIATBuild
+from .hazard_catalog import HazardCatalog
 from .method import Method
 from .sfincs import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowRun, WflowUpdateForcing
