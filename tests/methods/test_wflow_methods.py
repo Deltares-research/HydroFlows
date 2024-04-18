@@ -90,7 +90,6 @@ def time_series_nc():
         },
         attrs=dict(_FillValue=-9999),
     )
-    da.raster.set_crs(4326)
 
     return da
 
