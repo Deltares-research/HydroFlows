@@ -57,6 +57,18 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
 
 
 @pytest.fixture(scope="session")
+def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
+    """Return the path to the rio data catalog."""
+    _ = large_test_data.fetch(
+        "rio_sfincs_model.zip",
+        processor=pooch.Unzip(extract_dir="rio_sfincs_model"),
+    )
+    path = Path(large_test_data.path) / "rio_sfincs_model" / "sfincs.inp"
+    assert path.is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
 def rio_region(test_data_dir) -> Path:
     return test_data_dir / "rio_region.geojson"
 

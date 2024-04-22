@@ -6,3 +6,7 @@ DATA_LIBS: ["artifact_data"]
 SCENARIO: "test_scenario"
 
 RPS: [1, 2, 5, 10, 20, 50, 100]
+
+RIVER_UPA: 10 # wflow and sfincs build river upstrea area threshold [km2]
+
+PLOT_FIG: True # plot figures and various methods
