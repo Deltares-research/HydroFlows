@@ -2,6 +2,7 @@
 
 from .fiat import FIATBuild
 from .method import Method
+from .rainfall import GetERA5Rainfall, PluvialDesignEvents
 from .sfincs import SfincsBuild, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowDesignHydro, WflowRun, WflowUpdateForcing
 
@@ -15,5 +16,7 @@ METHODS = {
     "wflow_run": WflowRun,
     "wflow_update_forcing": WflowUpdateForcing,
     "sfincs_update_forcing": SfincsUpdateForcing,
+    "pluvial_design_events": PluvialDesignEvents,
+    "get_ERA5_rainfall": GetERA5Rainfall,
     "wflow_design_hydro": WflowDesignHydro
 }

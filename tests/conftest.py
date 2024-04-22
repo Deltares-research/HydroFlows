@@ -4,10 +4,73 @@ import shutil
 from pathlib import Path
 
 import geopandas as gpd
+import pooch
 import pytest
+from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
+
+
+@pytest.fixture(scope="session")
+def test_data_dir() -> Path:
+    return Path(__file__).parent / "_data"
+
+
+@pytest.fixture(scope="session")
+def large_test_data() -> pooch.Pooch:
+    """Return a pooch for large test test data."""
+    path = Path(__file__).parent / "_large_data"
+    try:  # get registry from remote
+        base_url = r"https://github.com/Deltares-research/hydroflows-data/releases/download/data"
+        registry_file = pooch.retrieve(
+            url=f"{base_url}/registry.txt",
+            known_hash=None,
+            path=path,
+            fname="registry.txt",
+        )
+    except HTTPError:  # use cached registry
+        base_url = str(path / "data")
+        registry_file = path / "registry.txt"
+    if not Path(registry_file).is_file():
+        raise FileNotFoundError(f"Registry file not found: {registry_file}")
+    # create a Pooch instance for the large test data
+    large_test_data = pooch.create(
+        path=path / "data",
+        base_url=base_url,
+        registry=None,
+    )
+    large_test_data.load_registry(path / "registry.txt")
+    return large_test_data
+
+
+@pytest.fixture(scope="session")
+def rio_test_data(large_test_data: pooch.Pooch) -> Path:
+    """Return the path to the rio data catalog."""
+    paths = large_test_data.fetch(
+        "rio_data_catalog.zip",
+        processor=pooch.Unzip(extract_dir="rio_data_catalog"),
+    )
+    path = Path(paths[0]).parent / "data_catalog.yml"
+    assert path.is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
+    """Return the path to the rio data catalog."""
+    _ = large_test_data.fetch(
+        "rio_sfincs_model.zip",
+        processor=pooch.Unzip(extract_dir="rio_sfincs_model"),
+    )
+    path = Path(large_test_data.path) / "rio_sfincs_model" / "sfincs.inp"
+    assert path.is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def rio_region(test_data_dir) -> Path:
+    return test_data_dir / "rio_region.geojson"
 
 
 @pytest.fixture()
@@ -16,11 +79,6 @@ def tmp_csv(tmpdir):
     csv_file = tmpdir.join("file.csv")
     csv_file.write("")
     return csv_file
-
-
-@pytest.fixture(scope="session")
-def test_data_dir() -> Path:
-    return Path(__file__).parent / "_data"
 
 
 @pytest.fixture()
@@ -61,6 +119,7 @@ def sfincs_src_points():
         ],
         crs="EPSG:32633",
     )
+
 
 @pytest.fixture(scope="function")  # noqa: PT003
 def sfincs_tmp_model_root(test_data_dir, tmpdir):
