@@ -54,6 +54,7 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
     assert path.is_file()
     return path
 
+
 @pytest.fixture(scope="session")
 def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio data catalog."""
@@ -64,6 +65,7 @@ def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
     path = Path(large_test_data.path) / "rio_sfincs_model" / "sfincs.inp"
     assert path.is_file()
     return path
+
 
 @pytest.fixture(scope="session")
 def rio_region(test_data_dir) -> Path:
@@ -116,3 +118,14 @@ def sfincs_src_points():
         ],
         crs="EPSG:32633",
     )
+
+
+@pytest.fixture(scope="function")  # noqa: PT003
+def sfincs_tmp_model_root(test_data_dir, tmpdir):
+    """Return a temporary directory with a copy of the sfincs model."""
+    # copy the sfincs model to a temporary directory
+    sfincs_model_root_tmp = tmpdir / "sfincs_model"
+    # copy
+    sfincs_model_root = test_data_dir / "sfincs_model"
+    shutil.copytree(sfincs_model_root, sfincs_model_root_tmp)
+    return sfincs_model_root_tmp
