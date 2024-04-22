@@ -1,5 +1,6 @@
 # fixtures with input and output files and folders
 
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
