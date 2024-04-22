@@ -104,23 +104,12 @@ target/
 # exclude compiled binaries
 bin/
 
-# exclude data from source control by default
-data/1-external
-data/2-interim
-data/3-input
-data/4-output
-data/5-visualization
-
-#exclude data from models
-models/gtsm
-models/sfincs
-models/wflow
-
-# exclude figures
-reports/figures
-
 # temporary snakemake files
 .snakemake
 
 # vscode
 .vscode
+
+# large test data
+tests/_large_data/data
+tests/_large_data/registry.txt

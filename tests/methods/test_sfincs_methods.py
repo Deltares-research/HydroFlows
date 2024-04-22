@@ -3,9 +3,9 @@ from pathlib import Path
 from hydroflows.methods import SfincsBuild, SfincsUpdateForcing
 
 
-def test_sfincs_build(sfincs_region_path , tmp_path):
+def test_sfincs_build(rio_region, rio_test_data, tmp_path):
     input = {
-        "region": str(sfincs_region_path)
+        "region": str(rio_region)
     }
 
     fn_sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
@@ -13,7 +13,7 @@ def test_sfincs_build(sfincs_region_path , tmp_path):
         "sfincs_inp": str(fn_sfincs_inp)
     }
     params = {
-        "data_libs": "artifact_data",
+        "data_libs": str(rio_test_data),
         "res": 50.0
     }
 
