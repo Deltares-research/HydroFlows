@@ -2,7 +2,8 @@
 
 # HydroFlows
 
-> Note: This is a **work in progress** and not yet ready for use!
+> [!WARNING]
+> This is a **work in progress** and not yet ready for use!
 
 HydroFlows is a Python package for automated workflows for globally applicable flood risk assessments.
 At its core it contains a set of methods that can be called via command line interface (CLI) or Python API.
@@ -52,3 +53,7 @@ To run a workflow in the project directory with snakemake, run:
 cd <project_dir>
 snakemake -s workflow/<workflow_name>.smk -c 1 --verbose
 ```
+
+> [!NOTE]
+> The workflows will be created from command line methods that are currently being
+> established.
