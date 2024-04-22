@@ -14,8 +14,8 @@ class Input(BaseModel):
     """Input parameters."""
 
     event_catalog: Path  # event catalog with inputs, used to collect metadata
-    hazards: List[List[Path]]  # collections of inundation maps from a hazard model
-    types: List[Literal["depth", "velocity", "rise_rate"]]  #
+    depth_hazard_maps: ListOfStr  # collections of inundation maps from a hazard model
+    velocity_hazard_maps: ListOfStr
 
 
 
