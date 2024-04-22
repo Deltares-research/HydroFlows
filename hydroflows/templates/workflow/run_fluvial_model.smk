@@ -61,5 +61,5 @@ rule get_design_events:
         hydroflows run \
         wflow_design_hydro \
         -i time_series_nc={input.time_series_nc} \
-        -o design_hydrograph={ouput.event_catalog} \
+        -o design_hydrograph={output.event_catalog} \
         """
