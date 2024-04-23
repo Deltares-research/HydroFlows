@@ -74,22 +74,24 @@ def test_sfincs_run(rio_sfincs_model, tmp_path):
 
     assert sfincs_map.is_file()
 
-def test_sfincs_postprocess(test_data_dir, sfincs_tmp_model_root):
+def test_sfincs_postprocess(rio_sfincs_model, tmp_path):
+    tmp_root = Path(tmp_path, "model")
+    copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])
+
     fn_sfincs_event_inp = Path(
-        sfincs_tmp_model_root,
-        "scenario",
-        "event_postprocess",
+        tmp_path,
+        "model",
         "sfincs.inp"
     )
     fn_sfincs_dep = Path(
-        sfincs_tmp_model_root,
-        "gis",
-        "dep.tif"
+        tmp_path,
+        "model",
+        "subgrid",
+        "dep_subgrid.tif"
     )
     fn_sfincs_inun_tif = Path(
-        sfincs_tmp_model_root,
-        "scenario",
-        "event_postprocess",
+        tmp_path,
+        "model",
         "event.tif"
     )
 

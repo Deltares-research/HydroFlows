@@ -24,7 +24,7 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    depth_min: float = -0.05  # minimum depth to consider as "flooding"
+    depth_min: float = 0.05  # minimum depth to consider as "flooding"
     raster_kwargs: dict = {}  # kwargs to pass to writer of inundation raster
 
 class SfincsPostprocess(Method):
