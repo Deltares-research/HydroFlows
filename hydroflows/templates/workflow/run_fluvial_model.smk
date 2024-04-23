@@ -1,6 +1,9 @@
+configfile: "workflow/snake_config/config.yaml"
+
 # Unpack config
 region_name = config["REGION"]
 scenario_name = config["SCENARIO"]
+rps = config["RPS"]
 
 # Target rule
 rule all:
@@ -51,7 +54,8 @@ rule get_design_events:
     input:
         time_series_nc = rules.wflow_run.output.wflow_output_timeseries
 
-    # params: # TODO add params like RPS
+    params:
+        rps = rps
 
     output:
         event_catalog = f"data/interim/{region_name}/{scenario_name}/discharge/design_events.yml"
@@ -61,5 +65,6 @@ rule get_design_events:
         hydroflows run \
         wflow_design_hydro \
         -i time_series_nc={input.time_series_nc} \
-        -o design_hydrograph={output.event_catalog} \
+        -p rps="{params.rps}" \
+        -o event_catalog={output.event_catalog}
         """
