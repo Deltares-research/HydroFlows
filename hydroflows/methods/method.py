@@ -24,7 +24,7 @@ class BaseParams(BaseModel):
 
 
 class Method(BaseModel):
-    """Base rule for all methods. Must be extended for rule-specific tasks."""
+    """Base method for all methods. Must be extended for rule-specific tasks."""
 
     # use pydantic models to (de)serialize/validate the input, output and params
     input: BaseModel

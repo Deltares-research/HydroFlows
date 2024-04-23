@@ -2,6 +2,7 @@
 
 # from datetime.datetime import strftime
 from pathlib import Path
+from typing import Optional
 
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
@@ -30,6 +31,7 @@ class Params(BaseModel):
     """Parameters"""
 
     event_name: str
+    dtout: Optional[int] = None
 
 
 class SfincsUpdateForcing(Method):
@@ -57,10 +59,14 @@ class SfincsUpdateForcing(Method):
 
         # update model simulation time range
         fmt = "%Y%m%d %H%M%S"  # sfincs inp time format
+        dt_sec = (event.time_range[1] - event.time_range[0]).total_seconds()
         sf.config.update(
             {
+                "tref": event.time_range[0].strftime(fmt),
                 "tstart": event.time_range[0].strftime(fmt),
                 "tstop": event.time_range[1].strftime(fmt),
+                "dtout": dt_sec,  # save only single output
+                "dtmaxout": dt_sec,
             }
         )
 

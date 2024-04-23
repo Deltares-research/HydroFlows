@@ -1,7 +1,7 @@
 """SFINCS run method."""
 
+import platform
 import subprocess
-import sys
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -27,7 +27,7 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    sfincs_exe: FilePath
+    sfincs_exe: Optional[Path] = None
     vm: Optional[Literal["docker", "singularity"]] = None
     docker_tag: str = "latest"
 
@@ -36,10 +36,9 @@ class SfincsRun(Method):
     """Rule for running a SFINCS model."""
 
     name: str = "sfincs_run"
-    params: Params # params.sfincs_exe required
+    params: Params  # params.sfincs_exe required
     input: Input
     output: Output
-
 
     def run(self) -> None:
         """Run the SFINCS model."""
@@ -47,8 +46,10 @@ class SfincsRun(Method):
         model_root = self.input.sfincs_inp.parent.resolve()
 
         # set command to run depending on OS and VM
-        if self.params.sfincs_exe is not None and sys.platform == "win32":
+        if self.params.sfincs_exe is not None and platform.system() == "Windows":
             sfincs_exe = self.params.sfincs_exe.resolve()
+            if not sfincs_exe.is_file():
+                raise FileNotFoundError(f"sfincs_exe not found: {sfincs_exe}")
             cmd = [str(sfincs_exe)]
         elif self.params.vm is not None:
             vm = self.params.vm
@@ -69,13 +70,14 @@ class SfincsRun(Method):
                     f"docker://deltares/sfincs-cpu:{docker_tag}",
                 ]
         else:
-            if sys.platform == "win32":
+            if platform.system() == "Windows":
                 raise ValueError("sfince_exe must be specified for Windows")
             else:
                 raise ValueError("vm must be specified for Linux or macOS")
 
         # run & write log file
-        with open(model_root / "sfincs_log.txt", "w") as f:
+        log_file = model_root / "sfincs_log.txt"
+        with open(log_file, "w") as f:
             proc = subprocess.run(
                 cmd,
                 cwd=model_root,
@@ -91,5 +93,13 @@ class SfincsRun(Method):
             )
         elif return_code != 0:
             raise RuntimeError(f"SFINCS run failed with return code {return_code}")
+
+        # check if "Simulation stopped" in log file
+        with open(log_file, "r") as f:
+            log = f.read()
+            if "Simulation stopped" in log:
+                raise RuntimeError(
+                    f"SFINCS run failed. Check log file for details: {log_file}"
+                )
 
         return None
