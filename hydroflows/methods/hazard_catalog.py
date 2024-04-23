@@ -1,10 +1,10 @@
 """Hazard catalog method."""
 
 from pathlib import Path
-from typing import List, Literal
 
 from pydantic import BaseModel
 
+from .._typing import ListOfStr
 from ..workflows.events import EventCatalog
 from .method import Method
 
