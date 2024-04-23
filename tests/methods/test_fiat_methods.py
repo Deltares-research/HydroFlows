@@ -1,6 +1,7 @@
 """Testing for FIAT rules."""
 import math
 import os
+import platform
 from pathlib import Path
 
 import geopandas as gpd
@@ -10,13 +11,20 @@ import pytest
 import xarray as xr
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows.methods import FIATBuild, FIATUpdateHazard
+from hydroflows.methods import FIATBuild, FIATRun, FIATUpdateHazard
 
 FIAT_DATA_PATH = Path(
     os.path.dirname(hydromt_fiat.__file__),
     "data",
     "hydromt_fiat_catalog_global.yml",
 ).as_posix()
+
+FIAT_EXE = Path(
+    Path(__file__).parent.parent,
+    "_bin",
+    "fiat",
+    "fiat.exe",
+)
 
 
 @pytest.fixture()
@@ -111,3 +119,18 @@ def test_fiat_update_hazard(tmp_path, fiat_simple_root, simple_hazard_map):
 
     # Assert that the hazard file exists
     assert output["fiat_haz"].exists()
+
+
+@pytest.mark.skipif(not FIAT_EXE.exists(), reason="sfincs executable not found")
+@pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
+def test_fiat_run(tmp_path):
+    # specify in- and output
+    input = {}
+    output = {}
+
+    # Setup the method
+    rule = FIATRun(input=input, output=output)
+    rule.run()
+
+    # Assert the output
+    pass
