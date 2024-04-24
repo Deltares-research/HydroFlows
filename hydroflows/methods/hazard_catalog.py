@@ -36,9 +36,8 @@ class HazardCatalog(Method):
     Parameters
     ----------
     input : Input
-        Contains an event_catalog (Path), a list of hazard types and a list of equal
-        length of a list of hazard file paths that point to the hazard files that belong
-        to the events in the event catalog file
+        Contains an event_catalog (Path), a list of hazard maps for depth and (if
+        needed) velocity maps.
 
     output : Output
         contains only event_catalog (Path), path to the output catalog file (.yml)
@@ -53,11 +52,8 @@ class HazardCatalog(Method):
 
         # input catalog with only forcing, should contain only two events
         event_catalog = some_path / "event_catalog_with_forcing.yml"
-        types = ["depth", "velocity"]
-        hazard_maps = [
-            ["depth_p_rp050.tif", "depth_p_rp010.tif"],
-            ["velocity_p_rp050.tif", "velocity_p_rp010.tif"]
-        ]
+        depth_hazard_maps = ["depth_p_rp050.tif", "depth_p_rp010.tif"]
+        velocity_hazard_maps = ["velocity_p_rp050.tif", "velocity_p_rp010.tif"]
         event_catalog_out = some_path / "event_catalog_with_hazards.yml"
         input = {
             "event_catalog": event_catalog,
