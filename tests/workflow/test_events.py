@@ -59,21 +59,21 @@ def test_forcing_event_catalog(test_data_dir):
         roots={"root_forcings": test_data_dir},
         events=[
             {
-                "name": "p_rp050",
-                "forcings": [{"type": "rainfall", "path": "p_rp050.csv"}],
+                "name": "rp050",
+                "forcings": [{"type": "rainfall", "path": "rainfall_rp050.csv"}],
             },
             {
-                "name": "p_rp010",
-                "forcings": [{"type": "rainfall", "path": "p_rp010.csv"}],
+                "name": "rp010",
+                "forcings": [{"type": "rainfall", "path": "rainfall_rp010.csv"}],
                 "probability": 0.01,
             },
         ],
     )
     assert len(event_catalog.events) == 2
-    event = event_catalog.get_event("p_rp050")
+    event = event_catalog.get_event("rp050")
     assert isinstance(event, Event)
-    assert event.name == "p_rp050"
-    assert event_catalog.event_names == ["p_rp050", "p_rp010"]
+    assert event.name == "rp050"
+    assert event_catalog.event_names == ["rp050", "rp010"]
     assert isinstance(event.forcings, list)
     event_dict = event_catalog.to_dict()
     assert isinstance(event_dict, dict)
@@ -92,17 +92,17 @@ def test_hazard_impact_event_catalog(test_data_dir):
         roots={"root_forcings": test_data_dir},
         events=[
             {
-                "name": "p_rp050",
-                "forcings": [{"type": "rainfall", "path": "p_rp050.csv"}],
+                "name": "rp050",
+                "forcings": [{"type": "rainfall", "path": "rainfall_rp050.csv"}],
                 "hazards": [
-                    {"type": "depth", "path": "depth_p_rp050.tif"},
-                    {"type": "velocity", "path": "velocity_p_rp050.tif"},
+                    {"type": "depth", "path": "flood_depth_rp050.tif"},
+                    {"type": "velocity", "path": "velocity_rp050.tif"},
                 ],
                 "impacts": [
                     {"type": "damage", "category": "all", "path":
-                        "damage_schools_p_rp050.tif"},  # example for grid output
+                        "damage_schools_rp050.tif"},  # example for grid output
                     {"type": "damage", "category": "schools", "path":
-                        "damage_schools_p_rp050.gpkg"},  # example for vector output
+                        "damage_schools_rp050.gpkg"},  # example for vector output
                 ]
             },
             {

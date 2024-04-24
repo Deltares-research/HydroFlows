@@ -1,5 +1,6 @@
 """Defines the Event class which is a breakpoint between workflows."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Literal, Optional, Union
@@ -126,6 +127,23 @@ class Hazard(BaseModel):
         """Check if the path exists."""
         if not self.path.exists():
             raise IOError(f"Hazard data {self.path} does not exist.")
+
+    def _set_path_absolute(self, root: Path) -> None:
+        """Set the path to be relative to the root."""
+        if not self.path.is_absolute() and (root / self.path).exists():
+            self.path = root / self.path
+        else:
+            self.path = self.path.resolve()
+
+    def _set_path_relative(self, root: Path) -> None:
+        """Set the path to be relative to the root."""
+        if self.path.is_absolute() and self.path.is_relative_to(root):
+            self.path = self.path.relative_to(root)
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Forcing {self.path} does not exist.")
 
 
 class Impact(BaseModel):
@@ -349,10 +367,13 @@ class EventCatalog(BaseModel):
             yml_dict = yaml.safe_load(file)
         if "roots" not in yml_dict:  # set root to parent of path
             yml_dict["roots"] = Roots(**{
-                "root_forcings": Path(path).parent,
-                "root_hazards": Path(path).parent,
-                "root_impacts": Path(path).parent,
+                "root_forcings": Path(path).parent
             })
+            # check if hazards/impacts seem present
+            if "hazards" in yml_dict["events"][0]:
+                yml_dict["roots"]: Path(path).parent
+            if "impacts" in yml_dict["events"][0]:
+                yml_dict["root_impacts"]: Path(path).parent
         else:
             yml_dict["roots"] = Roots(**yml_dict["roots"])
         return cls(**yml_dict)
@@ -365,6 +386,17 @@ class EventCatalog(BaseModel):
             for event in self.events:
                 for forcing in event.forcings:
                     forcing._set_path_relative(self.roots.root_forcings)
+        if self.roots.root_hazards is not None:
+            for event in self.events:
+                if event.hazards:
+                    for hazard in event.hazards:
+                        hazard._set_path_relative(self.roots.root_hazards)
+        if self.roots.root_impacts is not None:
+            for event in self.events:
+                if event.impacts:
+                    for impact in event.impacts:
+                        impact._set_path_relative(self.roots.root_hazards)
+
 
     def to_dict(self, relative_paths=False, **kwargs) -> dict:
         """Return the EventCatalog as a dictionary."""
@@ -385,6 +417,11 @@ class EventCatalog(BaseModel):
                 if k in yaml_dict["roots"]:
                     if Path(yaml_dict["roots"][k]) == Path(path).parent:
                         del yaml_dict["roots"][k]
+                    else:
+                        yaml_dict["roots"][k] = os.path.relpath(
+                            yaml_dict["roots"][k],
+                            start=str(Path(path).parent)
+                        )
             # if roots is an empty dict, then remove alltogether
             if not yaml_dict["roots"]:
                 del yaml_dict["roots"]

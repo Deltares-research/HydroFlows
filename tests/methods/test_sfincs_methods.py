@@ -50,7 +50,7 @@ def test_sfincs_update(rio_sfincs_model, tmp_path, test_data_dir):
         "event_catalog": str(test_data_dir / "events.yml"),
     }
     output = {"sfincs_inp": str(sfincs_inp_event)}
-    params = {"event_name": "p_rp050"}
+    params = {"event_name": "rp050"}
 
     SfincsUpdateForcing(input=input, output=output, params=params).run()
 
