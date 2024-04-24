@@ -63,5 +63,5 @@ class SfincsPostprocess(Method):
             dep=dep,
             hmin=hmin,
             floodmap_fn=fn_inun,
-            kwargs=self.params.raster_kwargs
+            **self.params.raster_kwargs
         )
