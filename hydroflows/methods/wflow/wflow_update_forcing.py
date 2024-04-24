@@ -59,7 +59,7 @@ class WflowUpdateForcing(Method):
         w = WflowModel(
             root=root,
             mode="r",
-            config_fn=self.input.wflow_toml,
+            config_fn=self.input.wflow_toml.name,
             data_libs=self.params.data_libs,
             logger=logger,
         )
@@ -100,7 +100,7 @@ class WflowUpdateForcing(Method):
             rel_dir = Path(os.path.relpath(root, self.output.wflow_toml.parent))
         else:
             rel_dir = root
-        w.set_config("input.path_static", rel_dir / "staticmaps.nc")
+        w.set_config("input.path_static", str(rel_dir / "staticmaps.nc"))
 
         # write to new root
         sims_root = self.output.wflow_toml.parent
