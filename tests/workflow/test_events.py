@@ -122,7 +122,7 @@ def test_hazard_impact_event_catalog(test_data_dir):
             },
         ],
     )
-    event = event_catalog.get_event("p_rp050")
+    event = event_catalog.get_event("rp050")
     assert isinstance(event.hazards, list)
     assert isinstance(event.impacts, list)
     event_dict = event_catalog.to_dict()
@@ -139,11 +139,18 @@ def test_event_catalog_io(event_catalog, tmpdir):
     event_catalog.to_yaml(event_yml)
     assert event_yml.exists()
     event_catalog2 = EventCatalog.from_yaml(event_yml)
+    # the event catalog is written in another folder, hence, the roots should be
+    # different
+    assert event_catalog != event_catalog2
+    # check if everytihng else is the same
+    del event_catalog.roots
+    del event_catalog2.roots
     assert event_catalog == event_catalog2
+
 
 
 def test_event_catalog_data(event_catalog):
     # test event catalog data
-    event = event_catalog.get_event_data("p_rp050")
+    event = event_catalog.get_event_data("rp050")
     assert all(isinstance(d.data, pd.DataFrame) for d in event.forcings)
     assert event.time_range is not None
