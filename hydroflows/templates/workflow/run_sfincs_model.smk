@@ -11,12 +11,8 @@ event_catalog_yml = f"data/interim/{region_name}/{scenario_name}/rainfall/design
 event_catalog = EventCatalog.from_yaml(event_catalog_yml)
 
 events = event_catalog.event_names
-print(events)
 # create a list of inputs to allow expansion
 event_inputs = [event_catalog.get_event(event).forcings[0].path for event in events]
-
-print(event_inputs)
-
 
 # Target rule
 rule all:
@@ -26,7 +22,7 @@ rule all:
 rule update_sfincs:
     input:
         sfincs_inp = "models/sfincs/{region_name}/sfincs.inp",
-        rainfall_csv = "data/interim/{region_name}/{scenario_name}/rainfall/rainfall_{event}.csv",
+        rainfall_csv = "data/interim/{region_name}/{scenario_name}/rainfall/{event}.csv",
         event_catalog = event_catalog_yml
     params:
         event_name = "{event}"
