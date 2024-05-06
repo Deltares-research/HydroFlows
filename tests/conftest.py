@@ -1,5 +1,5 @@
 # fixtures with input and output files and folders
-
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
@@ -56,7 +56,7 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
     assert path.is_file()
     return path
 
-  
+
 @pytest.fixture(scope="session")
 def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio wflow model config file."""
