@@ -1,10 +1,13 @@
 """Defines the Event class which is a breakpoint between workflows."""
 
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Literal, Optional, Union
 
+import geopandas as gpd
 import pandas as pd
+import xarray as xr
 import yaml
 from pydantic import (
     BaseModel,
@@ -45,7 +48,8 @@ class Forcing(BaseModel):
     def read_data(self, root: Optional[Path] = None, **kwargs) -> Any:
         """Read the data."""
         # update and check path
-        self._set_path_absolute(root)
+        if root:
+            self._set_path_absolute(root)
         self._check_path_exists()
         # read data
         if self.path.suffix == ".csv":
@@ -85,6 +89,112 @@ class Forcing(BaseModel):
             raise IOError(f"Forcing {self.path} does not exist.")
 
 
+class Hazard(BaseModel):
+    """A hazard map related to an event.
+
+    Hazard maps are stored in GeoTIFF raster files and can be embodied by several
+    variables, e.g. depth, velocity, rise rate.
+
+    Parameters
+    ----------
+    type : Literal["depth", "velocity", "rise_rate"]
+        The type of the forcing.
+    path : Path
+        The path to the hazard data layer (GeoTIFF).
+    data : Any, optional
+        The data for the hazard, by default None.
+        This is excluded from serialization.
+
+    """
+
+    type: Literal["depth", "velocity", "rise_rate"]
+    path: Path
+    # Excl from serialization
+    data: Optional[Any] = Field(None, exclude=True)
+    timestamp: Optional[datetime] = Field(None, exclude=True)
+
+    def read_data(self, **kwargs) -> Any:
+        """Read the data."""
+        # check path
+        self._check_path_exists()
+        # read data
+        if not self.path.suffix == ".tif":
+            # placeholder for other file types
+            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
+        return xr.open_dataset(self.path, **kwargs)
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Hazard data {self.path} does not exist.")
+
+    def _set_path_absolute(self, root: Path) -> None:
+        """Set the path to be relative to the root."""
+        if not self.path.is_absolute() and (root / self.path).exists():
+            self.path = root / self.path
+        else:
+            self.path = self.path.resolve()
+
+    def _set_path_relative(self, root: Path) -> None:
+        """Set the path to be relative to the root."""
+        if self.path.is_absolute() and self.path.is_relative_to(root):
+            self.path = self.path.relative_to(root)
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Forcing {self.path} does not exist.")
+
+
+class Impact(BaseModel):
+    """An impact map related to an event.
+
+    Impact maps are stored in GeoTIFF raster files or vector files and can be
+    embodied by several variables, e.g. damage, affected with several
+    arbitrary subcategories such as "content", "building", "infrastructure",
+    "population"
+
+    Parameters
+    ----------
+    type : Literal["damage", "affected"]
+        The type of the impact.
+    category : Optional[str] : category of the impact (e.g. "building", "content",
+        "population", "infrstructure". To be defined by user.
+    path : Path
+        The path to the hazard data layer (GeoTIFF).
+    data : Any, optional
+        The data for the hazard, by default None.
+        This is excluded from serialization.
+
+    """
+
+    type: Literal["damage", "affected"]  # can be extended
+    category: Optional[str] = None
+    path: Path
+    # Excl from serialization
+    data: Optional[Any] = Field(None, exclude=True)
+    timestamp: Optional[datetime] = Field(None, exclude=True)
+
+    def read_data(self, **kwargs) -> Any:
+        """Read the data."""
+        # check path
+        self._check_path_exists()
+        # read data
+        if self.path.suffix == ".tif":
+            # placeholder for other file types
+            return xr.open_dataset(self.path, **kwargs)
+        elif self.path.suffix in [".gpkg", "geojson"]:
+            # attempt to load as GeoDataSet
+            return gpd.read_file(self.path, **kwargs)
+        else:
+            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
+
+    def _check_path_exists(self) -> None:
+        """Check if the path exists."""
+        if not self.path.exists():
+            raise IOError(f"Impact data {self.path} does not exist.")
+
+
 class Event(BaseModel):
     """A model event.
 
@@ -95,6 +205,12 @@ class Event(BaseModel):
     forcings : List[Forcing]
         The list of forcings for the event. Each forcing is a dictionary with
         the structure as defined in :class:`Forcing`.
+    hazards : Optional[List[Hazard]]
+        The list of hazard outputs for the event. Each hazard is a dictionary with
+        the structure as defined in :class:`Hazard`.
+    impacts : Optional[List[Impact]]
+        The list of impact outputs for the event. Each impact is a dictionary with
+        the structure as defined in :class:`Impact`.
     probability : float, optional
         The probability of the event, by default None.
     time_range : List[datetime], optional
@@ -116,8 +232,11 @@ class Event(BaseModel):
 
     name: str
     forcings: List[Forcing]
+    hazards: Optional[List[Hazard]] = None
+    impacts: Optional[List[Impact]] = None
     probability: Optional[float] = None
     time_range: Optional[List[datetime]] = None
+
 
     @field_validator("forcings", mode="before")
     @classmethod
@@ -126,6 +245,23 @@ class Event(BaseModel):
         if isinstance(value, list) and all(isinstance(f, dict) for f in value):
             return [Forcing(**forcing) for forcing in value]
         return value
+
+    @field_validator("hazards", mode="before")
+    @classmethod
+    def _set_hazards(cls, value: Any) -> List[Hazard]:
+        # if list of dictionaries, convert to list of Forcing
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
+            return [Hazard(**hazard) for hazard in value]
+        return value
+
+    @field_validator("impacts", mode="before")
+    @classmethod
+    def _set_impacts(cls, value: Any) -> List[Impact]:
+        # if list of dictionaries, convert to list of Forcing
+        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
+            return [Impact(**impact) for impact in value]
+        return value
+
 
     def to_dict(self, **kwargs) -> dict:
         """Return the Event as a dictionary."""
@@ -148,6 +284,25 @@ class Event(BaseModel):
                 )
 
 
+class Roots(BaseModel):
+    """Dictionary of directories for event files.
+
+    Parameters
+    ----------
+    root_forcings : Optional[DirectoryPath]
+        Root directory for forcing data.
+    root_hazards : Optional[DirectoryPath]
+        Root directory for hazard data.
+    root_impacts : Optional[DirectoryPath]
+        Root directory for impact data.
+
+    """
+
+    root_forcings: Optional[DirectoryPath] = None
+    root_hazards: Optional[DirectoryPath] = None
+    root_impacts: Optional[DirectoryPath] = None
+
+
 class EventCatalog(BaseModel):
     """A dictionary of event configurations.
 
@@ -155,8 +310,8 @@ class EventCatalog(BaseModel):
     ----------
     version : str
         The version of the event catalog.
-    root : Path, optional
-        The root directory for the event catalog.
+    roots : Roots
+        The root directories for forcings, hazards and impacts for the event catalog.
     events : List[Event]
         The list of events. Each event is a dictionary with the structure
         as defined in :class:`Event`.
@@ -188,7 +343,8 @@ class EventCatalog(BaseModel):
     """
 
     version: str = "v0.1"
-    root: Optional[DirectoryPath] = None
+    roots: Optional[Roots] = Roots()
+    # root: Optional[DirectoryPath] = None
     events: List[Event]
 
     @field_validator("events", mode="before")
@@ -209,17 +365,38 @@ class EventCatalog(BaseModel):
         """Create an EventCatalog from a YAML file."""
         with open(path, "r") as file:
             yml_dict = yaml.safe_load(file)
-        if "root" not in yml_dict:  # set root to parent of path
-            yml_dict["root"] = Path(path).parent
+        if "roots" not in yml_dict:  # set root to parent of path
+            yml_dict["roots"] = Roots(**{
+                "root_forcings": Path(path).parent
+            })
+            # check if hazards/impacts seem present
+            if "hazards" in yml_dict["events"][0]:
+                yml_dict["roots"]: Path(path).parent
+            if "impacts" in yml_dict["events"][0]:
+                yml_dict["root_impacts"]: Path(path).parent
+        else:
+            yml_dict["roots"] = Roots(**yml_dict["roots"])
         return cls(**yml_dict)
 
     def set_forcing_paths_relative_to_root(self) -> None:
         """Set all forcing paths relative to root."""
-        if self.root is None:
+        if self.roots is None:
             return
-        for event in self.events:
-            for forcing in event.forcings:
-                forcing._set_path_relative(self.root)
+        if self.roots.root_forcings is not None:
+            for event in self.events:
+                for forcing in event.forcings:
+                    forcing._set_path_relative(self.roots.root_forcings)
+        if self.roots.root_hazards is not None:
+            for event in self.events:
+                if event.hazards:
+                    for hazard in event.hazards:
+                        hazard._set_path_relative(self.roots.root_hazards)
+        if self.roots.root_impacts is not None:
+            for event in self.events:
+                if event.impacts:
+                    for impact in event.impacts:
+                        impact._set_path_relative(self.roots.root_hazards)
+
 
     def to_dict(self, relative_paths=False, **kwargs) -> dict:
         """Return the EventCatalog as a dictionary."""
@@ -234,8 +411,21 @@ class EventCatalog(BaseModel):
         # serialize
         yaml_dict = self.to_dict(relative_paths=True)
         # remove root if parent of path
-        if "root" in yaml_dict and Path(yaml_dict["root"]) == Path(path).parent:
-            del yaml_dict["root"]
+        if "roots" in yaml_dict:
+            for k in ["root_forcings", "root_hazards", "root_impacts"]:
+                # remove all paths
+                if k in yaml_dict["roots"]:
+                    if Path(yaml_dict["roots"][k]) == Path(path).parent:
+                        del yaml_dict["roots"][k]
+                    else:
+                        yaml_dict["roots"][k] = os.path.relpath(
+                            yaml_dict["roots"][k],
+                            start=str(Path(path).parent)
+                        )
+            # if roots is an empty dict, then remove alltogether
+            if not yaml_dict["roots"]:
+                del yaml_dict["roots"]
+
         # write to file
         with open(path, "w") as file:
             yaml.safe_dump(yaml_dict, file, sort_keys=False)
@@ -304,7 +494,7 @@ class EventCatalog(BaseModel):
         # load data
         for forcing in event.forcings:
             if forcing.data is None:
-                forcing.read_data(self.root)
+                forcing.read_data(self.roots.root_forcings)
         # set time range
         if event.time_range is None:
             event.set_time_range_from_forcings()

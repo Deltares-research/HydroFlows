@@ -113,3 +113,4 @@ bin/
 # large test data
 tests/_large_data/data
 tests/_large_data/registry.txt
+tests/_bin

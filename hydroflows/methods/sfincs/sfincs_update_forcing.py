@@ -2,6 +2,7 @@
 
 # from datetime.datetime import strftime
 from pathlib import Path
+from typing import Optional
 
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
@@ -11,6 +12,56 @@ from ...workflows.events import EventCatalog
 from ..method import Method
 
 __all__ = ["SfincsUpdateForcing"]
+
+
+def parse_event_sfincs(root, event, out_root):
+    # Init sfincs and update root, config
+    sf = SfincsModel(root=root, mode="r", write_gis=False)
+
+    # update model simulation time range
+    fmt = "%Y%m%d %H%M%S"  # sfincs inp time format
+    dt_sec = (event.time_range[1] - event.time_range[0]).total_seconds()
+    sf.config.update(
+        {
+            "tref": event.time_range[0].strftime(fmt),
+            "tstart": event.time_range[0].strftime(fmt),
+            "tstop": event.time_range[1].strftime(fmt),
+            "dtout": dt_sec,  # save only single output
+            "dtmaxout": dt_sec,
+        }
+    )
+
+    # Set forcings, update config with relative paths
+    config = make_relative_paths(sf.config, root, out_root)
+    for forcing in event.forcings:
+        match forcing.type:
+
+            case "water_level":
+                sf.setup_waterlevel_forcing(
+                    timeseries=forcing.data,
+                    merge=False,
+                )
+                config.update({"bzsfile": "sfincs.bzs"})
+
+            case "discharge":
+                sf.setup_discharge_forcing(
+                    timeseries=forcing.data,
+                    merge=False,
+                )
+                config.update({"disfile": "sfincs.dis"})
+
+            case "rainfall":
+                sf.setup_precip_forcing(
+                    timeseries=forcing.data,
+                )
+                config.update({"precipfile": "sfincs.precip"})
+
+    # change root and update config
+    sf.set_root(out_root, mode="w+")
+    sf.setup_config(**config)
+    # Write forcing and config only
+    sf.write_forcing()
+    sf.write_config()
 
 
 class Input(BaseModel):
@@ -30,10 +81,11 @@ class Params(BaseModel):
     """Parameters"""
 
     event_name: str
+    dtout: Optional[int] = None
 
 
 class SfincsUpdateForcing(Method):
-    """Method for updating SFINCS forcing."""
+    """Method for updating SFINCS forcing with data from a event catalog."""
 
     name: str = "sfincs_update_forcing"
     params: Params
@@ -48,50 +100,7 @@ class SfincsUpdateForcing(Method):
         out_root = self.output.sfincs_inp.parent
         event_name = self.params.event_name
 
-        # Fetch event from event catalog
+        # Fetch events from event catalog and parse forcing
         event_catalog = EventCatalog.from_yaml(event_file)
         event = event_catalog.get_event_data(event_name)
-
-        # Init sfincs and update root, config
-        sf = SfincsModel(root=root, mode="r", write_gis=False)
-
-        # update model simulation time range
-        fmt = "%Y%m%d %H%M%S"  # sfincs inp time format
-        sf.config.update(
-            {
-                "tstart": event.time_range[0].strftime(fmt),
-                "tstop": event.time_range[1].strftime(fmt),
-            }
-        )
-
-        # Set forcings, update config with relative paths
-        config = make_relative_paths(sf.config, root, out_root)
-        for forcing in event.forcings:
-            match forcing.type:
-
-                case "water_level":
-                    sf.setup_waterlevel_forcing(
-                        timeseries=forcing.data,
-                        merge=False,
-                    )
-                    config.update({"bzsfile": "sfincs.bzs"})
-
-                case "discharge":
-                    sf.setup_discharge_forcing(
-                        timeseries=forcing.data,
-                        merge=False,
-                    )
-                    config.update({"disfile": "sfincs.dis"})
-
-                case "rainfall":
-                    sf.setup_precip_forcing(
-                        timeseries=forcing.data,
-                    )
-                    config.update({"precipfile": "sfincs.precip"})
-
-        # change root and update config
-        sf.set_root(out_root, mode="w+")
-        sf.setup_config(**config)
-        # Write forcing and config only
-        sf.write_forcing()
-        sf.write_config()
+        parse_event_sfincs(root, event, out_root)

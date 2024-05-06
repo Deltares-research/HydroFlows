@@ -36,6 +36,7 @@ rule setup_sfincs:
         sfincs_build \
         -i region={input.region} \
         -o sfincs_inp={output.sfincs_inp} \
+        -o sfincs_region={output.sfincs_region} \
         -p config={params.config} \
         -p data_libs="{params.data_libs}" \
         -p res={params.res}
