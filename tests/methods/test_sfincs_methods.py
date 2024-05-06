@@ -29,12 +29,21 @@ def copy_tree(
 
 
 def test_sfincs_build(rio_region, rio_test_data, tmp_path):
-    input = {"region": str(rio_region)}
+    input = {
+        "region": str(rio_region)
+    }
 
     sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
     sfincs_region = Path(tmp_path, "model", "gis", "region.geojson")
-    output = {"sfincs_inp": str(sfincs_inp), "sfincs_region": str(sfincs_region)}
-    params = {"data_libs": str(rio_test_data), "res": 100.0, "river_upa": 10.0}
+    output = {
+        "sfincs_inp": str(sfincs_inp),
+        "sfincs_region": str(sfincs_region)
+    }
+    params = {
+        "data_libs": str(rio_test_data),
+        "res": 100.0,
+        "river_upa": 10.0
+    }
     SfincsBuild(input=input, output=output, params=params).run()
     assert sfincs_inp.exists()
     assert sfincs_region.exists()

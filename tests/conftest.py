@@ -1,5 +1,5 @@
 # fixtures with input and output files and folders
-
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
@@ -11,6 +11,11 @@ from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
 from hydroflows.workflows.events import EventCatalog
+
+
+@pytest.fixture(scope="session")
+def test_data_dir() -> Path:
+    return Path(__file__).parent / "_data"
 
 
 @pytest.fixture(scope="session")
@@ -48,6 +53,18 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
         processor=pooch.Unzip(extract_dir="rio_data_catalog"),
     )
     path = Path(paths[0]).parent / "data_catalog.yml"
+    assert path.is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
+    """Return the path to the rio wflow model config file."""
+    _ = large_test_data.fetch(
+        "rio_wflow_model.zip",
+        processor=pooch.Unzip(extract_dir="rio_wflow_model"),
+    )
+    path = large_test_data.path / "rio_wflow_model" / "wflow.toml"
     assert path.is_file()
     return path
 
@@ -139,11 +156,6 @@ def tmp_tif(tmpdir):
     return tif_file
 
 
-@pytest.fixture(scope="session")
-def test_data_dir() -> Path:
-    return Path(__file__).parent / "_data"
-
-
 @pytest.fixture()
 def event_catalog(test_data_dir) -> EventCatalog:
     return EventCatalog.from_yaml(test_data_dir / "events.yml")
@@ -182,3 +194,14 @@ def sfincs_src_points():
         ],
         crs="EPSG:32633",
     )
+
+
+@pytest.fixture(scope="function")  # noqa: PT003
+def sfincs_tmp_model_root(test_data_dir, tmpdir):
+    """Return a temporary directory with a copy of the sfincs model."""
+    # copy the sfincs model to a temporary directory
+    sfincs_model_root_tmp = tmpdir / "sfincs_model"
+    # copy
+    sfincs_model_root = test_data_dir / "sfincs_model"
+    shutil.copytree(sfincs_model_root, sfincs_model_root_tmp)
+    return sfincs_model_root_tmp
