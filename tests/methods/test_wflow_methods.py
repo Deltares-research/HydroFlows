@@ -1,13 +1,11 @@
 import os
+import shutil
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
-import shutil
 import xarray as xr
-
-from hydromt_wflow import WflowModel
 
 from hydroflows.methods import WflowBuild, WflowDesignHydro, WflowUpdateForcing
 
