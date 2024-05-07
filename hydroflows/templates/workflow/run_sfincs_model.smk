@@ -1,5 +1,7 @@
 from hydroflows.workflows.events import EventCatalog
 
+configfile: "workflow/snake_config/config.yaml"
+
 # Unpack config
 region_name = config["REGION"]
 #run_name = config["RUN_NAME"]
