@@ -90,36 +90,8 @@ class PluvialDesignEvents(Method):
             ds_idf["return_values"], dt=1, length=event_duration
         )
 
-        # random starting time
-        dt0 = pd.to_datetime("2020-01-01")
-        time_delta = pd.to_timedelta(p_hyetograph["time"], unit="h").round("10min")
-        p_hyetograph["time"] = dt0 + time_delta
-        p_hyetograph = p_hyetograph.reset_coords(drop=True)
-
         root = self.output.event_catalog.parent
         os.makedirs(root, exist_ok=True)
-
-        events_list = []
-        for i, rp in enumerate(p_hyetograph.rps.values):
-            # save p_rp as csv files
-            name = f"p_event{int(i+1):02d}"
-            events_fn = Path(root, f"{name}.csv")
-            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
-
-            event = {
-                "name": name,
-                "forcings": [{"type": "rainfall", "path": f"{name}.csv"}],
-                "probability": 1 / rp,
-            }
-            events_list.append(event)
-
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
-            events=events_list,
-        )
-
-        event_catalog.to_yaml(self.output.event_catalog)
 
         # save plots
         if self.params.plot_fig:
@@ -162,3 +134,31 @@ class PluvialDesignEvents(Method):
                 dpi=150,
                 bbox_inches="tight",
             )
+
+        # random starting time
+        dt0 = pd.to_datetime("2020-01-01")
+        time_delta = pd.to_timedelta(p_hyetograph["time"], unit="h").round("10min")
+        p_hyetograph["time"] = dt0 + time_delta
+        p_hyetograph = p_hyetograph.reset_coords(drop=True)
+
+        events_list = []
+        for i, rp in enumerate(p_hyetograph.rps.values):
+            # save p_rp as csv files
+            name = f"p_event{int(i+1):02d}"
+            events_fn = Path(root, f"{name}.csv")
+            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
+
+            event = {
+                "name": name,
+                "forcings": [{"type": "rainfall", "path": f"{name}.csv"}],
+                "probability": 1 / rp,
+            }
+            events_list.append(event)
+
+        # make a data catalog
+        event_catalog = EventCatalog(
+            root=root,
+            events=events_list,
+        )
+
+        event_catalog.to_yaml(self.output.event_catalog)
