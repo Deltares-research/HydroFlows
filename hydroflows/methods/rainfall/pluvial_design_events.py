@@ -84,11 +84,18 @@ class PluvialDesignEvents(Method):
         )
 
         ds_idf = ds_idf.assign_coords(rps=self.params.rps)
+        # make sure there are no negative values
+        ds_idf['return_values'] = xr.where(
+            ds_idf['return_values'] < 0, 0, ds_idf['return_values']
+            )
 
         # Get design events hyetograph for each return period
         p_hyetograph = get_hyetograph(
             ds_idf["return_values"], dt=1, length=event_duration
         )
+
+        # make sure there are no negative values
+        p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
 
         root = self.output.event_catalog.parent
         os.makedirs(root, exist_ok=True)
