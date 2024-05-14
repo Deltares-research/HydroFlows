@@ -5,7 +5,7 @@ from typing import Optional
 
 import pytest
 
-from hydroflows.methods import SfincsBuild, SfincsUpdateForcing
+from hydroflows.methods import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from hydroflows.methods.sfincs.sfincs_run import SfincsRun
 
 SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
@@ -29,12 +29,21 @@ def copy_tree(
 
 
 def test_sfincs_build(rio_region, rio_test_data, tmp_path):
-    input = {"region": str(rio_region)}
+    input = {
+        "region": str(rio_region)
+    }
 
     sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
     sfincs_region = Path(tmp_path, "model", "gis", "region.geojson")
-    output = {"sfincs_inp": str(sfincs_inp), "sfincs_region": str(sfincs_region)}
-    params = {"data_libs": str(rio_test_data), "res": 100.0, "river_upa": 10.0}
+    output = {
+        "sfincs_inp": str(sfincs_inp),
+        "sfincs_region": str(sfincs_region)
+    }
+    params = {
+        "data_libs": str(rio_test_data),
+        "res": 100.0,
+        "river_upa": 10.0
+    }
     SfincsBuild(input=input, output=output, params=params).run()
     assert sfincs_inp.exists()
     assert sfincs_region.exists()
@@ -50,7 +59,7 @@ def test_sfincs_update(rio_sfincs_model, tmp_path, test_data_dir):
         "event_catalog": str(test_data_dir / "events.yml"),
     }
     output = {"sfincs_inp": str(sfincs_inp_event)}
-    params = {"event_name": "p_rp050"}
+    params = {"event_name": "rp050"}
 
     SfincsUpdateForcing(input=input, output=output, params=params).run()
 
@@ -73,3 +82,36 @@ def test_sfincs_run(rio_sfincs_model, tmp_path):
     SfincsRun(input=input, output=output, params=params).run()
 
     assert sfincs_map.is_file()
+
+def test_sfincs_postprocess(rio_sfincs_model, tmp_path):
+    tmp_root = Path(tmp_path, "model")
+    copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])
+
+    fn_sfincs_event_inp = Path(
+        tmp_path,
+        "model",
+        "sfincs.inp"
+    )
+    fn_sfincs_dep = Path(
+        tmp_path,
+        "model",
+        "subgrid",
+        "dep_subgrid.tif"
+    )
+    fn_sfincs_inun_tif = Path(
+        tmp_path,
+        "model",
+        "event.tif"
+    )
+
+    input = {
+        "sfincs_inp": str(fn_sfincs_event_inp),
+        "sfincs_dep": str(fn_sfincs_dep),
+    }
+    output = {
+        "sfincs_inun": str(fn_sfincs_inun_tif)
+    }
+
+    SfincsPostprocess(input=input, output=output).run()
+
+    assert fn_sfincs_inun_tif.is_file()

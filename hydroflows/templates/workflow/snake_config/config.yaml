@@ -1,12 +1,12 @@
 REGION_FILE: "data/input/test_region.geojson"
 REGION: "test_region"
-
-DATA_LIBS: ["artifact_data"]
-
+CONTINENT: "south_america"
+DATA_LIBS:
+  - "artifact_data"
 SCENARIO: "test_scenario"
-
+DEPTH_MIN: 0.05
 RPS: [1, 2, 5, 10, 20, 50, 100]
 
-RIVER_UPA: 10 # wflow and sfincs build river upstrea area threshold [km2]
+RIVER_UPA: 10 # wflow and sfincs build river upstream area threshold [km2]
 
 PLOT_FIG: True # plot figures and various methods

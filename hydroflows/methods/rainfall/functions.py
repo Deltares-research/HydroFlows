@@ -10,7 +10,7 @@ import xarray as xr
 def eva_idf(
     da: xr.DataArray,
     durations: np.ndarray = np.array([1, 2, 3, 6, 12, 24, 36, 48], dtype=int),
-    distribution: str = "gumb",
+    distribution: str = None,
     ev_type: str = "BM",
     rps: np.ndarray = np.array([2, 5, 10, 25, 50, 100]),
     **kwargs,
