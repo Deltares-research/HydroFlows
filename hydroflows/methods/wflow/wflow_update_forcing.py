@@ -70,7 +70,7 @@ class WflowUpdateForcing(Method):
                 "starttime": self.params.start_time.strftime(fmt),
                 "endtime": self.params.end_time.strftime(fmt),
                 "timestepsecs": self.params.timestep,
-                "input.path_forcing": "forcing.nc",
+                "input.path_forcing": "inmaps/forcing.nc",
             }
         )
 
@@ -102,4 +102,4 @@ class WflowUpdateForcing(Method):
             mode="w+",
         )
         w.write_config(config_name=self.output.wflow_toml.name)
-        w.write_forcing()
+        w.write_forcing(freq_out="1Y")
