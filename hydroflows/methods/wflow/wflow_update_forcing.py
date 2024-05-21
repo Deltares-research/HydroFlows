@@ -70,7 +70,7 @@ class WflowUpdateForcing(Method):
                 "starttime": self.params.start_time.strftime(fmt),
                 "endtime": self.params.end_time.strftime(fmt),
                 "timestepsecs": self.params.timestep,
-                "input.path_forcing": "forcing.nc",
+                "input.path_forcing": "inmaps/forcing.nc",
             }
         )
 
@@ -88,14 +88,6 @@ class WflowUpdateForcing(Method):
             skip_pet=False,
         )
 
-        # add a netcdf output for the discharges
-        w.setup_config_output_timeseries(
-            mapname="wflow_gauges",
-            toml_output="netcdf",
-            header=["Q"],
-            param=["lateral.river.q_av"],
-        )
-
         if self.output.wflow_toml.is_relative_to(root):
             rel_dir = Path(os.path.relpath(root, self.output.wflow_toml.parent))
         else:
@@ -110,4 +102,4 @@ class WflowUpdateForcing(Method):
             mode="w+",
         )
         w.write_config(config_name=self.output.wflow_toml.name)
-        w.write_forcing()
+        w.write_forcing(freq_out="1Y")
