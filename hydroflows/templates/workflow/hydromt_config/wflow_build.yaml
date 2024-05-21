@@ -51,6 +51,16 @@ setup_outlets:
 
 setup_gauges:
   gauges_fn: <gauges>  # placeholder for gauges vector file
+  snap_to_river: True
+  derive_subcatch: False
+  index_col: index
+  basename: locs
+
+setup_config_output_timeseries:
+  mapname: wflow_gauges_locs
+  toml_output: netcdf
+  header: ["Q"]
+  param: ["lateral.river.q_av"]
 
 setup_constant_pars:
   KsatHorFrac: 100
