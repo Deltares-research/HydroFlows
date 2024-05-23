@@ -16,16 +16,19 @@ class Input(BaseModel):
 
     sfincs_region: FilePath
 
+
 class Output(BaseModel):
     """Output parameters."""
 
     time_series_nc: Path
+
 
 class Params(BaseModel):
     """Parameters."""
 
     start_date: datetime
     end_date: datetime
+
 
 class GetERA5Rainfall(Method):
     """Rule for getting ERA5 rainfall at the centroid of a polygon region."""
@@ -40,7 +43,7 @@ class GetERA5Rainfall(Method):
         # read the region polygon file
         gdf = gpd.read_file(self.input.sfincs_region)
         # define the target coordinate reference system as EPSG 4326
-        tgt_crs = 'EPSG:4326'
+        tgt_crs = "EPSG:4326"
         # reproject the GeoDataFrame to the target CRS
         gdf = gdf.to_crs(tgt_crs)
         # Calculate the centroid of each polygon
@@ -54,7 +57,8 @@ class GetERA5Rainfall(Method):
             lon=centroid_lon,
             start_date=self.params.start_date,
             end_date=self.params.end_date,
-            variables="precipitation")
+            variables="precipitation",
+        )
         # convert df to xarray ds
         ds = xr.Dataset.from_dataframe(df)
         # save ds

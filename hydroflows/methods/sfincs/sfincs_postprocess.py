@@ -9,6 +9,7 @@ from ..method import Method
 
 __all__ = ["SfincsPostprocess"]
 
+
 class Input(BaseModel):
     """Input parameters."""
 
@@ -21,11 +22,13 @@ class Output(BaseModel):
 
     sfincs_inun: Path
 
+
 class Params(BaseModel):
     """Parameters."""
 
     depth_min: float = 0.05  # minimum depth to consider as "flooding"
     raster_kwargs: dict = {}  # kwargs to pass to writer of inundation raster
+
 
 class SfincsPostprocess(Method):
     """Rule for postprocessing Sfincs."""
@@ -55,7 +58,7 @@ class SfincsPostprocess(Method):
         zsmax = sf.results["zsmax"]
 
         # compute the maximum over all time steps
-        zsmax = zsmax.max(dim='timemax')
+        zsmax = zsmax.max(dim="timemax")
 
         # Fourthly, downscale the floodmap
         utils.downscale_floodmap(
@@ -63,5 +66,5 @@ class SfincsPostprocess(Method):
             dep=dep,
             hmin=hmin,
             floodmap_fn=fn_inun,
-            **self.params.raster_kwargs
+            **self.params.raster_kwargs,
         )

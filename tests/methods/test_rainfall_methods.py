@@ -54,7 +54,7 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
     assert len(events["events"]) == len(params["rps"])
 
     # test max value is 1
-    filename = events["events"][-1]['forcings'][0]['path']
+    filename = events["events"][-1]["forcings"][0]["path"]
     fn_csv = fn_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0

@@ -84,7 +84,7 @@ class WflowBuild(Method):
             opt.pop("setup_gauges")
             opt.pop("setup_config_output_timeseries")
         else:  # replace placeholder with actual file
-            opt['setup_gauges']['gauges_fn'] = str(gauges)
+            opt["setup_gauges"]["gauges_fn"] = str(gauges)
 
         # build the model
         w.build(opt=opt)

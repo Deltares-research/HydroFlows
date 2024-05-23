@@ -29,8 +29,8 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Parameters."""
 
-    start_time: datetime = datetime(2020,2,1,0,0,0)
-    end_time: datetime = datetime(2020,2,10,0,0,0)
+    start_time: datetime = datetime(2020, 2, 1, 0, 0, 0)
+    end_time: datetime = datetime(2020, 2, 10, 0, 0, 0)
 
     timestep: int = 86400  # in seconds
 

@@ -27,9 +27,7 @@ def test_hazard(tmp_tif):
         Forcing(type="unsupported_variable", path=tmp_tif)
 
 
-@pytest.mark.parametrize(
-    "file", ["tmp_tif", "tmp_geojson"]
-)
+@pytest.mark.parametrize("file", ["tmp_tif", "tmp_geojson"])
 def test_impact(file, request):
     file = request.getfixturevalue(file)
     """Test the Forcing class."""
@@ -39,7 +37,6 @@ def test_impact(file, request):
 
     with pytest.raises(ValidationError):
         Forcing(type="unsupported_variable", path=file)
-
 
 
 def test_event(tmp_csv):
@@ -99,11 +96,17 @@ def test_hazard_impact_event_catalog(test_data_dir):
                     {"type": "velocity", "path": "velocity_rp050.tif"},
                 ],
                 "impacts": [
-                    {"type": "damage", "category": "all", "path":
-                        "damage_schools_rp050.tif"},  # example for grid output
-                    {"type": "damage", "category": "schools", "path":
-                        "damage_schools_rp050.gpkg"},  # example for vector output
-                ]
+                    {
+                        "type": "damage",
+                        "category": "all",
+                        "path": "damage_schools_rp050.tif",
+                    },  # example for grid output
+                    {
+                        "type": "damage",
+                        "category": "schools",
+                        "path": "damage_schools_rp050.gpkg",
+                    },  # example for vector output
+                ],
             },
             {
                 "name": "p_rp010",
@@ -113,10 +116,16 @@ def test_hazard_impact_event_catalog(test_data_dir):
                     {"type": "velocity", "path": "velocity_p_rp010.tif"},
                 ],
                 "impacts": [
-                    {"type": "damage", "category": "all", "path":
-                        "damage_schools_p_rp010.tif"},  # example for grid output
-                    {"type": "damage", "category": "schools", "path":
-                        "damage_schools_p_rp010.gpkg"},  # example for vector output
+                    {
+                        "type": "damage",
+                        "category": "all",
+                        "path": "damage_schools_p_rp010.tif",
+                    },  # example for grid output
+                    {
+                        "type": "damage",
+                        "category": "schools",
+                        "path": "damage_schools_p_rp010.gpkg",
+                    },  # example for vector output
                 ],
                 "probability": 0.01,
             },
@@ -146,7 +155,6 @@ def test_event_catalog_io(event_catalog, tmpdir):
     del event_catalog.roots
     del event_catalog2.roots
     assert event_catalog == event_catalog2
-
 
 
 def test_event_catalog_data(event_catalog):

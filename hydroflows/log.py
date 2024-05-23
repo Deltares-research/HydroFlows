@@ -12,14 +12,14 @@ datestr = datetime.now().strftime("%Y%m%d")
 FMT = "%(asctime)s - %(name)s - %(module)s - %(levelname)s - %(message)s"
 
 
-def setuplog( # noqa: D103
+def setuplog(
     name: str = "hydroflows",
     path: str = None,
     log_level: int = 20,
     fmt: str = FMT,
     append: bool = True,
 ) -> logging.Logger:
-    f"""Create the logging on sys.stdout and file if path is given.
+    """Create the logging on sys.stdout and file if path is given.
 
     Parameters
     ----------
@@ -30,7 +30,7 @@ def setuplog( # noqa: D103
     log_level : int, optional
         Log level [0-50], by default 20 (info)
     fmt : str, optional
-        log message formatter, by default {FMT}
+        log message formatter, by default FMT
     append : bool, optional
         Wether to append (True) or overwrite (False) to a logfile at path, \
 by default True
@@ -55,6 +55,7 @@ by default True
         add_filehandler(logger, path, log_level=log_level, fmt=fmt)
     logger.info(f"hydroflows version: {__version__}")
     return logger
+
 
 def add_filehandler(logger, path, log_level=20, fmt=FMT):
     """Add file handler to logger."""

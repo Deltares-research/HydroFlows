@@ -5,17 +5,14 @@
 import os
 from distutils.dir_util import copy_tree
 from pathlib import Path
+from typing import List, Optional
 
 __all__ = ["create_folders", "copy_templates"]
 
 TEMPLATE_DIR = Path(__file__).parent.parent / "templates"
 
 
-
-def create_folders(
-    root: Path,
-    models: list = ["wflow", "sfincs", "fiat"]
-) -> None:
+def create_folders(root: Path, models: Optional[List] = None) -> None:
     """
     Create and setup a folder structure for a project.
 
@@ -24,8 +21,11 @@ def create_folders(
     root : str, optional
         project root folder
     models : list, optional
-        list of model names to create folders for
+        list of model names to create folders for,
+        if None, ["wflow", "sfincs", "fiat"]
     """
+    if models is None:
+        models = ["wflow", "sfincs", "fiat"]
     folders = {
         "bin": models,
         "data": ["input", "output"],
@@ -37,7 +37,7 @@ def create_folders(
             # "methods",
             # "notebooks",
             "snake_config",
-            "scripts"
+            "scripts",
         ],
     }
 
@@ -56,8 +56,9 @@ def create_folders(
     root = Path(root)
     _makedir(root, folders)
 
+
 def copy_templates(
-        root: Path,
+    root: Path,
 ) -> None:
     """
     Copy templates to the project folder.

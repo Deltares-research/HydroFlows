@@ -237,7 +237,6 @@ class Event(BaseModel):
     probability: Optional[float] = None
     time_range: Optional[List[datetime]] = None
 
-
     @field_validator("forcings", mode="before")
     @classmethod
     def _set_forcings(cls, value: Any) -> List[Forcing]:
@@ -261,7 +260,6 @@ class Event(BaseModel):
         if isinstance(value, list) and all(isinstance(f, dict) for f in value):
             return [Impact(**impact) for impact in value]
         return value
-
 
     def to_dict(self, **kwargs) -> dict:
         """Return the Event as a dictionary."""
@@ -366,14 +364,12 @@ class EventCatalog(BaseModel):
         with open(path, "r") as file:
             yml_dict = yaml.safe_load(file)
         if "roots" not in yml_dict:  # set root to parent of path
-            yml_dict["roots"] = Roots(**{
-                "root_forcings": Path(path).parent
-            })
+            yml_dict["roots"] = Roots(**{"root_forcings": Path(path).parent})
             # check if hazards/impacts seem present
             if "hazards" in yml_dict["events"][0]:
-                yml_dict["roots"]: Path(path).parent
+                yml_dict["roots"] = Path(path).parent
             if "impacts" in yml_dict["events"][0]:
-                yml_dict["root_impacts"]: Path(path).parent
+                yml_dict["root_impacts"] = Path(path).parent
         else:
             yml_dict["roots"] = Roots(**yml_dict["roots"])
         return cls(**yml_dict)
@@ -397,7 +393,6 @@ class EventCatalog(BaseModel):
                     for impact in event.impacts:
                         impact._set_path_relative(self.roots.root_hazards)
 
-
     def to_dict(self, relative_paths=False, **kwargs) -> dict:
         """Return the EventCatalog as a dictionary."""
         # set all forcing paths relative to root
@@ -419,8 +414,7 @@ class EventCatalog(BaseModel):
                         del yaml_dict["roots"][k]
                     else:
                         yaml_dict["roots"][k] = os.path.relpath(
-                            yaml_dict["roots"][k],
-                            start=str(Path(path).parent)
+                            yaml_dict["roots"][k], start=str(Path(path).parent)
                         )
             # if roots is an empty dict, then remove alltogether
             if not yaml_dict["roots"]:

@@ -1,4 +1,3 @@
-
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
@@ -24,6 +23,7 @@ def test_list_of_int():
         ta.validate_python("a, b, c")
     with pytest.raises(ValidationError):
         ta.validate_python(["a", "b", "c"])
+
 
 def test_list_of_float():
     ta = TypeAdapter(ListOfFloat)
