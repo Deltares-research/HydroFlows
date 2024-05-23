@@ -18,6 +18,7 @@ __all__ = ["Rule"]
 
 FMT = ["snakemake"]
 
+
 class Rule(BaseModel):
     """Define relationships between inputs and outputs.
 
@@ -41,7 +42,7 @@ class Rule(BaseModel):
     expand: Optional[Dict] = {}
 
     @model_validator(mode="after")
-    def validate_wildcards_input_output(self) -> 'Rule':
+    def validate_wildcards_input_output(self) -> "Rule":
         """Validate input / output logic.
 
         Validate input and output logic and wildcards. Set expand input args where
@@ -71,22 +72,16 @@ class Rule(BaseModel):
                     )
             # if wildcard does not appear in output, then check if it must be
             # expanded. Should happen when it appears in inputs (ip)
-            if not(any(has_wildcard_op)):
+            if not (any(has_wildcard_op)):
                 has_wildcard_ip = [
                     f"{{{wildcard}}}" in o_v for o_k, o_v in self.input.items()
                 ]
                 # if it appears, then do not expand, if it does not appear then expand
                 self.expand[wildcard] = list(
-                    compress(
-                        self.input.keys(),
-                        has_wildcard_ip
-                    )
+                    compress(self.input.keys(), has_wildcard_ip)
                 )
 
-    def parse(
-        self,
-        fmt: Optional[str] = "snakemake"
-    ) -> str:
+    def parse(self, fmt: Optional[str] = "snakemake") -> str:
         """
         Parse rule into workflow snippet.
 
@@ -109,9 +104,9 @@ class Rule(BaseModel):
 
 # placeholder for parser
 def parse_input_snakemake(
-        input: Optional[Dict] = {},
-        wildcard: Optional[list] = [],
-        expand: Optional[list] = []
+    input: Optional[Dict] = None,
+    wildcard: Optional[list] = None,
+    expand: Optional[list] = None,
 ):
     """Parse inputs to snakemake rule input section."""
     input_str = "\tinput:\n"

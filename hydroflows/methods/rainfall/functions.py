@@ -1,4 +1,5 @@
 """Functions for the pluvial design events."""
+
 from datetime import datetime
 
 import numpy as np
@@ -9,10 +10,10 @@ import xarray as xr
 
 def eva_idf(
     da: xr.DataArray,
-    durations: np.ndarray = np.array([1, 2, 3, 6, 12, 24, 36, 48], dtype=int),
+    durations: np.ndarray = np.array([1, 2, 3, 6, 12, 24, 36, 48], dtype=int),  # noqa: B008
     distribution: str = None,
     ev_type: str = "BM",
-    rps: np.ndarray = np.array([2, 5, 10, 25, 50, 100]),
+    rps: np.ndarray = np.array([2, 5, 10, 25, 50, 100]),  # noqa: B008
     **kwargs,
 ) -> xr.Dataset:
     """Return IDF based on EVA. From hydromt eva dev branch.
@@ -40,6 +41,7 @@ def eva_idf(
         IDF table
     """
     from hydromt.stats.extremes import eva
+
     assert np.all(
         np.diff(durations) > 0
     ), "durations should be monotonically increasing"
@@ -52,9 +54,8 @@ def eva_idf(
     # return
     if "min_dist" not in kwargs:
         kwargs.update(min_dist=dt_max)
-    return eva(
-        da1, ev_type=ev_type, distribution=distribution, rps=rps, **kwargs
-    )
+    return eva(da1, ev_type=ev_type, distribution=distribution, rps=rps, **kwargs)
+
 
 def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray:
     """Return hyetograph.
@@ -101,7 +102,9 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     # load required for argsort on next line
     pstep = (pdepth.interp(time=t).fillna(0).diff("time") / dt).load()
     # FIXME make sure pstep is decreasing with time;
-    pstep.data = np.take_along_axis(pstep.values, pstep.argsort(axis=0), axis=0)[::-1,:]
+    pstep.data = np.take_along_axis(pstep.values, pstep.argsort(axis=0), axis=0)[
+        ::-1, :
+    ]
     # reorder using alternating blocks method
     pevent = pstep.isel(time=slice(0, length)).isel(time=alt_order)
     # set time coordinate
@@ -110,7 +113,8 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     pevent.attrs.update(**da_idf.attrs)
     return pevent
 
-def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variables):
+
+def get_era5_open_meteo(lat, lon, start_date: datetime, end_date: datetime, variables):
     """Return ERA5 rainfall.
 
     Return a df with ERA5 raifall data at specific point location.
@@ -132,9 +136,11 @@ def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variab
     base_url = r"https://archive-api.open-meteo.com/v1/archive"
     start_date_str = start_date.strftime("%Y-%m-%d")
     end_date_str = end_date.strftime("%Y-%m-%d")
-    url = f"{base_url}?latitude={lat}&longitude={lon}" \
-      f"&start_date={start_date_str}&end_date={end_date_str}" \
-      f"&hourly={variables}"
+    url = (
+        f"{base_url}?latitude={lat}&longitude={lon}"
+        f"&start_date={start_date_str}&end_date={end_date_str}"
+        f"&hourly={variables}"
+    )
     response = requests.get(url)
 
     # Check if request was successful
@@ -142,7 +148,7 @@ def get_era5_open_meteo(lat, lon, start_date:datetime, end_date:datetime, variab
         # Parse response as JSON
         data = response.json()
         # make a df
-        df = pd.DataFrame(data['hourly']).set_index('time')
+        df = pd.DataFrame(data["hourly"]).set_index("time")
         df.index = pd.to_datetime(df.index)
         return df
     else:

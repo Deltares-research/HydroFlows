@@ -14,7 +14,7 @@ def default_config(tmp_path):
         "arg1": True,
         "arg2": True,
         "kwargs": ["item1", "item2"],
-        "meta": {"meta_item1": "some_meta"}
+        "meta": {"meta_item1": "some_meta"},
     }
     output_file = Path(tmp_path, "default_config.yml")
     with open(output_file, "w") as _w:

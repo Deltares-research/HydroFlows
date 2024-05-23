@@ -17,15 +17,18 @@ def cli_obj():
         failures.
 
         """
+
         @functools.wraps(f)
         def wrapper(*args, **kwargs):
-            echo = kwargs.pop('echo', False)
+            echo = kwargs.pop("echo", False)
             result = f(*args, **kwargs)
 
             if echo is True:
                 sys.stdout.write(result.output)
             return result
+
         return wrapper
+
     class_.invoke = invoke_wrapper(class_.invoke)
     cli_runner = class_()
     return cli_runner
