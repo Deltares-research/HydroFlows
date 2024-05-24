@@ -92,9 +92,7 @@ def test_fiat_build(tmp_path, sfincs_region_path):
         "region": sfincs_region_path.as_posix(),
     }
     fn_fiat_cfg = Path(tmp_path, "fiat_model", "settings.toml")
-    output = {
-        "fiat_cfg": fn_fiat_cfg
-    }
+    output = {"fiat_cfg": fn_fiat_cfg}
 
     # Setup the rule
     rule = FIATBuild(input=input, output=output)

@@ -24,5 +24,5 @@ METHODS = {
     "pluvial_design_events": PluvialDesignEvents,
     "hazard_catalog": HazardCatalog,
     "get_ERA5_rainfall": GetERA5Rainfall,
-    "wflow_design_hydro": WflowDesignHydro
+    "wflow_design_hydro": WflowDesignHydro,
 }

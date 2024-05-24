@@ -11,11 +11,9 @@ def test_hazard_catalog(test_data_dir, tmp_path):
         "event_catalog": event_catalog,
         "types": types,
         "depth_hazard_maps": depth_hazard_maps,
-        "velocity_hazard_maps": velocity_hazard_map
+        "velocity_hazard_maps": velocity_hazard_map,
     }
-    output = {
-        "event_catalog": str(event_catalog_out)
-    }
+    output = {"event_catalog": str(event_catalog_out)}
 
     # test running
     HazardCatalog(input=input, output=output).run()

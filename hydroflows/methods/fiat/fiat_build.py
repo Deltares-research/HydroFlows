@@ -30,8 +30,9 @@ class Params(BaseModel):
     """FIAT build params."""
 
     config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
-    data_libs: ListOfStr = ['artifact_data']
+    data_libs: ListOfStr = ["artifact_data"]
     continent: str = "South America"
+
 
 class Output(BaseModel):
     """Output FIAT build params."""
@@ -56,16 +57,12 @@ class FIATBuild(Method):
         region_gdf = region_gdf.dissolve()
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
-        region_gdf = region_gdf[['geometry']]
-        opt.update(
-            {"setup_region": {
-                "region": {"geom": region_gdf}
-            }}
-        )
-        #Setup the model
+        region_gdf = region_gdf[["geometry"]]
+        opt.update({"setup_region": {"region": {"geom": region_gdf}}})
+        # Setup the model
         root = self.output.fiat_cfg.parent
         model = FiatModel(
-            root = root,
+            root=root,
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )

@@ -11,6 +11,7 @@ from .method import Method
 
 __all__ = ["HazardCatalog"]
 
+
 class Input(BaseModel):
     """Input parameters."""
 
@@ -18,7 +19,6 @@ class Input(BaseModel):
     depth_hazard_maps: ListOfStr  # collections of inundation maps from a hazard model
     velocity_hazard_maps: Optional[ListOfStr] = None
     # types: List[Literal["depth", "velocity"]] = None
-
 
 
 class Output(BaseModel):
@@ -82,20 +82,27 @@ class HazardCatalog(Method):
         # loop over each type
         for n, event_input in enumerate(event_catalog.events):
             event = event_input
-            event.hazards = [Hazard(**{
-                "type": "depth", "path": os.path.relpath(
-                    self.input.depth_hazard_maps[n],
-                    os.curdir
+            event.hazards = [
+                Hazard(
+                    **{
+                        "type": "depth",
+                        "path": os.path.relpath(
+                            self.input.depth_hazard_maps[n], os.curdir
+                        ),
+                    }
                 )
-            })]
+            ]
             if self.input.velocity_hazard_maps:
-                event.hazards.append(Hazard(**{
-                    "type": "velocity",
-                    "path": os.path.relpath(
-                        self.input.velocity_hazard_maps[n],
-                        os.curdir
+                event.hazards.append(
+                    Hazard(
+                        **{
+                            "type": "velocity",
+                            "path": os.path.relpath(
+                                self.input.velocity_hazard_maps[n], os.curdir
+                            ),
+                        }
                     )
-                }))
+                )
             events_list.append(event)
         event_catalog.events = events_list
         event_catalog.to_yaml(self.output.event_catalog)

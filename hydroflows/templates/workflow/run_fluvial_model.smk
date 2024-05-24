@@ -3,6 +3,7 @@ configfile: "workflow/snake_config/config.yaml"
 # Unpack config
 region_name = config["REGION"]
 scenario_name = config["SCENARIO"]
+data_libs = config["DATA_LIBS"]
 rps = config["RPS"]
 
 # Target rule
@@ -17,6 +18,7 @@ rule wflow_update_forcing:
     params:
         start_time = "2010-02-03T00:00:00",
         end_time = "2010-02-09T00:00:00",
+        data_libs = data_libs
 
     output:
         wflow_toml = f"models/wflow/{region_name}/simulations/{scenario_name}/wflow_sbm.toml",
@@ -28,7 +30,8 @@ rule wflow_update_forcing:
         -i wflow_toml={input.wflow_toml} \
         -o wflow_toml={output.wflow_toml} \
         -p start_time={params.start_time} \
-        -p end_time={params.end_time}
+        -p end_time={params.end_time} \
+        -p data_libs="{params.data_libs}"
         """
 
 rule wflow_run:

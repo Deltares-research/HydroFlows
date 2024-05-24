@@ -49,15 +49,17 @@ def _cb_key_val(ctx, param, value):
     else:
         out = {}
         for pair in value:
-            if '=' not in pair:
+            if "=" not in pair:
                 raise click.BadParameter(
-                    "Invalid syntax for KEY=VAL arg: {}".format(pair))
+                    "Invalid syntax for KEY=VAL arg: {}".format(pair)
+                )
             else:
-                k, v = pair.split('=', 1)
+                k, v = pair.split("=", 1)
                 k = k.lower()
                 v = v.lower()
-                out[k] = None if v.lower() in ['none', 'null', 'nil', 'nada'] else v
+                out[k] = None if v.lower() in ["none", "null", "nil", "nada"] else v
         return out
+
 
 def print_license(ctx, param, value):
     """Print the license for hydroflows."""
@@ -82,8 +84,9 @@ overwrite_opt = click.option(
     "-w",
     is_flag=True,
     default=False,
-    help="Overwrite log message (instead of appending)."
+    help="Overwrite log message (instead of appending).",
 )
+
 
 @click.group()
 @click.version_option(__version__, message="hydroflows version: %(version)s")
@@ -103,11 +106,7 @@ overwrite_opt = click.option(
     help="Print information and version of hydroflows",
     callback=print_info,
 )
-@click.option(
-    '--debug/--no-debug',
-    default=False,
-    envvar='REPO_DEBUG'
-)
+@click.option("--debug/--no-debug", default=False, envvar="REPO_DEBUG")
 @click.pass_context
 def cli(ctx, info, license, debug):  # , quiet, verbose):
     """Command line interface for hydroflows."""
@@ -116,35 +115,33 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 
 
 opt_input = click.option(
-    '-i',
-    '--input',
+    "-i",
+    "--input",
     multiple=True,
     callback=_cb_key_val,
     required=True,
     help="Set required input file(s) for the method",
 )
 opt_output = click.option(
-    '-o',
-    '--output',
+    "-o",
+    "--output",
     multiple=True,
     callback=_cb_key_val,
     required=True,
-    help="Specify the output of the method"
+    help="Specify the output of the method",
 )
 opt_params = click.option(
-    '-p',
-    '--params',
+    "-p",
+    "--params",
     multiple=True,
     callback=_cb_key_val,
     required=False,
     help="Set the parameters for the method",
 )
 
+
 @cli.command(short_help="Run a method with set inputs, outputs and parameters")
-@click.argument(
-    "RUNNER",
-    type=str
-)
+@click.argument("RUNNER", type=str)
 @opt_input
 @opt_output
 @opt_params
@@ -201,6 +198,7 @@ opt_config = click.option(
     type=click.Path(exists=True, file_okay=True, path_type=Path),
     help="Path to a custom SnakeMake configurations file",
 )
+
 
 @cli.command(short_help="Create a new project folder structure and copy templates")
 @click.argument(

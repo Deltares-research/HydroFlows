@@ -17,7 +17,6 @@ from hydroflows.utils.parsers import str_to_list
         # space seperated, comma and space in quotes
         ("a 'a/b/, c.yml'", ["a", "a/b/, c.yml"]),
     ],
-
 )
 def test_hydromt_params(str_list, parsed_list):
     """Test ParamsHydromt."""

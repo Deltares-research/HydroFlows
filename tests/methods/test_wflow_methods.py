@@ -46,6 +46,7 @@ def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
 
     assert fn_wflow_toml_updated.exists()
 
+
 @pytest.fixture()
 def time_series_nc():
     rng = np.random.default_rng(12345)
@@ -68,21 +69,18 @@ def time_series_nc():
 
     return da
 
+
 def test_wflow_design_hydro(time_series_nc, tmp_path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     time_series_nc.to_netcdf(fn_time_series_nc)
 
-    input = {
-        "time_series_nc": str(fn_time_series_nc)
-    }
+    input = {"time_series_nc": str(fn_time_series_nc)}
 
     fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
 
-    output = {
-        "event_catalog": str(fn_data_catalog)
-    }
+    output = {"event_catalog": str(fn_data_catalog)}
 
     WflowDesignHydro(input=input, output=output).run()
     assert fn_data_catalog.exists()

@@ -35,7 +35,6 @@ def parse_event_sfincs(root, event, out_root):
     config = make_relative_paths(sf.config, root, out_root)
     for forcing in event.forcings:
         match forcing.type:
-
             case "water_level":
                 sf.setup_waterlevel_forcing(
                     timeseries=forcing.data,

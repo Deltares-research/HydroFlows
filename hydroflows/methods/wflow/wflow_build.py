@@ -85,17 +85,9 @@ class WflowBuild(Method):
         gauges = self.params.gauges
         if gauges is None or not gauges.is_file():  # remove placeholder
             opt.pop("setup_gauges")
+            opt.pop("setup_config_output_timeseries")
         else:  # replace placeholder with actual file
-            step = dict(
-                setup_gauges=dict(
-                    gauges_fn=str(gauges),
-                    snap_to_river=True,
-                    derive_subcatch=False,
-                    index_col="index",
-                    basename="locs",
-                )
-            )
-            opt.update(step)
+            opt["setup_gauges"]["gauges_fn"] = str(gauges)
 
         # build the model
         w.build(opt=opt)

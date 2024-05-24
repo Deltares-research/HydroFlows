@@ -17,6 +17,7 @@ __all__ = ["Method"]
 PACKAGE_ROOT = Path(__file__).parent.parent
 HYDROMT_CONFIG_DIR = PACKAGE_ROOT / "templates" / "workflow" / "hydromt_config"
 
+
 class BaseParams(BaseModel):
     """Base rule for all parameters. Must be extended for rule-specific tasks."""
 
