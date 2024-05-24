@@ -75,7 +75,8 @@ class WflowBuild(Method):
 
         # for reservoirs, lakes and glaciers: check if data is available
         for key in [
-            item for item in ["reservoirs", "lakes", "glaciers"]
+            item
+            for item in ["reservoirs", "lakes", "glaciers"]
             if f"setup_{item}" in opt
         ]:
             if opt[f"setup_{key}"].get(f"{key}_fn") not in w.data_catalog.sources:

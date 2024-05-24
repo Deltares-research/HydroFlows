@@ -55,13 +55,11 @@ class FIATUpdateHazard(Method):
 
         paths = [
             Path(
-                hc_path.parent,
-                hc["roots"]["root_hazards"],
-                item["hazards"][0]["path"]
+                hc_path.parent, hc["roots"]["root_hazards"], item["hazards"][0]["path"]
             )
             for item in hc["events"]
         ]
-        rp = [1/item["probability"] for item in hc["events"]]
+        rp = [1 / item["probability"] for item in hc["events"]]
 
         # Setup the hazard map
         model.setup_hazard(

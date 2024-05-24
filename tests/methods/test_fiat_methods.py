@@ -40,7 +40,7 @@ def fiat_simple_root(tmp_path, sfincs_region_path):
         ],
     )
     region_gdf = gpd.read_file(sfincs_region_path).to_crs(4326)
-    model.setup_region({"geom":region_gdf})
+    model.setup_region({"geom": region_gdf})
     model.setup_output()
     model.setup_vulnerability(
         vulnerability_fn="jrc_vulnerability_curves",
@@ -74,11 +74,7 @@ def simple_hazard_map(tmp_path, sfincs_region_path):
     lons = np.arange(math.floor(bbox[0]), math.ceil(bbox[2]) + 0.1, 0.25)
     lats = np.arange(math.ceil(bbox[3]), math.floor(bbox[1]) - 0.1, -0.25)
     data = np.ones([len(lats), len(lons)])
-    da = xr.DataArray(
-        data,
-        coords={"lat": lats, "lon": lons},
-        dims=["lat", "lon"]
-    )
+    da = xr.DataArray(data, coords={"lat": lats, "lon": lons}, dims=["lat", "lon"])
     da.name = "flood_map"
     da.raster.set_crs(4326)
     da = da.raster.gdal_compliant()
@@ -107,9 +103,7 @@ def test_fiat_update_hazard(tmp_path, fiat_simple_root, simple_hazard_map):
         "fiat_cfg": Path(fiat_simple_root, "settings.toml"),
         "hazard_map": simple_hazard_map,
     }
-    output = {
-        "fiat_haz": Path(fiat_simple_root, "hazard", "hazard_map.nc")
-    }
+    output = {"fiat_haz": Path(fiat_simple_root, "hazard", "hazard_map.nc")}
 
     # Setup the method.
     rule = FIATUpdateHazard(input=input, output=output)
