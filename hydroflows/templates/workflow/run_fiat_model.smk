@@ -1,7 +1,12 @@
 # Unpack config
 region_name = config["REGION"]
-run_name = config["RUN_NAME"]
-hazard_var = config["HAZARD_VAR"]
+risk = config["RISK"]
+scenario = config["SCENARIO"]
+threads = config["THREADS"]
+
+haz_fn = "hazard_map.nc"
+if risk:
+    haz_fn = "risk_map.nc"
 
 # Target rule
 rule all:
@@ -11,24 +16,24 @@ rule all:
 rule update_fiat:
     input:
         fiat_cfg = f"models/fiat/{region_name}/settings.toml",
-        hazard_map = f"models/sfincs/{region_name}/sfincs_map.nc"
+        event_catalog = f"results/{region_name}/hazard/{scenario}/hazard_maps.yml"
 
     params:
-        var = hazard_var,
-        map_type = "water_depth"
+        map_type = "water_depth",
+        risk = risk
 
     output:
-        fiat_haz = f"models/fiat/{region_name}/hazard/hazard_map.nc"
+        fiat_haz = f"models/fiat/{region_name}/hazard/{haz_fn}"
 
     shell:
         """
         hydroflows run \
         fiat_update_hazard \
         -i fiat_cfg={input.fiat_cfg} \
-        -i hazard_map={input.hazard_map} \
+        -i event_catalog={input.event_catalog} \
         -o fiat_haz={output.fiat_haz} \
         -p map_type={params.map_type} \
-        -p var={params.var}
+        -p risk={params.risk}
         """
 
 rule run_fiat:
@@ -37,8 +42,8 @@ rule run_fiat:
         fiat_cfg = rules.update_fiat.input.fiat_cfg
 
     params:
-        fiat_bin = f"bin/fiat/win64/fiat.exe",
-        threads = 4
+        fiat_bin = f"bin/fiat/fiat.exe",
+        threads = threads
 
     output:
         fiat_out = f"models/fiat/{region_name}/output/spatial.gpkg"

@@ -68,5 +68,5 @@ class SfincsBuild(Method):
             sf.plot_basemap(
                 fn_out='basemap.png',
                 plot_region=True,
-                shaded=True
+                shaded=False
             )
