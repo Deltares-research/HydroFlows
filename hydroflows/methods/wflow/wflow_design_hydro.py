@@ -134,38 +134,10 @@ class WflowDesignHydro(Method):
         # calculate the mean design hydrograph per rp
         q_hydrograph = da_q_hydrograph.mean("peak") * da_rps
 
-        # Put a random date for the csvs
-        dt0 = pd.to_datetime(self.params.t0)
-        time_delta = pd.to_timedelta(q_hydrograph["time"], unit=unit)
-        q_hydrograph["time"] = dt0 + time_delta
-        q_hydrograph = q_hydrograph.reset_coords(drop=True)
-
-        # save the data
+        # save plots
         root = self.output.event_catalog.parent
         os.makedirs(root, exist_ok=True)
 
-        events_list = []
-        for i, rp in enumerate(q_hydrograph.rps.values):
-            # save q_rp as csv files
-            name = f"q_event{int(i+1):02d}"
-            events_fn = Path(root, f"{name}.csv")
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
-
-            event = {
-                "name": name,
-                "forcings": [{"type": "discharge", "path": f"{name}.csv"}],
-                "probability": 1 / rp,
-            }
-            events_list.append(event)
-
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
-            events=events_list,
-        )
-        event_catalog.to_yaml(self.output.event_catalog)
-
-        # save plots
         if self.params.plot_fig:
             fn_plots = os.path.join(root, "figs")
 
@@ -216,3 +188,30 @@ class WflowDesignHydro(Method):
                     dpi=150,
                     bbox_inches="tight",
                 )
+
+        # Put a random date for the csvs
+        dt0 = pd.to_datetime(self.params.t0)
+        time_delta = pd.to_timedelta(q_hydrograph["time"], unit=unit)
+        q_hydrograph["time"] = dt0 + time_delta
+        q_hydrograph = q_hydrograph.reset_coords(drop=True)
+
+        events_list = []
+        for i, rp in enumerate(q_hydrograph.rps.values):
+            # save q_rp as csv files
+            name = f"q_event{int(i+1):02d}"
+            events_fn = Path(root, f"{name}.csv")
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
+
+            event = {
+                "name": name,
+                "forcings": [{"type": "discharge", "path": f"{name}.csv"}],
+                "probability": 1 / rp,
+            }
+            events_list.append(event)
+
+        # make a data catalog
+        event_catalog = EventCatalog(
+            root=root,
+            events=events_list,
+        )
+        event_catalog.to_yaml(self.output.event_catalog)
