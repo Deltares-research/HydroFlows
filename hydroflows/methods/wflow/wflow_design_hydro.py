@@ -72,7 +72,7 @@ class WflowDesignHydro(Method):
                     f"{dim} not a dimension in, {self.input.time_series_nc}"
                 )
         # warm up period from the start of the time series up to warm_up_years to exclude
-        warm_up_period = da[index_dim].values[0] + pd.Timedelta(
+        warm_up_period = da[time_dim].values[0] + pd.Timedelta(
             self.params.warm_up_years, "A"
         )
         # keep timeseries only after the warm up period
@@ -140,6 +140,9 @@ class WflowDesignHydro(Method):
 
         # calculate the mean design hydrograph per rp
         q_hydrograph = da_q_hydrograph.mean("peak") * da_rps
+
+        # make sure there are no negative values
+        q_hydrograph = xr.where(q_hydrograph < 0, 0, q_hydrograph)
 
         # save plots
         root = self.output.event_catalog.parent
