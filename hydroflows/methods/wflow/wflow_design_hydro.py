@@ -40,6 +40,7 @@ class Params(BaseModel):
     index_dim: str = "Q_gauges"
     time_dim: str = "time"
     t0: str = "2020-01-01"
+    warm_up_years: int = 2
 
     # return periods of interest
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
@@ -70,6 +71,12 @@ class WflowDesignHydro(Method):
                 raise ValueError(
                     f"{dim} not a dimension in, {self.input.time_series_nc}"
                 )
+        # warm up period from the start of the time series up to warm_up_years to exclude
+        warm_up_period = da[index_dim].values[0] + pd.Timedelta(
+            self.params.warm_up_years, "A"
+        )
+        # keep timeseries only after the warm up period
+        da = da.sel({time_dim: slice(warm_up_period, None)})
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
