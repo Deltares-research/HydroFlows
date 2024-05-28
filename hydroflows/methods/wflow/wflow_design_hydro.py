@@ -41,6 +41,7 @@ class Params(BaseModel):
     time_dim: str = "time"
     t0: str = "2020-01-01"
     warm_up_years: int = 2
+    n_peaks: int = None
 
     # return periods of interest
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
@@ -130,12 +131,12 @@ class WflowDesignHydro(Method):
         ).load()
         da_rps = da_rps.assign_coords(rps=self.params.rps)
 
-        # hydrographs based on the 10 highest peaks
+        # hydrographs based on the n highest peaks
         da_q_hydrograph = design_events.get_peak_hydrographs(
             da,
             da_peaks,
             wdw_size=wdw_size,
-            n_peaks=10,
+            n_peaks=self.params.n_peaks,
         ).transpose(time_dim, "peak", index_dim)
 
         # calculate the mean design hydrograph per rp
