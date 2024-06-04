@@ -274,12 +274,8 @@ class Event(BaseModel):
             if self.time_range is None:
                 self.time_range = forcing.time_range
             else:
-                self.time_range[0] = min(
-                    self.time_range[0], forcing.time_range.index[0]
-                )
-                self.time_range[1] = max(
-                    self.time_range[1], forcing.time_range.index[1]
-                )
+                self.time_range[0] = min(self.time_range[0], forcing.time_range[0])
+                self.time_range[1] = max(self.time_range[1], forcing.time_range[1])
 
 
 class Roots(BaseModel):
@@ -373,6 +369,31 @@ class EventCatalog(BaseModel):
         else:
             yml_dict["roots"] = Roots(**yml_dict["roots"])
         return cls(**yml_dict)
+
+    @classmethod
+    def from_yamls(cls, paths: List[FilePath]) -> "EventCatalog":
+        """Create an EventCatalog with absolute paths from several YAML files."""
+        curdir = Path(os.getcwd())
+        # outdir = Path(os.path.split(out)[0])
+        # os.chdir(outdir)
+        event_catalogs = [
+            EventCatalog.from_yaml(curdir / catalog_yml) for catalog_yml in paths
+        ]
+        events = []
+        for event_catalog in event_catalogs:
+            for event in event_catalog.events:
+                if event.forcings:
+                    for forcing in event.forcings:
+                        forcing.path = event_catalog.roots.root_forcings / forcing.path
+                if event.hazards:
+                    for hazard in event.hazards:
+                        hazard.path = event_catalog.roots.root_hazards / hazard.path
+
+                if event.impacts:
+                    for impact in event.impacts:
+                        impact.path = event_catalog.roots.root_impacts / impact.path
+                events.append(event)
+        return cls(events=events)
 
     def set_forcing_paths_relative_to_root(self) -> None:
         """Set all forcing paths relative to root."""
