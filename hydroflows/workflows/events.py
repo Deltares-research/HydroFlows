@@ -373,9 +373,9 @@ class EventCatalog(BaseModel):
     @classmethod
     def from_yamls(cls, paths: List[FilePath]) -> "EventCatalog":
         """Create an EventCatalog with absolute paths from several YAML files."""
+        # check which path names exist, remove paths that are non-existent to prevent stopping of workflow
+        paths = [path for path in paths if os.path.isfile(path)]
         curdir = Path(os.getcwd())
-        # outdir = Path(os.path.split(out)[0])
-        # os.chdir(outdir)
         event_catalogs = [
             EventCatalog.from_yaml(curdir / catalog_yml) for catalog_yml in paths
         ]
