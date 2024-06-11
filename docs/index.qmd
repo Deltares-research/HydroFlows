@@ -1,8 +1,0 @@
----
-title: "What is HydroFlows?"
-include-in-header:
-  - text: |
-      <style>figure { padding: 3em 0 0em 0; }</style>
-format:
-  html
----
