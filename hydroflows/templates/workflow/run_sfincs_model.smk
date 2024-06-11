@@ -8,13 +8,26 @@ region_name = config["REGION"]
 scenario_name = config["SCENARIO"]
 depth_min = config["DEPTH_MIN"]
 
-# starting point is an event catalog, located in a fixed position
-event_catalog_yml = f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml"
-event_catalog = EventCatalog.from_yaml(event_catalog_yml)
+# starting point is three event catalogs, located in fixed positions, for water level, rainfall, discharge.
+# TODO: in a more dynamic manner, these event catalogs should be parsed from chosen event sets, or even combinations
+# of event sets from different drivers
+event_catalog_ymls = [
+    f"data/interim/{region_name}/{scenario_name}/rainfall/design_events.yml",
+    f"data/interim/{region_name}/{scenario_name}/discharge/design_events.yml",
+    f"data/interim/{region_name}/{scenario_name}/water_level/design_events.yml",
+]
+event_catalog = EventCatalog.from_yamls(event_catalog_ymls)
+event_catalog_yml = f"data/interim/{region_name}/{scenario_name}/design_events_combined.yml"
+event_catalog.to_yaml(event_catalog_yml)
 
 events = event_catalog.event_names
 # create a list of inputs to allow expansion
-event_inputs = [event_catalog.get_event(event).forcings[0].path for event in events]
+event_inputs = [event_catalog.get_event(event).forcings[0].path for event in event_catalog.events]
+
+# function to retrieve forcings for each event
+def get_event_forcing(wildcards):
+    return event_inputs[wildcards.event]
+
 
 # Target rule
 rule all:
@@ -24,7 +37,7 @@ rule all:
 rule update_sfincs:
     input:
         sfincs_inp = "models/sfincs/{region_name}/sfincs.inp",
-        rainfall_csv = "data/interim/{region_name}/{scenario_name}/rainfall/{event}.csv",
+        forcing_csv = get_event_forcing,
         event_catalog = event_catalog_yml
     params:
         event_name = "{event}"
