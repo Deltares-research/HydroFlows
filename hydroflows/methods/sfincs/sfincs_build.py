@@ -64,4 +64,4 @@ class SfincsBuild(Method):
 
         # plot basemap
         if self.params.plot_fig == True:
-            sf.plot_basemap(fn_out="basemap.png", plot_region=True, shaded=True)
+            sf.plot_basemap(fn_out="basemap.png", plot_region=True, shaded=False)
