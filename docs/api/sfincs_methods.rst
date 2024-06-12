@@ -1,10 +1,10 @@
 .. currentmodule:: hydroflows.methods.sfincs
 
 SFINCS related methods
-=====================
+======================
 
 SfincsBuild
-----------
+-----------
 
 .. autosummary::
    :toctree: ../_generated
@@ -15,7 +15,7 @@ SfincsBuild
    sfincs_build.Output
 
 SfincsUpdateForcing
-------------------
+-------------------
 
 .. autosummary::
    :toctree: ../_generated
@@ -26,7 +26,7 @@ SfincsUpdateForcing
    sfincs_update_forcing.Output
 
 SfincsRun
---------
+---------
 
 .. autosummary::
    :toctree: ../_generated
@@ -37,7 +37,7 @@ SfincsRun
    sfincs_run.Output
 
 SfincsPostprocess
-------------------
+-----------------
 
 .. autosummary::
    :toctree: ../_generated
