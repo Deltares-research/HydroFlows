@@ -60,7 +60,7 @@ Hazzard methods
    hydroflows.methods.HazardCatalog
 
 Workflow related methods
----------------
+------------------------
 
 .. autosummary::
    :toctree: _generated
