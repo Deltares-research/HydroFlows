@@ -103,7 +103,7 @@ html_theme_options = {
     "icon_links": [
         {
             "name": "GitHub",
-            "url": "https://github.com/Deltares/hydromt_wflow",  # required
+            "url": "https://github.com/Deltares-research/HydroFlows",  # required
             "icon": "fab fa-github",
             "type": "fontawesome",
         },
