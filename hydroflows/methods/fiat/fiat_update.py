@@ -2,7 +2,7 @@
 from pathlib import Path
 
 import yaml
-from hydromt_fiat import FiatModel
+from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
 from hydroflows.methods.method import Method
