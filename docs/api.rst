@@ -17,6 +17,8 @@ FIAT related methods
    :toctree: _generated
 
    hydroflows.methods.FIATBuild
+   hydroflows.methods.FIATRun
+   hydroflows.methods.FIATUpdateHazard
 
 SFINCS related methods
 ----------------------
@@ -56,3 +58,16 @@ Hazzard methods
    :toctree: _generated
 
    hydroflows.methods.HazardCatalog
+
+Workflow related methods
+---------------
+
+.. autosummary::
+   :toctree: _generated
+
+   hydroflows.workflows.events.Forcing
+   hydroflows.workflows.events.Hazard
+   hydroflows.workflows.events.Impact
+   hydroflows.workflows.events.Event
+   hydroflows.workflows.events.Roots
+   hydroflows.workflows.events.EventCatalog
