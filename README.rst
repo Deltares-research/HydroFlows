@@ -1,10 +1,17 @@
 .. _readme:
 
+==========
 HydroFlows
 ==========
 
-.. image:: https://www.repostatus.org/badges/latest/wip.svg
+|status| |license|
+
+.. |status| image:: https://www.repostatus.org/badges/latest/wip.svg
    :alt: Project Status: WIP – Initial development is in progress, but there has not yet been a stable, usable release suitable for the public.
+
+.. |license| image:: https://img.shields.io/github/license/Deltares/hydromt?style=flat
+    :alt: License
+    :target: https://github.com/Deltares-research/HydroFlows/blob/main/LICENSE
 
 .. warning::
    This is a **work in progress** and not yet ready for use!
