@@ -4,6 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
+import numpy as np
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel, FilePath
 
@@ -43,13 +44,19 @@ def parse_event_sfincs(root, event, out_root):
                 config.update({"bzsfile": "sfincs.bzs"})
 
             case "discharge":
+                all_locs = sf.forcing["dis"].vector.to_gdf()
+                # find overlapping indexes
+                locs = all_locs.loc[np.int64(forcing.data.columns)]
                 sf.setup_discharge_forcing(
-                    timeseries=forcing.data,
-                    merge=False,
+                    timeseries=forcing.data, merge=False, locations=locs
                 )
                 config.update({"disfile": "sfincs.dis"})
+                config.update({"srcfile": "sfincs.src"})
 
             case "rainfall":
+                # if rainfall occurs, a stability issue in SFINCS makes sfincs crash when the courant condition is
+                # set to (default) 0.5. Therefore set to 0.1
+                sf.setup_config(alpha=0.1)
                 sf.setup_precip_forcing(
                     timeseries=forcing.data,
                 )

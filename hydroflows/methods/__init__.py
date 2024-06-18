@@ -1,6 +1,6 @@
 """Submodule for hydroflows methods."""
 
-from .fiat import FIATBuild
+from .fiat import FIATBuild, FIATRun, FIATUpdateHazard
 from .hazard_catalog import HazardCatalog
 from .method import Method
 from .rainfall import GetERA5Rainfall, PluvialDesignEvents
@@ -13,6 +13,8 @@ METHODS = {
     "sfincs_build": SfincsBuild,
     "wflow_build": WflowBuild,
     "fiat_build": FIATBuild,
+    "fiat_run": FIATRun,
+    "fiat_update_hazard": FIATUpdateHazard,
     "test_method": Method,  # FIX ME: keep this method private for CLI testing,
     "wflow_run": WflowRun,
     "wflow_update_forcing": WflowUpdateForcing,

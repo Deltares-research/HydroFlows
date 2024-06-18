@@ -74,7 +74,11 @@ class WflowBuild(Method):
         opt["setup_rivers"].update(river_upa=self.params.upstream_area)
 
         # for reservoirs, lakes and glaciers: check if data is available
-        for key in ["reservoirs", "lakes", "glaciers"]:
+        for key in [
+            item
+            for item in ["reservoirs", "lakes", "glaciers"]
+            if f"setup_{item}" in opt
+        ]:
             if opt[f"setup_{key}"].get(f"{key}_fn") not in w.data_catalog.sources:
                 opt.pop(f"setup_{key}")
 
