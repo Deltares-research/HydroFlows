@@ -62,7 +62,7 @@ class Params(BaseModel):
     """The path to the configuration file (.yml) that defines the settings
     to build a Sfincs model. In this file the different model components
     that are required by the :py:class:`hydromt_sfincs.SfincsModel` are listed.
-    Every component defines the setting for each hydromt_wflow setup methods.
+    Every component defines the setting for each hydromt_sfincs setup methods.
     For more information see hydromt_sfincs method
     `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
     """
