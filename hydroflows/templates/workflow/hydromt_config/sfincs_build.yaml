@@ -19,6 +19,14 @@ setup_mask_bounds:
   btype: waterlevel
   include_mask: osm_coastlines  # add buffer on the fly
   include_mask_buffer: 200 # buffer distance [m]
+  zmax: 5  # maximum dep level
+
+setup_river_inflow:
+  hydrography: merit_hydro
+  buffer: 200
+  river_upa: <river_upa>  # placeholder for river upstream area threshold [km2]
+  river_len: 1000
+  keep_rivers_geom: True
 
 setup_subgrid:
   datasets_dep:
@@ -34,9 +42,3 @@ setup_subgrid:
   write_dep_tif: True
   nr_subgrid_pixels: 5  # 20m resolution
   nbins: 8
-
-setup_river_inflow:
-  hydrography: merit_hydro
-  river_upa: <river_upa>  # placeholder for river upstream area threshold [km2]
-  river_len: 1000
-  keep_rivers_geom: True

@@ -1,4 +1,5 @@
 """SFINCS build methods."""
+
 from pathlib import Path
 
 from hydromt.config import configread, configwrite
@@ -13,25 +14,43 @@ __all__ = ["SfincsBuild"]
 
 
 class Input(BaseModel):
+    """SfincsBuild input parameters."""
+
     region: FilePath
+    """Path to the region vector file."""
 
 
 class Output(BaseModel):
+    """SfincsBuild output parameters."""
+
     sfincs_inp: Path
+    """Path to the SFINCS input file."""
+
     sfincs_region: Path
+    """Path to the SFINCS model region file."""
 
 
 class Params(BaseModel):
-    # optional parameter
+    """SfincsBuild parameters."""
+
     data_libs: ListOfStr = ["artifact_data"]
+    """List of data catalog files to use."""
+
     config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yaml")
+    """Path to the SFINCS build HydroMT configuration file."""
+
     res: float = 50.0
+    """Resolution of the grid in meters."""
+
     river_upa: float = 30
+    """Upstream area of the river in km2."""
+
     plot_fig: bool = True
+    """Plot the basemap."""
 
 
 class SfincsBuild(Method):
-    """Rule for building Sfincs."""
+    """Method for building SFINCS models."""
 
     name: str = "sfincs_build"
     params: Params = Params()  # optional parameters
@@ -47,6 +66,9 @@ class SfincsBuild(Method):
             res=self.params.res, region={"geom": str(self.input.region)}
         )
         opt["setup_mask_active"].update(mask=str(self.input.region))
+        # FIXME: because of the resolution of the grid and a small shift
+        # of the merit hydro data the rivers do not align with the model domain
+        # we should determine the river inflow points from the original region data?
         opt["setup_river_inflow"].update(river_upa=self.params.river_upa)
         # create the hydromt model
         root = self.output.sfincs_inp.parent
@@ -64,4 +86,4 @@ class SfincsBuild(Method):
 
         # plot basemap
         if self.params.plot_fig == True:
-            sf.plot_basemap(fn_out="basemap.png", plot_region=True, shaded=True)
+            sf.plot_basemap(fn_out="basemap.png", plot_region=False, shaded=False)
