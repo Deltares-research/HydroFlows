@@ -17,7 +17,7 @@ dependencies = [
   "geopandas",                # Reading vector data
   "hydromt>=0.9.4",           # hydromt core for setting up models
   "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
-  "hydromt_sfincs",           # hydromt plugin for sfincs models
+  "hydromt_sfincs@git+https://github.com/Deltares/hydromt_sfincs.git@river-inflow-fix",           # hydromt plugin for sfincs models
   "hydromt_wflow",            # hydromt plugin for wflow models
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
@@ -80,6 +80,7 @@ Source = "https://github.com/Deltares-research/HydroFlows"
 channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
+  "hydromt_sfincs",
   "quartodoc",
 ]
 
