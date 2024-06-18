@@ -10,4 +10,5 @@ Text to be added
    rainfall_methods.rst
    wflow_methods.rst
    sfincs_methods.rst
+   hazard_methods.rst
    workflow_methods.rst

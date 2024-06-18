@@ -51,8 +51,8 @@ Rainfall related methods
    hydroflows.methods.GetERA5Rainfall
    hydroflows.methods.PluvialDesignEvents
 
-Hazzard methods
----------------
+Hazzard related methods
+-----------------------
 
 .. autosummary::
    :toctree: _generated
