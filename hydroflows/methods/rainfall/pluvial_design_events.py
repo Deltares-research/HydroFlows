@@ -40,6 +40,7 @@ class Params(BaseModel):
     qthresh: float = 0.95
     min_sample_perc: int = 80
     time_dim: str = "time"
+    t0: str = "2020-01-01"
 
     # return periods of interest
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
@@ -143,7 +144,7 @@ class PluvialDesignEvents(Method):
             )
 
         # random starting time
-        dt0 = pd.to_datetime("2020-01-01")
+        dt0 = pd.to_datetime(self.params.t0)
         time_delta = pd.to_timedelta(p_hyetograph["time"], unit="h").round("10min")
         p_hyetograph["time"] = dt0 + time_delta
         p_hyetograph = p_hyetograph.reset_coords(drop=True)

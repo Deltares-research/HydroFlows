@@ -40,6 +40,8 @@ class Params(BaseModel):
     index_dim: str = "Q_gauges"
     time_dim: str = "time"
     t0: str = "2020-01-01"
+    warm_up_years: int = 2
+    n_peaks: int = None
 
     # return periods of interest
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
@@ -70,6 +72,12 @@ class WflowDesignHydro(Method):
                 raise ValueError(
                     f"{dim} not a dimension in, {self.input.time_series_nc}"
                 )
+        # warm up period from the start of the time series up to warm_up_years to exclude
+        warm_up_period = da[time_dim].values[0] + pd.Timedelta(
+            self.params.warm_up_years, "A"
+        )
+        # keep timeseries only after the warm up period
+        da = da.sel({time_dim: slice(warm_up_period, None)})
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
@@ -123,49 +131,24 @@ class WflowDesignHydro(Method):
         ).load()
         da_rps = da_rps.assign_coords(rps=self.params.rps)
 
-        # hydrographs based on the 10 highest peaks
+        # hydrographs based on the n highest peaks
         da_q_hydrograph = design_events.get_peak_hydrographs(
             da,
             da_peaks,
             wdw_size=wdw_size,
-            n_peaks=10,
+            n_peaks=self.params.n_peaks,
         ).transpose(time_dim, "peak", index_dim)
 
         # calculate the mean design hydrograph per rp
         q_hydrograph = da_q_hydrograph.mean("peak") * da_rps
 
-        # Put a random date for the csvs
-        dt0 = pd.to_datetime(self.params.t0)
-        time_delta = pd.to_timedelta(q_hydrograph["time"], unit=unit)
-        q_hydrograph["time"] = dt0 + time_delta
-        q_hydrograph = q_hydrograph.reset_coords(drop=True)
+        # make sure there are no negative values
+        q_hydrograph = xr.where(q_hydrograph < 0, 0, q_hydrograph)
 
-        # save the data
+        # save plots
         root = self.output.event_catalog.parent
         os.makedirs(root, exist_ok=True)
 
-        events_list = []
-        for i, rp in enumerate(q_hydrograph.rps.values):
-            # save q_rp as csv files
-            name = f"q_event{int(i+1):02d}"
-            events_fn = Path(root, f"{name}.csv")
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
-
-            event = {
-                "name": name,
-                "forcings": [{"type": "discharge", "path": f"{name}.csv"}],
-                "probability": 1 / rp,
-            }
-            events_list.append(event)
-
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
-            events=events_list,
-        )
-        event_catalog.to_yaml(self.output.event_catalog)
-
-        # save plots
         if self.params.plot_fig:
             fn_plots = os.path.join(root, "figs")
 
@@ -216,3 +199,30 @@ class WflowDesignHydro(Method):
                     dpi=150,
                     bbox_inches="tight",
                 )
+
+        # Put a random date for the csvs
+        dt0 = pd.to_datetime(self.params.t0)
+        time_delta = pd.to_timedelta(q_hydrograph["time"], unit=unit)
+        q_hydrograph["time"] = dt0 + time_delta
+        q_hydrograph = q_hydrograph.reset_coords(drop=True)
+
+        events_list = []
+        for i, rp in enumerate(q_hydrograph.rps.values):
+            # save q_rp as csv files
+            name = f"q_event{int(i+1):02d}"
+            events_fn = Path(root, f"{name}.csv")
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(events_fn)
+
+            event = {
+                "name": name,
+                "forcings": [{"type": "discharge", "path": f"{name}.csv"}],
+                "probability": 1 / rp,
+            }
+            events_list.append(event)
+
+        # make a data catalog
+        event_catalog = EventCatalog(
+            root=root,
+            events=events_list,
+        )
+        event_catalog.to_yaml(self.output.event_catalog)
