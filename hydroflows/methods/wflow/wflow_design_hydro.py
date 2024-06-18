@@ -87,8 +87,14 @@ class Params(BaseModel):
 
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
+
     warm_up_years: int = 2
+    """Number of (initial) years to exlcude from the discharge timeseries
+    as a warm-up period."""
+
     n_peaks: int = None
+    """Numper of largest peaks to get hydrogaph.
+    If None (default) all peaks are used."""
 
     # return periods of interest
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
