@@ -85,6 +85,7 @@ class Params(BaseModel):
 
     time_dim: str = "time"
     """Time dimension of the input time series provided in :py:class:`Input` class."""
+    t0: str = "2020-01-01"
 
     rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
     """Return periods of interest."""
@@ -196,7 +197,7 @@ class PluvialDesignEvents(Method):
             )
 
         # random starting time
-        dt0 = pd.to_datetime("2020-01-01")
+        dt0 = pd.to_datetime(self.params.t0)
         time_delta = pd.to_timedelta(p_hyetograph["time"], unit="h").round("10min")
         p_hyetograph["time"] = dt0 + time_delta
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
