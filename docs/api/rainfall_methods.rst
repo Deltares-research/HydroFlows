@@ -1,7 +1,7 @@
 .. currentmodule:: hydroflows.methods.rainfall
 
 Rainfall related methods
-======================
+========================
 
 GetERA5Rainfall
 ---------------
