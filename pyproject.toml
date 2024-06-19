@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 requires-python = ">=3.9"
-readme = "README.md"
+readme = "README.rst"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
   "Intended Audience :: Developers",
@@ -47,7 +47,10 @@ dev = [
   # "twine",       # needed to publish to pypi
 ]
 doc = [
-  "quartodoc",
+  "sphinx",
+  "sphinx_design",
+  "pydata-sphinx-theme",
+  "autodoc_pydantic",
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
@@ -80,7 +83,8 @@ Source = "https://github.com/Deltares-research/HydroFlows"
 channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
-  "quartodoc",
+  "sphinx_autosummary_accessors",
+  "sphinx_design",
 ]
 
 [project.scripts]

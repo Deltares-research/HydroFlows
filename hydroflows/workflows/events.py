@@ -23,27 +23,20 @@ SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True
 
 
 class Forcing(BaseModel):
-    """A forcing for the event.
-
-    Parameters
-    ----------
-    type : Literal["water_level", "discharge", "rainfall"]
-        The type of the forcing.
-    path : Path
-        The path to the forcing data.
-    data : Any, optional
-        The data for the forcing, by default None.
-        This is excluded from serialization.
-    time_range : datetime, optional
-        The time range of the forcing data, by default None.
-        This is excluded from serialization.
-    """
+    """A forcing for the event."""
 
     type: Literal["water_level", "discharge", "rainfall"]
+    """The type of the forcing."""
+
     path: Path
+    """The path to the forcing data."""
+
     # Excl from serialization
     data: Optional[Any] = Field(None, exclude=True)
+    """The data for the forcing. This is excluded from serialization."""
+
     time_range: Optional[List[datetime]] = Field(None, exclude=True)
+    """The time range of the forcing data. This is excluded from serialization."""
 
     def read_data(self, root: Optional[Path] = None, **kwargs) -> Any:
         """Read the data."""
@@ -90,28 +83,20 @@ class Forcing(BaseModel):
 
 
 class Hazard(BaseModel):
-    """A hazard map related to an event.
-
-    Hazard maps are stored in GeoTIFF raster files and can be embodied by several
-    variables, e.g. depth, velocity, rise rate.
-
-    Parameters
-    ----------
-    type : Literal["depth", "velocity", "rise_rate"]
-        The type of the forcing.
-    path : Path
-        The path to the hazard data layer (GeoTIFF).
-    data : Any, optional
-        The data for the hazard, by default None.
-        This is excluded from serialization.
-
-    """
+    """A hazard map related to an event."""
 
     type: Literal["depth", "velocity", "rise_rate"]
+    """The type of the forcing."""
+
     path: Path
+    """The path to the hazard data layer (GeoTIFF)."""
+
     # Excl from serialization
     data: Optional[Any] = Field(None, exclude=True)
+    """The data for the hazard. This is excluded from serialization."""
+
     timestamp: Optional[datetime] = Field(None, exclude=True)
+    """Timestamp. This is excluded from serialization."""
 
     def read_data(self, **kwargs) -> Any:
         """Read the data."""
@@ -152,28 +137,25 @@ class Impact(BaseModel):
     Impact maps are stored in GeoTIFF raster files or vector files and can be
     embodied by several variables, e.g. damage, affected with several
     arbitrary subcategories such as "content", "building", "infrastructure",
-    "population"
-
-    Parameters
-    ----------
-    type : Literal["damage", "affected"]
-        The type of the impact.
-    category : Optional[str] : category of the impact (e.g. "building", "content",
-        "population", "infrstructure". To be defined by user.
-    path : Path
-        The path to the hazard data layer (GeoTIFF).
-    data : Any, optional
-        The data for the hazard, by default None.
-        This is excluded from serialization.
-
+    "population".
     """
 
     type: Literal["damage", "affected"]  # can be extended
+    """The type of the impact."""
+
     category: Optional[str] = None
+    """category of the impact (e.g. "building", "content",
+    "population", "infrstructure". To be defined by user."""
+
     path: Path
+    """The path to the hazard data layer (GeoTIFF)."""
+
     # Excl from serialization
     data: Optional[Any] = Field(None, exclude=True)
+    """The data for the hazard. This is excluded from serialization."""
+
     timestamp: Optional[datetime] = Field(None, exclude=True)
+    """Timestamp. This is excluded from serialization."""
 
     def read_data(self, **kwargs) -> Any:
         """Read the data."""
@@ -198,44 +180,39 @@ class Impact(BaseModel):
 class Event(BaseModel):
     """A model event.
 
-    Parameters
-    ----------
-    name : str
-        The name of the event.
-    forcings : List[Forcing]
-        The list of forcings for the event. Each forcing is a dictionary with
-        the structure as defined in :class:`Forcing`.
-    hazards : Optional[List[Hazard]]
-        The list of hazard outputs for the event. Each hazard is a dictionary with
-        the structure as defined in :class:`Hazard`.
-    impacts : Optional[List[Impact]]
-        The list of impact outputs for the event. Each impact is a dictionary with
-        the structure as defined in :class:`Impact`.
-    probability : float, optional
-        The probability of the event, by default None.
-    time_range : List[datetime], optional
-        The time range of the event, by default None.
-
     Examples
     --------
-    The event can be created as follows:
+    The event can be created as follows::
 
-        ```python
         from hydroflows.workflows.events import Event
+
         event = Event(
             name="event",
-            forcings=[dict(type="rainfall", path="path/to/data.csv")],
+            forcings=[{"type": "rainfall", "path": "path/to/data.csv"}],
             probability=0.5,
         )
-        ````
     """
 
     name: str
+    """The name of the event."""
+
     forcings: List[Forcing]
+    """The list of forcings for the event. Each forcing is a dictionary with
+    the structure as defined in :py:class:`Forcing`."""
+
     hazards: Optional[List[Hazard]] = None
+    """The list of hazard outputs for the event. Each hazard is a dictionary with
+    the structure as defined in :py:class:`Hazard`."""
+
     impacts: Optional[List[Impact]] = None
+    """The list of impact outputs for the event. Each impact is a dictionary with
+    the structure as defined in :py:class:`Impact`."""
+
     probability: Optional[float] = None
+    """The probability of the event."""
+
     time_range: Optional[List[datetime]] = None
+    """The time range of the event."""
 
     @field_validator("forcings", mode="before")
     @classmethod
@@ -279,67 +256,55 @@ class Event(BaseModel):
 
 
 class Roots(BaseModel):
-    """Dictionary of directories for event files.
-
-    Parameters
-    ----------
-    root_forcings : Optional[DirectoryPath]
-        Root directory for forcing data.
-    root_hazards : Optional[DirectoryPath]
-        Root directory for hazard data.
-    root_impacts : Optional[DirectoryPath]
-        Root directory for impact data.
-
-    """
+    """Dictionary of directories for event files."""
 
     root_forcings: Optional[DirectoryPath] = None
+    """Root directory for forcing data."""
+
     root_hazards: Optional[DirectoryPath] = None
+    """Root directory for hazard data."""
+
     root_impacts: Optional[DirectoryPath] = None
+    """Root directory for impact data."""
 
 
 class EventCatalog(BaseModel):
     """A dictionary of event configurations.
 
-    Parameters
-    ----------
-    version : str
-        The version of the event catalog.
-    roots : Roots
-        The root directories for forcings, hazards and impacts for the event catalog.
-    events : List[Event]
-        The list of events. Each event is a dictionary with the structure
-        as defined in :class:`Event`.
-
     Examples
     --------
-    The event catalog can be created from a YAML file as follows:
+    The event catalog can be created from a YAML file as follows::
 
-        ```python
         from hydroflows.workflows.events import EventCatalog
+
         EventCatalog.from_yaml("path/to/events.yaml")
-        ````
 
-    The event catalog can be created from a dictionary as follows:
+    The event catalog can be created from a dictionary as follows::
 
-        ```python
         from hydroflows.workflows.events import EventCatalog
+
         EventCatalog(
             root="path/to/root",
             events=[
                 {
                     "name": "event1",
                     "forcings": [{"type": "rainfall", "path": "path/to/data.csv"}],
-                    "probability": 0.5, # optional
+                    "probability": 0.5,  # optional
                 }
             ],
         )
-        ````
     """
 
     version: str = "v0.1"
+    """The version of the event catalog."""
+
     roots: Optional[Roots] = Roots()
+    """The root directories for forcings, hazards and impacts for the event catalog."""
+
     # root: Optional[DirectoryPath] = None
     events: List[Event]
+    """The list of events. Each event is a dictionary with the structure
+    as defined in :py:class:`Event`."""
 
     @field_validator("events", mode="before")
     @classmethod
@@ -494,15 +459,14 @@ class EventCatalog(BaseModel):
 
         Examples
         --------
-        The event data can be loaded as follows:
+        The event data can be loaded as follows::
 
-            ```python
             from hydroflows.workflows.events import EventCatalog
+
             event_catalog = EventCatalog.from_yaml("path/to/events.yaml")
             event = event_catalog.get_event_data("event1")
             # event data is now loaded
             df = event.forcings[0].data
-            ````
         """
         # get event
         event = self.get_event(name, raise_error=True)
