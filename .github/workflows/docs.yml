@@ -18,13 +18,6 @@ jobs:
     steps:
       - name: checkout code
         uses: actions/checkout@v4
-#      - uses: prefix-dev/setup-pixi@v0.6.0
-#        with:
-#          pixi-version: "v0.21.1"
-#          environments: full-py311
-#      - name: Prepare pixi
-#        run: |
-#          pixi run --locked -e full-py311 install-hydromt
       - name: Setup Python
         uses: actions/setup-python@v5
         id: python_version
@@ -45,34 +38,6 @@ jobs:
           pushd docs
           make html
           popd
-
-#      - name: Setup quarto
-#        run: |
-#          sudo apt install -y curl
-#          sudo apt install -y gdebi-core
-#          mkdir tmp
-#          curl -L https://github.com/quarto-dev/quarto-cli/releases/download/v1.3.450/quarto-1.3.450-linux-amd64.deb --output tmp/quarto.deb
-#          chmod +x tmp/quarto.deb
-#          sudo gdebi -n tmp/quarto.deb
-#
-#      - name: Install quarto extensions
-#        run: |
-#          sudo apt install -y expect
-#          cd docs
-#          chmod u+x add_packages.sh
-#          ./add_packages.sh
-#
-#      - name: Setup api
-#        run: |
-#          cd docs
-#          python api.py
-#          python -m quartodoc interlinks
-#
-#      - name: Generate docs
-#        run: |
-#          quarto render docs/ --execute
-#          echo "DOC_VERSION=$(python -c 'from hydroflows import __version__ as v; print("dev" if "dev" in v else "v"+v.replace(".dev",""))')" >> $GITHUB_ENV
-#
 # TODO uncomment upload action as soon as HydroFlows is public
 #      - name: Upload to GitHub Pages
 #        if: ${{ github.event_name != 'pull_request' && !github.event.act }}
