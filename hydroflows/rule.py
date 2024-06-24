@@ -13,8 +13,9 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, cast
 
 from pydantic import BaseModel
+from tqdm.contrib.concurrent import thread_map
 
-from hydroflows.methods.method import Method
+from hydroflows.methods.method import ExpandMethod, Method
 
 if TYPE_CHECKING:
     from hydroflows.workflow import Workflow
@@ -64,7 +65,13 @@ class Rule:
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
-        return f"Rule(name={self.name}, runs={self.runs}, wildcards={self.wildcards})"
+        repr_dict = {"name": self.name, "runs": self.n_runs}
+        if self.wildcards:
+            repr_dict["wildcards"] = self.wildcards
+        if isinstance(self.method, ExpandMethod):
+            repr_dict["expand"] = list(self.method.expand_values.keys())
+        repr_str = ", ".join([f"{k}={v}" for k, v in repr_dict.items()])
+        return f"Rule({repr_str})"
 
     @property
     def workflow(self) -> "Workflow":
@@ -80,20 +87,24 @@ class Rule:
         return list(wc_in_params & wc_out)
 
     @property
-    def runs(self) -> int:
+    def n_runs(self) -> int:
         """Return the number of required method runs."""
         return len(self._wildcard_product())
 
     def to_dict(self) -> Dict:
         """Return the method as a dictionary."""
-        return {
+        out_dict = {
             "name": self.name,
-            "runs": self.runs,
-            "wildcards": self.wildcards,
+            "runs": self.n_runs,
             "input": self.input(),
             "output": self.output(),
             "params": self.params(exclude_defaults=True),
         }
+        if isinstance(self.method, ExpandMethod):
+            out_dict["expand"] = list(self.method.expand_values.keys())
+        if self.wildcards:
+            out_dict["wildcards"] = self.wildcards
+        return out_dict
 
     def input(
         self, filter_types: Tuple[Type] = None, filter_keys: List = None, **kwargs
@@ -138,8 +149,13 @@ class Rule:
 
     def _detect_wildcards(self) -> List[str]:
         """Detect wildcards in the rule based on workflow wildcard names."""
+        # add expand wildcards to workflow wildcards
+        if isinstance(self.method, ExpandMethod):
+            for key, val in self.method.expand_values.items():
+                self.workflow.wildcards.set(key, val)
+
+        # check for wildcards in input and output
         wildcards = {"input": [], "output": [], "params": []}
-        # check for known wildcards in input and output
         for key in wildcards.keys():
             for value in getattr(self, key)().values():
                 if not isinstance(value, (str, Path)):
@@ -148,6 +164,16 @@ class Rule:
                 for wc in self.workflow.wildcards.names:
                     if "{" + str(wc) + "}" in value and wc not in wildcards[key]:
                         wildcards[key].append(wc)
+
+        # make sure wildcards in output which are not in input match expand_refs
+        if isinstance(self.method, ExpandMethod):
+            expand_wc = list(set(wildcards["output"]) - set(wildcards["input"]))
+            if expand_wc != list(set(self.method.expand_values.keys())):
+                raise ValueError(
+                    f"Wildcards in output {expand_wc} do not match method {self.name} "
+                    f"expand_refs: {self.method.expand_refs.keys()}"
+                )
+
         return wildcards
 
     def explode_kwargs(self) -> List[Dict]:
@@ -165,20 +191,26 @@ class Rule:
     def _wildcard_product(self) -> List[Tuple]:
         """Return the product of all wildcard values."""
         # only explode if there are wildcards on the output
-        wc_values = [
-            self.workflow.wildcards.get_wildcard(wc).values for wc in self.wildcards
-        ]
+        wc_values = [self.workflow.wildcards.get(wc) for wc in self.wildcards]
         # drop None from list of values; this occurs when the workflow is not fully initialized yet
         wc_values = [v for v in wc_values if v is not None]
         return list(product(*wc_values))
 
-    def run(self) -> None:
+    def run(self, max_workers=None) -> None:
         """Run the rule."""
+        tqdm_kwargs = {}
+        if max_workers is not None:
+            tqdm_kwargs.update(max_workers=max_workers)
+
         all_kwargs = self.explode_kwargs()
-        n = len(all_kwargs)
-        for i, kwargs in enumerate(all_kwargs):
-            print(f"Running method {self.name}; instance ({i+1}/{n}) ...")
-            self._method_class(**kwargs).run()
+        if len(all_kwargs) == 1 or max_workers == 1:
+            self._run_method_instance(all_kwargs[0])
+        else:
+            thread_map(self._run_method_instance, all_kwargs, **tqdm_kwargs)
+
+    def _run_method_instance(self, kwargs: Dict) -> None:
+        """Run a method instance with the given kwargs."""
+        self._method_class(**kwargs).run()
 
     def to_str(self, fmt: str = "snakemake") -> str:
         """Return the rule as a string."""
@@ -195,7 +227,7 @@ class Rule:
         input = self.input(mode="python", filter_types=Path)
         snake += "    input:\n"
         for key, value in input.items():
-            value = self._parse_snake_key_value(key, value, "input")
+            value = self._parse_snake_key_value(key, value)
             snake += f"        {key}={value},\n"
         # parse params; only if non-default and key not in kwargs
         params = self.params(
@@ -204,13 +236,13 @@ class Rule:
         if params:
             snake += "    params:\n"
             for key, value in params.items():
-                value = self._parse_snake_key_value(key, value, "params")
+                value = self._parse_snake_key_value(key, value)
                 snake += f"        {key}={value},\n"
         # parse output; paths only
         output = self.output(mode="python", filter_types=Path)
         snake += "    output:\n"
         for key, value in output.items():
-            value = self._parse_snake_key_value(key, value, "output")
+            value = self._parse_snake_key_value(key, value)
             snake += f"        {key}={value},\n"
         # shell command
         snake += "    shell:\n"
@@ -222,7 +254,7 @@ class Rule:
         snake += '        """\n'
         return snake
 
-    def _parse_snake_key_value(self, key, val, comp) -> str:
+    def _parse_snake_key_value(self, key, val) -> str:
         """Expand the wildcards in a string."""
         # replace val with references to config or other rules
         kwargs = self._kwargs
@@ -234,14 +266,17 @@ class Rule:
             elif kwargs[key].startswith("$rules"):
                 v = f"{kwargs[key][1:]}"
         else:
-            # check in wildcard in value which should be expanded
-            # wildcards are in the form {wildcard_name}
             expand_kwargs = []
-            for wc in self._wildcards[comp]:
-                if "{" + wc + "}" in str(val):
-                    # NOTE wildcard values will be added by the workflow in upper case
-                    expand_kwargs.append(f"{wc}={wc.upper()}")
+            if isinstance(self.method, ExpandMethod):
+                for wc in self.method.expand_values.keys():
+                    if "{" + wc + "}" in str(val):
+                        # NOTE wildcard values will be added by the workflow in upper case
+                        expand_kwargs.append(f"{wc}={wc.upper()}")
             if expand_kwargs:
+                for wc in self.wildcards:
+                    if "{" + wc + "}" in str(val):
+                        # escape the wildcard in the value
+                        val = str(val).replace("{" + wc + "}", "{{" + wc + "}}")
                 # NOTE we assume product of all wildcards, this could be extended to also use zip
                 expand_kwargs_str = ", ".join(expand_kwargs)
                 v = f'expand("{val}", {expand_kwargs_str})'

@@ -5,29 +5,13 @@ Which is the main class for defining workflows in hydroflows.
 
 from pathlib import Path
 from pprint import pformat
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import yaml
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.rule import Rule
-
-
-class Wildcard(BaseModel):
-    """Wildcards class.
-
-    This class is used to define the wildcards for the workflow.
-    """
-
-    name: str
-    """Name of the wildcard."""
-
-    values: Optional[List[str]] = None
-    """Values of the wildcard."""
-
-    ref: Optional[str] = None
-    """Reference of the wildcard to a rule output."""
 
 
 class Wildcards(BaseModel):
@@ -36,46 +20,37 @@ class Wildcards(BaseModel):
     This class is used to define the wildcards for the workflow.
     """
 
-    wildcards: List[Wildcard]
-    """List of wildcards."""
-
-    @field_validator("wildcards", mode="before")
-    @classmethod
-    def _set_wildcards(cls, value: Any) -> List[Wildcard]:
-        # if list of dictionaries, convert to list of Wildcard
-        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
-            return [Wildcard(**wc) for wc in value]
-        return value
+    wildcards: Dict[str, List[str]]
+    """List of wildcard keys and values."""
 
     @property
     def names(self) -> List[str]:
         """Get the names of the wildcards."""
-        return [wildcard.name for wildcard in self.wildcards]
+        return list(self.wildcards.keys())
 
     @property
     def values(self) -> List[List]:
         """Get the values of the wildcards."""
-        return [wildcard.values for wildcard in self.wildcards]
+        return list(self.wildcards.values())
 
     def to_dict(self) -> Dict[str, List]:
         """Convert the wildcards to a dictionary of names and values."""
-        return {k: v for k, v in zip(self.names, self.values)}
+        return self.model_dump()["wildcards"]
 
     def _snake_wildcards(self) -> str:
         wc_str = ""
-        for wildcard in self.wildcards:
-            assert wildcard.values is not None
-            wc_str += f"{wildcard.name.upper()} = {wildcard.values}\n"
+        for key, values in self.wildcards.items():
+            str_values = str(values).replace("'", '"')
+            wc_str += f"{key.upper()} = {str_values}\n"
         return wc_str
 
-    def get_wildcard(self, name: str) -> Wildcard:
-        """Get a wildcard from the wildcards."""
-        wildcard = next(
-            (wildcard for wildcard in self.wildcards if wildcard.name == name), None
-        )
-        if wildcard is None:
-            raise ValueError(f"Wildcard {name} not found in wildcards.")
-        return wildcard
+    def set(self, key: str, values: List[str]):
+        """Add a wildcard."""
+        self.wildcards.update({key: values})
+
+    def get(self, key: str) -> List[str]:
+        """Get the values of a wildcard."""
+        return self.wildcards[key]
 
 
 class Workflow:
@@ -86,7 +61,7 @@ class Workflow:
         config: Dict,
         rules: List[Dict],
         results: List = None,
-        wildcards: List[Dict] = None,
+        wildcards: Dict[str, List[str]] = None,
     ) -> None:
         """Create a workflow instance.
 
@@ -115,8 +90,8 @@ class Workflow:
         for rule in rules:
             self.add_rule(**rule)
 
-        # after all rules are initialized, wildcards that are output of rules can be resolved
-        self._resolve_wildcards()
+        # TODO check if all wildcards in rules are in self.wildcards with values
+        self._check_wildcards()
 
         # if results are not provided, use the output of the last rule
         if self.results is None:
@@ -158,7 +133,7 @@ class Workflow:
         ref_keys = reference.split(".")
         match ref_keys[0]:
             case "$config":
-                value = get_nested_value_from_dict(self.config, ref_keys[1:])
+                value = get_nested_value_from_dict(self.config, ref_keys[1:], reference)
             case "$rules":
                 if not len(ref_keys) >= 4:
                     raise ValueError(
@@ -167,18 +142,17 @@ class Workflow:
                         "where <rule_component> is one of input, output or params."
                     )
                 rule_dict = self.get_rule(ref_keys[1]).to_dict()
-                value = get_nested_value_from_dict(rule_dict, ref_keys[2:])
+                value = get_nested_value_from_dict(rule_dict, ref_keys[2:], reference)
             case _:
                 raise ValueError(
                     f"Invalid reference: {reference}. References should start with $config or $rules."
                 )
         return value
 
-    def _resolve_wildcards(self) -> None:
-        """Resolve wildcards with references to rules."""
-        for wildcard in self.wildcards.wildcards:
-            if wildcard.ref is not None:
-                wildcard.values = self._resolve_references(wildcard.ref)
+    def _check_wildcards(self) -> None:
+        """Check if all wildcards in rules are in self.wildcards with values."""
+        # TODO: implement
+        pass
 
     @classmethod
     def from_yaml(cls, file: str):
@@ -208,27 +182,37 @@ class Workflow:
                 raise ValueError(
                     f"Invalid result reference: {ref}. References should start with $rules."
                 )
-            key = ref.split(".")[-1]
-            value = self._resolve_references(ref)
-            rule = self.get_rule(ref.split(".")[1])
-            result = rule._parse_snake_key_value(key, value, "output")
-            rule_all += f"        {result},\n"
+            val = self._resolve_references(ref)
+            expand_kwargs = []
+            for wc in self.wildcards.names:
+                if "{" + wc + "}" in str(val):
+                    # NOTE wildcard values will be added by the workflow in upper case
+                    expand_kwargs.append(f"{wc}={wc.upper()}")
+            if expand_kwargs:
+                # NOTE we assume product of all wildcards, this could be extended to also use zip
+                expand_kwargs_str = ", ".join(expand_kwargs)
+                v = f'expand("{val}", {expand_kwargs_str})'
+            else:
+                # no references or wildcards, just add the value with quotes
+                v = f'"{val}"'
+            rule_all += f"        {v},\n"
         return rule_all
 
     def run(self):
         """Run the workflow."""
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {rule.name} ({i+1}/{nrules})")
+            print(f">> Rule {i+1}/{nrules}: {rule.name}")
             rule.run()
 
 
-def get_nested_value_from_dict(d: dict, keys: list) -> Any:
+def get_nested_value_from_dict(d: dict, keys: list, full_reference: str = None) -> Any:
     """Get nested value from dictionary."""
+    if full_reference is None:
+        full_reference = ".".join(keys)
     for key in keys:
         if isinstance(d, dict) and key in d:
             d = d[key]
         else:
-            key_str = ".".join(keys)
-            raise KeyError(f"Key not found: {key_str}")
+            raise KeyError(f"Key not found: {full_reference}")
     return d

@@ -11,7 +11,7 @@ import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
-from typing import ClassVar, Dict, Generator
+from typing import ClassVar, Dict, Generator, List, cast
 
 from pydantic import BaseModel
 
@@ -145,3 +145,23 @@ class Method(ABC):
             if isinstance(value, Path):
                 if not value.parent.is_dir():
                     value.parent.mkdir(parents=True)
+
+
+class ExpandMethod(Method, ABC):
+    """Base class for methods that expand based on wildcards."""
+
+    expand_refs: Dict[str, str] = {}  # wildcard key: output key
+
+    def _resolve_expand_values(self) -> None:
+        """Resolve expand values based on expand_refs."""
+        self._expand_values: Dict[str, List] = {}
+        for wildcard, output_key in self.expand_refs.items():
+            expand_value = cast(List, getattr(self.output, output_key))
+            self._expand_values[wildcard] = expand_value
+
+    @property
+    def expand_values(self) -> Dict[str, List]:
+        """Return the expand values."""
+        if not hasattr(self, "_expand_values"):
+            self._resolve_expand_values()
+        return self._expand_values

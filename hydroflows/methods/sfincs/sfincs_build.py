@@ -1,4 +1,5 @@
 """SFINCS build methods."""
+
 from pathlib import Path
 from typing import Optional
 
@@ -32,6 +33,9 @@ class Output(BaseModel):
 
     sfincs_region: Path
     """The path to the derived SFINCS region GeoJSON file."""
+
+    sfincs_subgrid_dep: Path
+    """The path to the derived SFINCS subgrid depth geotiff file."""
 
 
 class Params(BaseModel):
@@ -114,14 +118,17 @@ class SfincsBuild(Method):
         :py:class:`hydromt_sfincs.SfincsModel`
             For more details on the SfincsModel used in hydromt_sfincs.
         """
-        self.params: Params = Params(
-            sfincs_root=sfincs_root, res=res, **params
-        )  # optional parameters
+        self.params: Params = Params(sfincs_root=sfincs_root, res=res, **params)
         self.input: Input = Input(region=region)
 
         sfincs_inp = self.params.sfincs_root / "sfincs.inp"
         sfincs_region = self.params.sfincs_root / "gis" / "region.geojson"
-        self.output: Output = Output(sfincs_inp=sfincs_inp, sfincs_region=sfincs_region)
+        sfincs_subgrid_dep = self.params.sfincs_root / "subgrid" / "dep.tif"
+        self.output: Output = Output(
+            sfincs_inp=sfincs_inp,
+            sfincs_region=sfincs_region,
+            sfincs_subgrid_dep=sfincs_subgrid_dep,
+        )
 
     def run(self):
         """Run the SfincsBuild method."""

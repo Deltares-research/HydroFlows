@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.events import Event, EventCatalog
-from hydroflows.methods.method import Method
+from hydroflows.methods.method import ExpandMethod
 
 __all__ = ["PluvialDesignEvents"]
 
@@ -84,10 +84,11 @@ class Params(BaseModel):
     as well as the calculated IDF curves per return period."""
 
 
-class PluvialDesignEvents(Method):
+class PluvialDesignEvents(ExpandMethod):
     """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
+    expand_refs: dict = {"event": "events"}
 
     def __init__(
         self, precip_nc_path: Path, event_root: Path = "data/events/rainfall", **params
