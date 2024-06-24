@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING, Dict, List, Tuple, Type, cast
 
 from pydantic import BaseModel
 
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 if TYPE_CHECKING:
     from hydroflows.workflow import Workflow

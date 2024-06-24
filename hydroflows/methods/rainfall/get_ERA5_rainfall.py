@@ -9,7 +9,7 @@ import requests
 import xarray as xr
 from pydantic import BaseModel
 
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 
 class Input(BaseModel):

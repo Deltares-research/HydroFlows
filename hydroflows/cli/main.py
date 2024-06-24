@@ -19,7 +19,7 @@ from typing import Optional
 import click
 
 from hydroflows import __version__
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 from hydroflows.utils import (
     adjust_config,
     copy_single_file,

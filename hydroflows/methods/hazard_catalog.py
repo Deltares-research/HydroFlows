@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from hydroflows._typing import ListOfStr
 from hydroflows.events import EventCatalog, Hazard
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 __all__ = ["HazardCatalog"]
 

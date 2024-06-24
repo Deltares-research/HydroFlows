@@ -7,7 +7,7 @@ from typing import Dict, Literal, Optional
 
 from pydantic import BaseModel
 
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 __all__ = ["SfincsRun"]
 

@@ -1,13 +1,18 @@
 """Submodule for hydroflows methods."""
 
+# NOTE all methods should be imported here to make them discoverable
+# in the Method._get_subclasses() method
 from .fiat import FIATBuild, FIATRun, FIATUpdateHazard
 from .hazard_catalog import HazardCatalog
+from .method import Method
 from .rainfall import GetERA5Rainfall, PluvialDesignEvents
 from .sfincs import SfincsBuild, SfincsPostprocess, SfincsRun, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowDesignHydro, WflowRun, WflowUpdateForcing
 
-# registered methods
+__all__ = ["Method"]
 
+
+# registered methods
 # TODO: turn in to list for entry points, similar to hydromt
 
 METHODS = {

@@ -5,7 +5,7 @@ from pathlib import Path
 from hydromt_sfincs import SfincsModel, utils
 from pydantic import BaseModel, FilePath
 
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 __all__ = ["SfincsPostprocess"]
 

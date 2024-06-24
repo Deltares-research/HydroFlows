@@ -11,7 +11,7 @@ from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.events import Event, EventCatalog
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 __all__ = ["PluvialDesignEvents"]
 

@@ -6,9 +6,9 @@ from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel
 
-from hydroflows import HYDROMT_CONFIG_DIR
 from hydroflows._typing import ListOfStr
-from hydroflows.method import Method
+from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows.methods.method import Method
 
 __all__ = ["SfincsBuild"]
 

@@ -13,7 +13,7 @@ from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfFloat
 from hydroflows.events import EventCatalog
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 __all__ = ["WflowDesignHydro"]
 

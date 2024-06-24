@@ -5,7 +5,7 @@ import yaml
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 
 
 class Input(BaseModel):

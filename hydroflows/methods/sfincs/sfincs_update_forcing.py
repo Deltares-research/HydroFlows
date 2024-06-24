@@ -9,7 +9,7 @@ from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel
 
 from hydroflows.events import Event
-from hydroflows.method import Method
+from hydroflows.methods.method import Method
 from hydroflows.utils import make_relative_paths
 
 __all__ = ["SfincsUpdateForcing"]
