@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import Method
+from hydroflows.method import Method
 
 __all__ = ["WflowRun"]
 

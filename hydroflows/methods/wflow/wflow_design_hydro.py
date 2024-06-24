@@ -12,8 +12,8 @@ from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfFloat
-from hydroflows.methods.method import Method
-from hydroflows.workflows.events import EventCatalog
+from hydroflows.events import EventCatalog
+from hydroflows.method import Method
 
 __all__ = ["WflowDesignHydro"]
 

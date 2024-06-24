@@ -5,7 +5,7 @@ from pathlib import Path
 from hydromt_sfincs import SfincsModel, utils
 from pydantic import BaseModel, FilePath
 
-from ..method import Method
+from hydroflows.method import Method
 
 __all__ = ["SfincsPostprocess"]
 
@@ -18,12 +18,7 @@ class Input(BaseModel):
     """
 
     sfincs_inp: FilePath
-    """The file path to the Sfincs configuration (inp) file from the
-    Sfincs model that needs to be postprocessed."""
-
     sfincs_dep: FilePath
-    """The file path to the Sfincs depth (dep) file from the
-    Sfincs model that needs to be postprocessed."""
 
 
 class Output(BaseModel):
@@ -34,7 +29,6 @@ class Output(BaseModel):
     """
 
     sfincs_inun: Path
-    """The path to the postprocessed Sfincs flood depth file."""
 
 
 class Params(BaseModel):
@@ -67,7 +61,7 @@ class SfincsPostprocess(Method):
     params: Params = Params()
 
     def run(self):
-        """Run the SfincsPostprocess method."""
+        """Run the postprocessing from SFINCS netcdf to inundation map."""
         root = self.input.sfincs_inp.parent
         fn_dep = self.input.sfincs_dep
         fn_inun = self.output.sfincs_inun
@@ -79,7 +73,7 @@ class SfincsPostprocess(Method):
         # Read the model results
         sf.read_results()
         if "zsmax" not in sf.results:
-            raise KeyError(f"zsmax is missing in results of {self.input.sfincs_inp}")
+            raise KeyError(f"zsmax is missing in results of {self.input.sfincs_map}")
 
         # Extract maximum water levels per time step from subgrid model
         zsmax = sf.results["zsmax"]
@@ -95,3 +89,33 @@ class SfincsPostprocess(Method):
             floodmap_fn=fn_inun,
             **self.params.raster_kwargs,
         )
+
+    @classmethod
+    def from_input_args(
+        cls, sfincs_map: Path, dem: Path, flood_map: Path, **params
+    ) -> "SfincsPostprocess":
+        """Create a new instance from input arguments.
+
+        Parameters
+        ----------
+        sfincs_map : Path
+            Path to the SFINCS map nc output file.
+        dem : Path
+            Path to the a high resolution DEM.
+        flood_map : Path
+            Path to the output flood map.
+        **params : dict
+            Additional parameters.
+
+        Returns
+        -------
+        SfincsPostprocess
+        """
+        input = {
+            "sfincs_map": sfincs_map,
+            "dem": dem,
+        }
+        output = {
+            "flood_map": flood_map,
+        }
+        return cls(input=input, output=output, params=params)

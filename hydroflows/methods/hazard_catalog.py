@@ -5,9 +5,9 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from .._typing import ListOfStr
-from ..workflows.events import EventCatalog, Hazard
-from .method import Method
+from hydroflows._typing import ListOfStr
+from hydroflows.events import EventCatalog, Hazard
+from hydroflows.method import Method
 
 __all__ = ["HazardCatalog"]
 

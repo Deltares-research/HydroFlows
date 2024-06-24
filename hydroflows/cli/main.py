@@ -13,14 +13,13 @@ optional
 - hydroflows create: create a new workflow
 """
 
-import os
 from pathlib import Path
 from typing import Optional
 
 import click
 
-from hydroflows import __version__, log
-from hydroflows.methods import METHODS
+from hydroflows import __version__
+from hydroflows.method import Method
 from hydroflows.utils import (
     adjust_config,
     copy_single_file,
@@ -55,8 +54,6 @@ def _cb_key_val(ctx, param, value):
                 )
             else:
                 k, v = pair.split("=", 1)
-                k = k.lower()
-                v = v.lower()
                 out[k] = None if v.lower() in ["none", "null", "nil", "nada"] else v
         return out
 
@@ -114,73 +111,24 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
         ctx.obj = {}
 
 
-opt_input = click.option(
-    "-i",
-    "--input",
-    multiple=True,
+@cli.command(short_help="Run a method with a set of key-word arguments.")
+@click.argument("METHOD", type=str, nargs=1)
+@click.argument(
+    "KWARGS",
+    nargs=-1,
     callback=_cb_key_val,
-    required=True,
-    help="Set required input file(s) for the method",
 )
-opt_output = click.option(
-    "-o",
-    "--output",
-    multiple=True,
-    callback=_cb_key_val,
-    required=True,
-    help="Specify the output of the method",
-)
-opt_params = click.option(
-    "-p",
-    "--params",
-    multiple=True,
-    callback=_cb_key_val,
-    required=False,
-    help="Set the parameters for the method",
-)
-
-
-@cli.command(short_help="Run a method with set inputs, outputs and parameters")
-@click.argument("RUNNER", type=str)
-@opt_input
-@opt_output
-@opt_params
 @verbose_opt
 @quiet_opt
 @overwrite_opt
 @click.pass_context
-def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
-    """Run a method with set inputs, outputs and parameters."""
-    append = not overwrite
-    log_level = max(10, 30 - 10 * (verbose - quiet))
-    logger = log.setuplog(
-        f"run_{runner}",
-        os.path.join(os.getcwd(), f"hydroflows_run_{runner}.log"),
-        log_level=log_level,
-        append=append,
-    )
-    if runner not in METHODS:
-        raise ValueError(f"Method {runner} not implemented")
-    try:
-        logger.info(f"Input: {input}")
-        logger.info(f"Parameters: {params}")
-        logger.info(f"Output: {output}")
+def method(ctx, method, kwargs, verbose, quiet, overwrite):
+    """Run a method with a set of key-word arguments.
 
-        if params:
-            method = METHODS[runner](input=input, output=output, params=params)
-        else:
-            method = METHODS[runner](input=input, output=output)
-
-        method.run()
-
-    except Exception as e:
-        logger.exception(e)  # catch and log errors
-        raise
-    finally:
-        # close logger gracefully
-        for handler in logger.handlers[:]:
-            handler.close()
-            logger.removeHandler(handler)
+    RUNNER is the name of the method to run, e.g., 'build_wflow'.
+    KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
+    """
+    Method.from_kwargs(method, **kwargs).run()
 
 
 opt_region = click.option(

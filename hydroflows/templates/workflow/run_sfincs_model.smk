@@ -71,20 +71,19 @@ rule run_sfincs:
 
 rule post_process_sfincs:
     input:
-        sfincs_inp = rules.update_sfincs.output.sfincs_inp,
         sfincs_map = rules.run_sfincs.output.sfincs_map,
-        sfincs_dep = "models/sfincs/{region_name}/subgrid/dep_subgrid.tif"
+        dem = "models/sfincs/{region_name}/subgrid/dep_subgrid.tif"
     params:
         depth_min = depth_min
     output:
-        sfincs_inun = "results/{region_name}/hazard/{scenario_name}/flood_depth_{event}.tif"
+        flood_map = "results/{region_name}/hazard/{scenario_name}/flood_depth_{event}.tif"
     shell:
         """
         hydroflows run \
         sfincs_postprocess \
-        -i sfincs_inp={input.sfincs_inp} \
-        -i sfincs_dep={input.sfincs_dep} \
-        -o sfincs_inun={output.sfincs_inun} \
+        -i sfincs_map={input.sfincs_map} \
+        -i dem={input.sfincs_dem} \
+        -o flood_map={output.flood_map} \
         -p depth_min={params.depth_min} \
         """
 

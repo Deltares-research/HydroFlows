@@ -9,7 +9,7 @@ from hydromt_wflow import WflowModel
 from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfStr
-from hydroflows.methods.method import Method
+from hydroflows.method import Method
 
 __all__ = ["WflowUpdateForcing"]
 
