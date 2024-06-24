@@ -9,6 +9,7 @@ validators and a run method.
 
 import inspect
 from abc import ABC, abstractmethod
+from pathlib import Path
 from pprint import pformat
 from typing import ClassVar, Dict, Generator
 
@@ -117,6 +118,7 @@ class Method(ABC):
         m = self.from_dict(d)
         assert m.to_dict() == d
 
+    @classmethod
     def _test_unique_keys(self) -> None:
         """Check if the method input, output and params keys are unique."""
         inputs = list(self.input.model_fields.keys())
@@ -130,3 +132,16 @@ class Method(ABC):
         # check for unique keys
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
+
+    def check_input_output_paths(self):
+        """Check if input exists and output parent directory exists."""
+        for key, value in self.input.model_dump().items():
+            if isinstance(value, Path):
+                if not value.is_file():
+                    raise FileNotFoundError(
+                        f"Input file {self.name}.input.{key} not found: {value}"
+                    )
+        for value in self.output.model_dump().values():
+            if isinstance(value, Path):
+                if not value.parent.is_dir():
+                    value.parent.mkdir(parents=True)

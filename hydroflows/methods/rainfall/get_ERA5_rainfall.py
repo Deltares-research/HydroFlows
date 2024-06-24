@@ -44,21 +44,29 @@ class Params(BaseModel):
 
 
 class GetERA5Rainfall(Method):
-    """Rule for getting ERA5 rainfall at the centroid of a polygon region.
-
-    This class utilizes the :py:class:`Params <hydroflows.methods.rainfall.get_ERA5_rainfall.Params>`,
-    :py:class:`Input <hydroflows.methods.rainfall.get_ERA5_rainfall.Input>`, and
-    :py:class:`Output <hydroflows.methods.rainfall.get_ERA5_rainfall.Output>` classes to
-    get ERA5 rainfall time series at the centroid of a polygon region, using the Open-Meteo API.
-
-    See Also
-    --------
-    ~:py:function:`hydroflows.methods.rainfall.get_ERA5_rainfall.get_era5_open_meteo`
-    """
+    """Rule for downloading ERA5 rainfall data at the centroid of a region."""
 
     name: str = "get_ERA5_rainfall"
 
     def __init__(self, region: Path, data_input_root: Path = "data/input", **params):
+        """Create and validate a GetERA5Rainfall instance.
+
+        Parameters
+        ----------
+        region : Path
+            The file path to the geometry file for which we want
+            to download ERA5 rainfall time series at its centroid.
+        data_input_root : Path, optional
+            The root folder where the data is stored, by default "data/input".
+        **params
+            Additional parameters to pass to the GetERA5Rainfall instance.
+
+        See Also
+        --------
+        :py:class:`GetERA5Rainfall Input <hydroflows.methods.rainfall.get_ERA5_rainfall.Input>`
+        :py:class:`GetERA5Rainfall Output <hydroflows.methods.rainfall.get_ERA5_rainfall.Output>`
+        :py:class:`GetERA5Rainfall Params <hydroflows.methods.rainfall.get_ERA5_rainfall.Params>`
+        """
         self.params: Params = Params(data_input_root=data_input_root, **params)
         self.input: Input = Input(region=region)
 
@@ -67,8 +75,9 @@ class GetERA5Rainfall(Method):
 
     def run(self):
         """Run the GetERA5Rainfall method."""
-        # create the output folder
-        self.output.precip_nc_path.parent.mkdir(parents=True, exist_ok=True)
+        # check if the input files and the output directory exist
+        self.check_input_output_paths()
+
         # read the region polygon file
         gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region).to_crs("EPSG:4326")
         # Calculate the centroid of each polygon

@@ -3,7 +3,7 @@
 import platform
 import subprocess
 from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 
@@ -57,7 +57,7 @@ class SfincsRun(Method):
     name: str = "sfincs_run"
 
     def __init__(self, sfincs_inp: str, **params) -> "SfincsRun":
-        """Create a sfincs_run instance from a minimal set of arguments.
+        """Create and validate a sfincs_run instance.
 
         Parameters
         ----------
@@ -73,16 +73,17 @@ class SfincsRun(Method):
         :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
         :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
         """
-        self.params = Params(**params)
-        self.input = Input(sfincs_inp=sfincs_inp)
-        self.output = Output(sfincs_map=Path(sfincs_inp).parent / "sfincs_map.nc")
-
-    def _get_kwargs(self) -> Dict[str, str]:
-        """Return the kwargs for the SfincsRun method."""
-        return super()._get_kwargs(exclude_outputs=["sfincs_map"])
+        self.params: Params = Params(**params)
+        self.input: Input = Input(sfincs_inp=sfincs_inp)
+        self.output: Output = Output(
+            sfincs_map=Path(sfincs_inp).parent / "sfincs_map.nc"
+        )
 
     def run(self) -> None:
         """Run the SfincsRun method."""
+        # check if the input files and the output directory exist
+        self.check_input_output_paths()
+
         # make sure model_root is an absolute path
         model_root = self.input.sfincs_inp.parent.resolve()
 

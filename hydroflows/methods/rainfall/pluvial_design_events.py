@@ -50,17 +50,7 @@ class Output(BaseModel):
 
 
 class Params(BaseModel):
-    """Parameters for :py:class:`PluvialDesignEvents` method.
-
-    This class utilizes the :py:class:`Params <hydroflows.methods.rainfall.get_ERA5_rainfall.Params>`,
-    :py:class:`Input <hydroflows.methods.rainfall.get_ERA5_rainfall.Input>`, and
-    :py:class:`Output <hydroflows.methods.rainfall.get_ERA5_rainfall.Output>` classes .
-
-    See Also
-    --------
-    ~:py:function:`hydroflows.methods.rainfall.pluvial_design_events.eva_idf`
-    ~:py:function:`hydroflows.methods.rainfall.pluvial_design_events.get_hyetograph`
-    """
+    """Parameters for :py:class:`PluvialDesignEvents` method."""
 
     event_root: Path
     """Root folder to save the derived design events."""
@@ -95,19 +85,30 @@ class Params(BaseModel):
 
 
 class PluvialDesignEvents(Method):
-    """Rule for generating pluvial design events.
-
-    This class utilizes the :py:class:`Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`,
-    :py:class:`Input <hydroflows.methods.rainfall.pluvial_design_events.Input>`, and
-    :py:class:`Output <hydroflows.methods.rainfall.pluvial_design_events.Output>` classes to derive
-    design pluvial events from a timeseries.
-    """
+    """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
 
     def __init__(
         self, precip_nc_path: Path, event_root: Path = "data/events/rainfall", **params
-    ):
+    ) -> None:
+        """Create and validate a PluvialDesignEvents instance.
+
+        Parameters
+        ----------
+        precip_nc_path : Path
+            The file path to the rainfall time series in NetCDF format.
+        event_root : Path, optional
+            The root folder to save the derived design events, by default "data/events/rainfall".
+        **params
+            Additional parameters to pass to the PluvialDesignEvents Params instance.
+
+        See Also
+        --------
+        :py:class:`PluvialDesignEvents Input <hydroflows.methods.rainfall.pluvial_design_events.Input>`
+        :py:class:`PluvialDesignEvents Output <hydroflows.methods.rainfall.pluvial_design_events.Output>`
+        :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
+        """
         self.params: Params = Params(event_root=event_root, **params)
         self.input: Input = Input(precip_nc_path=precip_nc_path)
         self.output: Output = Output(
@@ -119,6 +120,9 @@ class PluvialDesignEvents(Method):
 
     def run(self):
         """Run the Pluvial design events method."""
+        # check if the input files and the output directory exist
+        self.check_input_output_paths()
+
         da = xr.open_dataarray(self.input.precip_nc_path)
         time_dim = self.params.time_dim
         if da.ndim > 1 or time_dim not in da.dims:
@@ -160,7 +164,6 @@ class PluvialDesignEvents(Method):
         p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
 
         root = self.output.event_catalog.parent
-        root.mkdir(exist_ok=True, parents=True)
 
         # save plots
         if self.params.plot_fig:
