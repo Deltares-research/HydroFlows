@@ -26,7 +26,7 @@ class Input(BaseModel):
 class Output(BaseModel):
     """Output parameters for the :py:class:`GetERA5Rainfall` method."""
 
-    precip_nc_path: Path
+    precip_nc: Path
     """The path to the NetCDF file with the derived ERA5 rainfall timeseries."""
 
 
@@ -70,8 +70,8 @@ class GetERA5Rainfall(Method):
         self.params: Params = Params(data_input_root=data_input_root, **params)
         self.input: Input = Input(region=region)
 
-        precip_nc_path = Path(self.params.data_input_root) / "era5_precip.nc"
-        self.output: Output = Output(precip_nc_path=precip_nc_path)
+        precip_nc = Path(self.params.data_input_root) / "era5_precip.nc"
+        self.output: Output = Output(precip_nc=precip_nc)
 
     def run(self):
         """Run the GetERA5Rainfall method."""
@@ -94,7 +94,7 @@ class GetERA5Rainfall(Method):
         # convert df to xarray ds
         ds = xr.Dataset.from_dataframe(df)
         # save ds
-        ds.to_netcdf(self.output.precip_nc_path)
+        ds.to_netcdf(self.output.precip_nc)
 
 
 def get_era5_open_meteo(lat, lon, start_date: datetime, end_date: datetime, variables):

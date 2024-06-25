@@ -19,7 +19,7 @@ __all__ = ["PluvialDesignEvents"]
 class Input(BaseModel):
     """Input parameters for :py:class:`PluvialDesignEvents` method."""
 
-    precip_nc_path: Path
+    precip_nc: Path
     """
     The file path to the rainfall time series in NetCDF format which are used
     to apply EVA and derive design events. This file should contain a time dimension
@@ -91,13 +91,13 @@ class PluvialDesignEvents(ExpandMethod):
     expand_refs: dict = {"event": "events"}
 
     def __init__(
-        self, precip_nc_path: Path, event_root: Path = "data/events/rainfall", **params
+        self, precip_nc: Path, event_root: Path = "data/events/rainfall", **params
     ) -> None:
         """Create and validate a PluvialDesignEvents instance.
 
         Parameters
         ----------
-        precip_nc_path : Path
+        precip_nc : Path
             The file path to the rainfall time series in NetCDF format.
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/rainfall".
@@ -111,7 +111,7 @@ class PluvialDesignEvents(ExpandMethod):
         :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
         """
         self.params: Params = Params(event_root=event_root, **params)
-        self.input: Input = Input(precip_nc_path=precip_nc_path)
+        self.input: Input = Input(precip_nc=precip_nc)
         self.output: Output = Output(
             events=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
             event_yaml=Path(event_root, "{event}.yml"),
@@ -124,7 +124,7 @@ class PluvialDesignEvents(ExpandMethod):
         # check if the input files and the output directory exist
         self.check_input_output_paths()
 
-        da = xr.open_dataarray(self.input.precip_nc_path)
+        da = xr.open_dataarray(self.input.precip_nc)
         time_dim = self.params.time_dim
         if da.ndim > 1 or time_dim not in da.dims:
             raise ValueError()
