@@ -168,5 +168,25 @@ def create(
             raise ValueError(f"Unknown format {fmt}")
 
 
+@cli.command(short_help="Run a workflow file.")
+@click.argument(
+    "WORKFLOW",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.pass_context
+def run(
+    ctx,
+    workflow: Path,
+) -> None:
+    """Create a workflow file.
+
+    Parameters
+    ----------
+    WORKFLOW : Path
+        The hydroflows workflow file to use as template.
+    """
+    Workflow.from_yaml(workflow).run()
+
+
 if __name__ == "__main__":
     cli()
