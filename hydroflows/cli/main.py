@@ -123,7 +123,7 @@ def method(ctx, method, kwargs, verbose, quiet, overwrite):
     RUNNER is the name of the method to run, e.g., 'build_wflow'.
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
-    Method.from_kwargs(method, **kwargs).run()
+    Method.from_kwargs(method, **kwargs).run_with_checks()
 
 
 @cli.command(short_help="Create a workflow file.")

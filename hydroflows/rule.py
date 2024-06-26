@@ -210,7 +210,8 @@ class Rule:
 
     def _run_method_instance(self, kwargs: Dict) -> None:
         """Run a method instance with the given kwargs."""
-        self._method_class(**kwargs).run()
+        m = self._method_class(**kwargs)
+        m.run_with_checks()
 
     def to_str(self, fmt: str = "snakemake") -> str:
         """Return the rule as a string."""

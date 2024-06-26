@@ -146,6 +146,22 @@ class Method(ABC):
                 if not value.parent.is_dir():
                     value.parent.mkdir(parents=True)
 
+    def check_output_exists(self):
+        """Check if output files exist."""
+        for key, value in self.output.model_dump().items():
+            if isinstance(value, Path):
+                if not value.is_file():
+                    raise FileNotFoundError(
+                        f"Output file {self.name}.output.{key} not found: {value}"
+                    )
+
+    def run_with_checks(self, check_output: bool = True) -> None:
+        """Run the method with input/output checks."""
+        self.check_input_output_paths()
+        self.run()
+        if check_output:
+            self.check_output_exists()
+
 
 class ExpandMethod(Method, ABC):
     """Base class for methods that expand based on wildcards."""
