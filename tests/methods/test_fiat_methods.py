@@ -84,17 +84,12 @@ def simple_hazard_map(tmp_path, sfincs_region_path):
 
 def test_fiat_build(tmp_path, sfincs_region_path):
     # Setting input data
-    input = {
-        "region": sfincs_region_path.as_posix(),
-    }
-    fn_fiat_cfg = Path(tmp_path, "fiat_model", "settings.toml")
-    output = {"fiat_cfg": fn_fiat_cfg}
+    region = sfincs_region_path.as_posix()
+    fiat_root = Path(tmp_path, "fiat_model")
 
     # Setup the rule
-    rule = FIATBuild(input=input, output=output)
-    rule.run()
-
-    assert fn_fiat_cfg.exists()
+    rule = FIATBuild(region=region, fiat_root=fiat_root)
+    rule.run_with_checks()
 
 
 def test_fiat_update_hazard(tmp_path, fiat_simple_root, simple_hazard_map):
