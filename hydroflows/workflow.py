@@ -20,7 +20,7 @@ class Wildcards(BaseModel):
     This class is used to define the wildcards for the workflow.
     """
 
-    wildcards: Dict[str, List[str]]
+    wildcards: Dict[str, List[str]] = {}
     """List of wildcard keys and values."""
 
     @property
@@ -78,6 +78,8 @@ class Workflow:
         wildcards : List[Dict], optional
             The wildcards of the workflow, by default None.
         """
+        if wildcards is None:
+            wildcards = {}
         self.config: Dict = config  # TODO: create Config pydantic model
         self.wildcards: Wildcards = Wildcards(wildcards=wildcards)
         self.rules: List[Rule] = []
