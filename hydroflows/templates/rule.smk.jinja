@@ -1,0 +1,22 @@
+rule {{ name }}:
+    input:
+        {%- for key, value in inputs.items() %}
+        {{ key }}={{ value }},
+        {%- endfor %}
+    {%- if params %}
+    params:
+        {%- for key, value in params.items() %}
+        {{ key }}={{ value }},
+        {%- endfor %}
+    {%- endif %}
+    output:
+        {%- for key, value in outputs.items() %}
+        {{ key }}={{ value }},
+        {%- endfor %}
+    shell:
+        """
+        hydroflows method {{ method_name }} \
+        {%- for key, value in shell_args.items() %}
+        {{ key }}={{ value }} \
+        {%- endfor %}
+        """

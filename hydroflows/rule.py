@@ -12,6 +12,7 @@ from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, cast
 
+from jinja2 import Environment, PackageLoader, select_autoescape
 from pydantic import BaseModel
 from tqdm.contrib.concurrent import thread_map
 
@@ -223,37 +224,37 @@ class Rule:
 
     def _to_snakemake(self) -> str:
         """Return the rule as a snakemake rule."""
-        snake = f"rule {self.name}:\n"
-        # parse input; paths only
-        input = self.input(mode="python", filter_types=Path)
-        snake += "    input:\n"
-        for key, value in input.items():
-            value = self._parse_snake_key_value(key, value)
-            snake += f"        {key}={value},\n"
-        # parse params; only if non-default and key not in kwargs
-        params = self.params(
-            mode="json", exclude_defaults=True, filter_keys=list(self._kwargs.keys())
+        template_env = Environment(loader=PackageLoader("hydroflows"), autoescape=False)
+        template = template_env.get_template("rule.smk.jinja")
+        inputs = {
+            key: self._parse_snake_key_value(key, value)
+            for key, value in self.input(mode="python", filter_types=Path).items()
+        }
+        params = {
+            key: self._parse_snake_key_value(key, value)
+            for key, value in self.params(
+                mode="json",
+                exclude_defaults=True,
+                filter_keys=list(self._kwargs.keys()),
+            ).items()
+        }
+        output = {
+            key: self._parse_snake_key_value(key, value)
+            for key, value in self.output(mode="python", filter_types=Path).items()
+        }
+        shell_args = {
+            key: self._parse_snake_shell_key_value(key)
+            for key in self._resolved_kwargs
+        }
+
+        return template.render(
+            name=self.name,
+            inputs=inputs,
+            params=params,
+            outputs=output,
+            method_name=self.method.name,
+            shell_args=shell_args,
         )
-        if params:
-            snake += "    params:\n"
-            for key, value in params.items():
-                value = self._parse_snake_key_value(key, value)
-                snake += f"        {key}={value},\n"
-        # parse output; paths only
-        output = self.output(mode="python", filter_types=Path)
-        snake += "    output:\n"
-        for key, value in output.items():
-            value = self._parse_snake_key_value(key, value)
-            snake += f"        {key}={value},\n"
-        # shell command
-        snake += "    shell:\n"
-        snake += '        """\n'
-        snake += f"        hydroflows method {self.method.name} \\\n"
-        for key in self._resolved_kwargs.keys():
-            value = self._parse_snake_shell_key_value(key)
-            snake += f"        {key}={value} \\\n"
-        snake += '        """\n'
-        return snake
 
     def _parse_snake_key_value(self, key, val) -> str:
         """Expand the wildcards in a string."""
