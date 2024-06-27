@@ -1,6 +1,8 @@
 import typing
+from typing import cast
 
 from jinja2 import Environment
+from pydantic import BaseModel
 
 from hydroflows.methods.method import ExpandMethod
 
@@ -40,5 +42,16 @@ def setup_rule_env(env: Environment, rule: "Rule"):
                 # no references or wildcards, just add the value with quotes
                 v = f'"{val}"'
         return v
+    
+    def shell_value(key):
+        """Parse the key value pair for the shell command."""
+        # check if key is in input, output or params
+        for c in ["input", "output", "params"]:
+            comp = cast(BaseModel, getattr(rule.method, c))
+            if key in comp.model_fields:
+                value = f"{c}.{key}"
+                return '"{' + value + '}"'
+        raise ValueError(f"Key {key} not found in input, output or params.")
 
     env.filters["expand"] = expand
+    env.filters["shell_value"] = shell_value

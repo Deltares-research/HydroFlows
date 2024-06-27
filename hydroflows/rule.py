@@ -233,9 +233,6 @@ class Rule:
             mode="json", exclude_defaults=True, filter_keys=list(self._kwargs.keys())
         )
         output = self.output(mode="python", filter_types=Path)
-        shell_args = {
-            key: self._parse_snake_shell_key_value(key) for key in self._resolved_kwargs
-        }
 
         return template.render(
             name=self.name,
@@ -243,15 +240,5 @@ class Rule:
             params=params,
             output=output,
             method_name=self.method.name,
-            shell_args=shell_args,
+            shell_args=self._resolved_kwargs,
         )
-
-    def _parse_snake_shell_key_value(self, key) -> str:
-        """Parse the key value pair for the shell command."""
-        # check if key is in input, output or params
-        for c in ["input", "output", "params"]:
-            comp = cast(BaseModel, getattr(self.method, c))
-            if key in comp.model_fields:
-                value = f"{c}.{key}"
-                return '"{' + value + '}"'
-        raise ValueError(f"Key {key} not found in input, output or params.")

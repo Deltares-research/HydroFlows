@@ -16,7 +16,7 @@ rule {{ name }}:
     shell:
         """
         hydroflows method {{ method_name }} \
-        {%- for key, value in shell_args.items() %}
-        {{ key }}={{ value }} \
+        {%- for key in shell_args %}
+        {{ key }}={{ key|shell_value }} \
         {%- endfor %}
         """
