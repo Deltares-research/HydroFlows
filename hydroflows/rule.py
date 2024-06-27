@@ -12,11 +12,12 @@ from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type, cast
 
-from jinja2 import Environment, PackageLoader, select_autoescape
+from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 from tqdm.contrib.concurrent import thread_map
 
 from hydroflows.methods.method import ExpandMethod, Method
+from hydroflows.templates.jinja_filters import setup_rule_env
 
 if TYPE_CHECKING:
     from hydroflows.workflow import Workflow
@@ -225,67 +226,25 @@ class Rule:
     def _to_snakemake(self) -> str:
         """Return the rule as a snakemake rule."""
         template_env = Environment(loader=PackageLoader("hydroflows"), autoescape=False)
+        setup_rule_env(template_env, self)
         template = template_env.get_template("rule.smk.jinja")
-        inputs = {
-            key: self._parse_snake_key_value(key, value)
-            for key, value in self.input(mode="python", filter_types=Path).items()
-        }
-        params = {
-            key: self._parse_snake_key_value(key, value)
-            for key, value in self.params(
-                mode="json",
-                exclude_defaults=True,
-                filter_keys=list(self._kwargs.keys()),
-            ).items()
-        }
-        output = {
-            key: self._parse_snake_key_value(key, value)
-            for key, value in self.output(mode="python", filter_types=Path).items()
-        }
+        inputs = self.input(mode="python", filter_types=Path)
+        params = self.params(
+            mode="json", exclude_defaults=True, filter_keys=list(self._kwargs.keys())
+        )
+        output = self.output(mode="python", filter_types=Path)
         shell_args = {
-            key: self._parse_snake_shell_key_value(key)
-            for key in self._resolved_kwargs
+            key: self._parse_snake_shell_key_value(key) for key in self._resolved_kwargs
         }
 
         return template.render(
             name=self.name,
             inputs=inputs,
             params=params,
-            outputs=output,
+            output=output,
             method_name=self.method.name,
             shell_args=shell_args,
         )
-
-    def _parse_snake_key_value(self, key, val) -> str:
-        """Expand the wildcards in a string."""
-        # replace val with references to config or other rules
-        kwargs = self._kwargs
-        if key in kwargs and kwargs[key].startswith("$"):
-            if kwargs[key].startswith("$config"):
-                # resolve to python dict-like access
-                dict_keys = kwargs[key].split(".")[1:]
-                v = 'config["' + '"]["'.join(dict_keys) + '"]'
-            elif kwargs[key].startswith("$rules"):
-                v = f"{kwargs[key][1:]}"
-        else:
-            expand_kwargs = []
-            if isinstance(self.method, ExpandMethod):
-                for wc in self.method.expand_values.keys():
-                    if "{" + wc + "}" in str(val):
-                        # NOTE wildcard values will be added by the workflow in upper case
-                        expand_kwargs.append(f"{wc}={wc.upper()}")
-            if expand_kwargs:
-                for wc in self.wildcards:
-                    if "{" + wc + "}" in str(val):
-                        # escape the wildcard in the value
-                        val = str(val).replace("{" + wc + "}", "{{" + wc + "}}")
-                # NOTE we assume product of all wildcards, this could be extended to also use zip
-                expand_kwargs_str = ", ".join(expand_kwargs)
-                v = f'expand("{val}", {expand_kwargs_str})'
-            else:
-                # no references or wildcards, just add the value with quotes
-                v = f'"{val}"'
-        return v
 
     def _parse_snake_shell_key_value(self, key) -> str:
         """Parse the key value pair for the shell command."""

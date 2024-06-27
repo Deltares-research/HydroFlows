@@ -1,17 +1,17 @@
 rule {{ name }}:
     input:
         {%- for key, value in inputs.items() %}
-        {{ key }}={{ value }},
+        {{ key }}={{ value|expand(key) }},
         {%- endfor %}
     {%- if params %}
     params:
         {%- for key, value in params.items() %}
-        {{ key }}={{ value }},
+        {{ key }}={{ value|expand(key) }},
         {%- endfor %}
     {%- endif %}
     output:
-        {%- for key, value in outputs.items() %}
-        {{ key }}={{ value }},
+        {%- for key, value in output.items() %}
+        {{ key }}={{ value|expand(key) }},
         {%- endfor %}
     shell:
         """
