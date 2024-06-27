@@ -94,29 +94,23 @@ def test_fiat_build(tmp_path, sfincs_region_path):
 
 def test_fiat_update_hazard(tmp_path, fiat_simple_root, simple_hazard_map):
     # Specify in- and output
-    input = {
-        "fiat_cfg": Path(fiat_simple_root, "settings.toml"),
-        "hazard_map": simple_hazard_map,
-    }
-    output = {"fiat_haz": Path(fiat_simple_root, "hazard", "hazard_map.nc")}
-
+    fiat_cfg = Path(fiat_simple_root) / "settings.toml"
+    event_set_yaml = ""  # TODO: needs to be made as fixture
     # Setup the method.
-    rule = FIATUpdateHazard(input=input, output=output)
+    rule = FIATUpdateHazard(fiat_cfg=fiat_cfg, event_set_yaml=event_set_yaml)
     rule.run()
 
     # Assert that the hazard file exists
-    assert output["fiat_haz"].exists()
+    assert rule.output.fiat_hazard.exists()
 
 
-@pytest.mark.skipif(not FIAT_EXE.exists(), reason="sfincs executable not found")
+# @pytest.mark.skipif(not FIAT_EXE.exists(), reason="sfincs executable not found")
 @pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_fiat_run(tmp_path):
+def test_fiat_run(tmp_path, fiat_simple_root):
     # specify in- and output
-    input = {}
-    output = {}
-
+    fiat_cfg = Path(fiat_simple_root) / "settings.toml"
     # Setup the method
-    rule = FIATRun(input=input, output=output)
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=FIAT_EXE)
     rule.run()
 
     # Assert the output
