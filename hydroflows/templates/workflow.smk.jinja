@@ -9,7 +9,9 @@ configfile: "{{ configfile }}"
 
 rule all:
     input:
-        pass
+        {% for rule in rules_all %}
+        {{ rule }}
+        {% endfor %}
 
 {% for rule in rules %}
 {% with rule=rule %}

@@ -173,14 +173,15 @@ class Workflow:
             configfile=configfile,
             rules=[JinjaRule(r) for r in self.rules],
             wildcards=self.wildcards.wildcards,
+            rules_all=self._snake_rule_all(),
         )
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(configfile, "w") as f:
             yaml.dump(self.config, f)
 
-    def _snake_rule_all(self) -> str:
-        rule_all = "rule all:\n    input:\n"
+    def _snake_rule_all(self) -> List[str]:
+        rule_all = []
         for ref in self.results:
             if not ref.startswith("$rules"):
                 raise ValueError(
@@ -199,7 +200,7 @@ class Workflow:
             else:
                 # no references or wildcards, just add the value with quotes
                 v = f'"{val}"'
-            rule_all += f"        {v},\n"
+            rule_all.append(v)
         return rule_all
 
     def run(self):
