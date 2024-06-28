@@ -86,5 +86,5 @@ class JinjaRule:
             comp = cast(BaseModel, getattr(self.rule.method, c))
             if key in comp.model_fields:
                 value = f"{c}.{key}"
-                return '"{' + value + '}"'
+                return value
         raise ValueError(f"Key {key} not found in input, output or params.")

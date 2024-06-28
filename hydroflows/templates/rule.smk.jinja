@@ -18,7 +18,7 @@ rule {{ rule.name }}:
         """
         hydroflows method {{ rule.method_name }} \
         {% for key, value in rule.shell_args.items() %}
-        {{ key }}={{ value }} \
+        {{ key }}="{{ '{' }}{{ value }}{{ '}' }}" \
         {% endfor %}
         """
 {% endmacro %}
