@@ -107,7 +107,7 @@ class WflowUpdateForcing(Method):
             The start time of the period for which we want to generate forcing.
         end_time:datetime
             The end time of the period for which we want to generate forcing
-        sim_name : str
+        sim_name : str, optional
            The name of the subdirectory of the basemodel in which the
            forcing along with the updated config will be saved, by default "default".
         **params
@@ -125,7 +125,7 @@ class WflowUpdateForcing(Method):
         self.params: Params = Params(
             start_time=start_time, end_time=end_time, sim_name=sim_name, **params
         )
-        self.input: Input = Input(wflow_inp=wflow_toml)
+        self.input: Input = Input(wflow_toml=wflow_toml)
         wflow_out_toml = (
             self.input.wflow_toml.parent / "simulations" / sim_name / "wflow_sbm.toml"
         )

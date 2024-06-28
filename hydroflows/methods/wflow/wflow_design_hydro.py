@@ -64,6 +64,9 @@ class Params(BaseModel):
         using HydroMT.
     """
 
+    event_root: Path
+    """"Root folder to save the derived design events."""
+
     # parameters for the get_peaks function
     ev_type: Literal["BM", "POT"] = "BM"
     """Method to select events/peaks. Valid options are 'BM' for block maxima or
@@ -112,6 +115,7 @@ class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
     name: str = "wflow_design_hydro"
+    expand_refs: dict = {"event": "events"}
 
     def __init__(
         self, discharge_nc: Path, event_root: Path = "data/events/discharge", **params
@@ -148,6 +152,8 @@ class WflowDesignHydro(ExpandMethod):
 
     def run(self):
         """Run the WflowDesignHydro method."""
+        # check if the input files and the output directory exist
+        self.check_input_output_paths()
         # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
         time_dim = self.params.time_dim
