@@ -107,7 +107,7 @@ target/
 bin/
 
 # temporary snakemake files
-.snakemake
+*/.snakemake/*
 
 # vscode
 .vscode
@@ -116,3 +116,6 @@ bin/
 tests/_large_data/data
 tests/_large_data/registry.txt
 tests/_bin
+
+# only force add
+examples/

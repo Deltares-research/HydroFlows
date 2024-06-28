@@ -14,18 +14,13 @@ optional
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Literal
 
 import click
 
 from hydroflows import __version__
 from hydroflows.methods.method import Method
-from hydroflows.utils import (
-    adjust_config,
-    copy_single_file,
-    copy_templates,
-    create_folders,
-)
+from hydroflows.workflow import Workflow
 
 
 # Copied from rasterio.rio.options
@@ -128,59 +123,69 @@ def method(ctx, method, kwargs, verbose, quiet, overwrite):
     RUNNER is the name of the method to run, e.g., 'build_wflow'.
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
-    Method.from_kwargs(method, **kwargs).run()
+    Method.from_kwargs(method, **kwargs).run_with_checks()
 
 
-opt_region = click.option(
-    "-r",
-    "--region",
-    required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=Path),
-    help="Path to a model region vector file",
-)
-
-opt_config = click.option(
-    "-c",
-    "--config",
-    required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=Path),
-    help="Path to a custom SnakeMake configurations file",
-)
-
-
-@cli.command(short_help="Create a new project folder structure and copy templates")
+@cli.command(short_help="Create a workflow file.")
 @click.argument(
-    "ROOT",
-    type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
+    "WORKFLOW",
+    type=click.Path(exists=True, file_okay=True),
 )
-@opt_region
-@opt_config
+# TODO support output dir requires adapting relative paths in the workflow file.
+# for now we assume the workflow file is in the output dir.
+# @click.argument(
+#     "OUTPUT_DIR",
+#     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
+# )
+@click.option(
+    "--fmt",
+    required=False,
+    type=click.Choice(["smk"]),
+    help="Choose the format of the workflow file.",
+    default="smk",
+)
 @click.pass_context
-def init(
+def create(
     ctx,
-    root: Path,
-    region: Optional[Path] = None,
-    config: Optional[Path] = None,
+    workflow: Path,
+    # output_dir: Path,
+    fmt: Literal["smk"] = "smk",
 ) -> None:
-    """Initialize a new project."""
-    create_folders(root)
-    copy_templates(root)
-    # Work with extra input on initialization
-    cfg_kwargs = {}
-    if region is not None:
-        cfg_kwargs["REGION_FILE"] = Path(
-            "data",
-            "input",
-            region.name,
-        ).as_posix()
-        cfg_kwargs["REGION"] = region.stem
-        copy_single_file(region, Path(root, cfg_kwargs["REGION_FILE"]))
-    # Adjusting the config file i
-    adjust_config(
-        Path(root, "workflow", "snake_config", "config.yaml"),
-        extra=config,
-        **cfg_kwargs,
-    )
+    """Create a workflow file.
+
+    Parameters
+    ----------
+    WORKFLOW : Path
+        The hydroflows workflow file to use as template.
+    FORMAT : Literal["smk"]
+        The format of the workflow file.
+    """
+    wf = Workflow.from_yaml(workflow)
+    match fmt:
+        case "smk":
+            wf.to_snakemake(Path(workflow).with_suffix(".smk"))
+        case _:
+            raise ValueError(f"Unknown format {fmt}")
+
+
+@cli.command(short_help="Run a workflow file.")
+@click.argument(
+    "WORKFLOW",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.pass_context
+def run(
+    ctx,
+    workflow: Path,
+) -> None:
+    """Create a workflow file.
+
+    Parameters
+    ----------
+    WORKFLOW : Path
+        The hydroflows workflow file to use as template.
+    """
+    Workflow.from_yaml(workflow).run()
 
 
 if __name__ == "__main__":

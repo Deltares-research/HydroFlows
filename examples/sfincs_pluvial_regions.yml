@@ -1,0 +1,34 @@
+config:
+  sfincs_exe: bin/sfincs/sfincs.exe
+  rps: [5, 10]
+
+wildcards:
+  region: [test_region, test_region2]
+
+rules:
+  - method: sfincs_build
+    kwargs:
+      region: data/{region}.geojson
+      sfincs_root: models/sfincs/{region}
+  - method: get_ERA5_rainfall
+    kwargs:
+      region: $rules.sfincs_build.output.sfincs_region
+      data_input_root: data/input/{region}/rainfall
+  - method: pluvial_design_events
+    kwargs:
+      precip_nc: "$rules.get_ERA5_rainfall.output.precip_nc"
+      event_root: data/output/{region}/events
+      rps: $config.rps
+  - method: sfincs_update_forcing
+    kwargs:
+      sfincs_inp: $rules.sfincs_build.output.sfincs_inp
+      event_yaml: $rules.pluvial_design_events.output.event_yaml
+  - method: sfincs_run
+    kwargs:
+      sfincs_inp: $rules.sfincs_update_forcing.output.sfincs_out_inp
+      sfincs_exe: $config.sfincs_exe
+  - method: sfincs_postprocess
+    kwargs:
+      sfincs_subgrid_dep: $rules.sfincs_build.output.sfincs_subgrid_dep
+      sfincs_map: $rules.sfincs_run.output.sfincs_map
+      hazard_root: data/output/{region}/hazard

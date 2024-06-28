@@ -123,7 +123,7 @@ class SfincsBuild(Method):
 
         sfincs_inp = self.params.sfincs_root / "sfincs.inp"
         sfincs_region = self.params.sfincs_root / "gis" / "region.geojson"
-        sfincs_subgrid_dep = self.params.sfincs_root / "subgrid" / "dep.tif"
+        sfincs_subgrid_dep = self.params.sfincs_root / "subgrid" / "dep_subgrid.tif"
         self.output: Output = Output(
             sfincs_inp=sfincs_inp,
             sfincs_region=sfincs_region,
