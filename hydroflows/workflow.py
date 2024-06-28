@@ -39,13 +39,6 @@ class Wildcards(BaseModel):
         """Convert the wildcards to a dictionary of names and values."""
         return self.model_dump()["wildcards"]
 
-    def _snake_wildcards(self) -> str:
-        wc_str = ""
-        for key, values in self.wildcards.items():
-            str_values = str(values).replace("'", '"')
-            wc_str += f"{key.upper()} = {str_values}\n"
-        return wc_str
-
     def set(self, key: str, values: List[str]):
         """Add a wildcard."""
         self.wildcards.update({key: values})
@@ -179,6 +172,7 @@ class Workflow:
             version=__version__,
             configfile=configfile,
             rules=[JinjaRule(r) for r in self.rules],
+            wildcards=self.wildcards.wildcards,
         )
         with open(snakefile, "w") as f:
             f.write(_str)

@@ -3,7 +3,10 @@
 
 configfile: "{{ configfile }}"
 
-{# TODO: wildcards#}
+{% for key, values in wildcards.items() %}
+{{ key|upper }}={{ values|tojson }}
+{% endfor %}
+
 rule all:
     input:
         pass
