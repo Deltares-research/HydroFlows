@@ -10,14 +10,12 @@ requires a Method class as input.
 import weakref
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List, Tuple, Type, cast
+from typing import TYPE_CHECKING, Dict, List, Tuple, Type
 
 from jinja2 import Environment, PackageLoader
-from pydantic import BaseModel
 from tqdm.contrib.concurrent import thread_map
 
 from hydroflows.methods.method import ExpandMethod, Method
-from hydroflows.templates.jinja_filters import setup_rule_env
 
 if TYPE_CHECKING:
     from hydroflows.workflow import Workflow
@@ -214,31 +212,3 @@ class Rule:
         """Run a method instance with the given kwargs."""
         m = self._method_class(**kwargs)
         m.run_with_checks()
-
-    def to_str(self, fmt: str = "snakemake") -> str:
-        """Return the rule as a string."""
-        match fmt:
-            case "snakemake":
-                return self._to_snakemake()
-            case _:
-                raise ValueError(f"Format {fmt} not supported.")
-
-    def _to_snakemake(self) -> str:
-        """Return the rule as a snakemake rule."""
-        template_env = Environment(loader=PackageLoader("hydroflows"), autoescape=False)
-        setup_rule_env(template_env, self)
-        template = template_env.get_template("rule.smk.jinja")
-        inputs = self.input(mode="python", filter_types=Path)
-        params = self.params(
-            mode="json", exclude_defaults=True, filter_keys=list(self._kwargs.keys())
-        )
-        output = self.output(mode="python", filter_types=Path)
-
-        return template.render(
-            name=self.name,
-            inputs=inputs,
-            params=params,
-            output=output,
-            method_name=self.method.name,
-            shell_args=self._resolved_kwargs,
-        )
