@@ -91,11 +91,11 @@ class Params(BaseModel):
     """Random initial date for the design events."""
 
     warm_up_years: int = 2
-    """Number of (initial) years to exlcude from the discharge timeseries
+    """Number of (initial) years to exclude from the discharge timeseries
     as a warm-up period."""
 
     n_peaks: int = None
-    """Number of largest peaks to get hydrogaph.
+    """Number of largest peaks to get hydrograph.
     If None (default) all peaks are used."""
 
     # return periods of interest
@@ -103,7 +103,7 @@ class Params(BaseModel):
     """Return periods of interest."""
 
     plot_fig: bool = True
-    """Determines whether to plot figures, including the derived design hydrographs
+    """Determines whether to plot figures, including the derived design hydrograph
     per location and return period, as well as the EVA fits."""
 
     # duration for hydrograph
