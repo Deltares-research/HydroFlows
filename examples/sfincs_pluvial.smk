@@ -6,7 +6,7 @@ EVENT=["p_event01", "p_event02", "p_event03"]
 
 rule all:
     input:
-        expand("data\output\hazard\{event}.tif", event=EVENT)
+        expand("data\output\hazard\{event}.tif", event=EVENT),
 
 rule sfincs_build:
     input:
@@ -86,4 +86,3 @@ rule sfincs_postprocess:
         hydroflows method sfincs_postprocess \
         sfincs_map="{input.sfincs_map}" \
         """
-

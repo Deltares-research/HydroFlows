@@ -10,7 +10,7 @@ configfile: "{{ configfile }}"
 rule all:
     input:
         {% for rule in rules_all %}
-        {{ rule }}
+        {{ rule }},
         {% endfor %}
 
 {% for rule in rules %}

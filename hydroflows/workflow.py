@@ -13,7 +13,7 @@ from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.rule import Rule
-from hydroflows.templates.jinja_rule import JinjaRule
+from hydroflows.templates._jinja_snake_rule import JinjaSnakeRule
 
 
 class Wildcards(BaseModel):
@@ -171,7 +171,7 @@ class Workflow:
         _str = template.render(
             version=__version__,
             configfile=configfile,
-            rules=[JinjaRule(r) for r in self.rules],
+            rules=[JinjaSnakeRule(r) for r in self.rules],
             wildcards=self.wildcards.wildcards,
             rules_all=self._snake_rule_all(),
         )

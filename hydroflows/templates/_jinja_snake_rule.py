@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from hydroflows.rule import Rule
 
 
-class JinjaRule:
+class JinjaSnakeRule:
     """ViewModel for a Rule to print in a Jinja Snakemake template."""
 
     def __init__(self, rule: "Rule"):
@@ -52,7 +52,11 @@ class JinjaRule:
         """Expand the wildcards in a string."""
         # replace val with references to config or other rules
         kwargs = self.rule._kwargs
-        if key in kwargs and kwargs[key].startswith("$"):
+        if (
+            key in kwargs
+            and isinstance(kwargs[key], str)
+            and kwargs[key].startswith("$")
+        ):
             if kwargs[key].startswith("$config"):
                 # resolve to python dict-like access
                 dict_keys = kwargs[key].split(".")[1:]
@@ -74,9 +78,11 @@ class JinjaRule:
                 # NOTE we assume product of all wildcards, this could be extended to also use zip
                 expand_kwargs_str = ", ".join(expand_kwargs)
                 v = f'expand("{val}", {expand_kwargs_str})'
-            else:
+            elif isinstance(val, (Path, str)):
                 # no references or wildcards, just add the value with quotes
                 v = f'"{val}"'
+            else:
+                v = str(val)
         return v
 
     def _expand_shell_variable(self, key: str):
