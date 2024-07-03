@@ -154,6 +154,8 @@ class WflowDesignHydro(ExpandMethod):
         """Run the WflowDesignHydro method."""
         # check if the input files and the output directory exist
         self.check_input_output_paths()
+        root = self.output.event_catalog.parent
+
         # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
         time_dim = self.params.time_dim
@@ -235,62 +237,7 @@ class WflowDesignHydro(ExpandMethod):
         # make sure there are no negative values
         q_hydrograph = xr.where(q_hydrograph < 0, 0, q_hydrograph)
 
-        # save plots
-        root = self.output.event_catalog.parent
-        os.makedirs(root, exist_ok=True)
-
-        if self.params.plot_fig:
-            fn_plots = os.path.join(root, "figs")
-
-            os.makedirs(fn_plots, exist_ok=True)
-
-            # loop through all the stations and save figs
-            for station in da[index_dim].values:
-                fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-
-                extremes_rate = da_peaks.sel({index_dim: station}).extremes_rate.item()
-                dist = da_params.sel({index_dim: station}).distribution.item()
-
-                # Plot return values fits
-                extremes.plot_return_values(
-                    da_peaks.sel({index_dim: station}),
-                    da_params.sel({index_dim: station}),
-                    dist,
-                    color="k",
-                    nsample=1000,
-                    rps=np.maximum(1.001, self.params.rps),
-                    extremes_rate=extremes_rate,
-                    ax=ax,
-                )
-
-                ax.set_title(f"Station {station}")
-                ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
-                ax.set_xlabel("Return period [years]")
-                ax.grid(True)
-                fig.tight_layout()
-                fig.savefig(
-                    os.path.join(fn_plots, f"return_values_q_{station}.png"),
-                    dpi=150,
-                    bbox_inches="tight",
-                )
-
-                # Plot hydrographs
-                fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-                q_hydrograph.sel({index_dim: station}).rename(
-                    {"rps": "return period\n[years]"}
-                ).to_pandas().plot(ax=ax)  # noqa: E501
-                ax.set_xlabel(f"Time [{unit}]")
-                ax.set_title(f"Station {station}")
-                ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
-                fig.tight_layout()
-                ax.grid(True)
-                fig.savefig(
-                    os.path.join(fn_plots, f"discharge_hydrograph_{station}.png"),
-                    dpi=150,
-                    bbox_inches="tight",
-                )
-
-        # Put a random date for the csvs
+        # Use T0 for csv time series
         dt0 = pd.to_datetime(self.params.t0)
         time_delta = pd.to_timedelta(q_hydrograph["time"], unit=unit)
         q_hydrograph["time"] = dt0 + time_delta
@@ -319,3 +266,65 @@ class WflowDesignHydro(ExpandMethod):
             events=events_list,
         )
         event_catalog.to_yaml(self.output.event_catalog)
+
+        # save plots
+        if self.params.plot_fig:
+            plot_dir = os.path.join(root, "figs")
+            os.makedirs(plot_dir, exist_ok=True)
+
+            # loop through all the stations and save figs
+            for station in da[index_dim].values:
+                # Plot EVA
+                plot_eva(
+                    da_peaks, da_params, self.params.rps, index_dim, station, plot_dir
+                )
+
+                # Plot hydrographs
+                plot_hydrograph(q_hydrograph, station, index_dim, unit, plot_dir)
+
+
+def plot_eva(da_peaks, da_params, rps, index_dim, station, plot_dir):
+    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
+
+    extremes_rate = da_peaks.sel({index_dim: station}).extremes_rate.item()
+    dist = da_params.sel({index_dim: station}).distribution.item()
+
+    # Plot return values fits
+    extremes.plot_return_values(
+        da_peaks.sel({index_dim: station}),
+        da_params.sel({index_dim: station}),
+        dist,
+        color="k",
+        nsample=1000,
+        rps=np.maximum(1.001, rps),
+        extremes_rate=extremes_rate,
+        ax=ax,
+    )
+
+    ax.set_title(f"Station {station}")
+    ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
+    ax.set_xlabel("Return period [years]")
+    ax.grid(True)
+    fig.tight_layout()
+    fig.savefig(
+        os.path.join(plot_dir, f"return_values_q_{station}.png"),
+        dpi=150,
+        bbox_inches="tight",
+    )
+
+
+def plot_hydrograph(q_hydrograph, station, index_dim, unit, plot_dir):
+    fig, ax = plt.subplots(1, 1, figsize=(7, 5))
+    q_hydrograph.sel({index_dim: station}).rename(
+        {"rps": "return period\n[years]"}
+    ).to_pandas().plot(ax=ax)  # noqa: E501
+    ax.set_xlabel(f"Time [{unit}]")
+    ax.set_title(f"Station {station}")
+    ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
+    fig.tight_layout()
+    ax.grid(True)
+    fig.savefig(
+        os.path.join(plot_dir, f"discharge_hydrograph_{station}.png"),
+        dpi=150,
+        bbox_inches="tight",
+    )
