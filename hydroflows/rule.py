@@ -12,7 +12,6 @@ from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Tuple, Type
 
-from jinja2 import Environment, PackageLoader
 from tqdm.contrib.concurrent import thread_map
 
 from hydroflows.methods.method import ExpandMethod, Method
