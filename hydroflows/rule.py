@@ -259,7 +259,7 @@ class Rule:
         """Expand the wildcards in a string."""
         # replace val with references to config or other rules
         kwargs = self._kwargs
-        if key in kwargs and kwargs[key].startswith("$"):
+        if isinstance(kwargs.get(key, None), str) and kwargs[key].startswith("$"):
             if kwargs[key].startswith("$config"):
                 # resolve to python dict-like access
                 dict_keys = kwargs[key].split(".")[1:]
