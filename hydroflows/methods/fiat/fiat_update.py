@@ -4,7 +4,7 @@ from pathlib import Path
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel
 
-from hydroflows.events import EventCatalog
+from hydroflows.events import EventSet
 from hydroflows.methods.method import Method
 from hydroflows.utils import make_relative_paths
 
@@ -119,7 +119,7 @@ class FIATUpdateHazard(Method):
             event_set_path = Path(self.input.event_set_yaml)
             # with open(event_set_path, "r") as _r:
             #     hc = yaml.safe_load(_r)
-            event_set: EventCatalog = EventCatalog.from_yaml(self.input.event_set_yaml)
+            event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
             paths = [
                 Path(
                     event_set_path.parent,

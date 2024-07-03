@@ -1,13 +1,5 @@
-version: v0.1
-
 events:
   - name: rp050
-    forcings:
-      - type: rainfall
-        path: rainfall_rp050.csv
-    probability: 0.02
+    path: event_rp050.yml
   - name: rp010
-    forcings:
-      - type: rainfall
-        path: rainfall_rp010.csv
-    probability: 0.1
+    path: event_rp010.yml

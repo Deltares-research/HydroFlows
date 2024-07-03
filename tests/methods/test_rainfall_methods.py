@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import yaml
 
+from hydroflows.events import EventSet
 from hydroflows.methods import GetERA5Rainfall, PluvialDesignEvents
 
 
@@ -36,25 +36,29 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     precip_time_series_nc.to_netcdf(fn_time_series_nc)
 
-    input = {"time_series_nc": str(fn_time_series_nc)}
-    params = {
-        "rps": [1, 10, 100],
-    }
+    fn_event_set = Path(tmp_path, "data", "event_set.yml")  # used for assertion
+    event_root = fn_event_set.parent
+    rps = [1, 10, 100]
 
-    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
+    PluvialDesignEvents(
+        precip_nc=fn_time_series_nc,
+        rps=rps,
+        event_root=event_root,
+    ).run()
+    assert fn_event_set.exists()
 
-    output = {"event_catalog": str(fn_data_catalog)}
+    # read data back and check if all event paths are absolute and existing, length is correct
+    event_set = EventSet.from_yaml(fn_event_set)
+    assert isinstance(event_set.events, list)
+    assert len(event_set.events) == len(rps)
 
-    PluvialDesignEvents(input=input, params=params, output=output).run()
-    assert fn_data_catalog.exists()
-
-    with open(fn_data_catalog, "r") as f:
-        events = yaml.safe_load(f)
-    assert isinstance(events["events"], list)
-    assert len(events["events"]) == len(params["rps"])
+    # are all paths absolute
+    assert all([Path(event["path"]).is_absolute() for event in event_set.events])
+    assert all([Path(event["path"]).exists() for event in event_set.events])
 
     # test max value is 1
-    filename = events["events"][-1]["forcings"][0]["path"]
+    event = event_set.get_event("p_event01")
+    filename = event.forcings[0].path
     fn_csv = fn_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0

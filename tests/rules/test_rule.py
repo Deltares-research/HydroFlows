@@ -3,8 +3,8 @@ import os
 
 import pytest
 
+from hydroflows import Rule
 from hydroflows.methods import FIATBuild
-from hydroflows.rules import Rule
 
 
 @pytest.fixture()
