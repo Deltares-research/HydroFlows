@@ -24,6 +24,7 @@ dependencies = [
   "pydantic",                 # data validation
   "tqdm",                     # progress bar
   "xarray",                   # data handling
+  "jinja2",                   # templating
 ]
 
 requires-python = ">=3.9"
