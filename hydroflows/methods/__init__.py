@@ -1,5 +1,6 @@
 """Submodule for hydroflows methods."""
 
+from .coastal import CoastalDesignEvents, GetGTSMData, TideSurgeTimeseries
 from .fiat import FIATBuild, FIATRun, FIATUpdateHazard
 from .hazard_catalog import HazardCatalog
 from .method import Method
@@ -25,4 +26,7 @@ METHODS = {
     "hazard_catalog": HazardCatalog,
     "get_ERA5_rainfall": GetERA5Rainfall,
     "wflow_design_hydro": WflowDesignHydro,
+    "get_gtsm_data": GetGTSMData,
+    "create_tide_surge_timeseries": TideSurgeTimeseries,
+    "coastal_design_events": CoastalDesignEvents,
 }

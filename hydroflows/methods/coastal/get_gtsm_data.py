@@ -35,7 +35,7 @@ class Output(BaseModel):
 
 
 class Params(BaseModel):
-    """Parameters parameters for the :py:class:`GetGTSMData` method."""
+    """Params for the :py:class:`GetGTSMData` method."""
 
     start_time: datetime = datetime(1979, 1, 1)
     """Start date for the fetched timeseries"""
@@ -66,8 +66,8 @@ class GetGTSMData(Method):
     :py:function:`hydroflows.methods.coastal.get_gtsm_data.export_gtsm_data`
     """
 
-    name = "get_gtsm_data"
-    params: Params
+    name: str = "get_gtsm_data"
+    params: Params = Params()
     input: Input
     output: Output
 
@@ -92,14 +92,15 @@ class GetGTSMData(Method):
         }
 
         for var, kwargs in variables.items():
+            print(f"Downloading {var} data")
             fn_out = export_gtsm_data(
                 outdir=self.output.waterlevel_nc.parent,
-                tstart=datetime.strftime(self.input.start_time, "%Y-%m-%d"),
-                tend=datetime.strftime(self.input.end_time, "%Y-%m-%d"),
+                tstart=datetime.strftime(self.params.start_time, "%Y-%m-%d"),
+                tend=datetime.strftime(self.params.end_time, "%Y-%m-%d"),
                 data_path=self.params.gtsm_loc
                 / r"*2/{var}/reanalysis_{var}_{dt}_{year}_*_v1.nc",
                 dt=self.params.timestep,
-                var=var,
+                # var=var,
                 **kwargs,
             )
 
