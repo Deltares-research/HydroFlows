@@ -1,16 +1,13 @@
 """Create hydrographs for coastal waterlevels."""
 
 from pathlib import Path
-from typing import Union
 
-import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
 from pydantic import BaseModel
 
-from hydroflows._typing import ListOfInt
 from hydroflows.methods.method import Method
 from hydroflows.workflows.events import EventCatalog
 
@@ -24,26 +21,19 @@ class Input(BaseModel):
     tide_timeseries: Path
     """Path to tides timeseries data."""
 
+    rps_nc: Path
+    """Path to return periods and values dataset."""
+
 
 class Output(BaseModel):
     """Output parameters for the :py:class:`CoastalDesginEvents` method."""
 
     event_catalog: Path
-    """Path tot event catalog containing derived events"""
+    """Path to event catalog containing derived events"""
 
 
 class Params(BaseModel):
     """Params for the :py:class:`CoastalDesginEvents` method."""
-
-    rps: Union[ListOfInt, Path] = [1, 2, 5, 10, 20, 50, 100]
-    """
-    Return periods of derived events.
-    Either list of integer return periods or Path pointing to return period dataset.
-    Assumes COAST-RP dataset formatting.
-    """
-
-    region: Path = None
-    """Path to region geometry file. Required if params.rps is a Path."""
 
     ndays: int = 6
     """Duration of derived events in days."""
@@ -76,20 +66,7 @@ class CoastalDesignEvents(Method):
         """Run CoastalDesignEvents method."""
         da_surge = xr.open_dataarray(self.input.surge_timeseries)
         da_tide = xr.open_dataarray(self.input.tide_timeseries)
-
-        if isinstance(self.params.rps, Path):
-            region = gpd.read_file(self.params.region)
-            da_rps = xr.open_dataset(self.params.rps).rename(
-                {"station_x_coordinate": "lon", "station_y_coordinate": "lat"}
-            )
-            da_rps = xr.concat(
-                [da_rps[var] for var in da_rps.data_vars if var != "station_id"],
-                dim=pd.Index([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], name="rps"),
-            ).to_dataset(name="return_values")
-            dist = (da_rps.lat - region.centroid.y.values) ** 2 + (
-                da_rps.lon - region.centroid.x.values
-            ) ** 2
-            da_rps = da_rps.isel(stations=dist.argmin().values)
+        da_rps = xr.open_dataset(self.input.rps_nc)
 
         da_mhws_peaks = get_peaks(da_tide, "BM", min_dist=6 * 24 * 10, period="29.5D")
         tide_hydrographs = (
