@@ -84,10 +84,12 @@ class GetGTSMData(Method):
             "s": {
                 "var": "surge",
                 "stations": stations,
+                "fn_out": self.output.surge_nc,
             },
             "h": {
                 "var": "waterlevel",
                 "stations": stations,
+                "fn_out": self.output.waterlevel_nc,
             },
         }
 
@@ -141,6 +143,7 @@ def export_gtsm_data(
     tend: str,
     dt: str,
     var: str,
+    fn_out: str,
     chunks: dict = None,
 ) -> Path:
     """Return GTSM data variable timeseries in a single file.
@@ -197,7 +200,6 @@ def export_gtsm_data(
         da.to_netcdf(fn_out, encoding=encoding)
 
     fns = glob.glob(str(tmpdir / f"{var}_*.nc"))
-    fn_out = outdir / f"{var}.nc"
     if len(fns) > 1:
         ds = xr.open_mfdataset(fns).load()
         ds.to_netcdf(fn_out, encoding=encoding)

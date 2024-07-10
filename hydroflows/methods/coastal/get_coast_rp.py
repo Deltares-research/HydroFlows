@@ -63,6 +63,6 @@ class GetCoastRP(Method):
         dist = (coast_rp.lat - region.centroid.y.values) ** 2 + (
             coast_rp.lon - region.centroid.x.values
         ) ** 2
-        coast_rp = coast_rp.isel(dist.argmin().values)
+        coast_rp = coast_rp.isel(stations=dist.argmin().values)
 
         coast_rp.to_netcdf(self.output.rps_nc)
