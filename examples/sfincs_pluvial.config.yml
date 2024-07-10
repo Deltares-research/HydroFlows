@@ -1,0 +1,6 @@
+region: data/test_region.geojson
+rps:
+- 5
+- 10
+- 50
+sfincs_exe: bin/sfincs/sfincs.exe

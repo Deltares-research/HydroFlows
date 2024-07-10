@@ -10,7 +10,7 @@ import rasterio
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
-from hydroflows.workflows.events import EventCatalog
+from hydroflows.events import EventCatalog
 
 
 @pytest.fixture(scope="session")
