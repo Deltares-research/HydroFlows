@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from hydroflows.events import Event, EventCatalog, Forcing, Hazard, Impact
+from hydroflows.workflows.events import Event, EventCatalog, Forcing, Hazard, Impact
 
 
 def test_forcings(tmp_csv):

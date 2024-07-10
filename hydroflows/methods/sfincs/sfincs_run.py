@@ -5,9 +5,9 @@ import subprocess
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import Method
+from ..method import Method
 
 __all__ = ["SfincsRun"]
 
@@ -19,8 +19,9 @@ class Input(BaseModel):
     required for the :py:class:`SfincsRun` method.
     """
 
-    sfincs_inp: Path
-    """The path to the SFINCS model configuration (inp) file."""
+    sfincs_inp: FilePath
+    """The file path to the Sfincs configuration (inp) file from the
+    Sfincs model that needs to be run."""
 
 
 class Output(BaseModel):
@@ -31,7 +32,7 @@ class Output(BaseModel):
     """
 
     sfincs_map: Path
-    """The path to the SFINCS sfincs_map.nc output file."""
+    """The path to the generated Sfincs (output) map."""
 
 
 class Params(BaseModel):
@@ -42,7 +43,7 @@ class Params(BaseModel):
     """
 
     sfincs_exe: Optional[Path] = None
-    """The path to SFINCS executable."""
+    """The path to Sfincs executable."""
 
     vm: Optional[Literal["docker", "singularity"]] = None
     """The virtual machine environment to use."""
@@ -52,38 +53,21 @@ class Params(BaseModel):
 
 
 class SfincsRun(Method):
-    """Rule for running a Sfincs model."""
+    """Rule for running a Sfincs model.
+
+    This class utilizes the :py:class:`Params <hydroflows.methods.sfincs.sfincs_run.Params>`,
+    :py:class:`Input <hydroflows.methods.sfincs.sfincs_run.Input>`, and
+    :py:class:`Output <hydroflows.methods.sfincs.sfincs_run.Output>` classes to
+    run an existing Sfincs model.
+    """
 
     name: str = "sfincs_run"
-
-    def __init__(self, sfincs_inp: str, **params) -> "SfincsRun":
-        """Create and validate a sfincs_run instance.
-
-        Parameters
-        ----------
-        sfincs_inp : str
-            Path to the SFINCS input file.
-        **params
-            Additional parameters to pass to the SfincsRun instance.
-            See :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`.
-
-        See Also
-        --------
-        :py:class:`sfincs_run Input <hydroflows.methods.sfincs.sfincs_run.Input>`
-        :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
-        :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
-        """
-        self.params: Params = Params(**params)
-        self.input: Input = Input(sfincs_inp=sfincs_inp)
-        self.output: Output = Output(
-            sfincs_map=Path(sfincs_inp).parent / "sfincs_map.nc"
-        )
+    params: Params
+    input: Input
+    output: Output
 
     def run(self) -> None:
         """Run the SfincsRun method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # make sure model_root is an absolute path
         model_root = self.input.sfincs_inp.parent.resolve()
 

@@ -22,9 +22,7 @@ dependencies = [
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
   "pydantic",                 # data validation
-  "tqdm",                     # progress bar
   "xarray",                   # data handling
-  "jinja2",                   # templating
 ]
 
 requires-python = ">=3.9"

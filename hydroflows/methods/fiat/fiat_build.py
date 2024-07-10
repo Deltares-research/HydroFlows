@@ -9,8 +9,7 @@ from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfStr
-from hydroflows.config import HYDROMT_CONFIG_DIR
-from hydroflows.methods.method import Method
+from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
 
 __all__ = ["FIATBuild"]
 

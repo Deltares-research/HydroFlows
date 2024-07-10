@@ -1,22 +1,20 @@
 """Submodule for hydroflows methods."""
 
-
-# NOTE all methods should be imported here to make them discoverable
-# in the Method._get_subclasses() method
-
+from .coastal import (
+    CoastalDesignEvents,
+    GetCoastRP,
+    GetGTSMData,
+    GetWaterlevelRPS,
+    TideSurgeTimeseries,
+)
 from .fiat import FIATBuild, FIATRun, FIATUpdateHazard
 from .hazard_catalog import HazardCatalog
 from .method import Method
 from .rainfall import GetERA5Rainfall, PluvialDesignEvents
-from .coastal import CoastalDesignEvents, GetCoastRP, GetGTSMData, GetWaterlevelRPS, TideSurgeTimeseries
 from .sfincs import SfincsBuild, SfincsPostprocess, SfincsRun, SfincsUpdateForcing
 from .wflow import WflowBuild, WflowDesignHydro, WflowRun, WflowUpdateForcing
 
-__all__ = ["Method"]
-
-
 # registered methods
-# TODO: turn in to list for entry points, similar to hydromt
 
 METHODS = {
     "sfincs_build": SfincsBuild,
@@ -24,6 +22,7 @@ METHODS = {
     "fiat_build": FIATBuild,
     "fiat_run": FIATRun,
     "fiat_update_hazard": FIATUpdateHazard,
+    "test_method": Method,  # FIX ME: keep this method private for CLI testing,
     "wflow_run": WflowRun,
     "wflow_update_forcing": WflowUpdateForcing,
     "sfincs_update_forcing": SfincsUpdateForcing,
