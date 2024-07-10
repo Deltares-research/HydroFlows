@@ -10,6 +10,8 @@ from pydantic import BaseModel
 from hydroflows._typing import ListOfInt
 from hydroflows.methods.method import Method
 
+__all__ = ["GetWaterlevelRPS"]
+
 
 class Input(BaseModel):
     """Input parameters for the :py:class:`GetWaterlevelRPS` method."""
@@ -41,10 +43,6 @@ class Params(BaseModel):
 class GetWaterlevelRPS(Method):
     """Method for deriving return values from total waterlevel timeseries for given return periods.
 
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.get_waterlevel_rps.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.get_waterlevel_rps.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.get_waterlevel_rps.Params>` for method inputs, outputs and params.
-
     See Also
     --------
     :py:function:`hydromt.stats.get_peaks`
@@ -53,9 +51,33 @@ class GetWaterlevelRPS(Method):
     """
 
     name: str = "get_waterlevel_rps"
-    input: Input
-    output: Output
-    params: Params = Params()
+
+    def __init__(
+        self,
+        waterlevel_timeseries: Path,
+        data_root: Path = "data/input/forcing_data/waterlevel",
+        **params,
+    ) -> None:
+        """Create and validate a GetWaterlevelRPS instance.
+
+        Parameters
+        ----------
+        waterlevel_timeseries : Path
+            Path to total waterlevel timeseries
+        data_root : Path, optional
+            The folder root where output is stored, by default "data/input/forcing_data/waterlevel"
+
+        See Also
+        --------
+        :py:class:`Input <hydroflows.methods.coastal.get_waterlevel_rps.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.get_waterlevel_rps.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.get_waterlevel_rps.Params>`
+        """
+        self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
+        self.params: Params = Params(**params)
+
+        rps_fn = data_root / "waterlevel_rps.nc"
+        self.output: Output = Output(rps_nc=rps_fn)
 
     def run(self) -> None:
         """Run GetWaterlevelRPS method."""

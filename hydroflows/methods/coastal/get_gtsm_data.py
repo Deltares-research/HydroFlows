@@ -13,6 +13,8 @@ from shapely.geometry import Point
 
 from hydroflows.methods.method import Method
 
+__all__ = ["GetGTSMData"]
+
 
 class Input(BaseModel):
     """Input parameters for the :py:class:`GetGTSMData` method."""
@@ -56,10 +58,6 @@ class Params(BaseModel):
 class GetGTSMData(Method):
     """Method for getting GTSM waterlevel and surge timeseries at centroid of a region.
 
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.get_gtsm_data.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.get_gtsm_data.Params>` for method inputs, outputs and params.
-
     See Also
     --------
     :py:function:`hydroflows.methods.coastal.get_gtsm_data.get_gtsm_station`
@@ -67,9 +65,35 @@ class GetGTSMData(Method):
     """
 
     name: str = "get_gtsm_data"
-    params: Params = Params()
-    input: Input
-    output: Output
+
+    def __init__(
+        self,
+        region: Path,
+        data_root: Path = "data/input/forcing_data/waterlevel",
+        **params,
+    ) -> None:
+        """Create and validate a GetGTSMData instance.
+
+        Parameters
+        ----------
+        region : Path
+            Path to file containing area of interest geometry.
+            Centroid is used to look for nearest GTSM station.
+        data_root : Path, optional
+            The root folder where data is stored, by default "data/input/forcing_data/waterlevel"
+
+        See Also
+        --------
+        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Params>`
+        """
+        self.input: Input = Input(region=region)
+        self.params: Params = Params(**params)
+
+        waterlevel_path = data_root / "gtsm_waterlevel.nc"
+        surge_path = data_root / "gtsm_surge.nc"
+        self.output: Output = Output(waterlevel_nc=waterlevel_path, surge_nc=surge_path)
 
     def run(self):
         """Run GetGTSMData method."""
@@ -164,6 +188,8 @@ def export_gtsm_data(
         Time step of output timeseries. One of [10min, hourly, dailymax]
     var : str
         GTSM data variable
+    fn_out : str
+        Output file name
     chunks : _type_, optional
         xarray open_mfdataset chunking option when reading GTSM data files, by default {"stations": 1}
 

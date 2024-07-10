@@ -8,8 +8,10 @@ import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
 from pydantic import BaseModel
 
+from hydroflows.events import EventCatalog
 from hydroflows.methods.method import Method
-from hydroflows.workflows.events import EventCatalog
+
+__all__ = ["CoastalDesignEvents"]
 
 
 class Input(BaseModel):
@@ -58,9 +60,39 @@ class CoastalDesignEvents(Method):
     """
 
     name: str = "coastal_design_events"
-    input: Input
-    output: Output
-    params: Params = Params()
+
+    def __init__(
+        self,
+        data_root: Path = "data/input/forcing/waterlevel",
+        event_folder: Path = "data/interim/coastal",
+        **params,
+    ) -> None:
+        """Create and validate CoastalDesignEvents instance.
+
+        Parameters
+        ----------
+        data_root : Path, optional
+            Folder root of input tide and surge timeseries, by default "data/input/forcing/waterlevel"
+        event_folder : Path, optional
+            Folder root of ouput event catalog file, by default "data/interim/coastal"
+
+        See Also
+        --------
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Params>`
+        """
+        surge_fn = data_root / "surge_timeseries.nc"
+        tide_fn = data_root / "tide_timeseries.nc"
+        rps_fn = data_root / "waterlevel_rps.nc"
+
+        self.input: Input = Input(
+            surge_timeseries=surge_fn, tide_timeseries=tide_fn, rps_nc=rps_fn
+        )
+        self.params: Params = Params(**params)
+
+        event_catalog = event_folder / "design_events.yml"
+        self.output: Output = Output(event_catalog=event_catalog)
 
     def run(self):
         """Run CoastalDesignEvents method."""

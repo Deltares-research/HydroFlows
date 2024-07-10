@@ -9,6 +9,8 @@ from pydantic import BaseModel
 
 from hydroflows.methods.method import Method
 
+__all__ = ["GetCoastRP"]
+
 
 class Input(BaseModel):
     """Input parameters for the :py:class:`GetCoastRP` method."""
@@ -17,7 +19,7 @@ class Input(BaseModel):
     """Path to region geometry file."""
 
     coastrp_fn: Path
-    """Path to COAST-RP dataset."""
+    """Path to full COAST-RP dataset."""
 
 
 class Output(BaseModel):
@@ -34,18 +36,39 @@ class Params(BaseModel):
 
 
 class GetCoastRP(Method):
-    """Method for fetching and processing COAST-RP dataset.
-
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.get_coast_rp.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.get_coast_rp.Params>` for method inputs, outputs and params.
-
-    """
+    """Method for fetching and processing COAST-RP dataset."""
 
     name: str = "get_coast_rp"
-    input: Input
-    output: Output
-    params: Params = Params()
+
+    def __init__(
+        self,
+        region: Path,
+        coastrp_fn: Path,
+        data_root: Path = "data/input/forcing_data/waterlevel",
+    ) -> None:
+        """Create and validate a GetCoastRP instance.
+
+        Parameters
+        ----------
+        region : Path
+            Path to region geometry file.
+            Centroid is used to look for closest station to be consistent with GetGTSMData method.
+        coastrp_fn : Path
+            Path to full COAST-RP dataset.
+        data_root : Path, optional
+            The folder root where output is stored, by default "data/input/forcing_data/waterlevel"
+
+        See Also
+        --------
+        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
+        """
+        self.input: Input = Input(region=region, coastrp_fn=coastrp_fn)
+        self.params: Params = Params()
+
+        rps_fn = data_root / "waterlevel_rps.nc"
+        self.output: Output = Output(rps_nc=rps_fn)
 
     def run(self) -> None:
         """Run GetCoastRP Method."""

@@ -8,6 +8,8 @@ from pydantic import BaseModel
 
 from hydroflows.methods.method import Method
 
+__all__ = ["TideSurgeTimeseries"]
+
 
 class Input(BaseModel):
     """Input parameters for the :py:class:`TideSurgeTimeseries` method."""
@@ -42,18 +44,39 @@ class TideSurgeTimeseries(Method):
     If one of or both tide and surge timeseries are passed as params, they are simply copied over to their respective outputs.
     Currently one of tide or surge timeseries params is required.
     Full tidal analysis of a waterlevel timeseries is not yet implemented.
-
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>` for method inputs, outputs and params.
-
-
     """
 
     name: str = "create_tide_surge_timeseries"
-    input: Input
-    output: Output
-    params: Params = Params()
+
+    def __init__(
+        self,
+        waterlevel_timeseries: Path,
+        data_root: Path = "data/input/forcing/waterlevel",
+        **params,
+    ) -> None:
+        """Create and validate TideSurgeTimeseries instance.
+
+        Parameters
+        ----------
+        waterlevel_timeseries : Path
+            Path to waterlevel timeseries to derive tide and surge from.
+        data_root : Path, optional
+            Folder root where output is stored, by default "data/input/forcing/waterlevel"
+
+        See Also
+        --------
+        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
+        """
+        self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
+        self.params: Params = Params(**params)
+
+        surge_out = data_root / "surge_timeseries.nc"
+        tide_out = data_root / "tide_timeseries.nc"
+        self.output: Output = Output(
+            tide_timeseries=tide_out, surge_timeseries=surge_out
+        )
 
     def run(self) -> None:
         """Run TideSurgeTimeseries method."""
