@@ -24,6 +24,21 @@ rule get_gtsm_data:
         -o surge_nc={output.surge_nc}
         """
 
+rule get_coast_rp:
+    input:
+        region = region_file,
+        coastrp_fn = r"p:\11209169-003-up2030\data\WATER_LEVEL\COAST-RP\COAST-RP.nc"
+    output:
+        rps_nc = "data/interim/forcing_data/waterlevel_rps.nc"
+    shell:
+    """
+    hydroflows run \
+    get_coast_rp \
+    -i region={input.region_file} \
+    -i coastrp_fn={input.coastrp_fn} \
+    -o rps_nc={output.rps_nc}
+    """
+
 rule tide_surge_timeseries:
     input:
         waterlevel_timeseries = rules.get_gtsm_data.output.waterlevel_nc
@@ -46,11 +61,9 @@ rule coastal_design_events:
     input:
         surge_timeseries = rules.tide_surge_timeseries.output.surge_timeseries,
         tide_timeseries = rules.tide_surge_timeseries.output.tide_timeseries,
+        rps_nc = rules.get_coast_rp.output.rps_nc
     output:
         event_catalog = f"data/interim/{region_name}/{scenario_name}/coastal/design_events.yml"
-    params:
-        rps = r"p:\11209169-003-up2030\data\WATER_LEVEL\COAST-RP\COAST-RP.nc",
-        region = region_file,
     shell:
         """
         hydroflows run \
