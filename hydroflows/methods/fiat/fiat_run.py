@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic import BaseModel, FilePath
 
-from hydroflows.methods.method import Method
+from ..method import Method
 
 
 class Input(BaseModel):

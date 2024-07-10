@@ -145,7 +145,7 @@ class Impact(BaseModel):
 
     category: Optional[str] = None
     """category of the impact (e.g. "building", "content",
-    "population", "infrastructure". To be defined by user."""
+    "population", "infrstructure". To be defined by user."""
 
     path: Path
     """The path to the hazard data layer (GeoTIFF)."""
@@ -253,33 +253,6 @@ class Event(BaseModel):
             else:
                 self.time_range[0] = min(self.time_range[0], forcing.time_range[0])
                 self.time_range[1] = max(self.time_range[1], forcing.time_range[1])
-
-    def to_yaml(self, path: Path) -> None:
-        """Write the Event to a YAML file."""
-        # serialize
-        yaml_dict = self.to_dict()
-        # write to file
-        with open(path, "w") as file:
-            yaml.safe_dump(yaml_dict, file, sort_keys=False)
-
-    @classmethod
-    def from_yaml(cls, path: Path) -> "Event":
-        """Create an Event from a YAML file."""
-        with open(path, "r") as file:
-            yml_dict = yaml.safe_load(file)
-        event = cls(**yml_dict)
-        # FIXME: this is a bit hacky, but we need to set the path to the parent
-        if event.forcings:
-            for forcing in event.forcings:
-                forcing._set_path_absolute(Path(path).resolve().parent)
-        return event
-
-    def read_forcing_data(self) -> None:
-        """Read all forcings."""
-        for forcing in self.forcings:
-            if forcing.data is None:
-                forcing.read_data()
-        self.set_time_range_from_forcings()
 
 
 class Roots(BaseModel):

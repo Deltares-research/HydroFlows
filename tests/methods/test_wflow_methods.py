@@ -11,26 +11,21 @@ from hydroflows.methods import WflowBuild, WflowDesignHydro, WflowUpdateForcing
 
 
 def test_wflow_build(rio_region, rio_test_data, tmp_path):
-    # required inputs
-    region = rio_region.as_posix()
-    wflow_root = Path(tmp_path, "wflow_model")
+    input = {"region": str(rio_region)}
 
-    # some additional params
-    data_libs = rio_test_data.as_posix()
-    gauges = None
-    upstream_area = 10
-    plot_fig = False
+    params = {
+        "data_libs": [str(rio_test_data)],
+        "gauges": None,
+        "upstream_area": 10,
+        "plot_fig": False,
+    }
 
-    rule = WflowBuild(
-        region=region,
-        wflow_root=wflow_root,
-        data_libs=data_libs,
-        gauges=gauges,
-        upstream_area=upstream_area,
-        plot_fig=plot_fig,
-    )
+    fn_wflow_toml = Path(tmp_path, "model", "wflow.toml")
+    output = {"wflow_toml": str(fn_wflow_toml)}
 
-    rule.run_with_checks()
+    WflowBuild(input=input, params=params, output=output).run()
+
+    assert fn_wflow_toml.exists()
 
     # FIXME: add params gauges, then uncomment this
     # fn_geoms = Path(fn_wflow_toml.parent, "staticgeoms", "gauges_locs.geojson")
@@ -41,22 +36,15 @@ def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
     # copy the wflow model to the tmp_path
     root = tmp_path / "model"
     shutil.copytree(rio_wflow_model.parent, root)
-    # required inputs
-    wflow_toml = Path(root, rio_wflow_model.name)
-    start_time = "2020-02-01"
-    end_time = "2020-02-10"
+    fn_wflow_toml_updated = Path(root, "sims", "sim1", "wflow_sim1.toml")
 
-    # additional param
-    data_libs = rio_test_data.as_posix()
+    input = {"wflow_toml": str(root / rio_wflow_model.name)}
+    params = {"data_libs": [str(rio_test_data)]}
+    output = {"wflow_toml": str(fn_wflow_toml_updated)}
 
-    rule = WflowUpdateForcing(
-        wflow_toml=wflow_toml,
-        start_time=start_time,
-        end_time=end_time,
-        data_libs=data_libs,
-    )
+    WflowUpdateForcing(input=input, params=params, output=output).run()
 
-    rule.run_with_checks()
+    assert fn_wflow_toml_updated.exists()
 
 
 @pytest.fixture()
@@ -88,13 +76,11 @@ def test_wflow_design_hydro(time_series_nc, tmp_path):
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     time_series_nc.to_netcdf(fn_time_series_nc)
 
-    # required inputs
-    discharge_nc = str(fn_time_series_nc)
-    event_root = Path(tmp_path, "events")
+    input = {"time_series_nc": str(fn_time_series_nc)}
 
-    rule = WflowDesignHydro(
-        discharge_nc=discharge_nc,
-        event_root=event_root,
-    )
+    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
 
-    rule.run_with_checks()
+    output = {"event_catalog": str(fn_data_catalog)}
+
+    WflowDesignHydro(input=input, output=output).run()
+    assert fn_data_catalog.exists()
