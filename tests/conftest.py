@@ -163,8 +163,13 @@ def tmp_tif(tmpdir):
 
 
 @pytest.fixture()
-def event_set(test_data_dir) -> EventSet:
-    return EventSet.from_yaml(test_data_dir / "events.yml")
+def event_set_file(test_data_dir) -> Path:
+    return test_data_dir / "events.yml"
+
+
+@pytest.fixture()
+def event_set(event_set_file) -> EventSet:
+    return EventSet.from_yaml(event_set_file)
 
 
 @pytest.fixture()

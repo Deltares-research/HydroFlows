@@ -1,6 +1,8 @@
 """FIAT updating submodule/ rules."""
 from pathlib import Path
+from typing import List
 
+import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel
 
@@ -16,8 +18,11 @@ class Input(BaseModel):
     """The file path to the FIAT configuration (toml) file."""
 
     event_set_yaml: Path
-    """The path to the event description file,
+    """The path to the event description file, used to filter hazard maps,
     see also :py:class:`hydroflows.workflows.events.Event`."""
+
+    hazard_maps: List[Path]
+    """List of paths to hazard maps the event description file."""
 
 
 class Output(BaseModel):
@@ -60,7 +65,9 @@ class FIATUpdateHazard(Method):
 
     name: str = "fiat_update_hazard"
 
-    def __init__(self, fiat_cfg: Path, event_yaml: Path, **params):
+    def __init__(
+        self, fiat_cfg: Path, event_set_yaml: Path, hazard_maps: List[Path], **params
+    ):
         """Create and validate a FIATUpdateHazard instance.
 
         FIAT simulations are stored in a simulations/{event_name} subdirectory of the basemodel.
@@ -69,7 +76,7 @@ class FIATUpdateHazard(Method):
         ----------
         fiat_cfg : Path
             The file path to the FIAT configuration (toml) file.
-        event_yaml : Path
+        event_set_yaml : Path
             The path to the event description file.
         **params
             Additional parameters to pass to the FIATUpdateHazard instance.
@@ -83,11 +90,13 @@ class FIATUpdateHazard(Method):
 
         """
         self.params: Params = Params(**params)
-        self.input: Input = Input(fiat_cfg=fiat_cfg, event_yaml=event_yaml)
+        self.input: Input = Input(
+            fiat_cfg=fiat_cfg, event_set_yaml=event_set_yaml, hazard_maps=hazard_maps
+        )
         # NOTE: FIAT runs with full event sets with RPs. Name of event set is the stem of the event set file
         event_set_name = self.input.event_set_yaml.stem
         fiat_hazard = (
-            self.input.fiat_cfg.parent / "simulations" / event_set_name / "hazard.tif"
+            self.input.fiat_cfg.parent / "simulations" / event_set_name / "hazard.nc"
         )
         fiat_out_cfg = (
             self.input.fiat_cfg.parent
@@ -97,54 +106,72 @@ class FIATUpdateHazard(Method):
         )
         self.output: Output = Output(fiat_hazard=fiat_hazard, fiat_out_cfg=fiat_out_cfg)
 
-        def run(self):
-            """Run the FIATUpdateHazard method."""
-            # Load the existing
-            root = self.input.fiat_cfg.parent
-            out_root = self.output.fiat_out_cfg.parent
-            if not out_root.is_relative_to(root):
-                raise ValueError("out_root should be a subdirectory of root")
+    def run(self):
+        """Run the FIATUpdateHazard method."""
+        # Load the existing
+        root = self.input.fiat_cfg.parent
+        out_root = self.output.fiat_out_cfg.parent
+        if not out_root.is_relative_to(root):
+            raise ValueError("out_root should be a subdirectory of root")
 
-            model = FiatModel(
-                root=root,
-                mode="w+",
-            )
-            model.read()
+        model = FiatModel(
+            root=root,
+            mode="w+",
+        )
+        # TODO: hydromt_fiat does not automatically read the region, and region is needed!
+        model.read()
+        region_fn = Path(root / "exposure", "region.gpkg")
+        region_gdf = gpd.read_file(region_fn).to_crs(4326)
 
-            # Make all paths relative in the config
-            config = make_relative_paths(model.config, root, out_root)
+        model.setup_region({"geom": region_gdf})
 
-            ## WARNING! code below is necessary for now, as hydromt_fiat cant deliver
-            # READ the hazard catalog
-            event_set_path = Path(self.input.event_set_yaml)
-            # with open(event_set_path, "r") as _r:
-            #     hc = yaml.safe_load(_r)
-            event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
-            paths = [
-                Path(
-                    event_set_path.parent,
-                    event_set.roots["root_hazards"],
-                    item.hazards[0]["path"],
-                )
-                for item in event_set.events
-            ]
-            rps = [1 / item.probability for item in event_set.events]
+        # Make all paths relative in the config
+        config = {
+            k: make_relative_paths(model.config[k], root, out_root)
+            for k in model.config
+        }
+        config["exposure"]["csv"] = make_relative_paths(
+            model.config["exposure"]["csv"], root, out_root
+        )
+        config["exposure"]["geom"] = make_relative_paths(
+            model.config["exposure"]["geom"], root, out_root
+        )
 
-            # Setup the hazard map
-            model.setup_hazard(
-                paths,
-                map_type=self.params.map_type,
-                rp=rps,
-                risk_output=self.params.risk,
-            )
-            # change root to simulation folder
-            model.set_root(out_root, mode="w+")
-            model.write_grid(fn=fiat_hazard)
-            config.update("hazard.settings.var_as_band", True)
-            config.update("hazard.settings.path", fiat_hazard)
-            # model.set_config("hazard.settings.var_as_band", True)
+        ## WARNING! code below is necessary for now, as hydromt_fiat cant deliver
+        # READ the hazard catalog
+        event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
 
-            # update config
-            model.setup_config(**config)
-            # Write the config
-            model.write_config()
+        # extract all names
+        hazard_names = [event["name"] for event in event_set.events]
+
+        # filter out the right path names
+        hazard_fns = []
+        for name in hazard_names:
+            for fn in self.input.hazard_maps:
+                if name in fn.stem:
+                    hazard_fns.append(fn)
+                    break
+
+        # get return periods
+        rps = [1 / event_set.get_event(name).probability for name in hazard_names]
+
+        # Setup the hazard map
+        # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
+        # a ValueError if the metadata of those same maps does not contain a nodata value. Here we impose a random -9999.
+        model.setup_hazard(
+            hazard_fns,
+            map_type=self.params.map_type,
+            rp=rps,
+            risk_output=self.params.risk,
+            var="flood_map",
+            nodata=-9999.0,
+        )
+        # change root to simulation folder
+        model.set_root(out_root, mode="w+")
+        model.write_grid(fn=str(self.output.fiat_hazard))
+        model.setup_config(**config)
+        model.set_config("hazard.settings.var_as_band", True)
+        model.set_config("hazard.file", self.output.fiat_hazard.name)
+
+        # Write the config
+        model.write_config()
