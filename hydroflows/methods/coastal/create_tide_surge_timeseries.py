@@ -1,9 +1,11 @@
 """Convert waterlevel timeseries into tide and surge timeseries."""
 
 from pathlib import Path
-from shutil import copy
 
+import hatyan
+import pandas as pd
 import xarray as xr
+from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel
 
 from hydroflows.methods.method import Method
@@ -31,19 +33,20 @@ class Output(BaseModel):
 class Params(BaseModel):
     """Params for the :py:class:`TideSurgeTimeseries` method."""
 
-    surge_timeseries: Path = None
-    """Path to surge timeseries to use in derivation tide timeseries"""
-
-    tide_timeseries: Path = None
-    """Path to tide timeseries to ues in derivation surge timeseries"""
+    plot_fig: bool = True
+    """Make tidal component and timeseries plots.
+    Note: the timeseries difference plot is -1*surge timeseries"""
 
 
 class TideSurgeTimeseries(Method):
     """Method for deriving tide and surge timeseries from waterlevel timeseries.
 
-    If one of or both tide and surge timeseries are passed as params, they are simply copied over to their respective outputs.
-    Currently one of tide or surge timeseries params is required.
-    Full tidal analysis of a waterlevel timeseries is not yet implemented.
+    Implements hatyan package to do tidal analysis. Uses 94 tidal constituents to estimate tidal signal.
+
+    See Also
+    --------
+    :py:function:`hydroflows.methods.coastal.create_tide_surge_timeseries.plot_tide_components`
+    :py:function:`hydroflows.methods.coastal.create_tide_surge_timeseries.plot_timeseries`
     """
 
     name: str = "create_tide_surge_timeseries"
@@ -80,41 +83,62 @@ class TideSurgeTimeseries(Method):
 
     def run(self) -> None:
         """Run TideSurgeTimeseries method."""
-        # If both surge and tide timeseries already exist, use those.
-        # This is for redundancy. If those timeseries already exist, don't run this method.
-        if self.params.surge_timeseries and self.params.tide_timeseries:
-            assert (
-                self.params.surge_timeseries.exists()
-            ), "Provide valid surge timeseries path"
-            assert (
-                self.params.tide_timeseries.exists()
-            ), "Provide valid tide timeseries path"
+        # Open waterlevel data
+        h = xr.open_dataarray(self.input.waterlevel_timeseries)
+        h = h.squeeze()
+        ts = pd.DataFrame({"values": h.to_series()})
 
-            copy(self.params.surge_timeseries, self.output.surge_timeseries)
-            copy(self.params.tide_timeseries, self.output.tide_timeseries)
-        # TODO: make two elif statements nicer. Combine with ternary operators somehow?
-        elif self.params.surge_timeseries.exists():
-            assert (
-                self.params.surge_timeseries.exists()
-            ), "Provide valid surge timeseries path"
-            copy(self.params.surge_timeseries, self.output.surge_timeseries)
+        time_slice = slice(
+            h.time[0].values,
+            h.time.values[-1],
+            pd.Timedelta(h.time.diff(dim="time")[0].values),
+        )
 
-            surge = xr.open_dataarray(self.params.surge_timeseries)
-            waterlevel = xr.open_dataarray(self.input.waterlevel_timeseries)
+        # Get list of tidal components
+        const_list = hatyan.get_const_list_hatyan("year")
 
-            tide = waterlevel - surge
-            tide.to_netcdf(self.output.tide_timeseries)
-        elif self.params.tide_timeseries.exists():
-            assert (
-                self.params.tide_timeseries.exists()
-            ), "Provide valid tide timeseries path"
-            copy(self.params.tide_timeseries, self.output.tide_timeseries)
+        # Get amplitude, phase of tidal components
+        comp_mean = hatyan.analysis(
+            ts=ts,
+            const_list=const_list,
+            nodalfactors=True,
+            return_allperiods=False,
+            fu_alltimes=True,
+            analysis_perperiod="Y",
+        )
+        # Get tidal timeseries
+        ts_pred = hatyan.prediction(comp=comp_mean, times=time_slice)
+        # Get surge timeseries
+        ts_surge = ts - ts_pred
 
-            tide = xr.open_dataarray(self.params.tide_timeseries)
-            waterlevel = xr.open_dataarray(self.input.waterlevel_timeseries)
+        if self.params.plot_fig:
+            savefolder = Path(self.output.tide_timeseries.parent, "figs")
+            if not savefolder.exists():
+                savefolder.mkdir(parents=True)
 
-            surge = waterlevel - tide
-            surge.to_netcdf(self.output.surge_timeseries)
-        # TODO: Implement tidal analysis of a single waterlevel timeseries
-        else:
-            raise NotImplementedError("Tidal analysis not implemented")
+            plot_tide_components(comp_mean, savefolder / "tidal_components.png")
+            plot_timeseries(ts, ts_pred, savefolder / "tide_timeseries.png")
+
+        t = xr.zeros_like(h)
+        t.data = ts_pred.values.squeeze()
+        t = t.rename("tide")
+
+        s = xr.zeros_like(h)
+        s.data = ts_surge.values.squeeze()
+        s = s.rename("surge")
+
+        t.to_netcdf(self.output.tide_timeseries)
+        s.to_netcdf(self.output.surge_timeseries)
+
+
+def plot_tide_components(comp, savepath):
+    fig, (ax1, ax2) = hatyan.plot_components(comp=comp)
+    fig.savefig(savepath, dpi=150, bbox_inches="tight")
+
+
+def plot_timeseries(ts, ts_pred, savepath):
+    fig, (ax1, ax2) = hatyan.plot_timeseries(ts=ts_pred, ts_validation=ts)
+    lower, upper = (ts - ts_pred).min().values, (ts - ts_pred).max().values
+    ax2.set_ylim(lower, upper)
+    ax1.set_xlim(ts_pred.index[-1], ts_pred.index[-1] - relativedelta(years=1))
+    fig.savefig(savepath, dpi=150, bbox_inches="tight")

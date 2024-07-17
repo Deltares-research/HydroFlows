@@ -35,6 +35,9 @@ class Output(BaseModel):
     surge_nc: Path
     """Path to output file containing surge .nc timeseries"""
 
+    tide_nc: Path
+    """Path to output file containing tide .nc timeseries"""
+
 
 class Params(BaseModel):
     """Params for the :py:class:`GetGTSMData` method."""
@@ -93,7 +96,10 @@ class GetGTSMData(Method):
 
         waterlevel_path = data_root / "gtsm_waterlevel.nc"
         surge_path = data_root / "gtsm_surge.nc"
-        self.output: Output = Output(waterlevel_nc=waterlevel_path, surge_nc=surge_path)
+        tide_path = data_root / "gtsm_tide.nc"
+        self.output: Output = Output(
+            waterlevel_nc=waterlevel_path, surge_nc=surge_path, tide_nc=tide_path
+        )
 
     def run(self):
         """Run GetGTSMData method."""
@@ -131,6 +137,10 @@ class GetGTSMData(Method):
             )
 
         rmtree(fn_out.parent / "gtsm_tmp")
+        s = xr.open_dataarray(self.output.surge_nc)
+        h = xr.open_dataarray(self.output.waterlevel_nc)
+        t = h - s
+        t.to_netcdf(self.output.tide_nc)
 
 
 def get_gtsm_station(

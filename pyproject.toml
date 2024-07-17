@@ -25,6 +25,7 @@ dependencies = [
   "tqdm",                     # progress bar
   "xarray",                   # data handling
   "jinja2",                   # templating
+  "hatyan",                   # tidal analysis
 ]
 
 requires-python = ">=3.9"
@@ -87,6 +88,7 @@ deps_not_in_conda = [
   "hydromt_fiat",
   "sphinx_autosummary_accessors",
   "sphinx_design",
+  "hatyan",
 ]
 
 [project.scripts]
