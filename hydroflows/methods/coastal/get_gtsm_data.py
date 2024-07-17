@@ -51,6 +51,7 @@ class Params(BaseModel):
     timestep: str = "10min"
     """Time step of the output timeseries"""
 
+    # TODO: Do something about hard coded ref to p-drive
     gtsm_loc: Path = Path(r"p:/archivedprojects/11205028-c3s_435/01_data/01_Timeseries")
     """
     Location of GTSM data.
@@ -114,12 +115,12 @@ class GetGTSMData(Method):
             "s": {
                 "var": "surge",
                 "stations": stations,
-                "fn_out": self.output.surge_nc,
+                "outpath": self.output.surge_nc,
             },
             "h": {
                 "var": "waterlevel",
                 "stations": stations,
-                "fn_out": self.output.waterlevel_nc,
+                "outpath": self.output.waterlevel_nc,
             },
         }
 
@@ -177,7 +178,7 @@ def export_gtsm_data(
     tend: str,
     dt: str,
     var: str,
-    fn_out: str,
+    outpath: str,
     chunks: dict = None,
 ) -> Path:
     """Return GTSM data variable timeseries in a single file.
@@ -236,8 +237,10 @@ def export_gtsm_data(
         da.to_netcdf(fn_out, encoding=encoding)
 
     fns = glob.glob(str(tmpdir / f"{var}_*.nc"))
-    if len(fns) > 1:
-        ds = xr.open_mfdataset(fns).load()
-        ds.to_netcdf(fn_out, encoding=encoding)
+    fn_out = outpath
+    # if len(fns) > 1:
+    ds = xr.open_mfdataset(fns).load()
+    ds.to_netcdf(fn_out, encoding=encoding)
+    ds.close()
 
     return fn_out

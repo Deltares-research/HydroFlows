@@ -3,6 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
+import numpy as np
 import xarray as xr
 from hydromt.stats import fit_extremes, get_peaks, get_return_value
 from pydantic import BaseModel
@@ -89,5 +90,5 @@ class GetWaterlevelRPS(Method):
             qthresh=self.params.qthresh,
         )
         da_h_extremes = fit_extremes(da_h_peaks, ev_type=self.params.ev_type)
-        h_rps = get_return_value(da_h_extremes, rps=self.params.rps)
+        h_rps = get_return_value(da_h_extremes, rps=np.array(self.params.rps))
         h_rps.to_netcdf(self.output.rps_nc)
