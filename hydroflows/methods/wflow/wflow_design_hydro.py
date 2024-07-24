@@ -12,7 +12,7 @@ from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat
-from hydroflows.events import Event, EventCatalog
+from hydroflows.events import Event, EventSet
 from hydroflows.methods.method import ExpandMethod
 
 __all__ = ["WflowDesignHydro"]
@@ -48,9 +48,10 @@ class Output(BaseModel):
     event_csv: Path
     """The path to the event csv timeseries file."""
 
-    event_catalog: Path
-    """The path to the event catalog yml file,
-    see also :py:class:`hydroflows.workflows.events.EventCatalog` class.
+    event_set: Path
+    """The path to the event set yml file that contains the derived
+    fluvial event configurations. This event set can be created from
+    a dictionary using the :py:class:`hydroflows.workflows.events.EventSet` class.
     """
 
 
@@ -147,14 +148,14 @@ class WflowDesignHydro(ExpandMethod):
             events=[f"q_event{int(i+1):02d}" for i in range(len(self.params.rps))],
             event_yaml=Path(event_root, "{event}.yml"),
             event_csv=Path(event_root, "{event}.csv"),
-            event_catalog=Path(event_root, "event_catalog.yml"),
+            event_set=Path(event_root, "event_set.yml"),
         )
 
     def run(self):
         """Run the WflowDesignHydro method."""
         # check if the input files and the output directory exist
         self.check_input_output_paths()
-        root = self.output.event_catalog.parent
+        root = self.output.event_set.parent
 
         # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
@@ -246,11 +247,10 @@ class WflowDesignHydro(ExpandMethod):
         events_list = []
         for name, rp in zip(self.output.events, q_hydrograph.rps.values):
             # save q_rp as csv files
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(
-                str(self.output.event_csv).format(event=name)
-            )
-
-            # save event description file
+            # name = f"q_event{int(i+1):02d}"
+            forcing_fn = Path(root, f"{name}.csv")
+            event_fn = str(self.output.event_yaml).format(event=name)
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_fn)
             event = Event(
                 name=name,
                 forcings=[{"type": "discharge", "path": f"{name}.csv"}],
@@ -258,14 +258,14 @@ class WflowDesignHydro(ExpandMethod):
             )
             event.set_time_range_from_forcings()
             event.to_yaml(str(self.output.event_yaml).format(event=name))
+            event.to_yaml(event_fn)
             events_list.append(event)
 
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
+        # make an event set
+        event_set = EventSet(
             events=events_list,
         )
-        event_catalog.to_yaml(self.output.event_catalog)
+        event_set.to_yaml(self.output.event_set)
 
         # save plots
         if self.params.plot_fig:

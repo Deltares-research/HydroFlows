@@ -10,7 +10,7 @@ import xarray as xr
 from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat, ListOfInt
-from hydroflows.events import Event, EventCatalog
+from hydroflows.events import Event, EventSet
 from hydroflows.methods.method import ExpandMethod
 
 __all__ = ["PluvialDesignEvents"]
@@ -42,9 +42,9 @@ class Output(BaseModel):
     event_csv: Path
     """The path to the event csv timeseries file"""
 
-    event_catalog: Path
-    """The path to the event catalog yml file,
-    see also :py:class:`hydroflows.workflows.events.EventCatalog`.
+    event_set: Path
+    """The path to the event set yml file,
+    see also :py:class:`hydroflows.workflows.events.EventSet`.
 
     """
 
@@ -116,7 +116,7 @@ class PluvialDesignEvents(ExpandMethod):
             events=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
             event_yaml=Path(event_root, "{event}.yml"),
             event_csv=Path(event_root, "{event}.csv"),
-            event_catalog=Path(event_root, "event_catalog.yml"),
+            event_set=Path(event_root, "event_set.yml"),
         )
 
     def run(self):
@@ -164,7 +164,7 @@ class PluvialDesignEvents(ExpandMethod):
         # make sure there are no negative values
         p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
 
-        root = self.output.event_catalog.parent
+        root = self.output.event_set.parent
 
         # save plots
         if self.params.plot_fig:
@@ -195,15 +195,15 @@ class PluvialDesignEvents(ExpandMethod):
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(str(self.output.event_yaml).format(event=name))
-            events_list.append(event)
+            event_file = str(self.output.event_yaml).format(event=name)
+            event.to_yaml(event_file)
+            events_list.append({"name": name, "path": event_file})
 
         # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
+        event_set = EventSet(
             events=events_list,
         )
-        event_catalog.to_yaml(self.output.event_catalog)
+        event_set.to_yaml(self.output.event_set)
 
 
 def _plot_hyetograph(p_hyetograph, path: Path) -> None:

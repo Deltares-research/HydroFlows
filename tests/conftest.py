@@ -10,7 +10,7 @@ import rasterio
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
-from hydroflows.events import EventCatalog
+from hydroflows.events import EventSet
 
 
 @pytest.fixture(scope="session")
@@ -163,8 +163,13 @@ def tmp_tif(tmpdir):
 
 
 @pytest.fixture()
-def event_catalog(test_data_dir) -> EventCatalog:
-    return EventCatalog.from_yaml(test_data_dir / "events.yml")
+def event_set_file(test_data_dir) -> Path:
+    return test_data_dir / "events.yml"
+
+
+@pytest.fixture()
+def event_set(event_set_file) -> EventSet:
+    return EventSet.from_yaml(event_set_file)
 
 
 @pytest.fixture()

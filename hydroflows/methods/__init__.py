@@ -3,7 +3,7 @@
 # NOTE all methods should be imported here to make them discoverable
 # in the Method._get_subclasses() method
 from .fiat import FIATBuild, FIATRun, FIATUpdateHazard
-from .hazard_catalog import HazardCatalog
+from .hazard_catalog import HazardSet
 from .method import Method
 from .rainfall import GetERA5Rainfall, PluvialDesignEvents
 from .sfincs import SfincsBuild, SfincsPostprocess, SfincsRun, SfincsUpdateForcing
@@ -27,7 +27,7 @@ METHODS = {
     "sfincs_run": SfincsRun,
     "sfincs_postprocess": SfincsPostprocess,
     "pluvial_design_events": PluvialDesignEvents,
-    "hazard_catalog": HazardCatalog,
+    "hazard_catalog": HazardSet,
     "get_ERA5_rainfall": GetERA5Rainfall,
     "wflow_design_hydro": WflowDesignHydro,
 }

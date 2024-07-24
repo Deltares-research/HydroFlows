@@ -1,10 +1,7 @@
-from pathlib import Path
-
-import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from hydroflows.events import Event, EventCatalog, Forcing, Hazard, Impact
+from hydroflows.events import Event, EventSet, Forcing, Hazard, Impact
 
 
 def test_forcings(tmp_csv):
@@ -51,114 +48,19 @@ def test_event(tmp_csv):
     assert event.probability == 0.5
 
 
-def test_forcing_event_catalog(test_data_dir):
-    event_catalog = EventCatalog(
-        roots={"root_forcings": test_data_dir},
+def test_event_set(test_data_dir):
+    event_set = EventSet(
+        root=test_data_dir,
         events=[
-            {
-                "name": "rp050",
-                "forcings": [{"type": "rainfall", "path": "rainfall_rp050.csv"}],
-            },
-            {
-                "name": "rp010",
-                "forcings": [{"type": "rainfall", "path": "rainfall_rp010.csv"}],
-                "probability": 0.01,
-            },
+            {"name": "rp050", "path": "event_rp050.yml"},
+            {"name": "rp010", "path": "event_rp010.yml"},
         ],
     )
-    assert len(event_catalog.events) == 2
-    event = event_catalog.get_event("rp050")
+    assert len(event_set.events) == 2
+    event = event_set.get_event("rp050")
     assert isinstance(event, Event)
-    assert event.name == "rp050"
-    assert event_catalog.event_names == ["rp050", "rp010"]
-    assert isinstance(event.forcings, list)
-    event_dict = event_catalog.to_dict()
-    assert isinstance(event_dict, dict)
-    assert isinstance(event_dict["events"], list)
-    # set absolute paths
-    root_forcing = event_catalog.roots.root_forcings
-    event_catalog.events[0].forcings[0]._set_path_absolute(root_forcing)
-    assert event.forcings[0].path.is_absolute()
-    events_dict = event_catalog.to_dict(relative_paths=True)
-    assert not Path(events_dict["events"][0]["forcings"][0]["path"]).is_absolute()
-    assert not event.forcings[0].path.is_absolute()
 
 
-def test_hazard_impact_event_catalog(test_data_dir):
-    event_catalog = EventCatalog(
-        roots={"root_forcings": test_data_dir},
-        events=[
-            {
-                "name": "rp050",
-                "forcings": [{"type": "rainfall", "path": "rainfall_rp050.csv"}],
-                "hazards": [
-                    {"type": "depth", "path": "flood_depth_rp050.tif"},
-                    {"type": "velocity", "path": "velocity_rp050.tif"},
-                ],
-                "impacts": [
-                    {
-                        "type": "damage",
-                        "category": "all",
-                        "path": "damage_schools_rp050.tif",
-                    },  # example for grid output
-                    {
-                        "type": "damage",
-                        "category": "schools",
-                        "path": "damage_schools_rp050.gpkg",
-                    },  # example for vector output
-                ],
-            },
-            {
-                "name": "p_rp010",
-                "forcings": [{"type": "rainfall", "path": "p_rp010.csv"}],
-                "hazards": [
-                    {"type": "depth", "path": "depth_p_rp010.tif"},
-                    {"type": "velocity", "path": "velocity_p_rp010.tif"},
-                ],
-                "impacts": [
-                    {
-                        "type": "damage",
-                        "category": "all",
-                        "path": "damage_schools_p_rp010.tif",
-                    },  # example for grid output
-                    {
-                        "type": "damage",
-                        "category": "schools",
-                        "path": "damage_schools_p_rp010.gpkg",
-                    },  # example for vector output
-                ],
-                "probability": 0.01,
-            },
-        ],
-    )
-    event = event_catalog.get_event("rp050")
-    assert isinstance(event.hazards, list)
-    assert isinstance(event.impacts, list)
-    event_dict = event_catalog.to_dict()
-    assert isinstance(event_dict, dict)
-    assert isinstance(event_dict["events"], list)
-    # set absolute paths
-    event_catalog.to_dict(relative_paths=True)
-    event_catalog.to_yaml("catalog.yml")
-
-
-def test_event_catalog_io(event_catalog, tmpdir):
-    # test event catalog round trip
-    event_yml = Path(tmpdir) / "events.yaml"
-    event_catalog.to_yaml(event_yml)
-    assert event_yml.exists()
-    event_catalog2 = EventCatalog.from_yaml(event_yml)
-    # the event catalog is written in another folder, hence, the roots should be
-    # different
-    assert event_catalog != event_catalog2
-    # check if everytihng else is the same
-    del event_catalog.roots
-    del event_catalog2.roots
-    assert event_catalog == event_catalog2
-
-
-def test_event_catalog_data(event_catalog):
-    # test event catalog data
-    event = event_catalog.get_event_data("rp050")
-    assert all(isinstance(d.data, pd.DataFrame) for d in event.forcings)
-    assert event.time_range is not None
+def test_event_set_io(event_set):
+    event = event_set.get_event("rp050")
+    assert isinstance(event, Event)
