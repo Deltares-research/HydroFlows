@@ -47,7 +47,7 @@ class Params(BaseModel):
     """"The data type of each map speficied in the data catalog. A single map type
     applies for all the elements."""
 
-    risk: bool = False
+    risk: bool = True
     """"The parameter that defines if a risk analysis is required."""
 
     var: str = "zsmax"
@@ -158,6 +158,7 @@ class FIATUpdateHazard(Method):
         # Setup the hazard map
         # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
         # a ValueError if the metadata of those same maps does not contain a nodata value. Here we impose a random -9999.
+        model.setup_config(**config)
         model.setup_hazard(
             hazard_fns,
             map_type=self.params.map_type,
@@ -169,7 +170,6 @@ class FIATUpdateHazard(Method):
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
         model.write_grid(fn=str(self.output.fiat_hazard))
-        model.setup_config(**config)
         model.set_config("hazard.settings.var_as_band", True)
         model.set_config("hazard.file", self.output.fiat_hazard.name)
 
