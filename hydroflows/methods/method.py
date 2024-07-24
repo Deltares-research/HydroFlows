@@ -11,7 +11,7 @@ import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
-from typing import ClassVar, Dict, Generator, List, cast
+from typing import ClassVar, Dict, Generator, List, Tuple, cast
 
 from pydantic import BaseModel
 
@@ -146,14 +146,22 @@ class Method(ABC):
                 if not value.parent.is_dir():
                     value.parent.mkdir(parents=True)
 
-    def check_output_exists(self):
-        """Check if output files exist."""
+    @property
+    def _output_paths(self) -> List[Tuple[str, Path]]:
+        """Return a list of output key-path tuples."""
+        paths = []
         for key, value in self.output.model_dump().items():
             if isinstance(value, Path):
-                if not value.is_file():
-                    raise FileNotFoundError(
-                        f"Output file {self.name}.output.{key} not found: {value}"
-                    )
+                paths.append((key, value))
+        return paths
+
+    def check_output_exists(self):
+        """Check if output files exist."""
+        for key, path in self._output_paths:
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"Output file {self.name}.output.{key} not found: {path}"
+                )
 
     def run_with_checks(self, check_output: bool = True) -> None:
         """Run the method with input/output checks."""
@@ -177,7 +185,23 @@ class ExpandMethod(Method, ABC):
 
     @property
     def expand_values(self) -> Dict[str, List]:
-        """Return the expand values."""
+        """Return a dict with wildcards and list of expand values."""
         if not hasattr(self, "_expand_values"):
             self._resolve_expand_values()
         return self._expand_values
+
+    @property
+    def _output_paths(self) -> List[Tuple[str, Path]]:
+        """Return a list of output key-path tuples."""
+        paths = []
+        for key, value in self.output.model_dump().items():
+            if not isinstance(value, Path):
+                continue
+            for wc, vlist in self.expand_values.items():
+                if "{" + wc + "}" in str(value):
+                    for v in vlist:
+                        path = Path(str(value).format(**{wc: v}))
+                        paths.append((key, path))
+                else:
+                    paths.append((key, value))
+        return paths

@@ -2,13 +2,11 @@
 
 configfile: "sfincs_pluvial.config.yml"
 
-EVENT = ["p_event01", "p_event02", "p_event03"]
-
+EVENT=["p_event01", "p_event02", "p_event03"]
 
 rule all:
     input:
         expand("data\output\hazard\{event}.tif", event=EVENT),
-
 
 rule sfincs_build:
     input:
@@ -16,7 +14,7 @@ rule sfincs_build:
     output:
         sfincs_inp="models\sfincs\sfincs.inp",
         sfincs_region="models\sfincs\gis\region.geojson",
-        sfincs_subgrid_dep="models\sfincs\subgrid\dep.tif",
+        sfincs_subgrid_dep="models\sfincs\subgrid\dep_subgrid.tif",
     shell:
         """
         hydroflows method sfincs_build \
