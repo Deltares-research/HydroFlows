@@ -44,7 +44,7 @@ class GetCoastRP(Method):
         self,
         region: Path,
         coastrp_fn: Path,
-        data_root: Path = "data/input/forcing_data/waterlevel",
+        data_root: Path = Path("data/input/forcing_data/waterlevel"),
     ) -> None:
         """Create and validate a GetCoastRP instance.
 

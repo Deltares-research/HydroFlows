@@ -63,8 +63,8 @@ class CoastalDesignEvents(Method):
 
     def __init__(
         self,
-        data_root: Path = "data/input/forcing/waterlevel",
-        event_folder: Path = "data/interim/coastal",
+        data_root: Path = Path("data/input/forcing/waterlevel"),
+        event_folder: Path = Path("data/interim/coastal"),
         **params,
     ) -> None:
         """Create and validate CoastalDesignEvents instance.

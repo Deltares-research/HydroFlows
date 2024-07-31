@@ -54,7 +54,7 @@ class TideSurgeTimeseries(Method):
     def __init__(
         self,
         waterlevel_timeseries: Path,
-        data_root: Path = "data/input/forcing/waterlevel",
+        data_root: Path = Path("data/input/forcing/waterlevel"),
         **params,
     ) -> None:
         """Create and validate TideSurgeTimeseries instance.
