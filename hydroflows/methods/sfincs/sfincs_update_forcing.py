@@ -4,6 +4,7 @@
 from pathlib import Path
 from typing import Dict
 
+import geopandas as gpd
 import numpy as np
 from hydromt_sfincs import SfincsModel
 from pydantic import BaseModel
@@ -16,7 +17,11 @@ __all__ = ["SfincsUpdateForcing"]
 
 
 def parse_event_sfincs(
-    root: Path, event: Event, out_root: Path, sfincs_config: Dict = None
+    root: Path,
+    event: Event,
+    out_root: Path,
+    sfincs_config: Dict = None,
+    bnd_locs: gpd.GeoDataFrame = None,
 ):
     """Parse event and update SFINCS model with event forcing.
 
@@ -65,11 +70,17 @@ def parse_event_sfincs(
     for forcing in event.forcings:
         match forcing.type:
             case "water_level":
+                if bnd_locs is None:
+                    raise ValueError(
+                        "No bnd locations provided for waterlevel timeseries."
+                    )
                 sf.setup_waterlevel_forcing(
                     timeseries=forcing.data,
+                    locations=bnd_locs,
                     merge=False,
                 )
                 config.update({"bzsfile": "sfincs.bzs"})
+                config.update({"bndfile": "sfincs.bnd"})
 
             case "discharge":
                 all_locs = sf.forcing["dis"].vector.to_gdf()
@@ -121,6 +132,9 @@ class Params(BaseModel):
 
     sfincs_config: Dict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
+
+    bnd_locations: Path = None
+    """Path to file describing sfincs bnd locations"""
 
 
 class SfincsUpdateForcing(Method):
@@ -181,6 +195,13 @@ class SfincsUpdateForcing(Method):
         # update sfincs model with event forcing
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
+        bnd_locs = None
+        if self.params.bnd_locations is not None:
+            bnd_locs = gpd.read_file(self.params.bnd_locations)
         parse_event_sfincs(
-            root, event, out_root, sfincs_config=self.params.sfincs_config
+            root,
+            event,
+            out_root,
+            sfincs_config=self.params.sfincs_config,
+            bnd_locs=bnd_locs,
         )
