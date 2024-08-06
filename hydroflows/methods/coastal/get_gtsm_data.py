@@ -9,7 +9,6 @@ import geopandas as gpd
 import pandas as pd
 import xarray as xr
 from pydantic import BaseModel
-from shapely.geometry import Point
 
 from hydroflows.methods.method import Method
 
@@ -105,10 +104,10 @@ class GetGTSMData(Method):
     def run(self):
         """Run GetGTSMData method."""
         gdf = gpd.read_file(self.input.region).to_crs(4326)
-
-        stations = get_gtsm_station(
-            gdf.centroid.x, gdf.centroid.y, self.params.gtsm_loc / "gtsm_locs.gpkg"
-        )
+        stations = get_gtsm_station(gdf, self.params.gtsm_loc / "gtsm_locs.gpkg")
+        # stations = get_gtsm_station(
+        #     gdf.centroid.x, gdf.centroid.y, self.params.gtsm_loc / "gtsm_locs.gpkg"
+        # )
         stations = stations["stations"].values
 
         variables = {
@@ -145,8 +144,9 @@ class GetGTSMData(Method):
 
 
 def get_gtsm_station(
-    x: float,
-    y: float,
+    # x: float,
+    # y: float,
+    region: gpd.GeoDataFrame,
     stations_fn: Path,
 ) -> gpd.GeoDataFrame:
     """Return GTSM station closest to query location.
@@ -166,8 +166,9 @@ def get_gtsm_station(
         GTSM station ID and coordinates
     """
     gdf = gpd.read_file(stations_fn).drop_duplicates(subset="geometry")
-    idx = gdf.sindex.nearest(Point(x, y))[1]
-    return gdf.iloc[idx]
+    # idx = gdf.sindex.nearest(Point(x, y))[1]
+    # return gdf.iloc[idx]
+    return gdf.clip(region)
 
 
 def export_gtsm_data(

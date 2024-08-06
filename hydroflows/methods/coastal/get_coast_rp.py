@@ -6,6 +6,7 @@ import geopandas as gpd
 import pandas as pd
 import xarray as xr
 from pydantic import BaseModel
+from shapely import Point
 
 from hydroflows.methods.method import Method
 
@@ -83,9 +84,31 @@ class GetCoastRP(Method):
             [coast_rp[var] for var in coast_rp.data_vars if var != "station_id"],
             dim=pd.Index([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], name="rps"),
         ).to_dataset(name="return_values")
-        dist = (coast_rp.lat - region.centroid.y.values) ** 2 + (
-            coast_rp.lon - region.centroid.x.values
-        ) ** 2
-        coast_rp = coast_rp.isel(stations=dist.argmin().values)
-
+        coast_rp = clip_coastrp(coast_rp, region)
         coast_rp.to_netcdf(self.output.rps_nc)
+
+
+def clip_coastrp(coast_rp: xr.DataArray, region: gpd.GeoDataFrame) -> xr.DataArray:
+    """Clip COAST-RP to given region.
+
+    Parameters
+    ----------
+    coast_rp : xr.DataArray
+        DataArray containing COAST-RP data with lat,lon coords.
+    region : gpd.GeoDataFrame
+        Region GeoDataFrame
+
+    Returns
+    -------
+    xr.DataArray
+        Clipped COAST-RP DataArray
+    """
+    points = []
+    for station in coast_rp.stations:
+        point = Point(
+            coast_rp.sel(stations=station).lon.values,
+            coast_rp.sel(stations=station).lat.values,
+        )
+        if region.contains(point)[0]:
+            points.append(station)
+    return coast_rp.sel(stations=points)

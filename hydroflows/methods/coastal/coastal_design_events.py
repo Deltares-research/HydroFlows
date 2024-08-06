@@ -2,11 +2,13 @@
 
 from pathlib import Path
 
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
 from pydantic import BaseModel
+from shapely import Point
 
 from hydroflows.events import EventCatalog
 from hydroflows.methods.method import Method
@@ -32,6 +34,9 @@ class Output(BaseModel):
 
     event_catalog: Path
     """Path to event catalog containing derived events"""
+
+    bnd_locations: Path
+    """Path to file containing waterlevel locations"""
 
 
 class Params(BaseModel):
@@ -63,7 +68,10 @@ class CoastalDesignEvents(Method):
 
     def __init__(
         self,
-        data_root: Path = Path("data/input/forcing/waterlevel"),
+        surge_timeseries: Path,
+        tide_timeseries: Path,
+        rps_nc: Path,
+        # data_root: Path = Path("data/input/forcing/waterlevel"),
         event_folder: Path = Path("data/interim/coastal"),
         **params,
     ) -> None:
@@ -82,17 +90,23 @@ class CoastalDesignEvents(Method):
         :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Output>`
         :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Params>`
         """
-        surge_fn = data_root / "surge_timeseries.nc"
-        tide_fn = data_root / "tide_timeseries.nc"
-        rps_fn = data_root / "waterlevel_rps.nc"
+        # surge_fn = data_root / "surge_timeseries.nc"
+        # tide_fn = data_root / "tide_timeseries.nc"
+        # rps_fn = data_root / "waterlevel_rps.nc"
 
         self.input: Input = Input(
-            surge_timeseries=surge_fn, tide_timeseries=tide_fn, rps_nc=rps_fn
+            surge_timeseries=surge_timeseries,
+            tide_timeseries=tide_timeseries,
+            rps_nc=rps_nc,
         )
         self.params: Params = Params(**params)
 
         event_catalog = event_folder / "design_events.yml"
-        self.output: Output = Output(event_catalog=event_catalog)
+        bnd_locations = event_folder / "bnd_locations.gpkg"
+        self.output: Output = Output(
+            event_catalog=event_catalog,
+            bnd_locations=bnd_locations,
+        )
 
     def run(self):
         """Run CoastalDesignEvents method."""
@@ -111,6 +125,9 @@ class CoastalDesignEvents(Method):
             .transpose("time", "peak", ...)
             .mean("peak")
         )
+        tide_hydrographs = tide_hydrographs.expand_dims(
+            dim={"stations": tide_hydrographs.stations.size}
+        )
 
         da_surge_peaks = get_peaks(da_surge, "BM", min_dist=6 * 24 * 10)
         surge_hydrographs = (
@@ -123,6 +140,9 @@ class CoastalDesignEvents(Method):
             .transpose("time", "peak", ...)
             .mean("peak")
         )
+        surge_hydrographs = surge_hydrographs.expand_dims(
+            dim={"stations": surge_hydrographs.stations.size}
+        )
 
         nontidal_rp = da_rps["return_values"] - tide_hydrographs
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
@@ -130,7 +150,6 @@ class CoastalDesignEvents(Method):
             time=pd.to_datetime(self.params.t0)
             + pd.to_timedelta(10 * h_hydrograph.time, unit="min")
         )
-        h_hydrograph = h_hydrograph.reset_coords(drop=True)
 
         root = self.output.event_catalog.parent
         root.mkdir(parents=True, exist_ok=True)
@@ -138,7 +157,7 @@ class CoastalDesignEvents(Method):
         events_list = []
         for i, rp in enumerate(h_hydrograph.rps):
             event_fn = Path(root, f"h_event{int(i+1):02d}.csv")
-            h_hydrograph.sel(rps=rp).to_pandas().to_csv(event_fn)
+            h_hydrograph.sel(rps=rp).transpose().to_pandas().to_csv(event_fn)
             event = {
                 "name": f"h_event{int(i+1):02d}",
                 "forcings": [{"type": "water_level", "path": f"h_event{int(i+1):02d}"}],
@@ -152,11 +171,30 @@ class CoastalDesignEvents(Method):
         )
         event_catalog.to_yaml(self.output.event_catalog)
 
+        locs = []
+        for station in h_hydrograph.stations:
+            locs.append(
+                Point(
+                    h_hydrograph.sel(stations=station).lon.values,
+                    h_hydrograph.sel(stations=station).lat.values,
+                )
+            )
+
+        locations = gpd.GeoDataFrame(
+            {"index": h_hydrograph.stations.values, "geometry": locs}, crs=4326
+        )
+        locations.to_file(self.output.bnd_locations, driver="GPKG")
+
         if self.params.plot_fig:
             savefolder = Path(root, "figs")
             if not savefolder.exists():
                 savefolder.mkdir(parents=True)
-            plot_hydrographs(h_hydrograph, savefolder / "waterlevel_hydrographs.png")
+            for station in h_hydrograph.stations:
+                plot_hydrographs(
+                    h_hydrograph.sel(stations=station),
+                    savefolder
+                    / f"waterlevel_hydrographs_stationID_{station.values}.png",
+                )
 
 
 def plot_hydrographs(
