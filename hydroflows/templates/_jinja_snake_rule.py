@@ -26,12 +26,18 @@ class JinjaSnakeRule:
     @property
     def input(self) -> Dict[str, str]:
         result = self.rule.input(mode="python", filter_types=Path)
-        return {key: self._expand_variable(key, val) for key, val in result.items()}
+        return {
+            key: self._expand_variable(key, val.as_posix())
+            for key, val in result.items()
+        }
 
     @property
     def output(self) -> Dict[str, str]:
         result = self.rule.output(mode="python", filter_types=Path)
-        return {key: self._expand_variable(key, val) for key, val in result.items()}
+        return {
+            key: self._expand_variable(key, val.as_posix())
+            for key, val in result.items()
+        }
 
     @property
     def params(self) -> Dict[str, str]:

@@ -10,6 +10,7 @@ from typing import Any, Dict, List
 import yaml
 from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
+from yaml.resolver import BaseResolver
 
 from hydroflows import __version__
 from hydroflows.rule import Rule
@@ -177,6 +178,11 @@ class Workflow:
         )
         with open(snakefile, "w") as f:
             f.write(_str)
+        # Add quotes at start of each string for literal interpretation
+        yaml.add_representer(SingleQuoted, represent_single_quoted)
+        for key, val in self.config.items():
+            if isinstance(val, str):
+                self.config[key] = SingleQuoted(val)
         with open(configfile, "w") as f:
             yaml.dump(self.config, f)
 
@@ -188,6 +194,8 @@ class Workflow:
                     f"Invalid result reference: {ref}. References should start with $rules."
                 )
             val = self._resolve_references(ref)
+            if isinstance(val, Path):
+                val = val.as_posix()
             expand_kwargs = []
             for wc in self.wildcards.names:
                 if "{" + wc + "}" in str(val):
@@ -221,3 +229,16 @@ def get_nested_value_from_dict(d: dict, keys: list, full_reference: str = None) 
         else:
             raise KeyError(f"Key not found: {full_reference}")
     return d
+
+
+# Helper class, function to control yaml string parsing with quotes
+# Source: https://stackoverflow.com/questions/69493759/how-to-get-consistent-quotes-during-pyyaml-dump
+class SingleQuoted(str):
+    """Class to indicate which string to parse with quotes."""
+
+    pass
+
+
+def represent_single_quoted(dumper, data):
+    """Define how to parse string quotes."""
+    return dumper.represent_scalar(BaseResolver.DEFAULT_SCALAR_TAG, data, style="'")
