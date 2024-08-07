@@ -53,7 +53,7 @@ doc = [
   "sphinx",
   "sphinx_design",
   "pydata-sphinx-theme",
-  "autodoc_pydantic",
+  "autodoc-pydantic",
   "hydroflows[examples,extra]",       # examples are included in the docs
 ]
 examples = [
