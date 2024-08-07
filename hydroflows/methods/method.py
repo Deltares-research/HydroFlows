@@ -171,14 +171,18 @@ class Method(ABC):
             self.check_output_exists()
 
 
-class ExpandMethod(Method, ABC):
+class ExpandMethod(Method):
     """Base class for methods that expand based on wildcards."""
 
     expand_refs: Dict[str, str] = {}  # wildcard key: output key
 
+    def __init__(self, **params):
+        """Create and validate an ExpandMethod instance."""
+        super().__init__(**params)
+        self._expand_values: Dict[str, List] = {}
+
     def _resolve_expand_values(self) -> None:
         """Resolve expand values based on expand_refs."""
-        self._expand_values: Dict[str, List] = {}
         for wildcard, output_key in self.expand_refs.items():
             expand_value = cast(List, getattr(self.output, output_key))
             self._expand_values[wildcard] = expand_value
@@ -187,6 +191,8 @@ class ExpandMethod(Method, ABC):
     def expand_values(self) -> Dict[str, List]:
         """Return a dict with wildcards and list of expand values."""
         if not hasattr(self, "_expand_values"):
+            self._expand_values: Dict[str, List] = {}  # should be in __init__
+        if not self._expand_values:
             self._resolve_expand_values()
         return self._expand_values
 
@@ -205,3 +211,19 @@ class ExpandMethod(Method, ABC):
                 else:
                     paths.append((key, value))
         return paths
+
+    @property
+    def wildcards(self) -> List[str]:
+        """Return a list of wildcards."""
+        return list(self.expand_refs.keys())
+
+
+class ReduceMethod(Method):
+    """Base class for methods that convert input to output."""
+
+    reduce_refs: Dict[str, str] = {}  # wildcard key: input key
+
+    @property
+    def wildcards(self) -> List[str]:
+        """Return a list of wildcards."""
+        return list(self.reduce_refs.keys())

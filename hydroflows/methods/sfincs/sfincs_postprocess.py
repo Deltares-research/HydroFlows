@@ -1,6 +1,7 @@
 """Sfincs postprocess method."""
 
 from pathlib import Path
+from typing import Optional
 
 from hydromt_sfincs import SfincsModel, utils
 from pydantic import BaseModel
@@ -48,7 +49,7 @@ class SfincsPostprocess(Method):
     def __init__(
         self,
         sfincs_map: Path,
-        sfincs_subgrid_dep: Path = None,
+        sfincs_subgrid_dep: Optional[Path] = None,
         hazard_root: Path = "data/output/hazard",
         **params,
     ) -> None:
@@ -80,7 +81,7 @@ class SfincsPostprocess(Method):
         if sfincs_subgrid_dep is None:
             # assume basemodel is two levels up from sfincs_map
             basemodel_root = Path(sfincs_map).parent.parent.parent
-            sfincs_subgrid_dep = basemodel_root / "subgrid" / "dep.tif"
+            sfincs_subgrid_dep = basemodel_root / "subgrid" / "dep_subgrid.tif"
         self.input: Input = Input(
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
         )

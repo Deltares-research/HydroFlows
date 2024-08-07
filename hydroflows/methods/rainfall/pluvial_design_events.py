@@ -32,7 +32,7 @@ class Input(BaseModel):
 class Output(BaseModel):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
 
-    events: List[str]
+    event_names: List[str]
     """List of event names derived from the design events."""
 
     event_yaml: Path
@@ -88,7 +88,7 @@ class PluvialDesignEvents(ExpandMethod):
     """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
-    expand_refs: dict = {"event": "events"}
+    expand_refs: dict = {"event": "event_names"}
 
     def __init__(
         self, precip_nc: Path, event_root: Path = "data/events/rainfall", **params
@@ -113,7 +113,7 @@ class PluvialDesignEvents(ExpandMethod):
         self.params: Params = Params(event_root=event_root, **params)
         self.input: Input = Input(precip_nc=precip_nc)
         self.output: Output = Output(
-            events=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
+            event_names=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
             event_yaml=Path(event_root, "{event}.yml"),
             event_csv=Path(event_root, "{event}.csv"),
             event_set=Path(event_root, "event_set.yml"),
@@ -182,7 +182,7 @@ class PluvialDesignEvents(ExpandMethod):
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.events, p_hyetograph.rps.values):
+        for name, rp in zip(self.output.event_names, p_hyetograph.rps.values):
             # save p_rp as csv files
             p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(
                 str(self.output.event_csv).format(event=name)

@@ -1,7 +1,7 @@
 """FIAT run rule/ submodule."""
+
 import subprocess
 from pathlib import Path
-from typing import Optional
 
 from pydantic import BaseModel
 
@@ -41,7 +41,7 @@ class Params(BaseModel):
     method to define the required settings.
     """
 
-    fiat_bin: Optional[Path] = None
+    fiat_bin: Path
     """The path to the FIAT executable."""
 
     threads: int = 1
@@ -59,13 +59,15 @@ class FIATRun(Method):
 
     name: str = "fiat_run"
 
-    def __init__(self, fiat_cfg: str, **params):
+    def __init__(self, fiat_cfg: Path, fiat_bin: Path, **params):
         """Create and validate a fiat_run instance.
 
         Parameters
         ----------
-        fiat_cfg : str
+        fiat_cfg : Path
             Path to the FIAT config file.
+        fiat_bin : Path
+            Path to the FIAT executable
         **params
             Additional parameters to pass to the FIATRun instance.
             See :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`.
@@ -76,7 +78,7 @@ class FIATRun(Method):
         :py:class:`fiat_run Output <hydroflows.methods.fiat.fiat_run.Output>`
         :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`
         """
-        self.params: Params = Params(**params)
+        self.params: Params = Params(fiat_bin=fiat_bin, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
             fiat_out=Path(fiat_cfg.parent) / "output" / "spatial.gpkg"

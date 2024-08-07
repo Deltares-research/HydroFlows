@@ -3,9 +3,10 @@
 Which is the main class for defining workflows in hydroflows.
 """
 
+from itertools import product
 from pathlib import Path
 from pprint import pformat
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
@@ -13,7 +14,8 @@ from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.rule import Rule
-from hydroflows.templates._jinja_snake_rule import JinjaSnakeRule
+from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
+from hydroflows.utils.misc import SafeFormatDict
 
 
 class Wildcards(BaseModel):
@@ -113,11 +115,12 @@ class Workflow:
             raise ValueError(f"Rule {name} not found in workflow.")
         return rule
 
-    def _resolve_references(self, reference: str) -> Any:
-        """Resolve references to config and rules.
+    def _resolve_reference(self, reference: str) -> Any:
+        """Resolve reference to config and rules.
 
-        References are start with either $config or $rules
-        and are dot separated strings to access nested values.
+        A reference is a dot-separated string that starts with
+        either $config or $rules. The reference is resolved
+        by looking up the value in the corresponding class.
 
         For instance $config.region.geom would resolve to
         the value of config["region"]["geom"].
@@ -145,6 +148,31 @@ class Workflow:
                     f"Invalid reference: {reference}. References should start with $config or $rules."
                 )
         return value
+
+    def _resolve_wildcards(
+        self, input: Union[str, Path], wildcards: Optional[List[str]] = None
+    ) -> List[str]:
+        """Resolve wildcards in a string. Multiple wildcard values are resolved using the product of all wildcard values."""
+        str_input = str(input)
+        if wildcards is None:
+            if not self.wildcards.names:
+                return [str_input]
+            wildcards = self.wildcards.names
+
+        wildcards = list(set(wildcards))
+        # get product of all wildcard values
+        wc_values = [self.wildcards.get(wc) for wc in wildcards]
+        # drop None from list of values; this occurs when the workflow is not fully initialized yet
+        wc_values = [v for v in wc_values if v is not None]
+        if not wc_values:
+            return [str_input]
+
+        out_lst = []
+        for wc in product(*wc_values):
+            # SafeFormatDict is used to avoid KeyError when a wildcard is not in the mapping
+            wc_dict = dict(zip(wildcards, wc))
+            out_lst.append(str_input.format_map(SafeFormatDict(wc_dict)))
+        return out_lst
 
     def _check_wildcards(self) -> None:
         """Check if all wildcards in rules are in self.wildcards with values."""
@@ -187,7 +215,7 @@ class Workflow:
                 raise ValueError(
                     f"Invalid result reference: {ref}. References should start with $rules."
                 )
-            val = self._resolve_references(ref)
+            val = self._resolve_reference(ref)
             expand_kwargs = []
             for wc in self.wildcards.names:
                 if "{" + wc + "}" in str(val):

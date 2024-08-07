@@ -60,6 +60,11 @@ class Rule:
         self._resolved_kwargs: Dict = self._resolve_kwargs(kwargs.copy())
         self.method: Method = self._method_class(**self._resolved_kwargs)
 
+        # add expand wildcards to workflow wildcards
+        if isinstance(self.method, ExpandMethod):
+            for key, val in self.method.expand_values.items():
+                self.workflow.wildcards.set(key, val)
+
         self._wildcards: Dict = self._detect_wildcards()
 
     def __repr__(self) -> str:
@@ -112,7 +117,7 @@ class Rule:
         kwargs = {"exclude_none": True, **kwargs}
         input = self.method.input.model_dump(**kwargs)
         if filter_types is not None:
-            input = {k: v for k, v in input.items() if isinstance(v, filter_types)}
+            input = {k: v for k, v in input.items() if _check_type(v, filter_types)}
         if filter_keys is not None:
             input = {k: v for k, v in input.items() if k in filter_keys}
         return input
@@ -124,7 +129,7 @@ class Rule:
         kwargs = {"exclude_none": True, **kwargs}
         output = self.method.output.model_dump(**kwargs)
         if filter_types is not None:
-            output = {k: v for k, v in output.items() if isinstance(v, filter_types)}
+            output = {k: v for k, v in output.items() if _check_type(v, filter_types)}
         if filter_keys is not None:
             output = {k: v for k, v in output.items() if k in filter_keys}
         return output
@@ -143,16 +148,11 @@ class Rule:
         """Resolve the kwargs."""
         for key, value in kwargs.items():
             if isinstance(value, str) and value.startswith("$"):
-                kwargs[key] = self.workflow._resolve_references(value)
+                kwargs[key] = self.workflow._resolve_reference(value)
         return kwargs
 
     def _detect_wildcards(self) -> List[str]:
         """Detect wildcards in the rule based on workflow wildcard names."""
-        # add expand wildcards to workflow wildcards
-        if isinstance(self.method, ExpandMethod):
-            for key, val in self.method.expand_values.items():
-                self.workflow.wildcards.set(key, val)
-
         # check for wildcards in input and output
         wildcards = {"input": [], "output": [], "params": []}
         for key in wildcards.keys():
@@ -211,3 +211,11 @@ class Rule:
         """Run a method instance with the given kwargs."""
         m = self._method_class(**kwargs)
         m.run_with_checks()
+
+
+def _check_type(value, types, multiple=True) -> bool:
+    """Check if a value is of a certain type. If multiple, check if all values are of a certain type."""
+    if multiple and isinstance(value, (list, set)):
+        return all(isinstance(v, types) for v in value)
+    else:
+        return isinstance(value, types)

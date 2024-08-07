@@ -1,13 +1,14 @@
 """FIAT updating submodule/ rules."""
+
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 from pydantic import BaseModel
 
 from hydroflows.events import EventSet
-from hydroflows.methods.method import Method
+from hydroflows.methods.method import ReduceMethod
 from hydroflows.utils import make_relative_paths
 
 
@@ -54,7 +55,7 @@ class Params(BaseModel):
     """"Variable name."""
 
 
-class FIATUpdateHazard(Method):
+class FIATUpdateHazard(ReduceMethod):
     """Rule for updating a FIAT model with hazard maps.
 
     This class utilizes the :py:class:`Params <hydroflows.methods.fiat.fiat_update.Params>`,
@@ -64,9 +65,14 @@ class FIATUpdateHazard(Method):
     """
 
     name: str = "fiat_update_hazard"
+    reduce_refs = {"event": "hazard_maps"}
 
     def __init__(
-        self, fiat_cfg: Path, event_set_yaml: Path, hazard_maps: List[Path], **params
+        self,
+        fiat_cfg: Path,
+        event_set_yaml: Path,
+        hazard_maps: Union[Path, List[Path]],
+        **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
 
@@ -78,6 +84,8 @@ class FIATUpdateHazard(Method):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
+        hazard_maps : Union[Path, List[Path]]
+            The path to the hazard maps.
         **params
             Additional parameters to pass to the FIATUpdateHazard instance.
             See :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`.
@@ -89,6 +97,12 @@ class FIATUpdateHazard(Method):
         :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`
 
         """
+        if not isinstance(hazard_maps, list):
+            if r"{event}" not in str(hazard_maps):
+                raise ValueError(
+                    "hazard_maps should be path with a wildcard {event} or a list of paths"
+                )
+            hazard_maps = [hazard_maps]  # hazard_maps may be a path with a wildcard
         self.params: Params = Params(**params)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg, event_set_yaml=event_set_yaml, hazard_maps=hazard_maps

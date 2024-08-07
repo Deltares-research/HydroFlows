@@ -38,7 +38,7 @@ class Input(BaseModel):
 class Output(BaseModel):
     """Output parameters for the :py:class:`WflowDesignHydro` method."""
 
-    events: List[str]
+    event_names: List[str]
     """List of event names derived from the design events."""
 
     event_yaml: Path
@@ -116,7 +116,7 @@ class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
     name: str = "wflow_design_hydro"
-    expand_refs: dict = {"event": "events"}
+    expand_refs: dict = {"event": "event_names"}
 
     def __init__(
         self, discharge_nc: Path, event_root: Path = "data/events/discharge", **params
@@ -145,7 +145,7 @@ class WflowDesignHydro(ExpandMethod):
         self.params: Params = Params(event_root=event_root, **params)
         self.input: Input = Input(discharge_nc=discharge_nc)
         self.output: Output = Output(
-            events=[f"q_event{int(i+1):02d}" for i in range(len(self.params.rps))],
+            event_names=[f"q_event{int(i+1):02d}" for i in range(len(self.params.rps))],
             event_yaml=Path(event_root, "{event}.yml"),
             event_csv=Path(event_root, "{event}.csv"),
             event_set=Path(event_root, "event_set.yml"),
@@ -245,7 +245,7 @@ class WflowDesignHydro(ExpandMethod):
         q_hydrograph = q_hydrograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.events, q_hydrograph.rps.values):
+        for name, rp in zip(self.output.event_names, q_hydrograph.rps.values):
             # save q_rp as csv files
             # name = f"q_event{int(i+1):02d}"
             forcing_fn = Path(root, f"{name}.csv")

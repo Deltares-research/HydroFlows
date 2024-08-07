@@ -6,7 +6,7 @@ EVENT=["p_event01", "p_event02", "p_event03"]
 
 rule all:
     input:
-        expand("data\output\hazard\{event}.tif", event=EVENT),
+        "models\fiat\simulations\event_set\output\spatial.gpkg",
 
 rule sfincs_build:
     input:
@@ -18,6 +18,17 @@ rule sfincs_build:
     shell:
         """
         hydroflows method sfincs_build \
+        region="{input.region}" \
+        """
+
+rule fiat_build:
+    input:
+        region=rules.sfincs_build.output.sfincs_region,
+    output:
+        fiat_cfg="models\fiat\settings.toml",
+    shell:
+        """
+        hydroflows method fiat_build \
         region="{input.region}" \
         """
 
@@ -40,7 +51,7 @@ rule pluvial_design_events:
     output:
         event_yaml=expand("data\events\rainfall\{event}.yml", event=EVENT),
         event_csv=expand("data\events\rainfall\{event}.csv", event=EVENT),
-        event_catalog="data\events\rainfall\event_catalog.yml",
+        event_set="data\events\rainfall\event_set.yml",
     shell:
         """
         hydroflows method pluvial_design_events \
@@ -78,11 +89,42 @@ rule sfincs_run:
 rule sfincs_postprocess:
     input:
         sfincs_map=rules.sfincs_run.output.sfincs_map,
-        sfincs_subgrid_dep="models\sfincs\subgrid\dep.tif",
+        sfincs_subgrid_dep=rules.sfincs_build.output.sfincs_subgrid_dep,
     output:
         hazard_tif="data\output\hazard\{event}.tif",
     shell:
         """
         hydroflows method sfincs_postprocess \
         sfincs_map="{input.sfincs_map}" \
+        sfincs_subgrid_dep="{input.sfincs_subgrid_dep}" \
+        """
+
+rule fiat_update_hazard:
+    input:
+        fiat_cfg=rules.fiat_build.output.fiat_cfg,
+        event_set_yaml=rules.pluvial_design_events.output.event_set,
+        hazard_maps=expand("data\output\hazard\{event}.tif", event=EVENT),
+    output:
+        fiat_hazard="models\fiat\simulations\event_set\hazard.nc",
+        fiat_out_cfg="models\fiat\simulations\event_set\settings.toml",
+    shell:
+        """
+        hydroflows method fiat_update_hazard \
+        fiat_cfg="{input.fiat_cfg}" \
+        event_set_yaml="{input.event_set_yaml}" \
+        hazard_maps="{input.hazard_maps}" \
+        """
+
+rule fiat_run:
+    input:
+        fiat_cfg=rules.fiat_update_hazard.output.fiat_out_cfg,
+    params:
+        fiat_bin=config["fiat_exe"],
+    output:
+        fiat_out="models\fiat\simulations\event_set\output\spatial.gpkg",
+    shell:
+        """
+        hydroflows method fiat_run \
+        fiat_cfg="{input.fiat_cfg}" \
+        fiat_bin="{params.fiat_bin}" \
         """
