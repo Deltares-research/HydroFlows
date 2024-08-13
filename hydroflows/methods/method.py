@@ -19,20 +19,27 @@ __all__ = ["Method"]
 
 
 class Method(ABC):
-    """Base method for all methods. Must be extended for rule-specific tasks."""
+    """Base method for all methods.
+
+    The method class defines the structure of a method in a HydroFlow workflow.
+    It should have a name, input, output and params, and implement a run and __init__ method.
+
+    """
 
     # name of the method, should be replaced in subclass
     name: ClassVar[str] = "abstract_method"
 
-    def __init__(self, **params):
-        # NOTE: this should be implemented in the specific rule
-        # initialize input, output and params
-        # relations between in- and outputs can be defined here
-        # the required init kwargs should be a minimal set of parameters
-        # optional parameters can be derived from other parameters or have default values
-        self.input: BaseModel  # = Input(...)
-        self.output: BaseModel  # = Output(...)
-        self.params: BaseModel  # = Params(**params) # optional
+    def __init__(self, input: BaseModel, output: BaseModel, params: BaseModel) -> None:
+        """Create a new method instance with input, output and params."""
+        self.input = input
+        self.output = output
+        self.params = params
+
+        # placeholder
+        self.wildcards: Dict[str, List[str]] = {}
+        """Wildcards detected for expanding (1:n), reducing (n:1) and exploding (n:n) the method."""
+
+    ## ABSTRACT METHODS
 
     @abstractmethod
     def run(self) -> None:
@@ -45,8 +52,12 @@ class Method(ABC):
         # raise NotImplementedError
         pass
 
+    ## MAGIC METHODS
+
     def __repr__(self) -> str:
         return f"Method({pformat(self.to_dict())})"
+
+    ## DESERIALIZATION METHODS
 
     def to_dict(self, **kwargs) -> Dict:
         """Return a serialized dictionary representation of the method input, output and params."""
@@ -63,9 +74,15 @@ class Method(ABC):
             out_dict["params"] = self.params.model_dump(**dump_kwargs)
         return out_dict
 
+    ## SERIALIZATION METHODS
+
     @classmethod
     def from_dict(cls, d: dict) -> "Method":
-        """Create a new instance from a dictionary representation."""
+        """Create a new instance from a nested dictionary representation.
+
+        The dictionary should have keys: `input`, `output` and optionally `params` and `name`.
+        `name` is used to select the correct subclass if called from the parent class.
+        """
         # check dict keys
         if not all(k in d.keys() for k in ["input", "output"]):
             raise ValueError("Dictionary should have keys: input and output")
@@ -87,7 +104,7 @@ class Method(ABC):
 
     @classmethod
     def from_kwargs(cls, name: str, **kwargs) -> "Method":
-        """Create a new instance from a name and keyword arguments."""
+        """Create a new method instance from the method `name` and its initialization arguments."""
         if cls.name == name:
             return cls(**kwargs)
         elif cls.name == "abstract_method":  # parent class
@@ -112,6 +129,8 @@ class Method(ABC):
         known_methods = [m.name for m in cls._get_subclasses()]
         raise ValueError(f"Unknown method: {name}, select from {known_methods}")
 
+    ## TESTING METHODS
+
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
         d = self.to_dict()
@@ -132,6 +151,15 @@ class Method(ABC):
         # check for unique keys
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
+
+    ## RUN METHODS
+
+    def run_with_checks(self, check_output: bool = True) -> None:
+        """Run the method with input/output checks."""
+        self.check_input_output_paths()
+        self.run()
+        if check_output:
+            self.check_output_exists()
 
     def check_input_output_paths(self):
         """Check if input exists and output parent directory exists."""
@@ -163,22 +191,45 @@ class Method(ABC):
                     f"Output file {self.name}.output.{key} not found: {path}"
                 )
 
-    def run_with_checks(self, check_output: bool = True) -> None:
-        """Run the method with input/output checks."""
-        self.check_input_output_paths()
-        self.run()
-        if check_output:
-            self.check_output_exists()
+    ## WILDCARD METHODS
+
+    def _detect_wildcards(self, known_wildcards: List[str]) -> Dict[str, List]:
+        """Detect wildcards based on known workflow wildcard names.
+
+        This method should be called from the Workflow passing the known wildcards.
+        """
+        # check for wildcards in input and output
+        wildcards = {"input": [], "output": [], "params": []}
+        for key in wildcards.keys():
+            for value in getattr(self, key)().values():
+                if not isinstance(value, (str, Path)):
+                    continue
+                value = str(value)
+                for wc in known_wildcards:
+                    if "{" + str(wc) + "}" in value and wc not in wildcards[key]:
+                        wildcards[key].append(wc)
+        self._all_wildcards = wildcards
+
+        # these are the wildcards that are used in both input/params and output
+        wc_in_params = set(wildcards["input"] + wildcards["params"])
+        wc_out = set(wildcards["output"])
+
+        # set the wildcards
+        self.wildcards = {
+            "explode": list(wc_in_params & wc_out),
+            "reduce": list(wc_out - wc_in_params),
+            "expand": list(wc_in_params - wc_out),
+        }
 
 
 class ExpandMethod(Method):
-    """Base class for methods that expand based on wildcards."""
+    """Base class for methods that expand on a wildcard."""
 
     expand_refs: Dict[str, str] = {}  # wildcard key: output key
 
-    def __init__(self, **params):
+    def __init__(self, input: BaseModel, output: BaseModel, params: BaseModel) -> None:
         """Create and validate an ExpandMethod instance."""
-        super().__init__(**params)
+        super().__init__(input, output, params)
         self._expand_values: Dict[str, List] = {}
 
     def _resolve_expand_values(self) -> None:
@@ -212,18 +263,18 @@ class ExpandMethod(Method):
                     paths.append((key, value))
         return paths
 
-    @property
-    def wildcards(self) -> List[str]:
-        """Return a list of wildcards."""
-        return list(self.expand_refs.keys())
+    # @property
+    # def wildcards(self) -> List[str]:
+    #     """Return a list of wildcards."""
+    #     return list(self.expand_refs.keys())
 
 
 class ReduceMethod(Method):
     """Base class for methods that convert input to output."""
 
-    reduce_refs: Dict[str, str] = {}  # wildcard key: input key
+    # reduce_refs: Dict[str, str] = {}  # wildcard key: input key
 
-    @property
-    def wildcards(self) -> List[str]:
-        """Return a list of wildcards."""
-        return list(self.reduce_refs.keys())
+    # @property
+    # def wildcards(self) -> List[str]:
+    #     """Return a list of wildcards."""
+    #     return list(self.reduce_refs.keys())

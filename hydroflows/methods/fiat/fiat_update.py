@@ -5,14 +5,14 @@ from typing import List, Union
 
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
-from pydantic import BaseModel
 
 from hydroflows.events import EventSet
 from hydroflows.methods.method import ReduceMethod
+from hydroflows.methods.method_parameters import Parameters, ReduceParameters
 from hydroflows.utils import make_relative_paths
 
 
-class Input(BaseModel):
+class Input(ReduceParameters):
     """Input parameters for the :py:class:`FIATUpdateHazard` method."""
 
     fiat_cfg: Path
@@ -26,7 +26,7 @@ class Input(BaseModel):
     """List of paths to hazard maps the event description file."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for :py:class:`FIATUpdateHazard` method."""
 
     fiat_hazard: Path
@@ -35,7 +35,7 @@ class Output(BaseModel):
     fiat_out_cfg: Path
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`FIATUpdateHazard` method.
 
     See Also
@@ -45,7 +45,7 @@ class Params(BaseModel):
     """
 
     map_type: str = "water_depth"
-    """"The data type of each map speficied in the data catalog. A single map type
+    """"The data type of each map specified in the data catalog. A single map type
     applies for all the elements."""
 
     risk: bool = True
@@ -65,7 +65,7 @@ class FIATUpdateHazard(ReduceMethod):
     """
 
     name: str = "fiat_update_hazard"
-    reduce_refs = {"event": "hazard_maps"}
+    # reduce_refs = {"event": "hazard_maps"}
 
     def __init__(
         self,
@@ -97,15 +97,12 @@ class FIATUpdateHazard(ReduceMethod):
         :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`
 
         """
-        if not isinstance(hazard_maps, list):
-            if r"{event}" not in str(hazard_maps):
-                raise ValueError(
-                    "hazard_maps should be path with a wildcard {event} or a list of paths"
-                )
-            hazard_maps = [hazard_maps]  # hazard_maps may be a path with a wildcard
         self.params: Params = Params(**params)
         self.input: Input = Input(
-            fiat_cfg=fiat_cfg, event_set_yaml=event_set_yaml, hazard_maps=hazard_maps
+            fiat_cfg=fiat_cfg,
+            event_set_yaml=event_set_yaml,
+            hazard_maps=hazard_maps,
+            _reduce_wildcards=["event"],
         )
         # NOTE: FIAT runs with full event sets with RPs. Name of event set is the stem of the event set file
         event_set_name = self.input.event_set_yaml.stem

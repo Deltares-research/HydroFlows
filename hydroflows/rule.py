@@ -24,9 +24,14 @@ __all__ = ["Rule"]
 FMT = ["snakemake"]
 
 
-# TODO can this also be a pydantic model?
 class Rule:
-    """Rule class."""
+    """Rule class.
+
+    This class
+    - resolves references in kwargs
+    - initializes a method instance based on the method name and kwargs
+    - detects wildcards in input, output and params (TODO: move to method)
+    """
 
     def __init__(
         self,
@@ -60,6 +65,7 @@ class Rule:
         self._resolved_kwargs: Dict = self._resolve_kwargs(kwargs.copy())
         self.method: Method = self._method_class(**self._resolved_kwargs)
 
+        # TODO: move to workflow class?
         # add expand wildcards to workflow wildcards
         if isinstance(self.method, ExpandMethod):
             for key, val in self.method.expand_values.items():

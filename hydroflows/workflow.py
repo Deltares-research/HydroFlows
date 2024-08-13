@@ -50,15 +50,44 @@ class Wildcards(BaseModel):
         return self.wildcards[key]
 
 
+class Rules:
+    """Rules class."""
+
+    rules: List[str]
+    """ordered sequence of rule names"""
+
+    def __init__(self, rules: Optional[List[Rule]] = None) -> None:
+        if rules:
+            for rule in rules:
+                self.set(rule)
+
+    def set(self, rule: Rule) -> None:
+        """Set rule."""
+        if not isinstance(rule, Rule):
+            raise ValueError()
+        name = rule.name
+        if hasattr(self, name):
+            raise ValueError()
+        self.__setattr__(name, rule)
+        self.rules.append(name)
+
+    def get(self, name: str) -> Rule:
+        """Get rule."""
+        if name not in self.rules:
+            raise ValueError()
+        rule: Rule = self.__getattr__(name)
+        return rule
+
+
 class Workflow:
     """Workflow class."""
 
     def __init__(
         self,
-        config: Dict,
-        rules: List[Dict],
-        results: List = None,
-        wildcards: Dict[str, List[str]] = None,
+        config: Optional[Dict] = None,
+        rules: Optional[List[Dict]] = None,
+        results: Optional[List] = None,
+        wildcards: Optional[Dict[str, List[str]]] = None,
     ) -> None:
         """Create a workflow instance.
 
@@ -75,8 +104,15 @@ class Workflow:
         wildcards : List[Dict], optional
             The wildcards of the workflow, by default None.
         """
+        # initialize workflow with default values
         if wildcards is None:
             wildcards = {}
+        if rules is None:
+            rules = []
+        if config is None:
+            config = {}
+
+        # set attributes
         self.config: Dict = config  # TODO: create Config pydantic model
         self.wildcards: Wildcards = Wildcards(wildcards=wildcards)
         self.rules: List[Rule] = []
@@ -93,10 +129,10 @@ class Workflow:
         self._check_wildcards()
 
         # if results are not provided, use the output of the last rule
-        if self.results is None:
-            out_rule = self.rules[-1].name
-            out_keys = self.rules[-1].output(filter_types=Path).keys()
-            self.results = [f"$rules.{out_rule}.output.{key}" for key in out_keys]
+        # if self.results is None:
+        #     out_rule = self.rules[-1].name
+        #     out_keys = self.rules[-1].output(filter_types=Path).keys()
+        #     self.results = [f"$rules.{out_rule}.output.{key}" for key in out_keys]
 
     def __repr__(self) -> str:
         rules_str = pformat(self.rules)
