@@ -7,7 +7,7 @@ EVENT=["p_event01", "p_event02"]
 
 rule all:
     input:
-        hazard_tif=expand("data/output/{{region}}/hazard/{{event}}.tif", region=REGION, event=EVENT),
+        hazard_tif=expand("data/output/{region}/hazard/{event}.tif", region=REGION, event=EVENT),
 
 rule sfincs_build:
     input:
