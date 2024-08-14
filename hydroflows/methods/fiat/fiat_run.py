@@ -3,12 +3,11 @@
 import subprocess
 from pathlib import Path
 
-from pydantic import BaseModel
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
-from hydroflows.methods.method import Method
 
-
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters.
 
     This class represents the input data
@@ -23,7 +22,7 @@ class Input(BaseModel):
     FIAT model that needs to be run."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters.
 
     This class represents the output data
@@ -34,7 +33,7 @@ class Output(BaseModel):
     """Placeholder for docstrings."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters.
 
     Instances of this class are used in the :py:class:`FIATRun`
@@ -81,7 +80,7 @@ class FIATRun(Method):
         self.params: Params = Params(fiat_bin=fiat_bin, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
-            fiat_out=Path(fiat_cfg.parent) / "output" / "spatial.gpkg"
+            fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg"
         )
 
     def run(self):

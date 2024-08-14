@@ -5,14 +5,13 @@ import subprocess
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel
-
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsRun"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters.
 
     This class represents the input data
@@ -23,7 +22,7 @@ class Input(BaseModel):
     """The path to the SFINCS model configuration (inp) file."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters.
 
     This class represents the output data
@@ -34,7 +33,7 @@ class Output(BaseModel):
     """The path to the SFINCS sfincs_map.nc output file."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters.
 
     Instances of this class are used in the :py:class:`SfincsRun`
@@ -76,7 +75,7 @@ class SfincsRun(Method):
         self.params: Params = Params(**params)
         self.input: Input = Input(sfincs_inp=sfincs_inp)
         self.output: Output = Output(
-            sfincs_map=Path(sfincs_inp).parent / "sfincs_map.nc"
+            sfincs_map=self.input.sfincs_inp.parent / "sfincs_map.nc"
         )
 
     def run(self) -> None:

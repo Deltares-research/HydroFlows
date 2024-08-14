@@ -6,11 +6,11 @@ import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt_fiat.fiat import FiatModel
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["FIATBuild"]
 
@@ -21,7 +21,7 @@ FIAT_DATA_PATH = Path(
 ).as_posix()
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters.
 
     This class represents the input data
@@ -35,7 +35,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters.
 
     This class represents the output data
@@ -46,7 +46,7 @@ class Output(BaseModel):
     """The file path to the FIAT configuration (toml) file."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`FIATBuild`.
 
     Instances of this class are used in the :py:class:`FIATBuild`

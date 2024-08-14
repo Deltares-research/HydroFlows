@@ -11,9 +11,9 @@ import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
-from typing import ClassVar, Dict, Generator, List, Tuple, cast
+from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple, cast
 
-from pydantic import BaseModel
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
 
@@ -29,15 +29,12 @@ class Method(ABC):
     # name of the method, should be replaced in subclass
     name: ClassVar[str] = "abstract_method"
 
-    def __init__(self, input: BaseModel, output: BaseModel, params: BaseModel) -> None:
+    @abstractmethod
+    def __init__(self) -> None:
         """Create a new method instance with input, output and params."""
-        self.input = input
-        self.output = output
-        self.params = params
-
-        # placeholder
-        self.wildcards: Dict[str, List[str]] = {}
-        """Wildcards detected for expanding (1:n), reducing (n:1) and exploding (n:n) the method."""
+        self.input: Parameters = Parameters()
+        self.output: Parameters = Parameters()
+        self.params: Parameters = Parameters()
 
     ## ABSTRACT METHODS
 
@@ -55,20 +52,34 @@ class Method(ABC):
     ## MAGIC METHODS
 
     def __repr__(self) -> str:
-        return f"Method({pformat(self.to_dict())})"
+        return f"Method({pformat(self.dict)})"
 
     ## DESERIALIZATION METHODS
 
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        """Return the minimal set of keyword-arguments which result in the same method parametrization."""
+        init_kw = inspect.signature(self.__init__).parameters
+        in_kw = {k: v for k, v in self.dict["input"].items() if k in init_kw}
+        out_kw = {k: v for k, v in self.dict["output"].items() if k in init_kw}
+        kw = {**in_kw, **out_kw, **self.dict.get("params", {})}
+        return kw
+
+    @property
+    def dict(self) -> Dict[str, Dict]:
+        """Return a dictionary representation of the method input, output and params."""
+        if not hasattr(self, "._dict") or not self._dict:
+            self._dict = self.to_dict()
+        return self._dict
+
     def to_dict(self, **kwargs) -> Dict:
         """Return a serialized dictionary representation of the method input, output and params."""
-        _kwargs = dict(
-            exclude_none=True, exclude_defaults=True, round_trip=True, mode="json"
-        )
+        _kwargs = dict(exclude_defaults=True, round_trip=True, mode="json")
         dump_kwargs = {**_kwargs, **kwargs}
         out_dict = {
             "name": self.name,
-            "input": self.input.model_dump(**dump_kwargs),
-            "output": self.output.model_dump(**dump_kwargs),
+            "input": self.input.to_dict(**dump_kwargs),
+            "output": self.output.to_dict(**dump_kwargs),
         }
         if hasattr(self, "params"):  # params are optional
             out_dict["params"] = self.params.model_dump(**dump_kwargs)
@@ -77,42 +88,51 @@ class Method(ABC):
     ## SERIALIZATION METHODS
 
     @classmethod
-    def from_dict(cls, d: dict) -> "Method":
-        """Create a new instance from a nested dictionary representation.
+    def from_dict(
+        cls,
+        input: Dict,
+        output: Dict,
+        params: Optional[Dict] = None,
+        name: Optional[str] = None,
+    ) -> "Method":
+        """Create a new instance from input, output and params dictionaries.
 
-        The dictionary should have keys: `input`, `output` and optionally `params` and `name`.
-        `name` is used to select the correct subclass if called from the parent class.
+        Parameters
+        ----------
+        input, output : Dict
+            Dictionary with input, and output parameters.
+        params : Dict, optional
+            Dictionary with additional parameters, by default None.
+        name : str, optional
+            Name of the method, by default None.
+            This is required if called from the parent Method class.
         """
-        # check dict keys
-        if not all(k in d.keys() for k in ["input", "output"]):
-            raise ValueError("Dictionary should have keys: input and output")
-        name = d.get("name", cls.name)
-        if not (cls.name == name or cls.name == "abstract_method"):
-            raise ValueError(
-                f"Method {name} cannot be initiated from class {cls.__name__} with name {cls.name}"
-            )
+        # if called from the parent class, get the subclass by name
+        if cls.name == "abstract_method":
+            if name is None:
+                raise ValueError("Cannot initiate from Method without a method name")
+            cls = cls._get_subclass(name)
 
         # get keyword arguments of __init__ method based on its signature
         init_kw = inspect.signature(cls.__init__).parameters
-        for key in ["input", "output"]:
-            kwargs = {k: v for k, v in d[key].items() if k in init_kw}
-        kwargs.update(**d.get("params", {}))  # always include non-default params
-        if cls.name == name:
-            return cls(**kwargs)
-        elif cls.name == "abstract_method":  # parent class
-            return cls._get_subclass(name)(**kwargs)
+        input_kwargs = {k: v for k, v in input.items() if k in init_kw}
+        output_kwargs = {k: v for k, v in output.items() if k in init_kw}
+        kwargs = {**input_kwargs, **output_kwargs}
+        if params is not None:
+            kwargs.update(params)  # always include params
+
+        return cls(**kwargs)
 
     @classmethod
-    def from_kwargs(cls, name: str, **kwargs) -> "Method":
+    def from_kwargs(cls, name: Optional[str] = None, **kwargs) -> "Method":
         """Create a new method instance from the method `name` and its initialization arguments."""
-        if cls.name == name:
-            return cls(**kwargs)
-        elif cls.name == "abstract_method":  # parent class
-            return cls._get_subclass(name)(**kwargs)
-        else:
-            raise ValueError(
-                f"Method {name} cannot be initiated from class {cls.__name__} with name {cls.name}"
-            )
+        # if called from the parent class, get the subclass by name
+        if cls.name == "abstract_method":
+            if name is None:
+                raise ValueError("Cannot initiate from Method without a method name")
+            cls = cls._get_subclass(name)
+
+        return cls(**kwargs)
 
     @classmethod
     def _get_subclasses(cls) -> Generator[type["Method"], None, None]:
@@ -123,6 +143,10 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
+        # FIXME use entrypoints to get all subclasses
+        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
+        from hydroflows import methods as _  # noqa: F401
+
         for subclass in cls._get_subclasses():
             if subclass.name == name:
                 return subclass
@@ -133,9 +157,9 @@ class Method(ABC):
 
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
-        d = self.to_dict()
-        m = self.from_dict(d)
-        assert m.to_dict() == d
+        kw = self.kwargs
+        m = self.from_kwargs(kw)
+        assert m.dict == self.dict
 
     @classmethod
     def _test_unique_keys(self) -> None:
@@ -191,46 +215,16 @@ class Method(ABC):
                     f"Output file {self.name}.output.{key} not found: {path}"
                 )
 
-    ## WILDCARD METHODS
 
-    def _detect_wildcards(self, known_wildcards: List[str]) -> Dict[str, List]:
-        """Detect wildcards based on known workflow wildcard names.
-
-        This method should be called from the Workflow passing the known wildcards.
-        """
-        # check for wildcards in input and output
-        wildcards = {"input": [], "output": [], "params": []}
-        for key in wildcards.keys():
-            for value in getattr(self, key)().values():
-                if not isinstance(value, (str, Path)):
-                    continue
-                value = str(value)
-                for wc in known_wildcards:
-                    if "{" + str(wc) + "}" in value and wc not in wildcards[key]:
-                        wildcards[key].append(wc)
-        self._all_wildcards = wildcards
-
-        # these are the wildcards that are used in both input/params and output
-        wc_in_params = set(wildcards["input"] + wildcards["params"])
-        wc_out = set(wildcards["output"])
-
-        # set the wildcards
-        self.wildcards = {
-            "explode": list(wc_in_params & wc_out),
-            "reduce": list(wc_out - wc_in_params),
-            "expand": list(wc_in_params - wc_out),
-        }
-
-
-class ExpandMethod(Method):
+class ExpandMethod(Method, ABC):
     """Base class for methods that expand on a wildcard."""
 
-    expand_refs: Dict[str, str] = {}  # wildcard key: output key
-
-    def __init__(self, input: BaseModel, output: BaseModel, params: BaseModel) -> None:
-        """Create and validate an ExpandMethod instance."""
-        super().__init__(input, output, params)
-        self._expand_values: Dict[str, List] = {}
+    @abstractmethod
+    def __init__(self) -> None:
+        """Create a new expand method instance."""
+        super().__init__()
+        self.expand_refs: Dict[str, str] = {}  # wildcard key: output key
+        # self.expand_output_keys: List[str] = []  # output keys with wildcards
 
     def _resolve_expand_values(self) -> None:
         """Resolve expand values based on expand_refs."""
@@ -241,7 +235,7 @@ class ExpandMethod(Method):
     @property
     def expand_values(self) -> Dict[str, List]:
         """Return a dict with wildcards and list of expand values."""
-        if not hasattr(self, "_expand_values"):
+        if not hasattr(self, "_expand_values") or not self._expand_values:
             self._expand_values: Dict[str, List] = {}  # should be in __init__
         if not self._expand_values:
             self._resolve_expand_values()
@@ -263,18 +257,12 @@ class ExpandMethod(Method):
                     paths.append((key, value))
         return paths
 
-    # @property
-    # def wildcards(self) -> List[str]:
-    #     """Return a list of wildcards."""
-    #     return list(self.expand_refs.keys())
-
 
 class ReduceMethod(Method):
     """Base class for methods that convert input to output."""
 
-    # reduce_refs: Dict[str, str] = {}  # wildcard key: input key
-
-    # @property
-    # def wildcards(self) -> List[str]:
-    #     """Return a list of wildcards."""
-    #     return list(self.reduce_refs.keys())
+    # @abstractmethod
+    # def __init__(self) -> None:
+    #     """Create a new expand method instance."""
+    #     super().__init__()
+    #     self.reduce_input_keys: List[str] = []  # input keys with wildcards

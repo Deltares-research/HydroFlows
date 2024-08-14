@@ -6,16 +6,16 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsBuild"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`SfincsBuild` method."""
 
     region: Path
@@ -25,7 +25,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`SfincsBuild` method."""
 
     sfincs_inp: Path
@@ -38,7 +38,7 @@ class Output(BaseModel):
     """The path to the derived SFINCS subgrid depth geotiff file."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`SfincsBuild`.
 
     See Also
@@ -49,6 +49,9 @@ class Params(BaseModel):
 
     sfincs_root: Path
     """The path to the root directory where the SFINCS model will be created."""
+
+    res: float
+    """Model resolution [m]."""
 
     # optional parameter
     data_libs: ListOfStr = ["artifact_data"]
@@ -71,9 +74,6 @@ class Params(BaseModel):
     merge_kwargs: Optional[dict] = None
     """Additional keyword arguments to pass to the merge method."""
 
-    res: float = 100.0
-    """Model resolution [m]."""
-
     river_upa: float = 30
     """River upstream area threshold [km2]."""
 
@@ -91,7 +91,7 @@ class SfincsBuild(Method):
     def __init__(
         self,
         region: Path,
-        sfincs_root: Path = "models/sfincs",
+        sfincs_root: Path = Path("models/sfincs"),
         res: float = 100,
         **params,
     ) -> None:
@@ -120,14 +120,10 @@ class SfincsBuild(Method):
         """
         self.params: Params = Params(sfincs_root=sfincs_root, res=res, **params)
         self.input: Input = Input(region=region)
-
-        sfincs_inp = self.params.sfincs_root / "sfincs.inp"
-        sfincs_region = self.params.sfincs_root / "gis" / "region.geojson"
-        sfincs_subgrid_dep = self.params.sfincs_root / "subgrid" / "dep_subgrid.tif"
         self.output: Output = Output(
-            sfincs_inp=sfincs_inp,
-            sfincs_region=sfincs_region,
-            sfincs_subgrid_dep=sfincs_subgrid_dep,
+            sfincs_inp=self.params.sfincs_root / "sfincs.inp",
+            sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",
+            sfincs_subgrid_dep=self.params.sfincs_root / "subgrid" / "dep_subgrid.tif",
         )
 
     def run(self):

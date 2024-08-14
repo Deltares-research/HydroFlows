@@ -2,22 +2,22 @@
 
 # from datetime.datetime import strftime
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Optional
 
 import numpy as np
 from hydromt_sfincs import SfincsModel
-from pydantic import BaseModel
 
 from hydroflows.events import Event
-from hydroflows.methods.method import Method
 from hydroflows.utils import make_relative_paths
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsUpdateForcing"]
 
 
 def parse_event_sfincs(
-    root: Path, event: Event, out_root: Path, sfincs_config: Dict = None
-):
+    root: Path, event: Event, out_root: Path, sfincs_config: Optional[Dict] = None
+) -> None:
     """Parse event and update SFINCS model with event forcing.
 
     This method requires that the out_root is a subdirectory of the root directory.
@@ -98,7 +98,7 @@ def parse_event_sfincs(
     sf.write_config()
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`SfincsUpdateForcing` method."""
 
     sfincs_inp: Path
@@ -109,14 +109,14 @@ class Input(BaseModel):
     see also :py:class:`hydroflows.workflows.events.Event`."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for :py:class:`SfincsUpdateForcing` method."""
 
     sfincs_out_inp: Path
     """The path to the updated SFINCS configuration (inp) file per event."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`SfincsUpdateForcing` method."""
 
     sfincs_config: Dict = {}

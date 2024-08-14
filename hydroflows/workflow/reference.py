@@ -3,7 +3,7 @@
 from typing import TYPE_CHECKING, Any, Optional
 
 if TYPE_CHECKING:
-    from hydroflows.workflow import Workflow
+    from hydroflows.workflow.workflow import Workflow
 
 
 class Ref(object):
@@ -26,7 +26,10 @@ class Ref(object):
             The workflow instance to which the reference belongs.
         """
         self.ref: str = ref
+        """Reference string."""
+
         self.value: Any = None
+        """Resolved value of the reference."""
 
         ref_type = self.ref.split(".")[0]
 
@@ -40,6 +43,13 @@ class Ref(object):
                     f"Invalid reference: {self.ref}. References should start with config or rules."
                 )
 
+    def __repr__(self) -> str:
+        return f"Ref({self.ref})"
+
+    def __str__(self) -> str:
+        # NOTE: this is used in Parameters
+        return str(self.value)
+
     def _resolve_rule_ref(self, workflow: "Workflow") -> Any:
         """Resolve reference another rule."""
         ref_keys = self.ref.split(".")
@@ -50,8 +60,8 @@ class Ref(object):
                 "A rule reference should be in the form rules.<rule_name>.<rule_component>.<key>, "
                 "where <rule_component> is one of input, output or params."
             )
-        rule_dict = workflow.get_rule(ref_keys[1]).to_dict()
-        value = _get_nested_value_from_dict(rule_dict, ref_keys[2:], self.ref)
+        parameters = workflow.rules.get_rule(ref_keys[1]).method.dict
+        value = _get_nested_value_from_dict(parameters, ref_keys[2:], self.ref)
         return value
 
     def _resolve_config_ref(self, workflow: "Workflow") -> Any:

@@ -7,12 +7,12 @@ import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
 from hydroflows.events import EventSet
-from hydroflows.methods.method import ReduceMethod
-from hydroflows.methods.method_parameters import Parameters, ReduceParameters
 from hydroflows.utils import make_relative_paths
+from hydroflows.workflow.method import ReduceMethod
+from hydroflows.workflow.method_parameters import Parameters
 
 
-class Input(ReduceParameters):
+class Input(Parameters):
     """Input parameters for the :py:class:`FIATUpdateHazard` method."""
 
     fiat_cfg: Path
@@ -22,7 +22,8 @@ class Input(ReduceParameters):
     """The path to the event description file, used to filter hazard maps,
     see also :py:class:`hydroflows.workflows.events.Event`."""
 
-    hazard_maps: List[Path]
+    # single path should also be allowed for validation !
+    hazard_maps: Union[Path, List[Path]]
     """List of paths to hazard maps the event description file."""
 
 
@@ -65,7 +66,6 @@ class FIATUpdateHazard(ReduceMethod):
     """
 
     name: str = "fiat_update_hazard"
-    # reduce_refs = {"event": "hazard_maps"}
 
     def __init__(
         self,
@@ -102,7 +102,6 @@ class FIATUpdateHazard(ReduceMethod):
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
-            _reduce_wildcards=["event"],
         )
         # NOTE: FIAT runs with full event sets with RPs. Name of event set is the stem of the event set file
         event_set_name = self.input.event_set_yaml.stem
@@ -119,6 +118,11 @@ class FIATUpdateHazard(ReduceMethod):
 
     def run(self):
         """Run the FIATUpdateHazard method."""
+        # make sure hazard maps is a list
+        hazard_maps = self.input.hazard_maps
+        if not isinstance(hazard_maps, list):
+            hazard_maps = [hazard_maps]
+
         # Load the existing
         root = self.input.fiat_cfg.parent
         out_root = self.output.fiat_out_cfg.parent
@@ -158,7 +162,7 @@ class FIATUpdateHazard(ReduceMethod):
         # filter out the right path names
         hazard_fns = []
         for name in hazard_names:
-            for fn in self.input.hazard_maps:
+            for fn in hazard_maps:
                 if name in fn.stem:
                     hazard_fns.append(fn)
                     break

@@ -7,16 +7,16 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.events import Event, EventSet
-from hydroflows.methods.method import ExpandMethod
+from hydroflows.workflow.method import ExpandMethod
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["PluvialDesignEvents"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for :py:class:`PluvialDesignEvents` method."""
 
     precip_nc: Path
@@ -29,7 +29,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
 
     event_names: List[str]
@@ -49,7 +49,7 @@ class Output(BaseModel):
     """
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for :py:class:`PluvialDesignEvents` method."""
 
     event_root: Path
@@ -88,7 +88,6 @@ class PluvialDesignEvents(ExpandMethod):
     """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
-    expand_refs: dict = {"event": "event_names"}
 
     def __init__(
         self, precip_nc: Path, event_root: Path = "data/events/rainfall", **params
@@ -114,10 +113,13 @@ class PluvialDesignEvents(ExpandMethod):
         self.input: Input = Input(precip_nc=precip_nc)
         self.output: Output = Output(
             event_names=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
-            event_yaml=Path(event_root, "{event}.yml"),
-            event_csv=Path(event_root, "{event}.csv"),
-            event_set=Path(event_root, "event_set.yml"),
+            event_yaml=self.params.event_root / "{event}.yml",
+            event_csv=self.params.event_root / "{event}.csv",
+            event_set=self.params.event_root / "event_set.yml",
         )
+        # expand refs
+        self.expand_refs: dict = {"event": "event_names"}
+        # self.expand_output_keys: List[str] = ["event_yaml", "event_csv"]
 
     def run(self):
         """Run the Pluvial design events method."""

@@ -9,16 +9,16 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat
 from hydroflows.events import Event, EventSet
-from hydroflows.methods.method import ExpandMethod
+from hydroflows.workflow.method import ExpandMethod
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["WflowDesignHydro"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`WflowDesignHydro` method."""
 
     discharge_nc: Path
@@ -35,7 +35,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`WflowDesignHydro` method."""
 
     event_names: List[str]
@@ -55,7 +55,7 @@ class Output(BaseModel):
     """
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`WflowDesignHydro` method.
 
     See Also
@@ -116,7 +116,6 @@ class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
     name: str = "wflow_design_hydro"
-    expand_refs: dict = {"event": "event_names"}
 
     def __init__(
         self, discharge_nc: Path, event_root: Path = "data/events/discharge", **params
@@ -146,10 +145,13 @@ class WflowDesignHydro(ExpandMethod):
         self.input: Input = Input(discharge_nc=discharge_nc)
         self.output: Output = Output(
             event_names=[f"q_event{int(i+1):02d}" for i in range(len(self.params.rps))],
-            event_yaml=Path(event_root, "{event}.yml"),
-            event_csv=Path(event_root, "{event}.csv"),
-            event_set=Path(event_root, "event_set.yml"),
+            event_yaml=self.params.event_root / "{event}.yml",
+            event_csv=self.params.event_root / "{event}.csv",
+            event_set=self.params.event_root / "event_set.yml",
         )
+        # expand refs
+        self.expand_refs = {"event": "event_names"}
+        # self.expand_output_keys = ["event_yaml", "event_csv"]
 
     def run(self):
         """Run the WflowDesignHydro method."""

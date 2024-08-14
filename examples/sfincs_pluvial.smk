@@ -6,56 +6,69 @@ EVENT=["p_event01", "p_event02", "p_event03"]
 
 rule all:
     input:
-        "models\fiat\simulations\event_set\output\spatial.gpkg",
+        fiat_out="models/fiat/simulations/event_set/output/spatial.gpkg",
 
 rule sfincs_build:
     input:
         region=config["region"],
+    params:
+        sfincs_root="models/sfincs",
+        res=100.0,
     output:
-        sfincs_inp="models\sfincs\sfincs.inp",
-        sfincs_region="models\sfincs\gis\region.geojson",
-        sfincs_subgrid_dep="models\sfincs\subgrid\dep_subgrid.tif",
+        sfincs_inp="models/sfincs/sfincs.inp",
+        sfincs_region="models/sfincs/gis/region.geojson",
+        sfincs_subgrid_dep="models/sfincs/subgrid/dep_subgrid.tif",
     shell:
         """
         hydroflows method sfincs_build \
         region="{input.region}" \
+        sfincs_root="{params.sfincs_root}" \
+        res="{params.res}" \
         """
 
 rule fiat_build:
     input:
         region=rules.sfincs_build.output.sfincs_region,
+    params:
+        fiat_root="models/fiat",
     output:
-        fiat_cfg="models\fiat\settings.toml",
+        fiat_cfg="models/fiat/settings.toml",
     shell:
         """
         hydroflows method fiat_build \
         region="{input.region}" \
+        fiat_root="{params.fiat_root}" \
         """
 
 rule get_ERA5_rainfall:
     input:
         region=rules.sfincs_build.output.sfincs_region,
+    params:
+        data_input_root="data/input",
     output:
-        precip_nc="data\input\era5_precip.nc",
+        precip_nc="data/input/era5_precip.nc",
     shell:
         """
         hydroflows method get_ERA5_rainfall \
         region="{input.region}" \
+        data_input_root="{params.data_input_root}" \
         """
 
 rule pluvial_design_events:
     input:
         precip_nc=rules.get_ERA5_rainfall.output.precip_nc,
     params:
+        event_root="data/events/rainfall",
         rps=config["rps"],
     output:
-        event_yaml=expand("data\events\rainfall\{event}.yml", event=EVENT),
-        event_csv=expand("data\events\rainfall\{event}.csv", event=EVENT),
-        event_set="data\events\rainfall\event_set.yml",
+        event_yaml=expand("data/events/rainfall/{event}.yml", event=EVENT),
+        event_csv=expand("data/events/rainfall/{event}.csv", event=EVENT),
+        event_set="data/events/rainfall/event_set.yml",
     shell:
         """
         hydroflows method pluvial_design_events \
         precip_nc="{input.precip_nc}" \
+        event_root="{params.event_root}" \
         rps="{params.rps}" \
         """
 
@@ -64,7 +77,7 @@ rule sfincs_update_forcing:
         sfincs_inp=rules.sfincs_build.output.sfincs_inp,
         event_yaml=rules.pluvial_design_events.output.event_yaml,
     output:
-        sfincs_out_inp="models\sfincs\simulations\{event}\sfincs.inp",
+        sfincs_out_inp="models/sfincs/simulations/{event}/sfincs.inp",
     shell:
         """
         hydroflows method sfincs_update_forcing \
@@ -78,7 +91,7 @@ rule sfincs_run:
     params:
         sfincs_exe=config["sfincs_exe"],
     output:
-        sfincs_map="models\sfincs\simulations\{event}\sfincs_map.nc",
+        sfincs_map="models/sfincs/simulations/{event}/sfincs_map.nc",
     shell:
         """
         hydroflows method sfincs_run \
@@ -90,13 +103,16 @@ rule sfincs_postprocess:
     input:
         sfincs_map=rules.sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=rules.sfincs_build.output.sfincs_subgrid_dep,
+    params:
+        hazard_root="data/output/hazard",
     output:
-        hazard_tif="data\output\hazard\{event}.tif",
+        hazard_tif="data/output/hazard/{event}.tif",
     shell:
         """
         hydroflows method sfincs_postprocess \
         sfincs_map="{input.sfincs_map}" \
         sfincs_subgrid_dep="{input.sfincs_subgrid_dep}" \
+        hazard_root="{params.hazard_root}" \
         """
 
 rule fiat_update_hazard:
@@ -105,8 +121,8 @@ rule fiat_update_hazard:
         event_set_yaml=rules.pluvial_design_events.output.event_set,
         hazard_maps=expand("data\output\hazard\{event}.tif", event=EVENT),
     output:
-        fiat_hazard="models\fiat\simulations\event_set\hazard.nc",
-        fiat_out_cfg="models\fiat\simulations\event_set\settings.toml",
+        fiat_hazard="models/fiat/simulations/event_set/hazard.nc",
+        fiat_out_cfg="models/fiat/simulations/event_set/settings.toml",
     shell:
         """
         hydroflows method fiat_update_hazard \
@@ -121,7 +137,7 @@ rule fiat_run:
     params:
         fiat_bin=config["fiat_exe"],
     output:
-        fiat_out="models\fiat\simulations\event_set\output\spatial.gpkg",
+        fiat_out="models/fiat/simulations/event_set/output/spatial.gpkg",
     shell:
         """
         hydroflows method fiat_run \

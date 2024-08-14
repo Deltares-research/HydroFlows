@@ -1,17 +1,17 @@
-"""Sfincs postprocess method."""
+"""SFINCS postprocess method."""
 
 from pathlib import Path
 from typing import Optional
 
 from hydromt_sfincs import SfincsModel, utils
-from pydantic import BaseModel
 
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsPostprocess"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`SfincsPostprocess` method."""
 
     sfincs_map: Path
@@ -21,14 +21,14 @@ class Input(BaseModel):
     """The path to the highres dem file to use for downscaling the results."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`SfincsPostprocess` method."""
 
     hazard_tif: Path
     """The path to the output inundation raster geotiff."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`SfincsPostprocess` method."""
 
     hazard_root: Path
@@ -75,7 +75,6 @@ class SfincsPostprocess(Method):
         :py:class:`sfincs_postprocess Output <hydroflows.methods.sfincs.sfincs_postprocess.Output>`
         :py:class:`sfincs_postprocess Params <hydroflows.methods.sfincs.sfincs_postprocess.Params>`
         """
-        # params: Params = Params() # optional parameters
         self.params: Params = Params(hazard_root=hazard_root, **params)
 
         if sfincs_subgrid_dep is None:
@@ -88,9 +87,10 @@ class SfincsPostprocess(Method):
 
         # set the output file;
         # NOTE: we assume the sfincs_map parent folder is the event name
-        event_name = Path(sfincs_map).parent.stem
-        hazard_tif = self.params.hazard_root / f"{event_name}.tif"
-        self.output: Output = Output(hazard_tif=hazard_tif)
+        event_name = self.input.sfincs_map.parent.stem
+        self.output: Output = Output(
+            hazard_tif=self.params.hazard_root / f"{event_name}.tif"
+        )
 
         # TODO create output event file
 
