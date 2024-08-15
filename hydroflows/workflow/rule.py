@@ -10,6 +10,7 @@ from tqdm.contrib.concurrent import thread_map
 from hydroflows.workflow.method import ExpandMethod, Method
 
 if TYPE_CHECKING:
+    from hydroflows.workflow.method_parameters import Parameters
     from hydroflows.workflow.workflow import Workflow
 
 __all__ = ["Rule"]
@@ -108,6 +109,21 @@ class Rule:
     def _all_wildcards(self) -> List[str]:
         """Return all wildcards."""
         return list(set(sum(self.wildcards.values(), [])))
+
+    @property
+    def input(self) -> "Parameters":
+        """Return the input parameters of the method."""
+        return self.method.input
+
+    @property
+    def output(self) -> "Parameters":
+        """Return the output parameters of the method."""
+        return self.method.output
+
+    @property
+    def params(self) -> "Parameters":
+        """Return the parameters of the method."""
+        return self.method.params
 
     ## SERIALIZATION METHODS
 
