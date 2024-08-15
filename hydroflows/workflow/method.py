@@ -52,9 +52,9 @@ class Method(ABC):
     ## MAGIC METHODS
 
     def __repr__(self) -> str:
-        return f"Method({pformat(self.dict)})"
+        return f"Method(name={self.name}; parameters={pformat(self.dict)})"
 
-    ## DESERIALIZATION METHODS
+    ## SERIALIZATION METHODS
 
     @property
     def kwargs(self) -> Dict[str, Any]:
@@ -63,6 +63,20 @@ class Method(ABC):
         in_kw = {k: v for k, v in self.dict["input"].items() if k in init_kw}
         out_kw = {k: v for k, v in self.dict["output"].items() if k in init_kw}
         kw = {**in_kw, **out_kw, **self.dict.get("params", {})}
+        return kw
+
+    @property
+    def kwargs_with_refs(self) -> Dict[str, Any]:
+        """Return the keyword-arguments with references."""
+        init_kw = inspect.signature(self.__init__).parameters
+        opt = dict(
+            mode="json", return_refs=True, exclude_defaults=True, posix_path=True
+        )
+        in_kw = {k: v for k, v in self.input.to_dict(**opt).items() if k in init_kw}
+        out_kw = {k: v for k, v in self.output.to_dict(**opt).items() if k in init_kw}
+        kw = {**in_kw, **out_kw}
+        if hasattr(self, "params"):  # params are optional
+            kw.update(self.params.to_dict(**opt))
         return kw
 
     @property
@@ -77,7 +91,6 @@ class Method(ABC):
         _kwargs = dict(exclude_defaults=True, round_trip=True, mode="json")
         dump_kwargs = {**_kwargs, **kwargs}
         out_dict = {
-            "name": self.name,
             "input": self.input.to_dict(**dump_kwargs),
             "output": self.output.to_dict(**dump_kwargs),
         }
@@ -178,6 +191,15 @@ class Method(ABC):
 
     ## RUN METHODS
 
+    def dryrun(self, missing_file_error: bool = False) -> None:
+        """Run method with dummy outputs."""
+        self.check_input_output_paths(missing_file_error=missing_file_error)
+        # write output files
+        for _, path in self._output_paths:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "w") as f:
+                f.write("")
+
     def run_with_checks(self, check_output: bool = True) -> None:
         """Run the method with input/output checks."""
         self.check_input_output_paths()
@@ -185,14 +207,19 @@ class Method(ABC):
         if check_output:
             self.check_output_exists()
 
-    def check_input_output_paths(self):
+    def check_input_output_paths(self, missing_file_error: bool = True) -> None:
         """Check if input exists and output parent directory exists."""
         for key, value in self.input.model_dump().items():
             if isinstance(value, Path):
+                msg = f"Input file {self.name}.input.{key} not found: {value}"
                 if not value.is_file():
-                    raise FileNotFoundError(
-                        f"Input file {self.name}.input.{key} not found: {value}"
-                    )
+                    if not missing_file_error:  # create dummy file
+                        print(f"WARNING: {msg}")
+                        value.parent.mkdir(parents=True, exist_ok=True)
+                        with open(value, "w") as f:
+                            f.write("")
+                    else:
+                        raise FileNotFoundError(msg)
         for value in self.output.model_dump().values():
             if isinstance(value, Path):
                 if not value.parent.is_dir():

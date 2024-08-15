@@ -12,9 +12,6 @@ rule all:
 rule sfincs_build:
     input:
         region="data/{region}.geojson",
-    params:
-        sfincs_root="models/sfincs/{region}",
-        res=100.0,
     output:
         sfincs_inp="models/sfincs/{region}/sfincs.inp",
         sfincs_region="models/sfincs/{region}/gis/region.geojson",

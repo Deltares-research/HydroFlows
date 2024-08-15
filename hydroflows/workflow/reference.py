@@ -25,6 +25,8 @@ class Ref(object):
         workflow : Workflow
             The workflow instance to which the reference belongs.
         """
+        if not str(ref).startswith("$"):
+            ref = f"${ref}"
         self.ref: str = ref
         """Reference string."""
 
@@ -34,9 +36,9 @@ class Ref(object):
         ref_type = self.ref.split(".")[0]
 
         match ref_type:
-            case "rules":
+            case "$rules":
                 self.value = self._resolve_rule_ref(workflow)
-            case "config":
+            case "$config":
                 self.value = self._resolve_config_ref(workflow)
             case _:
                 raise ValueError(
@@ -47,7 +49,7 @@ class Ref(object):
         return f"Ref({self.ref})"
 
     def __str__(self) -> str:
-        # NOTE: this is used in Parameters
+        # NOTE: this is required for Parameters
         return str(self.value)
 
     def _resolve_rule_ref(self, workflow: "Workflow") -> Any:

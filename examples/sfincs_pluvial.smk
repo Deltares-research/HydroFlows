@@ -11,9 +11,6 @@ rule all:
 rule sfincs_build:
     input:
         region=config["region"],
-    params:
-        sfincs_root="models/sfincs",
-        res=100.0,
     output:
         sfincs_inp="models/sfincs/sfincs.inp",
         sfincs_region="models/sfincs/gis/region.geojson",
@@ -119,7 +116,7 @@ rule fiat_update_hazard:
     input:
         fiat_cfg=rules.fiat_build.output.fiat_cfg,
         event_set_yaml=rules.pluvial_design_events.output.event_set,
-        hazard_maps=expand("data\output\hazard\{event}.tif", event=EVENT),
+        hazard_maps=expand("data/output/hazard/{event}.tif", event=EVENT),
     output:
         fiat_hazard="models/fiat/simulations/event_set/hazard.nc",
         fiat_out_cfg="models/fiat/simulations/event_set/settings.toml",

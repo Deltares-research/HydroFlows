@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Union
+from typing import TYPE_CHECKING, Any, Dict, List
 
 if TYPE_CHECKING:
     from hydroflows.workflow.method import Method
@@ -30,15 +30,21 @@ class JinjaSnakeRule:
     @property
     def input(self) -> Dict[str, str]:
         """Get the rule input path parameters."""
-        result = self.method.input.to_dict(
-            mode="python", filter_types=Path, return_refs=True
-        )
         wildcards = self.rule.wildcards["reduce"]
+        wildcard_fields = []
+        for wc in wildcards:
+            wildcard_fields.extend(self.rule.wildcard_fields.get(wc))
+        result = self.method.input.to_dict(
+            mode="json",
+            filter_types=Path,
+            return_refs=True,
+            exclude_ref_keys=wildcard_fields,
+            posix_path=True,
+            quote_str=True,
+        )
         for key, val in result.items():
-            # get the original value instead of the reference
-            org_val = getattr(self.method.input, key)
-            if wildcards and any("{" + wc + "}" in str(org_val) for wc in wildcards):
-                result[key] = self._expand_variable(org_val, wildcards)
+            if wildcards and any("{" + wc + "}" in val for wc in wildcards):
+                result[key] = self._expand_variable(val, wildcards)
             else:
                 result[key] = self._parse_variable(val)
         return result
@@ -46,7 +52,12 @@ class JinjaSnakeRule:
     @property
     def output(self) -> Dict[str, str]:
         """Get the rule output path parameters."""
-        result = self.method.output.to_dict(mode="python", filter_types=Path)
+        result = self.method.output.to_dict(
+            mode="json",
+            filter_types=Path,
+            posix_path=True,
+            quote_str=True,
+        )
         wildcards = self.rule.wildcards["expand"]
         for key, val in result.items():
             if wildcards and any("{" + wc + "}" in str(val) for wc in wildcards):
@@ -59,17 +70,27 @@ class JinjaSnakeRule:
     def params(self) -> Dict[str, str]:
         """Get the rule parameters."""
         result = self.method.params.to_dict(
-            mode="python", exclude_defaults=True, return_refs=True
+            mode="json",
+            exclude_defaults=True,
+            return_refs=True,
+            posix_path=True,
+            quote_str=True,
         )
         return {key: self._parse_variable(val) for key, val in result.items()}
 
     @property
     def rule_all_input(self) -> Dict[str, str]:
         """Get the rule all input (output paths with expand)."""
-        result = self.method.output.to_dict(mode="python", filter_types=Path)
+        result = self.method.output.to_dict(
+            mode="json",
+            filter_types=Path,
+            posix_path=True,
+            quote_str=True,
+        )
         wildcards = self.rule.workflow.wildcards.names
         for key, val in result.items():
-            result[key] = self._expand_variable(val, wildcards)
+            if key in self.rule._all_wildcard_fields:
+                result[key] = self._expand_variable(val, wildcards)
         return result
 
     @property
@@ -77,10 +98,7 @@ class JinjaSnakeRule:
         """Get the rule shell arguments."""
         return {key: self._parse_shell_variable(key) for key in self.method.kwargs}
 
-    def _expand_variable(self, val: Union[str, Path], wildcards: List) -> Any:
-        if isinstance(val, Path):
-            val = val.as_posix()
-        val = str(val)
+    def _expand_variable(self, val: str, wildcards: List) -> Any:
         expand_lst = []
         for wc in wildcards:
             if "{" + wc + "}" in val:
@@ -90,27 +108,19 @@ class JinjaSnakeRule:
                 # escape wildcard in the value which is not expanded
                 val = val.replace("{" + wc + "}", "{{" + wc + "}}")
         if len(expand_lst) == 0:
-            raise ValueError(f"No wildcards found in {val}")
+            return val
         expand_str = ", ".join(expand_lst)
-        val = f'expand("{val}", {expand_str})'
+        val = f"expand({val}, {expand_str})"
         return val
 
-    def _parse_config_reference(self, val: str) -> str:
-        """Parse the config reference to snakemake format."""
-        dict_keys = val.split(".")[1:]
-        return 'config["' + '"]["'.join(dict_keys) + '"]'
-
-    def _parse_variable(self, val: Any) -> str:
-        """Expand the wildcards and parse references to snakemake format."""
-        if isinstance(val, Path):
-            val = f'"{val.as_posix()}"'
-        elif isinstance(val, str) and val.startswith("config."):
-            val = self._parse_config_reference(val)
-        elif isinstance(val, str) and val.startswith("rules."):
-            pass  # already in snakemake format
-        elif isinstance(val, str):
-            val = f'"{val}"'
-        return str(val)
+    def _parse_variable(self, val: str) -> str:
+        """Parse references to snakemake format."""
+        if val.startswith("$config."):
+            dict_keys = val.split(".")[1:]
+            val = 'config["' + '"]["'.join(dict_keys) + '"]'
+        elif val.startswith("$rules."):
+            val = val[1:]
+        return val
 
     def _parse_shell_variable(self, key: str) -> str:
         """Parse the key value pair for the shell command."""

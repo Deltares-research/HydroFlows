@@ -1,8 +1,12 @@
 """Pydantic models for method parameters."""
 
-from typing import Dict, List, Tuple, Type
+from pathlib import Path
+from typing import Dict, List, Literal, Tuple, Type
 
-from pydantic import BaseModel, model_validator
+from pydantic import (
+    BaseModel,
+    model_validator,
+)
 
 from hydroflows.workflow.reference import Ref
 
@@ -36,68 +40,57 @@ class Parameters(BaseModel):
 
     def to_dict(
         self,
+        mode: Literal["python", "json"] = "python",
         filter_types: Tuple[Type] = None,
         filter_keys: List = None,
         return_refs=False,
+        posix_path=False,
+        quote_str=False,
+        exclude_ref_keys: List[str] = None,
         **kwargs,
     ) -> Dict:
-        """Convert the parameters to a dictionary."""
-        kwargs = {"exclude_none": True, **kwargs}
-        out_dict = self.model_dump(**kwargs)
-        if filter_types is not None:
-            out_dict = {
-                k: v for k, v in out_dict.items() if isinstance(v, filter_types)
-            }
-        if filter_keys is not None:
-            out_dict = {k: v for k, v in out_dict.items() if k in filter_keys}
-        # return cross-references (str) if requested
-        # should be after filter_types
-        if return_refs:
-            out_dict = {k: self._refs.get(k, v) for k, v in out_dict.items()}
+        """Convert the parameters fields to a dictionary.
+
+        Parameters
+        ----------
+        mode : Literal["python", "json"], optional
+            The serialization mode, by default "python"
+        filter_types : Tuple[Type], optional
+            Filter the parameters by type, by default None
+        filter_keys : List, optional
+            Filter the parameters by key, by default None
+        return_refs : bool, optional
+            Return references instead of values, by default False
+        posix_path : bool, optional
+            Convert Path objects to posix paths (str), by default False
+        quote_str : bool, optional
+            Quote string values, by default False
+        exclude_ref_keys : List[str], optional
+            Do not transform these keys to references, by default None
+        """
+        kwargs = {"exclude_none": True, "mode": mode, **kwargs}
+        parameters = self.model_dump(**kwargs)
+        exclude_ref_keys = exclude_ref_keys or []
+        out_dict = {}
+        for k, v in parameters.items():
+            org_val = getattr(self, k)
+            if (filter_keys is not None and k not in filter_keys) or (
+                filter_types is not None and not isinstance(org_val, filter_types)
+            ):
+                continue
+            elif return_refs and k in self._refs and k not in exclude_ref_keys:
+                # return cross-references (str)
+                out_dict[k] = self._refs[k]
+            elif posix_path and isinstance(org_val, Path):
+                # convert Path to posix path;
+                # NOTE this could also be done with a custom pydantic Serializer but then
+                # all Path fields would need to be replaced by a custom annotated PathField
+                out_dict[k] = org_val.as_posix()
+                if quote_str:
+                    out_dict[k] = f'"{out_dict[k]}"'
+            elif quote_str and isinstance(org_val, str):
+                out_dict[k] = f'"{v}"'
+            else:
+                out_dict[k] = v
+
         return out_dict
-
-
-# class ReduceParameters(Parameters):
-#     """ReduceInput class.
-
-#     This class is used to define the input parameters for a reduce method.
-#     Parameters of type Path or str with wildcards are converted to lists.
-#     """
-
-#     _reduce_wildcards: List[str] = []
-
-#     def __init__(self, **data) -> None:
-#         super().__init__(**data)
-#         self._reduce_wildcards = data.get("_reduce_wildcards", [])
-
-#     @model_validator(mode="before")
-#     @classmethod
-#     def _validate_reduce_input(cls, data):
-#         """Convert Path or str with wildcards to list."""
-#         if isinstance(data, dict):
-#             for wildcard in data.get("_reduce_wildcards", []):
-#                 wc_str = "{" + wildcard + "}"
-#                 for key, value in data.items():
-#                     if isinstance(value, (Path, Ref, str)) and wc_str in str(value):
-#                         data[key] = [value]
-#         return data
-
-# def _check_type(value, types, multiple=True) -> bool:
-#     """Check if a value is of a certain type. If multiple, check if all values are of a certain type."""
-#     if multiple and isinstance(value, (list, set)):
-#         return all(isinstance(v, types) for v in value)
-#     else:
-#         return isinstance(value, types)
-
-# if __name__ == "__main__":
-#     from hydroflows.workflow import Workflow
-
-#     class Input(Parameters):
-#         work_dir: Path
-
-#     wf = Workflow()
-#     wf.config = {"work_dir": "/path/to/work_dir"}
-
-#     inp = Input(work_dir=Ref("config.work_dir", wf))
-#     print(inp)
-#     print(inp._refs)
