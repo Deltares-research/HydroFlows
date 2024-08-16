@@ -7,7 +7,7 @@ import os
 import tempfile
 from pathlib import Path
 from pprint import pformat
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
@@ -18,6 +18,7 @@ from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
+from hydroflows.workflow.workflow_config import WorkflowConfig
 
 
 class Workflow:
@@ -25,7 +26,8 @@ class Workflow:
 
     def __init__(
         self,
-        config: Optional[Dict] = None,
+        name="hydroflows",
+        config: Optional[Union[Dict, WorkflowConfig]] = None,
         wildcards: Optional[Dict] = None,
     ) -> None:
         """Create a workflow instance.
@@ -44,7 +46,11 @@ class Workflow:
         if wildcards is None:
             wildcards = {}
 
-        self.config: Dict = config  # TODO: create Config pydantic model
+        self.name: str = str(name)
+        self.config: WorkflowConfig = (
+            WorkflowConfig(**config) if isinstance(config, dict) else config
+        )
+        self.config._workflow_name = self.name
         self.wildcards: Wildcards = Wildcards(wildcards=wildcards)
         self.rules: Rules = Rules()
 
@@ -124,12 +130,12 @@ class Workflow:
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(configfile, "w") as f:
-            yaml.dump(self.config, f)
+            yaml.dump(self.config.to_dict(mode="json"), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
         yml_dict = {
-            "config": self.config,
+            "config": self.config.to_dict(mode="json"),
             "wildcards": self.wildcards.to_dict(),
             "rules": [r.to_dict() for r in self.rules],
         }
