@@ -191,8 +191,8 @@ def sfincs_region():
 
 
 @pytest.fixture()
-def sfincs_region_path(tmpdir, sfincs_region):
-    p = Path(str(tmpdir), "region.geojson")
+def sfincs_region_path(tmp_path: Path, sfincs_region: gpd.GeoDataFrame) -> Path:
+    p = Path(tmp_path, "region.geojson")
     sfincs_region.to_file(p)
     return p
 

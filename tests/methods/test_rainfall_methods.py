@@ -30,7 +30,7 @@ def precip_time_series_nc():
     return da
 
 
-def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
+def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
@@ -40,12 +40,14 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
     event_root = fn_event_set.parent
     rps = [1, 10, 100]
 
-    PluvialDesignEvents(
-        precip_nc=fn_time_series_nc,
+    p_events = PluvialDesignEvents(
+        precip_nc=str(fn_time_series_nc),
         rps=rps,
         event_root=event_root,
-    ).run()
-    assert fn_event_set.exists()
+    )
+    assert len(p_events.params.event_names) == len(rps)
+
+    p_events.run_with_checks()
 
     # read data back and check if all event paths are absolute and existing, length is correct
     event_set = EventSet.from_yaml(fn_event_set)
@@ -64,13 +66,16 @@ def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
     assert df.max().max() == 1.0
 
 
-def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
-    input = {"sfincs_region": str(sfincs_region_path)}
+def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
+    get_era5 = GetERA5Rainfall(
+        region=str(sfincs_region_path),
+        data_root=str(tmp_path / "data"),
+        filename="era5.nc",
+        start_date="2023-11-01",
+        end_data="2023-12-31",
+    )
+    assert get_era5.output.precip_nc == tmp_path / "data" / "era5.nc"
+    get_era5.run_with_checks()
 
-    fn_time_series = Path(tmp_path, "era5_data.nc")
-    output = {"time_series_nc": str(fn_time_series)}
-
-    params = {"start_date": "2000-01-01", "end_date": "2010-12-31"}
-
-    GetERA5Rainfall(input=input, output=output, params=params).run()
-    assert fn_time_series.exists()
+    da = xr.open_dataarray(get_era5.output.precip_nc)
+    assert da["time"].min() == pd.Timestamp("2023-11-01")

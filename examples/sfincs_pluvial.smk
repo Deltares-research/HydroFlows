@@ -43,15 +43,12 @@ rule fiat_build:
 rule get_ERA5_rainfall:
     input:
         region=rules.sfincs_build.output.sfincs_region,
-    params:
-        data_input_root="data/input",
     output:
         precip_nc="data/input/era5_precip.nc",
     shell:
         """
         hydroflows method get_ERA5_rainfall \
         region="{input.region}" \
-        data_input_root="{params.data_input_root}" \
         """
 
 rule pluvial_design_events:

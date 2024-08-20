@@ -5,6 +5,7 @@ from typing import Dict, List, Literal, Tuple, Type
 
 from pydantic import (
     BaseModel,
+    ConfigDict,
     model_validator,
 )
 
@@ -16,6 +17,8 @@ class Parameters(BaseModel):
 
     This class is used to define the parameters (input, output and params) for a method.
     """
+
+    model_config = ConfigDict(extra="forbid")
 
     _refs: Dict[str, str] = {}
     """Dictionary of references to parameters of other rules or config items."""
