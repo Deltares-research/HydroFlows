@@ -96,9 +96,10 @@ def test_wflow_design_hydro(time_series_nc: xr.DataArray, tmp_path: Path):
     discharge_nc = str(fn_time_series_nc)
     event_root = Path(tmp_path, "events")
 
-    rule = WflowDesignHydro(
+    m = WflowDesignHydro(
         discharge_nc=discharge_nc,
         event_root=event_root,
+        wildcard="q_event",
     )
-
-    rule.run_with_checks()
+    assert "{q_event}" in str(m.output.event_csv)
+    m.run_with_checks()

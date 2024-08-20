@@ -41,15 +41,15 @@ class Output(Parameters):
 
     event_yaml: Path
     """The path to the event description file,
-    see also :py:class:`hydroflows.workflows.events.Event`."""
+    see also :py:class:`hydroflows.events.Event`."""
 
     event_csv: Path
     """The path to the event csv timeseries file."""
 
-    event_set: Path
+    event_set_yaml: Path
     """The path to the event set yml file that contains the derived
     fluvial event configurations. This event set can be created from
-    a dictionary using the :py:class:`hydroflows.workflows.events.EventSet` class.
+    a dictionary using the :py:class:`hydroflows.events.EventSet` class.
     """
 
 
@@ -124,7 +124,7 @@ class WflowDesignHydro(ExpandMethod):
         self,
         discharge_nc: Path,
         event_root: Path = "data/events/discharge",
-        rps: Optional[ListOfFloat] = None,
+        rps: Optional[List[float]] = None,
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",
         **params,
@@ -177,7 +177,7 @@ class WflowDesignHydro(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set=self.params.event_root / "event_set.yml",
+            event_set_yaml=self.params.event_root / "fluvial_events.yml",
         )
         # set wildcard
         self.set_expand_wildcard(wildcard, self.params.event_names)
@@ -186,7 +186,7 @@ class WflowDesignHydro(ExpandMethod):
         """Run the WflowDesignHydro method."""
         # check if the input files and the output directory exist
         self.check_input_output_paths()
-        root = self.output.event_set.parent
+        root = self.output.event_set_yaml.parent
 
         # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
@@ -277,23 +277,24 @@ class WflowDesignHydro(ExpandMethod):
 
         events_list = []
         for name, rp in zip(self.params.event_names, q_hydrograph["rps"].values):
+            fmt_dict = {self.params.wildcard: name}
             # save q_rp as csv file
-            forcing_file = Path(root, f"{name}.csv")
+            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
             q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
             # save event yaml file
-            event_file = str(self.output.event_yaml).format(event=name)
+            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "discharge", "path": f"{name}.csv"}],
+                forcings=[{"type": "discharge", "path": forcing_file.name}],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file})
+            events_list.append({"name": name, "path": event_file.name})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)
-        event_set.to_yaml(self.output.event_set)
+        event_set.to_yaml(self.output.event_set_yaml)
 
         # save plots
         if self.params.plot_fig:

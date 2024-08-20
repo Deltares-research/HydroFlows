@@ -51,7 +51,7 @@ rule pluvial_design_events:
     output:
         event_yaml=expand("data/output/{{region}}/events/{event}.yml", event=EVENT),
         event_csv=expand("data/output/{{region}}/events/{event}.csv", event=EVENT),
-        event_set="data/output/{region}/events/event_set.yml",
+        event_set_yaml="data/output/{region}/events/pluvial_events.yml",
     shell:
         """
         hydroflows method pluvial_design_events \
