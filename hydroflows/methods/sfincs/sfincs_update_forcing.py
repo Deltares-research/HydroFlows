@@ -119,6 +119,9 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`SfincsUpdateForcing` method."""
 
+    event_name: str
+    """The name of the event"""
+
     sfincs_config: Dict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
 
@@ -134,7 +137,13 @@ class SfincsUpdateForcing(Method):
 
     name: str = "sfincs_update_forcing"
 
-    def __init__(self, sfincs_inp: Path, event_yaml: Path, **params):
+    def __init__(
+        self,
+        sfincs_inp: Path,
+        event_yaml: Path,
+        event_name: Optional[str] = None,
+        **params,
+    ):
         """Create and validate a SfincsUpdateForcing instance.
 
         SFINCS simulations are stored in a simulations/{event_name} subdirectory of the basemodel.
@@ -144,7 +153,9 @@ class SfincsUpdateForcing(Method):
         sfincs_inp : Path
             The file path to the SFINCS basemodel configuration file (inp).
         event_yaml : Path
-            The path to the event description file,
+            The path to the event description file
+        event_name : str, optional
+            The name of the event, by default derived from the event_yaml file name stem.
         **params
             Additional parameters to pass to the SfincsUpdateForcing instance.
             See :py:class:`sfincs_update_forcing Params <hydroflows.methods.sfincs.sfincs_update_forcing.Params>`.
@@ -155,11 +166,13 @@ class SfincsUpdateForcing(Method):
         :py:class:`sfincs_update_forcing Output <hydroflows.methods.sfincs.sfincs_update_forcing.Output>`
         :py:class:`sfincs_update_forcing Params <hydroflows.methods.sfincs.sfincs_update_forcing.Params>`
         """
-        self.params: Params = Params(**params)
         self.input: Input = Input(sfincs_inp=sfincs_inp, event_yaml=event_yaml)
 
-        # NOTE: event name is the stem of the event file
-        event_name = self.input.event_yaml.stem
+        if event_name is None:
+            # event name is the stem of the event file
+            event_name = self.input.event_yaml.stem
+        self.params: Params = Params(event_name=event_name, **params)
+
         sfincs_out_inp = (
             self.input.sfincs_inp.parent / "simulations" / event_name / "sfincs.inp"
         )
@@ -167,15 +180,11 @@ class SfincsUpdateForcing(Method):
 
     def run(self):
         """Run the SfincsUpdateForcing method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # fetch event from event yaml file
         event: Event = Event.from_yaml(self.input.event_yaml)
-        event_name = self.input.event_yaml.stem
-        if event_name != event.name:
+        if event.name != self.params.event_name:
             raise ValueError(
-                f"Event file name {self.input.event_yaml} does not match event name {event.name}"
+                f"Event file name {self.input.event_yaml.stem} does not match event name {event.name}"
             )
 
         # update sfincs model with event forcing

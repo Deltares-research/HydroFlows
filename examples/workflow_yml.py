@@ -4,7 +4,7 @@ from hydroflows import Workflow
 
 # %% Create a workflow from a YAML file
 wf_name = "sfincs_pluvial"
-# wf_name = "sfincs_pluvial_regions"
+wf_name = "sfincs_pluvial_regions"
 wf = Workflow.from_yaml(f"{wf_name}.yml")
 print(wf)
 

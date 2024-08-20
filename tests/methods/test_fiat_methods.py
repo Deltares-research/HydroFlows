@@ -1,4 +1,5 @@
 """Testing for FIAT rules."""
+
 import os
 import platform
 from pathlib import Path
@@ -62,7 +63,7 @@ def fiat_simple_root(tmp_path: Path, sfincs_region_path):
 
 
 @pytest.fixture()
-def hazard_map_data(sfincs_region_path):
+def hazard_map_data(sfincs_region_path: Path) -> xr.DataArray:
     # Get extent sfincs model
     geom = gpd.read_file(sfincs_region_path).to_crs(4326)
     bbox = list(geom.bounds.loc[0])
@@ -81,7 +82,7 @@ def hazard_map_data(sfincs_region_path):
 
 
 @pytest.fixture()
-def first_hazard_map(tmp_path: Path, hazard_map_data):
+def first_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
     # Set root
     root = Path(tmp_path, "flood_map_rp010.nc")
     hazard_map_data.to_netcdf(root)
@@ -89,14 +90,14 @@ def first_hazard_map(tmp_path: Path, hazard_map_data):
 
 
 @pytest.fixture()
-def second_hazard_map(tmp_path: Path, hazard_map_data):
+def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
     # Set root
     root = Path(tmp_path, "flood_map_rp050.nc")
     (hazard_map_data * 2).to_netcdf(root)
     return root
 
 
-def test_fiat_build(tmp_path: Path, sfincs_region_path):
+def test_fiat_build(tmp_path: Path, sfincs_region_path: Path):
     # Setting input data
     region = sfincs_region_path.as_posix()
     fiat_root = Path(tmp_path, "fiat_model")
@@ -107,7 +108,10 @@ def test_fiat_build(tmp_path: Path, sfincs_region_path):
 
 
 def test_fiat_update_hazard(
-    fiat_simple_root, first_hazard_map, second_hazard_map, event_set_file
+    fiat_simple_root: Path,
+    first_hazard_map: Path,
+    second_hazard_map: Path,
+    event_set_file: Path,
 ):
     # Specify in- and output
     fiat_cfg = Path(fiat_simple_root) / "settings.toml"
@@ -117,20 +121,14 @@ def test_fiat_update_hazard(
         event_set_yaml=event_set_file,
         hazard_maps=[first_hazard_map, second_hazard_map],
     )
-    rule.run()
-
-    # Assert that the hazard file exists
-    assert rule.output.fiat_hazard.exists()
+    rule.run_with_checks()
 
 
-# @pytest.mark.skipif(not FIAT_EXE.exists(), reason="sfincs executable not found")
+@pytest.mark.skipif(not FIAT_EXE.exists(), reason="fiat executable not found")
 @pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
 def test_fiat_run(tmp_path: Path, fiat_simple_root: Path):
     # specify in- and output
     fiat_cfg = Path(fiat_simple_root) / "settings.toml"
     # Setup the method
     rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=FIAT_EXE)
-    rule.run()
-
-    # Assert the output
-    pass
+    rule.run_with_checks()

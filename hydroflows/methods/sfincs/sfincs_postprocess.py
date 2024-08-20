@@ -34,6 +34,9 @@ class Params(Parameters):
     hazard_root: Path
     """The path to the root directory where the hazard output files are saved."""
 
+    event_name: str
+    """The name of the event."""
+
     depth_min: float = 0.05
     """Minimum depth to consider as "flooding."""
 
@@ -49,7 +52,8 @@ class SfincsPostprocess(Method):
     def __init__(
         self,
         sfincs_map: Path,
-        sfincs_subgrid_dep: Optional[Path] = None,
+        sfincs_subgrid_dep: Path,
+        event_name: Optional[str] = None,
         hazard_root: Path = "data/output/hazard",
         **params,
     ) -> None:
@@ -59,9 +63,8 @@ class SfincsPostprocess(Method):
         ----------
         sfincs_map : Path
             The path to the SFINCS model output sfincs_map.nc file.
-        sfincs_subgrid_dep : Path, optional
+        sfincs_subgrid_dep : Path
             The path to the highres dem file to use for downscaling the results.
-            By default None and set to the subgrid/dep.tif file in the SFINCS basemodel folder.
         hazard_root : Path, optional
             The path to the root directory where the hazard output files are saved,
             by default "data/output/hazard".
@@ -75,30 +78,22 @@ class SfincsPostprocess(Method):
         :py:class:`sfincs_postprocess Output <hydroflows.methods.sfincs.sfincs_postprocess.Output>`
         :py:class:`sfincs_postprocess Params <hydroflows.methods.sfincs.sfincs_postprocess.Params>`
         """
-        self.params: Params = Params(hazard_root=hazard_root, **params)
-
-        if sfincs_subgrid_dep is None:
-            # assume basemodel is two levels up from sfincs_map
-            basemodel_root = Path(sfincs_map).parent.parent.parent
-            sfincs_subgrid_dep = basemodel_root / "subgrid" / "dep_subgrid.tif"
         self.input: Input = Input(
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
         )
 
-        # set the output file;
-        # NOTE: we assume the sfincs_map parent folder is the event name
-        event_name = self.input.sfincs_map.parent.stem
+        if event_name is None:  # event name is the stem of the event file
+            event_name = self.input.sfincs_map.parent.stem
+        self.params: Params = Params(
+            hazard_root=hazard_root, event_name=event_name, **params
+        )
+
         self.output: Output = Output(
             hazard_tif=self.params.hazard_root / f"{event_name}.tif"
         )
 
-        # TODO create output event file
-
     def run(self):
         """Run the postprocessing from SFINCS netcdf to inundation map."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # unpack input, output and params
         root = self.input.sfincs_map.parent
         sfincs_subgrid_dep = self.input.sfincs_subgrid_dep
