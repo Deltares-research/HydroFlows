@@ -96,6 +96,9 @@ hydroflows = "hydroflows.cli.main:cli"
 testpaths = [
     "test",
 ]
+markers = [
+    "requires_data: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.coverage.run]
 branch = true

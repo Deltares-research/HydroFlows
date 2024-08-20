@@ -264,7 +264,7 @@ class WflowDesignHydro(ExpandMethod):
         ).transpose(time_dim, "peak", index_dim)
 
         # calculate the mean design hydrograph per rp
-        q_hydrograph = da_q_hydrograph.mean("peak") * da_rps
+        q_hydrograph: xr.DataArray = da_q_hydrograph.mean("peak") * da_rps
 
         # make sure there are no negative values
         q_hydrograph = xr.where(q_hydrograph < 0, 0, q_hydrograph)
@@ -276,26 +276,23 @@ class WflowDesignHydro(ExpandMethod):
         q_hydrograph = q_hydrograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.event_names, q_hydrograph.rps.values):
-            # save q_rp as csv files
-            # name = f"q_event{int(i+1):02d}"
-            forcing_fn = Path(root, f"{name}.csv")
-            event_fn = str(self.output.event_yaml).format(event=name)
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_fn)
+        for name, rp in zip(self.params.event_names, q_hydrograph["rps"].values):
+            # save q_rp as csv file
+            forcing_file = Path(root, f"{name}.csv")
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            # save event yaml file
+            event_file = str(self.output.event_yaml).format(event=name)
             event = Event(
                 name=name,
                 forcings=[{"type": "discharge", "path": f"{name}.csv"}],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(str(self.output.event_yaml).format(event=name))
-            event.to_yaml(event_fn)
-            events_list.append(event)
+            event.to_yaml(event_file)
+            events_list.append({"name": name, "path": event_file})
 
-        # make an event set
-        event_set = EventSet(
-            events=events_list,
-        )
+        # make and save event set yaml file
+        event_set = EventSet(events=events_list)
         event_set.to_yaml(self.output.event_set)
 
         # save plots

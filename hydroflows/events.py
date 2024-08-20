@@ -2,7 +2,7 @@
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 import geopandas as gpd
 import pandas as pd
@@ -319,7 +319,7 @@ class EventSet(BaseModel):
         )
     """
 
-    events: List[dict]
+    events: List[Dict]
     """The list of events. Each event is a dictionary with a file and reference to an event file. """
 
     @classmethod

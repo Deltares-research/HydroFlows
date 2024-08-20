@@ -189,7 +189,7 @@ class PluvialDesignEvents(ExpandMethod):
         )
 
         # Get design events hyetograph for each return period
-        p_hyetograph = get_hyetograph(
+        p_hyetograph: xr.DataArray = get_hyetograph(
             ds_idf["return_values"], dt=1, length=event_duration
         )
 
@@ -216,25 +216,21 @@ class PluvialDesignEvents(ExpandMethod):
         events_list = []
         for name, rp in zip(self.output.event_names, p_hyetograph.rps.values):
             # save p_rp as csv files
-            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(
-                str(self.output.event_csv).format(event=name)
-            )
-
-            # save event description file
+            forcing_file = str(self.output.event_csv).format(event=name)
+            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            # save event description yaml file
+            event_file = str(self.output.event_yaml).format(event=name)
             event = Event(
                 name=name,
                 forcings=[{"type": "rainfall", "path": f"{name}.csv"}],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event_file = str(self.output.event_yaml).format(event=name)
             event.to_yaml(event_file)
             events_list.append({"name": name, "path": event_file})
 
-        # make a data catalog
-        event_set = EventSet(
-            events=events_list,
-        )
+        # make and save event set yaml file
+        event_set = EventSet(events=events_list)
         event_set.to_yaml(self.output.event_set)
 
 
