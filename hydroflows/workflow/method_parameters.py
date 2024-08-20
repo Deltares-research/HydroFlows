@@ -33,7 +33,7 @@ class Parameters(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _resolve_refs(cls, data: Dict):
+    def _resolve_refs(cls, data: Dict) -> Dict:
         """Resolve the references to other parameters."""
         if isinstance(data, dict):
             for key, value in data.items():

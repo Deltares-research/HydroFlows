@@ -7,6 +7,7 @@ import numpy as np
 import pooch
 import pytest
 import rasterio
+import rasterio.transform
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
@@ -87,17 +88,17 @@ def rio_region(test_data_dir) -> Path:
 
 
 @pytest.fixture()
-def tmp_csv(tmpdir):
+def tmp_csv(tmp_path: Path) -> Path:
     """Create a temporary csv file."""
-    csv_file = tmpdir.join("file.csv")
-    csv_file.write("")
+    csv_file = tmp_path / "file.csv"
+    csv_file.write_text("")
     return csv_file
 
 
 @pytest.fixture()
-def tmp_geojson(tmpdir):
+def tmp_geojson(tmp_path: Path) -> Path:
     """Create a temporary GeoJSON file."""
-    geojson_file = tmpdir.join("file.geojson")
+    geojson_file = tmp_path / "file.geojson"
     ids = ["id_1", "id_2", "id_3"]
     xs = [0, 1, 2]
     ys = [0, 1, 2]
@@ -129,9 +130,9 @@ def tmp_geojson(tmpdir):
 
 
 @pytest.fixture()
-def tmp_tif(tmpdir):
+def tmp_tif(tmp_path: Path) -> Path:
     """Create a temporary tif file."""
-    tif_file = tmpdir.join("file.tif")
+    tif_file = tmp_path / "file.tif"
 
     # Define some parameters
     width = 100

@@ -72,7 +72,7 @@ def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
         data_root=str(tmp_path / "data"),
         filename="era5.nc",
         start_date="2023-11-01",
-        end_data="2023-12-31",
+        end_date="2023-12-31",
     )
     assert get_era5.output.precip_nc == tmp_path / "data" / "era5.nc"
     get_era5.run_with_checks()

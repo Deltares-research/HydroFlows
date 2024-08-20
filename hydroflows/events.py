@@ -10,11 +10,12 @@ import xarray as xr
 import yaml
 from pydantic import (
     BaseModel,
-    DirectoryPath,
     Field,
     FilePath,
     field_validator,
+    model_validator,
 )
+from typing_extensions import TypedDict
 
 __all__ = ["EventSet"]
 
@@ -54,7 +55,7 @@ class Forcing(BaseModel):
         """Read the CSV file."""
         # read csv; check for datetime index
         # TODO: we could use pandera for more robust data validation
-        df = pd.read_csv(
+        df: pd.DataFrame = pd.read_csv(
             self.path, index_col=index_col, parse_dates=parse_dates, **kwargs
         )
         if not df.index.dtype == "datetime64[ns]":
@@ -281,17 +282,7 @@ class Event(BaseModel):
         self.set_time_range_from_forcings()
 
 
-class Roots(BaseModel):
-    """Dictionary of directories for event files."""
-
-    root_forcings: Optional[DirectoryPath] = None
-    """Root directory for forcing data."""
-
-    root_hazards: Optional[DirectoryPath] = None
-    """Root directory for hazard data."""
-
-    root_impacts: Optional[DirectoryPath] = None
-    """Root directory for impact data."""
+EventDict = TypedDict("EventDict", {"name": str, "path": Path})
 
 
 class EventSet(BaseModel):
@@ -319,19 +310,31 @@ class EventSet(BaseModel):
         )
     """
 
-    events: List[Dict]
-    """The list of events. Each event is a dictionary with a file and reference to an event file. """
+    root: Optional[Path] = None
+    """The root directory for the event files."""
+
+    events: List[EventDict]
+    """The list of events. Each event is a dictionary with an event name and reference to an event file. """
+
+    @model_validator(mode="before")
+    @classmethod
+    def _set_paths(cls, data: Dict) -> Dict:
+        """Set the paths to relative to root if not absolute."""
+        if "root" in data:
+            root = Path(data["root"])
+            for event in data["events"]:
+                path = event["path"]
+                if not Path(path).is_absolute():
+                    event["path"] = root / path
+        return data
 
     @classmethod
-    def from_yaml(cls, path: FilePath) -> "EventSet":
+    def from_yaml(cls, path: Path) -> "EventSet":
         """Create an EventSet from a YAML file."""
         with open(path, "r") as file:
             yaml_dict = yaml.safe_load(file)
-        # make all paths absolute
-        root = path.parent
-        for event in yaml_dict["events"]:
-            event["path"] = root / event["path"]
-
+        if "root" not in yaml_dict:
+            yaml_dict["root"] = Path(path).parent
         return cls(**yaml_dict)
 
     def to_dict(self, **kwargs) -> dict:
@@ -368,10 +371,7 @@ class EventSet(BaseModel):
         """
         for event in self.events:
             if event["name"] == name:
-                if Path(event["path"]).is_absolute():
-                    event_file = Path(event["path"])
-                else:
-                    event_file = self.root / event["path"]
+                event_file = Path(event["path"])
                 return Event.from_yaml(path=event_file)
 
         if raise_error:

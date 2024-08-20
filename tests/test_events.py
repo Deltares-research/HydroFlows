@@ -1,10 +1,12 @@
+from pathlib import Path
+
 import pytest
 from pydantic import ValidationError
 
 from hydroflows.events import Event, EventSet, Forcing, Hazard, Impact
 
 
-def test_forcings(tmp_csv):
+def test_forcings(tmp_csv: Path):
     """Test the Forcing class."""
     forcings = Forcing(type="rainfall", path=str(tmp_csv))
     assert forcings.type == "rainfall"
@@ -14,7 +16,7 @@ def test_forcings(tmp_csv):
         Forcing(type="temperature", path=tmp_csv)
 
 
-def test_hazard(tmp_tif):
+def test_hazard(tmp_tif: Path):
     """Test the Forcing class."""
     hazard = Hazard(type="depth", path=str(tmp_tif))
     assert hazard.type == "depth"
@@ -25,7 +27,7 @@ def test_hazard(tmp_tif):
 
 
 @pytest.mark.parametrize("file", ["tmp_tif", "tmp_geojson"])
-def test_impact(file, request):
+def test_impact(file: str, request: pytest.FixtureRequest):
     file = request.getfixturevalue(file)
     """Test the Forcing class."""
     impact = Impact(type="affected", path=str(file))
@@ -36,7 +38,7 @@ def test_impact(file, request):
         Forcing(type="unsupported_variable", path=file)
 
 
-def test_event(tmp_csv):
+def test_event(tmp_csv: Path):
     """Test the Event class."""
     event = Event(
         name="event",
@@ -48,9 +50,9 @@ def test_event(tmp_csv):
     assert event.probability == 0.5
 
 
-def test_event_set(test_data_dir):
+def test_event_set(test_data_dir: Path):
     event_set = EventSet(
-        root=test_data_dir,
+        root=str(test_data_dir),
         events=[
             {"name": "rp050", "path": "event_rp050.yml"},
             {"name": "rp010", "path": "event_rp010.yml"},
@@ -61,6 +63,6 @@ def test_event_set(test_data_dir):
     assert isinstance(event, Event)
 
 
-def test_event_set_io(event_set):
+def test_event_set_io(event_set: EventSet):
     event = event_set.get_event("rp050")
     assert isinstance(event, Event)
