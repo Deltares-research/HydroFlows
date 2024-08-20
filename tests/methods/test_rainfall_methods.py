@@ -36,20 +36,20 @@ def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Pat
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     precip_time_series_nc.to_netcdf(fn_time_series_nc)
 
-    fn_event_set = Path(tmp_path, "data", "event_set.yml")  # used for assertion
-    event_root = fn_event_set.parent
     rps = [1, 10, 100]
-
     p_events = PluvialDesignEvents(
         precip_nc=str(fn_time_series_nc),
+        event_root=Path(tmp_path, "data"),
         rps=rps,
-        event_root=event_root,
     )
+
     assert len(p_events.params.event_names) == len(rps)
 
     p_events.run_with_checks()
 
+    # TODO separate this into a new test function?
     # read data back and check if all event paths are absolute and existing, length is correct
+    fn_event_set = p_events.output.event_set_yaml
     event_set = EventSet.from_yaml(fn_event_set)
     assert isinstance(event_set.events, list)
     assert len(event_set.events) == len(rps)

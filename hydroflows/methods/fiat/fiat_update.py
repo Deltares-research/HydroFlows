@@ -20,7 +20,7 @@ class Input(Parameters):
 
     event_set_yaml: Path
     """The path to the event description file, used to filter hazard maps,
-    see also :py:class:`hydroflows.workflows.events.Event`."""
+    see also :py:class:`hydroflows.events.Event`."""
 
     # single path should also be allowed for validation !
     hazard_maps: Union[Path, List[Path]]

@@ -6,7 +6,7 @@ EVENT=["p_event01", "p_event02", "p_event03"]
 
 rule all:
     input:
-        fiat_out="models/fiat/simulations/event_set/output/spatial.gpkg",
+        fiat_out="models/fiat/simulations/pluvial_events/output/spatial.gpkg",
 
 rule sfincs_build:
     input:
@@ -43,15 +43,12 @@ rule fiat_build:
 rule get_ERA5_rainfall:
     input:
         region=rules.sfincs_build.output.sfincs_region,
-    params:
-        data_input_root="data/input",
     output:
         precip_nc="data/input/era5_precip.nc",
     shell:
         """
         hydroflows method get_ERA5_rainfall \
         region="{input.region}" \
-        data_input_root="{params.data_input_root}" \
         """
 
 rule pluvial_design_events:
@@ -64,7 +61,7 @@ rule pluvial_design_events:
     output:
         event_yaml=expand("data/events/rainfall/{event}.yml", event=EVENT),
         event_csv=expand("data/events/rainfall/{event}.csv", event=EVENT),
-        event_set="data/events/rainfall/event_set.yml",
+        event_set_yaml="data/events/rainfall/pluvial_events.yml",
     shell:
         """
         hydroflows method pluvial_design_events \
@@ -125,11 +122,11 @@ rule sfincs_postprocess:
 rule fiat_update_hazard:
     input:
         fiat_cfg=rules.fiat_build.output.fiat_cfg,
-        event_set_yaml=rules.pluvial_design_events.output.event_set,
+        event_set_yaml=rules.pluvial_design_events.output.event_set_yaml,
         hazard_maps=expand("data/output/hazard/{event}.tif", event=EVENT),
     output:
-        fiat_hazard="models/fiat/simulations/event_set/hazard.nc",
-        fiat_out_cfg="models/fiat/simulations/event_set/settings.toml",
+        fiat_hazard="models/fiat/simulations/pluvial_events/hazard.nc",
+        fiat_out_cfg="models/fiat/simulations/pluvial_events/settings.toml",
     shell:
         """
         hydroflows method fiat_update_hazard \
@@ -144,7 +141,7 @@ rule fiat_run:
     params:
         fiat_bin=config["fiat_exe"],
     output:
-        fiat_out="models/fiat/simulations/event_set/output/spatial.gpkg",
+        fiat_out="models/fiat/simulations/pluvial_events/output/spatial.gpkg",
     shell:
         """
         hydroflows method fiat_run \
