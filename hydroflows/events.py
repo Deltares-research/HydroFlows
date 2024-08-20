@@ -184,7 +184,7 @@ class Event(BaseModel):
     --------
     The event can be created as follows::
 
-        from hydroflows.workflows.events import Event
+        from hydroflows.events import Event
 
         event = Event(
             name="event",
@@ -292,13 +292,13 @@ class EventSet(BaseModel):
     --------
     The event set can be created from a YAML file as follows::
 
-        from hydroflows.workflows.events import EventSet
+        from hydroflows.events import EventSet
 
         EventSet.from_yaml("path/to/eventset.yaml")
 
     The event set can be created from a dictionary as follows::
 
-        from hydroflows.workflows.events import EventSet
+        from hydroflows.events import EventSet
 
         EventSet(
             events=[
@@ -411,7 +411,7 @@ class EventSet(BaseModel):
         --------
         The event data can be loaded as follows::
 
-            from hydroflows.workflows.events import EventSet
+            from hydroflows.events import EventSet
 
             event_set = EventSet.from_yaml("path/to/events.yaml")
             event = event_set.get_event_data("event1")

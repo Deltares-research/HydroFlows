@@ -33,7 +33,7 @@ rules:
   - method: fiat_update_hazard
     kwargs:
       fiat_cfg: $rules.fiat_build.output.fiat_cfg
-      event_set_yaml: $rules.pluvial_design_events.output.event_set
+      event_set_yaml: $rules.pluvial_design_events.output.event_set_yaml
       hazard_maps: $rules.sfincs_postprocess.output.hazard_tif
   - method: fiat_run
     kwargs:
