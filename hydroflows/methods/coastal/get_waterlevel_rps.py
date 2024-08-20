@@ -6,29 +6,29 @@ from typing import Literal
 import numpy as np
 import xarray as xr
 from hydromt.stats import fit_extremes, get_peaks, get_return_value
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfInt
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetWaterlevelRPS"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`GetWaterlevelRPS` method."""
 
     waterlevel_timeseries: Path
     """Path to total waterlevel timeseries"""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`GetWaterlevelRPS` method."""
 
     rps_nc: Path
     """Path to return period and values dataset."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Params for the :py:class:`GetWaterlevelRPS` method."""
 
     rps: ListOfInt = [1, 2, 5, 10, 20, 50, 100]

@@ -1,39 +1,46 @@
 """Get return periods from COAST-RP data."""
 
+import platform
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel
 from shapely import Point
 
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetCoastRP"]
 
+PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
+COASTRP_PATH = Path(
+    PDRIVE, "11209169-003-up2030", "data", "WATER_LEVEL", "COAST-RP", "COAST-RP.nc"
+)
 
-class Input(BaseModel):
+
+class Input(Parameters):
     """Input parameters for the :py:class:`GetCoastRP` method."""
 
     region: Path
     """Path to region geometry file."""
 
-    coastrp_fn: Path
+    coastrp_fn: Path = COASTRP_PATH
     """Path to full COAST-RP dataset."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`GetCoastRP` method."""
 
     rps_nc: Path
     """Path to return period and values dataset."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Params parameters for the :py:class:`GetCoastRP` method."""
 
-    pass
+    data_root: Path = Path("data/input/forcing_data/waterlevel")
+    """The folder root where output is stored."""
 
 
 class GetCoastRP(Method):
@@ -44,7 +51,6 @@ class GetCoastRP(Method):
     def __init__(
         self,
         region: Path,
-        coastrp_fn: Path,
         data_root: Path = Path("data/input/forcing_data/waterlevel"),
     ) -> None:
         """Create and validate a GetCoastRP instance.
@@ -65,10 +71,10 @@ class GetCoastRP(Method):
         :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Output>`
         :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
         """
-        self.input: Input = Input(region=region, coastrp_fn=coastrp_fn)
-        self.params: Params = Params()
+        self.input: Input = Input(region=region)
+        self.params: Params = Params(data_root=data_root)
 
-        rps_fn = data_root / "waterlevel_rps.nc"
+        rps_fn = self.params.data_root / "waterlevel_rps.nc"
         self.output: Output = Output(rps_nc=rps_fn)
 
     def run(self) -> None:

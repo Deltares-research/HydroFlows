@@ -1,6 +1,7 @@
 """Get GTSM data method."""
 
 import glob
+import platform
 from datetime import datetime
 from pathlib import Path
 from shutil import rmtree
@@ -8,14 +9,19 @@ from shutil import rmtree
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel
 
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetGTSMData"]
 
+PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
+GTSM_ROOT = Path(
+    PDRIVE, "archivedprojects", "11205028-c3s_435", "01_data", "01_Timeseries"
+)
 
-class Input(BaseModel):
+
+class Input(Parameters):
     """Input parameters for the :py:class:`GetGTSMData` method."""
 
     region: Path
@@ -25,7 +31,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`GetGTSMData` method."""
 
     waterlevel_nc: Path
@@ -38,7 +44,7 @@ class Output(BaseModel):
     """Path to output file containing tide .nc timeseries"""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Params for the :py:class:`GetGTSMData` method."""
 
     start_time: datetime = datetime(1979, 1, 1)
@@ -51,7 +57,7 @@ class Params(BaseModel):
     """Time step of the output timeseries"""
 
     # TODO: Do something about hard coded ref to p-drive
-    gtsm_loc: Path = Path(r"p:/archivedprojects/11205028-c3s_435/01_data/01_Timeseries")
+    gtsm_loc: Path = GTSM_ROOT
     """
     Location of GTSM data.
     Points to internal Deltares storage by default.

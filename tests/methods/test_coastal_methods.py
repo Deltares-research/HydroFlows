@@ -1,22 +1,21 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
 
-from hydroflows.methods import (
-    CoastalDesignEvents,
-    GetCoastRP,
-    GetGTSMData,
-    GetWaterlevelRPS,
-    TideSurgeTimeseries,
-)
+from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
+from hydroflows.methods.coastal.create_tide_surge_timeseries import TideSurgeTimeseries
+from hydroflows.methods.coastal.get_coast_rp import COASTRP_PATH, GetCoastRP
+from hydroflows.methods.coastal.get_gtsm_data import GTSM_ROOT, GetGTSMData
+from hydroflows.methods.coastal.get_waterlevel_rps import GetWaterlevelRPS
 
 
 @pytest.fixture()
-def waterlevel_timeseries():
+def waterlevel_timeseries() -> xr.DataArray:
     dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
 
     np.random.seed(1234)
@@ -33,8 +32,8 @@ def waterlevel_timeseries():
 
 
 @pytest.fixture()
-def tide_surge_timeseries():
-    dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
+def tide_surge_timeseries() -> Tuple[xr.DataArray, xr.DataArray]:
+    dates = pd.date_range(start="2000-01-01", end="2005-12-31", freq="10min")
 
     np.random.seed(1234)
     data1 = np.random.rand(len(dates))
@@ -48,7 +47,7 @@ def tide_surge_timeseries():
 
 
 @pytest.fixture()
-def rps_nc():
+def waterlevel_rps() -> xr.Dataset:
     rps = xr.Dataset(
         coords=dict(rps=("rps", [1, 10, 100])),
         data_vars=dict(return_values=(["rps"], np.array([0.5, 1, 1.5]))),
@@ -57,7 +56,8 @@ def rps_nc():
     return rps
 
 
-def test_get_gtsm_data(rio_region, tmp_path):
+@pytest.mark.skipif(not GTSM_ROOT.exists(), reason="No access to GTSM data")
+def test_get_gtsm_data(rio_region: Path, tmp_path: Path):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
 
@@ -71,7 +71,9 @@ def test_get_gtsm_data(rio_region, tmp_path):
     rule.run_with_checks()
 
 
-def test_create_tide_surge_timeseries(waterlevel_timeseries, tmp_path):
+def test_create_tide_surge_timeseries(
+    waterlevel_timeseries: xr.DataArray, tmp_path: Path
+):
     data_dir = Path(tmp_path, "waterlevel")
     data_dir.mkdir()
     waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
@@ -85,17 +87,16 @@ def test_create_tide_surge_timeseries(waterlevel_timeseries, tmp_path):
     rule.run_with_checks()
 
 
-def test_get_coast_rp(rio_region, tmp_path):
+@pytest.mark.skipif(not COASTRP_PATH.exists(), reason="No access to COASTRP data")
+def test_get_coast_rp(rio_region: Path, tmp_path: Path):
     data_dir = Path(tmp_path, "coast_rp")
-    # TODO: Fix hard coded path, include coast-rp in test data?
-    coast_rp_fn = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\COAST-RP\COAST-RP.nc")
 
-    rule = GetCoastRP(region=rio_region, data_root=data_dir, coastrp_fn=coast_rp_fn)
+    rule = GetCoastRP(region=rio_region, data_root=data_dir)
 
     rule.run_with_checks()
 
 
-def test_get_waterlevel_rps(waterlevel_timeseries, tmp_path):
+def test_get_waterlevel_rps(waterlevel_timeseries: xr.DataArray, tmp_path: Path):
     data_dir = Path(tmp_path, "waterlevel")
     data_dir.mkdir()
     waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
@@ -108,15 +109,25 @@ def test_get_waterlevel_rps(waterlevel_timeseries, tmp_path):
     rule.run_with_checks()
 
 
-def test_coastal_design_events(tide_surge_timeseries, rps_nc, tmp_path):
+def test_coastal_design_events(
+    tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    waterlevel_rps: xr.Dataset,
+    tmp_path: Path,
+):
     data_dir = Path(tmp_path, "coastal_rps")
     data_dir.mkdir()
     t, s = tide_surge_timeseries
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
 
-    rps_nc.to_netcdf(data_dir / "waterlevel_rps.nc")
+    waterlevel_rps.to_netcdf(data_dir / "waterlevel_rps.nc")
 
-    rule = CoastalDesignEvents(data_root=data_dir, event_folder=data_dir / "events")
+    rule = CoastalDesignEvents(
+        surge_timeseries=data_dir / "surge_timeseries.nc",
+        tide_timeseries=data_dir / "tide_timeseries.nc",
+        waterlevel_rps=data_dir / "waterlevel_rps.nc",
+        event_root=str(data_dir / "events"),
+        rps=waterlevel_rps["rps"].values.tolist(),
+    )
 
     rule.run_with_checks()

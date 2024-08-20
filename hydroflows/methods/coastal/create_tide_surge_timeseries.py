@@ -6,21 +6,21 @@ import hatyan
 import pandas as pd
 import xarray as xr
 from dateutil.relativedelta import relativedelta
-from pydantic import BaseModel
 
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["TideSurgeTimeseries"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`TideSurgeTimeseries` method."""
 
     waterlevel_timeseries: Path
     """Path to waterlevel timeseries to derive tide and surge from."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`TideSurgeTimeseries` method."""
 
     surge_timeseries: Path
@@ -30,7 +30,7 @@ class Output(BaseModel):
     """Path to output tide timeseries."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Params for the :py:class:`TideSurgeTimeseries` method."""
 
     plot_fig: bool = True
