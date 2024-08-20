@@ -47,6 +47,8 @@ class Output(Parameters):
 class Params(Parameters):
     """Params for the :py:class:`GetGTSMData` method."""
 
+    data_root: Path = Path("data/input")
+
     start_time: datetime = datetime(1979, 1, 1)
     """Start date for the fetched timeseries"""
 
@@ -78,7 +80,7 @@ class GetGTSMData(Method):
     def __init__(
         self,
         region: Path,
-        data_root: Path = Path("data/input/forcing_data/waterlevel"),
+        data_root: Path = Path("data/input"),
         **params,
     ) -> None:
         """Create and validate a GetGTSMData instance.
@@ -98,11 +100,11 @@ class GetGTSMData(Method):
         :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Params>`
         """
         self.input: Input = Input(region=region)
-        self.params: Params = Params(**params)
+        self.params: Params = Params(data_root=data_root, **params)
 
-        waterlevel_path = data_root / "gtsm_waterlevel.nc"
-        surge_path = data_root / "gtsm_surge.nc"
-        tide_path = data_root / "gtsm_tide.nc"
+        waterlevel_path = self.params.data_root / "gtsm_waterlevel.nc"
+        surge_path = self.params.data_root / "gtsm_surge.nc"
+        tide_path = self.params.data_root / "gtsm_tide.nc"
         self.output: Output = Output(
             waterlevel_nc=waterlevel_path, surge_nc=surge_path, tide_nc=tide_path
         )

@@ -33,6 +33,8 @@ class Output(Parameters):
 class Params(Parameters):
     """Params for the :py:class:`TideSurgeTimeseries` method."""
 
+    data_root: Path = Path("data/input")
+
     plot_fig: bool = True
     """Make tidal component and timeseries plots.
     Note: the timeseries difference plot is -1*surge timeseries"""
@@ -54,7 +56,7 @@ class TideSurgeTimeseries(Method):
     def __init__(
         self,
         waterlevel_timeseries: Path,
-        data_root: Path = Path("data/input/forcing/waterlevel"),
+        data_root: Path = Path("data/input"),
         **params,
     ) -> None:
         """Create and validate TideSurgeTimeseries instance.
@@ -73,10 +75,10 @@ class TideSurgeTimeseries(Method):
         :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
         """
         self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
-        self.params: Params = Params(**params)
+        self.params: Params = Params(data_root=data_root, **params)
 
-        surge_out = data_root / "surge_timeseries.nc"
-        tide_out = data_root / "tide_timeseries.nc"
+        surge_out = self.params.data_root / "surge_timeseries.nc"
+        tide_out = self.params.data_root / "tide_timeseries.nc"
         self.output: Output = Output(
             tide_timeseries=tide_out, surge_timeseries=surge_out
         )
