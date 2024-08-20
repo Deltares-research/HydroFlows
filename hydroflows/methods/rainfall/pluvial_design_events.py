@@ -214,7 +214,7 @@ class PluvialDesignEvents(ExpandMethod):
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.event_names, p_hyetograph.rps.values):
+        for name, rp in zip(self.params.event_names, p_hyetograph["rps"].values):
             # save p_rp as csv files
             forcing_file = str(self.output.event_csv).format(event=name)
             p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)

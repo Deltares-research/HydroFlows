@@ -78,6 +78,8 @@ rule sfincs_update_forcing:
     input:
         sfincs_inp=rules.sfincs_build.output.sfincs_inp,
         event_yaml=rules.pluvial_design_events.output.event_yaml,
+    params:
+        event_name="{event}",
     output:
         sfincs_out_inp="models/sfincs/simulations/{event}/sfincs.inp",
     shell:
@@ -85,6 +87,7 @@ rule sfincs_update_forcing:
         hydroflows method sfincs_update_forcing \
         sfincs_inp="{input.sfincs_inp}" \
         event_yaml="{input.event_yaml}" \
+        event_name="{params.event_name}" \
         """
 
 rule sfincs_run:
@@ -107,6 +110,7 @@ rule sfincs_postprocess:
         sfincs_subgrid_dep=rules.sfincs_build.output.sfincs_subgrid_dep,
     params:
         hazard_root="data/output/hazard",
+        event_name="{event}",
     output:
         hazard_tif="data/output/hazard/{event}.tif",
     shell:
@@ -115,6 +119,7 @@ rule sfincs_postprocess:
         sfincs_map="{input.sfincs_map}" \
         sfincs_subgrid_dep="{input.sfincs_subgrid_dep}" \
         hazard_root="{params.hazard_root}" \
+        event_name="{params.event_name}" \
         """
 
 rule fiat_update_hazard:
