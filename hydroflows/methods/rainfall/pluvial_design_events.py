@@ -1,22 +1,23 @@
 """Pluvial design events method."""
 
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat, ListOfInt
-from hydroflows.events import Event, EventCatalog
-from hydroflows.methods.method import ExpandMethod
+from hydroflows.events import Event, EventSet
+from hydroflows.workflow.method import ExpandMethod
+from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.reference import Ref
 
 __all__ = ["PluvialDesignEvents"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for :py:class:`PluvialDesignEvents` method."""
 
     precip_nc: Path
@@ -29,11 +30,8 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
-
-    events: List[str]
-    """List of event names derived from the design events."""
 
     event_yaml: Path
     """The path to the event description file,
@@ -42,18 +40,27 @@ class Output(BaseModel):
     event_csv: Path
     """The path to the event csv timeseries file"""
 
-    event_catalog: Path
-    """The path to the event catalog yml file,
-    see also :py:class:`hydroflows.workflows.events.EventCatalog`.
+    event_set: Path
+    """The path to the event set yml file,
+    see also :py:class:`hydroflows.workflows.events.EventSet`.
 
     """
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for :py:class:`PluvialDesignEvents` method."""
 
     event_root: Path
     """Root folder to save the derived design events."""
+
+    rps: ListOfFloat
+    """Return periods of interest."""
+
+    event_names: List[str]
+    """List of event names associated with return periods."""
+
+    wildcard: str = "event"
+    """The wildcard key for expansion over the design events."""
 
     durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
     """Intensity Duration Frequencies provided as multiply of the data time step."""
@@ -76,9 +83,6 @@ class Params(BaseModel):
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
 
-    rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
-    """Return periods of interest."""
-
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
@@ -88,10 +92,15 @@ class PluvialDesignEvents(ExpandMethod):
     """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
-    expand_refs: dict = {"event": "events"}
 
     def __init__(
-        self, precip_nc: Path, event_root: Path = "data/events/rainfall", **params
+        self,
+        precip_nc: Path,
+        event_root: Path = "data/events/rainfall",
+        rps: Optional[ListOfFloat] = None,
+        event_names: Optional[List[str]] = None,
+        wildcard: str = "event",
+        **params,
     ) -> None:
         """Create and validate a PluvialDesignEvents instance.
 
@@ -101,6 +110,12 @@ class PluvialDesignEvents(ExpandMethod):
             The file path to the rainfall time series in NetCDF format.
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/rainfall".
+        rps : List[float], optional
+            Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
+        event_names : List[str], optional
+            List of event names for the design events, by "p_event{i}", where i is the event number.
+        wildcard : str, optional
+            The wildcard key for expansion over the design events, by default "event".
         **params
             Additional parameters to pass to the PluvialDesignEvents Params instance.
 
@@ -110,14 +125,31 @@ class PluvialDesignEvents(ExpandMethod):
         :py:class:`PluvialDesignEvents Output <hydroflows.methods.rainfall.pluvial_design_events.Output>`
         :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
         """
-        self.params: Params = Params(event_root=event_root, **params)
-        self.input: Input = Input(precip_nc=precip_nc)
-        self.output: Output = Output(
-            events=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
-            event_yaml=Path(event_root, "{event}.yml"),
-            event_csv=Path(event_root, "{event}.csv"),
-            event_catalog=Path(event_root, "event_catalog.yml"),
+        if rps is None:
+            rps = [1, 2, 5, 10, 20, 50, 100]
+        if event_names is None:
+            event_names = Ref(
+                ref=f"$wildcards.{wildcard}",
+                value=[f"p_event{int(i+1):02d}" for i in range(len(rps))],
+            )
+        elif len(event_names) != len(rps):
+            raise ValueError("event_names should have the same length as rps")
+        self.params: Params = Params(
+            event_root=event_root,
+            rps=rps,
+            event_names=event_names,
+            wildcard=wildcard,
+            **params,
         )
+        self.input: Input = Input(precip_nc=precip_nc)
+        wc = "{" + wildcard + "}"
+        self.output: Output = Output(
+            event_yaml=self.params.event_root / f"{wc}.yml",
+            event_csv=self.params.event_root / f"{wc}.csv",
+            event_set=self.params.event_root / "event_set.yml",
+        )
+        # set wildcards and its expand values
+        self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
         """Run the Pluvial design events method."""
@@ -157,14 +189,14 @@ class PluvialDesignEvents(ExpandMethod):
         )
 
         # Get design events hyetograph for each return period
-        p_hyetograph = get_hyetograph(
+        p_hyetograph: xr.DataArray = get_hyetograph(
             ds_idf["return_values"], dt=1, length=event_duration
         )
 
         # make sure there are no negative values
         p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
 
-        root = self.output.event_catalog.parent
+        root = self.output.event_set.parent
 
         # save plots
         if self.params.plot_fig:
@@ -182,28 +214,24 @@ class PluvialDesignEvents(ExpandMethod):
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.events, p_hyetograph.rps.values):
+        for name, rp in zip(self.params.event_names, p_hyetograph["rps"].values):
             # save p_rp as csv files
-            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(
-                str(self.output.event_csv).format(event=name)
-            )
-
-            # save event description file
+            forcing_file = str(self.output.event_csv).format(event=name)
+            p_hyetograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            # save event description yaml file
+            event_file = str(self.output.event_yaml).format(event=name)
             event = Event(
                 name=name,
                 forcings=[{"type": "rainfall", "path": f"{name}.csv"}],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(str(self.output.event_yaml).format(event=name))
-            events_list.append(event)
+            event.to_yaml(event_file)
+            events_list.append({"name": name, "path": event_file})
 
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
-            events=events_list,
-        )
-        event_catalog.to_yaml(self.output.event_catalog)
+        # make and save event set yaml file
+        event_set = EventSet(events=events_list)
+        event_set.to_yaml(self.output.event_set)
 
 
 def _plot_hyetograph(p_hyetograph, path: Path) -> None:

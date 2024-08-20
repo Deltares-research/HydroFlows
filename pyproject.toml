@@ -25,7 +25,6 @@ dependencies = [
   "tqdm",                     # progress bar
   "xarray",                   # data handling
   "jinja2",                   # templating
-  "hatyan",                   # tidal analysis
 ]
 
 requires-python = ">=3.9"
@@ -98,6 +97,9 @@ hydroflows = "hydroflows.cli.main:cli"
 testpaths = [
     "test",
 ]
+markers = [
+    "requires_data: marks tests as slow (deselect with '-m \"not slow\"')",
+]
 
 [tool.coverage.run]
 branch = true
@@ -138,7 +140,7 @@ ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904"]
 exclude = ["docs"]
 
 [tool.ruff.per-file-ignores]
-"tests/**" = ["D103", "D100", "D104"]
+"tests/**" = ["D100", "D101", "D102", "D103", "D104"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
 "hydroflows/**/__init__.py" = ["F401", "F403"]

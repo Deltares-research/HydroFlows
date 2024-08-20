@@ -1,5 +1,5 @@
 {% macro add_rule(rule) %}
-rule {{ rule.name }}:
+rule {{ rule.rule_id }}:
     input:
         {% for key, value in rule.input.items() %}
         {{ key }}={{ value }},

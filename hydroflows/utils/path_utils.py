@@ -29,4 +29,7 @@ def make_relative_paths(config: dict, src: Path, dst: Path) -> dict:
             and not isfile((join(dst, v)))
         ):
             config_kwargs[k] = join(relpath, v)
+        else:
+            # leave arg as is
+            config_kwargs[k] = v
     return config_kwargs

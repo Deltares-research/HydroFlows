@@ -1,9 +1,8 @@
 """Defines the Event class which is a breakpoint between workflows."""
 
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 import geopandas as gpd
 import pandas as pd
@@ -11,13 +10,14 @@ import xarray as xr
 import yaml
 from pydantic import (
     BaseModel,
-    DirectoryPath,
     Field,
     FilePath,
     field_validator,
+    model_validator,
 )
+from typing_extensions import TypedDict
 
-__all__ = ["EventCatalog"]
+__all__ = ["EventSet"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 
@@ -55,7 +55,7 @@ class Forcing(BaseModel):
         """Read the CSV file."""
         # read csv; check for datetime index
         # TODO: we could use pandera for more robust data validation
-        df = pd.read_csv(
+        df: pd.DataFrame = pd.read_csv(
             self.path, index_col=index_col, parse_dates=parse_dates, **kwargs
         )
         if not df.index.dtype == "datetime64[ns]":
@@ -282,156 +282,77 @@ class Event(BaseModel):
         self.set_time_range_from_forcings()
 
 
-class Roots(BaseModel):
-    """Dictionary of directories for event files."""
-
-    root_forcings: Optional[DirectoryPath] = None
-    """Root directory for forcing data."""
-
-    root_hazards: Optional[DirectoryPath] = None
-    """Root directory for hazard data."""
-
-    root_impacts: Optional[DirectoryPath] = None
-    """Root directory for impact data."""
+EventDict = TypedDict("EventDict", {"name": str, "path": Path})
 
 
-class EventCatalog(BaseModel):
-    """A dictionary of event configurations.
+class EventSet(BaseModel):
+    """A dictionary of events, referring to event file names.
 
     Examples
     --------
-    The event catalog can be created from a YAML file as follows::
+    The event set can be created from a YAML file as follows::
 
-        from hydroflows.workflows.events import EventCatalog
+        from hydroflows.workflows.events import EventSet
 
-        EventCatalog.from_yaml("path/to/events.yaml")
+        EventSet.from_yaml("path/to/eventset.yaml")
 
-    The event catalog can be created from a dictionary as follows::
+    The event set can be created from a dictionary as follows::
 
-        from hydroflows.workflows.events import EventCatalog
+        from hydroflows.workflows.events import EventSet
 
-        EventCatalog(
-            root="path/to/root",
+        EventSet(
             events=[
                 {
                     "name": "event1",
-                    "forcings": [{"type": "rainfall", "path": "path/to/data.csv"}],
-                    "probability": 0.5,  # optional
+                    "path": "path/to/data.csv"
                 }
             ],
         )
     """
 
-    version: str = "v0.1"
-    """The version of the event catalog."""
+    root: Optional[Path] = None
+    """The root directory for the event files."""
 
-    roots: Optional[Roots] = Roots()
-    """The root directories for forcings, hazards and impacts for the event catalog."""
+    events: List[EventDict]
+    """The list of events. Each event is a dictionary with an event name and reference to an event file. """
 
-    # root: Optional[DirectoryPath] = None
-    events: List[Event]
-    """The list of events. Each event is a dictionary with the structure
-    as defined in :py:class:`Event`."""
-
-    @field_validator("events", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def _set_events(cls, value: Any) -> List[Event]:
-        # if list of dictionaries, convert to list of Event
-        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
-            return [Event(**event) for event in value]
-        return value
-
-    @property
-    def event_names(self) -> list[str]:
-        """Return a list of event names."""
-        return [event.name for event in self.events]
+    def _set_paths(cls, data: Dict) -> Dict:
+        """Set the paths to relative to root if not absolute."""
+        if "root" in data:
+            root = Path(data["root"])
+            for event in data["events"]:
+                path = event["path"]
+                if not Path(path).is_absolute():
+                    event["path"] = root / path
+        return data
 
     @classmethod
-    def from_yaml(cls, path: FilePath) -> "EventCatalog":
-        """Create an EventCatalog from a YAML file."""
+    def from_yaml(cls, path: Path) -> "EventSet":
+        """Create an EventSet from a YAML file."""
         with open(path, "r") as file:
-            yml_dict = yaml.safe_load(file)
-        if "roots" not in yml_dict:  # set root to parent of path
-            yml_dict["roots"] = Roots(**{"root_forcings": Path(path).parent})
-            # check if hazards/impacts seem present
-            if "hazards" in yml_dict["events"][0]:
-                yml_dict["roots"] = Path(path).parent
-            if "impacts" in yml_dict["events"][0]:
-                yml_dict["root_impacts"] = Path(path).parent
-        else:
-            yml_dict["roots"] = Roots(**yml_dict["roots"])
-        return cls(**yml_dict)
+            yaml_dict = yaml.safe_load(file)
+        if "root" not in yaml_dict:
+            yaml_dict["root"] = Path(path).parent
+        return cls(**yaml_dict)
 
-    @classmethod
-    def from_yamls(cls, paths: List[FilePath]) -> "EventCatalog":
-        """Create an EventCatalog with absolute paths from several YAML files."""
-        # check which path names exist, remove paths that are non-existent to prevent stopping of workflow
-        paths = [path for path in paths if os.path.isfile(path)]
-        curdir = Path(os.getcwd())
-        event_catalogs = [
-            EventCatalog.from_yaml(curdir / catalog_yml) for catalog_yml in paths
-        ]
-        events = []
-        for event_catalog in event_catalogs:
-            for event in event_catalog.events:
-                if event.forcings:
-                    for forcing in event.forcings:
-                        forcing.path = event_catalog.roots.root_forcings / forcing.path
-                if event.hazards:
-                    for hazard in event.hazards:
-                        hazard.path = event_catalog.roots.root_hazards / hazard.path
-
-                if event.impacts:
-                    for impact in event.impacts:
-                        impact.path = event_catalog.roots.root_impacts / impact.path
-                events.append(event)
-        return cls(events=events)
-
-    def set_forcing_paths_relative_to_root(self) -> None:
-        """Set all forcing paths relative to root."""
-        if self.roots is None:
-            return
-        if self.roots.root_forcings is not None:
-            for event in self.events:
-                for forcing in event.forcings:
-                    forcing._set_path_relative(self.roots.root_forcings)
-        if self.roots.root_hazards is not None:
-            for event in self.events:
-                if event.hazards:
-                    for hazard in event.hazards:
-                        hazard._set_path_relative(self.roots.root_hazards)
-        if self.roots.root_impacts is not None:
-            for event in self.events:
-                if event.impacts:
-                    for impact in event.impacts:
-                        impact._set_path_relative(self.roots.root_hazards)
-
-    def to_dict(self, relative_paths=False, **kwargs) -> dict:
-        """Return the EventCatalog as a dictionary."""
-        # set all forcing paths relative to root
-        if relative_paths:
-            self.set_forcing_paths_relative_to_root()
+    def to_dict(self, **kwargs) -> dict:
+        """Return the EventSet as a dictionary."""
         kwargs = {**SERIALIZATION_KWARGS, **kwargs}
         return self.model_dump(**kwargs)
 
     def to_yaml(self, path: FilePath) -> None:
-        """Write the EventCatalog to a YAML file."""
+        """Write the EventSet to a YAML file."""
         # serialize
-        yaml_dict = self.to_dict(relative_paths=True)
-        # remove root if parent of path
-        if "roots" in yaml_dict:
-            for k in ["root_forcings", "root_hazards", "root_impacts"]:
-                # remove all paths
-                if k in yaml_dict["roots"]:
-                    if Path(yaml_dict["roots"][k]) == Path(path).parent:
-                        del yaml_dict["roots"][k]
-                    else:
-                        yaml_dict["roots"][k] = os.path.relpath(
-                            yaml_dict["roots"][k], start=str(Path(path).parent)
-                        )
-            # if roots is an empty dict, then remove alltogether
-            if not yaml_dict["roots"]:
-                del yaml_dict["roots"]
+        yaml_dict = self.to_dict()
+        # make relative paths
+        root = path.parent
+        for event in yaml_dict["events"]:
+            event_path = Path(event["path"])
+            """Set the path to be relative to the root."""
+            if event_path.is_absolute() and event_path.is_relative_to(root):
+                event["path"] = str(event_path.relative_to(root))
 
         # write to file
         with open(path, "w") as file:
@@ -449,8 +370,10 @@ class EventCatalog(BaseModel):
             and returns None.
         """
         for event in self.events:
-            if event.name == name:
-                return event
+            if event["name"] == name:
+                event_file = Path(event["path"])
+                return Event.from_yaml(path=event_file)
+
         if raise_error:
             raise ValueError(f"Event {name} not found.")
         return None
@@ -488,10 +411,10 @@ class EventCatalog(BaseModel):
         --------
         The event data can be loaded as follows::
 
-            from hydroflows.workflows.events import EventCatalog
+            from hydroflows.workflows.events import EventSet
 
-            event_catalog = EventCatalog.from_yaml("path/to/events.yaml")
-            event = event_catalog.get_event_data("event1")
+            event_set = EventSet.from_yaml("path/to/events.yaml")
+            event = event_set.get_event_data("event1")
             # event data is now loaded
             df = event.forcings[0].data
         """
@@ -506,13 +429,14 @@ class EventCatalog(BaseModel):
             event.set_time_range_from_forcings()
         return event
 
-    def add_event(self, event: Union[Event, dict]) -> None:
+    def add_event(self, name: str, path: FilePath) -> None:
         """Add an event.
 
-        event : Union[Event, dict]
-            The event to add.
-            See :class:`Event` for the event structure.
+        name : str
+            name of the event
+        path : FilePath
+            Path to yaml file with event description
+            See :class:`Event` for the structure of the data in this path.
         """
-        if isinstance(event, dict):
-            event = Event(**event)
+        event = {"name": name, "path": path}
         self.events.append(event)

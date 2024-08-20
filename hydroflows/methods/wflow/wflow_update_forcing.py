@@ -6,15 +6,15 @@ from pathlib import Path
 
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfStr
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["WflowUpdateForcing"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`WflowUpdateForcing` method."""
 
     wflow_toml: Path
@@ -22,14 +22,14 @@ class Input(BaseModel):
     Wflow model to be updated."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`WflowUpdateForcing` method."""
 
     wflow_out_toml: Path
     """The path to the updated (forcing) Wflow (toml) configuration file."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`WflowUpdateForcing` method.
 
     See Also

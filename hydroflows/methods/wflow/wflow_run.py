@@ -3,14 +3,13 @@
 import subprocess
 from pathlib import Path
 
-from pydantic import BaseModel
-
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["WflowRun"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`WflowRun` method."""
 
     wflow_toml: Path
@@ -18,7 +17,7 @@ class Input(BaseModel):
     Wflow model that needs to be run."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`WflowRun` method."""
 
     # TODO: if this file is in the wflow toml
@@ -32,7 +31,7 @@ class Output(BaseModel):
     the file should be named as output_scalar.nc."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`WflowRun`."""
 
     wflow_bin: Path
