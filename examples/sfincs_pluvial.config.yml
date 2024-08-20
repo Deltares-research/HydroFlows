@@ -1,3 +1,4 @@
+fiat_exe: bin/fiat/fiat
 region: data/test_region.geojson
 rps:
 - 5

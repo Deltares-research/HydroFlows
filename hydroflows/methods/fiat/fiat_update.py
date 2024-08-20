@@ -1,17 +1,18 @@
 """FIAT updating submodule/ rules."""
+
 from pathlib import Path
-from typing import List
+from typing import List, Union
 
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
-from pydantic import BaseModel
 
 from hydroflows.events import EventSet
-from hydroflows.methods.method import Method
 from hydroflows.utils import make_relative_paths
+from hydroflows.workflow.method import ReduceMethod
+from hydroflows.workflow.method_parameters import Parameters
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`FIATUpdateHazard` method."""
 
     fiat_cfg: Path
@@ -21,11 +22,12 @@ class Input(BaseModel):
     """The path to the event description file, used to filter hazard maps,
     see also :py:class:`hydroflows.workflows.events.Event`."""
 
-    hazard_maps: List[Path]
+    # single path should also be allowed for validation !
+    hazard_maps: Union[Path, List[Path]]
     """List of paths to hazard maps the event description file."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for :py:class:`FIATUpdateHazard` method."""
 
     fiat_hazard: Path
@@ -34,7 +36,7 @@ class Output(BaseModel):
     fiat_out_cfg: Path
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`FIATUpdateHazard` method.
 
     See Also
@@ -44,7 +46,7 @@ class Params(BaseModel):
     """
 
     map_type: str = "water_depth"
-    """"The data type of each map speficied in the data catalog. A single map type
+    """"The data type of each map specified in the data catalog. A single map type
     applies for all the elements."""
 
     risk: bool = True
@@ -54,7 +56,7 @@ class Params(BaseModel):
     """"Variable name."""
 
 
-class FIATUpdateHazard(Method):
+class FIATUpdateHazard(ReduceMethod):
     """Rule for updating a FIAT model with hazard maps.
 
     This class utilizes the :py:class:`Params <hydroflows.methods.fiat.fiat_update.Params>`,
@@ -66,7 +68,11 @@ class FIATUpdateHazard(Method):
     name: str = "fiat_update_hazard"
 
     def __init__(
-        self, fiat_cfg: Path, event_set_yaml: Path, hazard_maps: List[Path], **params
+        self,
+        fiat_cfg: Path,
+        event_set_yaml: Path,
+        hazard_maps: Union[Path, List[Path]],
+        **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
 
@@ -78,6 +84,8 @@ class FIATUpdateHazard(Method):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
+        hazard_maps : Union[Path, List[Path]]
+            The path to the hazard maps.
         **params
             Additional parameters to pass to the FIATUpdateHazard instance.
             See :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`.
@@ -91,7 +99,9 @@ class FIATUpdateHazard(Method):
         """
         self.params: Params = Params(**params)
         self.input: Input = Input(
-            fiat_cfg=fiat_cfg, event_set_yaml=event_set_yaml, hazard_maps=hazard_maps
+            fiat_cfg=fiat_cfg,
+            event_set_yaml=event_set_yaml,
+            hazard_maps=hazard_maps,
         )
         # NOTE: FIAT runs with full event sets with RPs. Name of event set is the stem of the event set file
         event_set_name = self.input.event_set_yaml.stem
@@ -108,6 +118,11 @@ class FIATUpdateHazard(Method):
 
     def run(self):
         """Run the FIATUpdateHazard method."""
+        # make sure hazard maps is a list
+        hazard_maps = self.input.hazard_maps
+        if not isinstance(hazard_maps, list):
+            hazard_maps = [hazard_maps]
+
         # Load the existing
         root = self.input.fiat_cfg.parent
         out_root = self.output.fiat_out_cfg.parent
@@ -147,7 +162,7 @@ class FIATUpdateHazard(Method):
         # filter out the right path names
         hazard_fns = []
         for name in hazard_names:
-            for fn in self.input.hazard_maps:
+            for fn in hazard_maps:
                 if name in fn.stem:
                     hazard_fns.append(fn)
                     break

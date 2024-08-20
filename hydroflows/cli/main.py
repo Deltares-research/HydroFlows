@@ -19,8 +19,8 @@ from typing import Literal
 import click
 
 from hydroflows import __version__
-from hydroflows.methods.method import Method
-from hydroflows.workflow import Workflow
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.workflow import Workflow
 
 
 # Copied from rasterio.rio.options

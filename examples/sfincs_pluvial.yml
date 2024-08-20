@@ -1,5 +1,6 @@
 config:
   sfincs_exe: bin/sfincs/sfincs.exe
+  fiat_exe: bin/fiat/fiat
   region: data/test_region.geojson
   rps: [5, 10, 50]
 
@@ -7,6 +8,9 @@ rules:
   - method: sfincs_build
     kwargs:
       region: $config.region
+  - method: fiat_build
+    kwargs:
+      region: $rules.sfincs_build.output.sfincs_region
   - method: get_ERA5_rainfall
     kwargs:
       region: $rules.sfincs_build.output.sfincs_region
@@ -25,3 +29,13 @@ rules:
   - method: sfincs_postprocess
     kwargs:
       sfincs_map: $rules.sfincs_run.output.sfincs_map
+      sfincs_subgrid_dep: $rules.sfincs_build.output.sfincs_subgrid_dep
+  - method: fiat_update_hazard
+    kwargs:
+      fiat_cfg: $rules.fiat_build.output.fiat_cfg
+      event_set_yaml: $rules.pluvial_design_events.output.event_set
+      hazard_maps: $rules.sfincs_postprocess.output.hazard_tif
+  - method: fiat_run
+    kwargs:
+      fiat_cfg: $rules.fiat_update_hazard.output.fiat_out_cfg
+      fiat_bin: $config.fiat_exe
