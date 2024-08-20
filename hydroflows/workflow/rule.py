@@ -59,6 +59,11 @@ class Rule:
         self._wildcard_fields: List[str] = []
         self._wildcards: Dict[str, List] = {}
 
+        # add expand wildcards to workflow wildcards
+        if isinstance(self.method, ExpandMethod):
+            for wc, val in self.method.expand_wildcards.items():
+                self.workflow.wildcards.set(wc, val)
+
     def __repr__(self) -> str:
         """Return the representation of the rule."""
         repr_dict = {
@@ -141,11 +146,6 @@ class Rule:
 
     def _detect_wildcards(self) -> None:
         """Detect wildcards based on known workflow wildcard names."""
-        # add expand wildcards to workflow wildcards
-        if isinstance(self.method, ExpandMethod):
-            for wc, val in self.method.expand_values.items():
-                self.workflow.wildcards.set(wc, val)
-
         # check for wildcards in input and output
         known_wildcards = self.workflow.wildcards.names
         wildcards: Dict[str, List] = {"input": [], "output": [], "params": []}

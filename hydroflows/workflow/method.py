@@ -11,7 +11,7 @@ import inspect
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
-from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple, cast
+from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -32,6 +32,8 @@ class Method(ABC):
     @abstractmethod
     def __init__(self) -> None:
         """Create a new method instance with input, output and params."""
+        # NOTE: the parameter fields are specific to each method and should
+        # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
         self.output: Parameters = Parameters()
         self.params: Parameters = Parameters()
@@ -48,6 +50,50 @@ class Method(ABC):
         # it can use input, output and params, e.g. self.input.file1
         # raise NotImplementedError
         pass
+
+    ## INPUT/OUTPUT/PARAMS PROPERTIES
+
+    @property
+    def input(self) -> Parameters:
+        """Return the input parameters of the method."""
+        if not hasattr(self, "_input"):
+            raise ValueError("Input parameters not set")
+        return self._input
+
+    @input.setter
+    def input(self, value: Parameters) -> None:
+        """Set the input parameters of the method."""
+        if not isinstance(value, Parameters):
+            raise ValueError("Input should be a Parameters instance")
+        self._input = value
+
+    @property
+    def output(self) -> Parameters:
+        """Return the output parameters of the method."""
+        if not hasattr(self, "_output"):
+            raise ValueError("Output parameters not set")
+        return self._output
+
+    @output.setter
+    def output(self, value: Parameters) -> None:
+        """Set the output parameters of the method."""
+        if not isinstance(value, Parameters):
+            raise ValueError("Output should be a Parameters instance")
+        self._output = value
+
+    @property
+    def params(self) -> Parameters:
+        """Return the additional parameters of the method."""
+        if not hasattr(self, "_params"):
+            return Parameters()
+        return self._params
+
+    @params.setter
+    def params(self, value: Parameters) -> None:
+        """Set the additional parameters of the method."""
+        if not isinstance(value, Parameters):
+            raise ValueError("Params should be a Parameters instance")
+        self._params = value
 
     ## MAGIC METHODS
 
@@ -74,9 +120,8 @@ class Method(ABC):
         )
         in_kw = {k: v for k, v in self.input.to_dict(**opt).items() if k in init_kw}
         out_kw = {k: v for k, v in self.output.to_dict(**opt).items() if k in init_kw}
-        kw = {**in_kw, **out_kw}
-        if hasattr(self, "params"):  # params are optional
-            kw.update(self.params.to_dict(**opt))
+        params_kw = self.params.to_dict(**opt)
+        kw = {**in_kw, **out_kw, **params_kw}
         return kw
 
     @property
@@ -94,7 +139,7 @@ class Method(ABC):
             "input": self.input.to_dict(**dump_kwargs),
             "output": self.output.to_dict(**dump_kwargs),
         }
-        if hasattr(self, "params"):  # params are optional
+        if hasattr(self, "_params"):  # params are optional
             out_dict["params"] = self.params.model_dump(**dump_kwargs)
         return out_dict
 
@@ -179,15 +224,26 @@ class Method(ABC):
         """Check if the method input, output and params keys are unique."""
         inputs = list(self.input.model_fields.keys())
         outputs = list(self.output.model_fields.keys())
-        ukeys = set(inputs + outputs)
-        nkeys = len(inputs) + len(outputs)
-        if hasattr(self, "params"):  # params are optional
-            params = list(self.params.model_fields.keys())
-            ukeys = set(list(ukeys) + params)
-            nkeys += len(params)
+        params = list(self.params.model_fields.keys())
+        ukeys = set(inputs + outputs + params)
+        nkeys = len(inputs) + len(outputs) + len(params)
         # check for unique keys
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
+
+    @classmethod
+    def _test_method_kwargs(self) -> None:
+        """Test if all method __init__ arguments are in input, output or params."""
+        init_kw = inspect.signature(self.__init__).parameters
+        in_kw = self.input.model_fields.keys()
+        out_kw = self.output.model_fields.keys()
+        params_kw = self.params.model_fields.keys()
+        all_kw = list(in_kw) + list(out_kw) + list(params_kw)
+        for k in init_kw:
+            if k not in all_kw:
+                raise ValueError(
+                    f"Method __init__ argument {k} not in input, output or params"
+                )
 
     ## RUN METHODS
 
@@ -249,24 +305,30 @@ class ExpandMethod(Method, ABC):
     @abstractmethod
     def __init__(self) -> None:
         """Create a new expand method instance."""
-        super().__init__()
-        self.expand_refs: Dict[str, str] = {}  # wildcard key: output key
-        # self.expand_output_keys: List[str] = []  # output keys with wildcards
+        # NOTE: see init of super method for requirements
+        # in addition call the set_expand_wildcard method
+        # self.set_expand_wildcard(wildcard, values)
 
-    def _resolve_expand_values(self) -> None:
-        """Resolve expand values based on expand_refs."""
-        for wildcard, output_key in self.expand_refs.items():
-            expand_value = cast(List, getattr(self.output, output_key))
-            self._expand_values[wildcard] = expand_value
+    def set_expand_wildcard(self, wildcard: str, values: List[str]) -> None:
+        """Set wildcard key and values.
+
+        Parameters
+        ----------
+        wildcard : str
+            The wildcard key.
+        values : List[str]
+            The list of expand values for the wildcard.
+        """
+        if not hasattr(self, "_expand_wildcards"):
+            self._expand_wildcards: Dict[str, List] = {}
+        self._expand_wildcards[wildcard] = values
 
     @property
-    def expand_values(self) -> Dict[str, List]:
-        """Return a dict with wildcards and list of expand values."""
-        if not hasattr(self, "_expand_values") or not self._expand_values:
-            self._expand_values: Dict[str, List] = {}  # should be in __init__
-        if not self._expand_values:
-            self._resolve_expand_values()
-        return self._expand_values
+    def expand_wildcards(self) -> Dict[str, List[str]]:
+        """Return a dict with a list of expand values per wildcard key."""
+        if not hasattr(self, "_expand_wildcards"):
+            return {}
+        return self._expand_wildcards
 
     @property
     def _output_paths(self) -> List[Tuple[str, Path]]:
@@ -275,7 +337,7 @@ class ExpandMethod(Method, ABC):
         for key, value in self.output.model_dump().items():
             if not isinstance(value, Path):
                 continue
-            for wc, vlist in self.expand_values.items():
+            for wc, vlist in self.expand_wildcards.items():
                 if "{" + wc + "}" in str(value):
                     for v in vlist:
                         path = Path(str(value).format(**{wc: v}))
@@ -286,10 +348,7 @@ class ExpandMethod(Method, ABC):
 
 
 class ReduceMethod(Method):
-    """Base class for methods that convert input to output."""
+    """Base class for methods that reduce multiple inputs to one output."""
 
-    # @abstractmethod
-    # def __init__(self) -> None:
-    #     """Create a new expand method instance."""
-    #     super().__init__()
-    #     self.reduce_input_keys: List[str] = []  # input keys with wildcards
+    # NOTE: for now this class merely serves to flag a a reduce method
+    # it may be extended in the future to include specific reduce logic or methods

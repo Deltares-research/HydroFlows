@@ -91,7 +91,7 @@ class Workflow:
         return Ref(ref, self)
 
     @classmethod
-    def from_yaml(cls, file: str):
+    def from_yaml(cls, file: str) -> "Workflow":
         """Load a workflow from a yaml file."""
         # Load the yaml file
         with open(file, "r") as f:
@@ -210,8 +210,10 @@ class Wildcards(BaseModel):
 
     def set(self, key: str, values: List[str]):
         """Add a wildcard."""
+        key = str(key).lower()
         self.wildcards.update({key: values})
 
     def get(self, key: str) -> List[str]:
         """Get the values of a wildcard."""
+        key = str(key).lower()
         return self.wildcards[key]

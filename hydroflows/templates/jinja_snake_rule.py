@@ -113,14 +113,16 @@ class JinjaSnakeRule:
         val = f"expand({val}, {expand_str})"
         return val
 
-    def _parse_variable(self, val: str) -> str:
+    def _parse_variable(self, val: Any) -> str:
         """Parse references to snakemake format."""
-        if val.startswith("$config."):
+        if isinstance(val, str) and val.startswith("$config."):
             dict_keys = val.split(".")[1:]
             val = 'config["' + '"]["'.join(dict_keys) + '"]'
-        elif val.startswith("$rules."):
+        elif isinstance(val, str) and val.startswith("$rules."):
             val = val[1:]
-        return val
+        elif isinstance(val, str) and val.startswith("$wildcards."):
+            val = val.split(".")[1].upper()
+        return str(val)
 
     def _parse_shell_variable(self, key: str) -> str:
         """Parse the key value pair for the shell command."""

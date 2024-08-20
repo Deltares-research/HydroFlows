@@ -12,6 +12,9 @@ rule all:
 rule sfincs_build:
     input:
         region="data/{region}.geojson",
+    params:
+        sfincs_root="models/sfincs/{region}",
+        res=100.0,
     output:
         sfincs_inp="models/sfincs/{region}/sfincs.inp",
         sfincs_region="models/sfincs/{region}/gis/region.geojson",
@@ -44,6 +47,7 @@ rule pluvial_design_events:
     params:
         event_root="data/output/{region}/events",
         rps=config["rps"],
+        event_names=EVENT,
     output:
         event_yaml=expand("data/output/{{region}}/events/{event}.yml", event=EVENT),
         event_csv=expand("data/output/{{region}}/events/{event}.csv", event=EVENT),
@@ -54,6 +58,7 @@ rule pluvial_design_events:
         precip_nc="{input.precip_nc}" \
         event_root="{params.event_root}" \
         rps="{params.rps}" \
+        event_names="{params.event_names}" \
         """
 
 rule sfincs_update_forcing:

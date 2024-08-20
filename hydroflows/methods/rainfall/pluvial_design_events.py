@@ -1,7 +1,7 @@
 """Pluvial design events method."""
 
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,6 +12,7 @@ from hydroflows._typing import ListOfFloat, ListOfInt
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.reference import Ref
 
 __all__ = ["PluvialDesignEvents"]
 
@@ -32,9 +33,6 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
 
-    event_names: List[str]
-    """List of event names derived from the design events."""
-
     event_yaml: Path
     """The path to the event description file,
     see also :py:class:`hydroflows.workflows.events.Event`."""
@@ -54,6 +52,15 @@ class Params(Parameters):
 
     event_root: Path
     """Root folder to save the derived design events."""
+
+    rps: ListOfFloat
+    """Return periods of interest."""
+
+    event_names: List[str]
+    """List of event names associated with return periods."""
+
+    wildcard: str = "event"
+    """The wildcard key for expansion over the design events."""
 
     durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
     """Intensity Duration Frequencies provided as multiply of the data time step."""
@@ -76,9 +83,6 @@ class Params(Parameters):
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
 
-    rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
-    """Return periods of interest."""
-
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
@@ -90,7 +94,13 @@ class PluvialDesignEvents(ExpandMethod):
     name: str = "pluvial_design_events"
 
     def __init__(
-        self, precip_nc: Path, event_root: Path = "data/events/rainfall", **params
+        self,
+        precip_nc: Path,
+        event_root: Path = "data/events/rainfall",
+        rps: Optional[ListOfFloat] = None,
+        event_names: Optional[List[str]] = None,
+        wildcard: str = "event",
+        **params,
     ) -> None:
         """Create and validate a PluvialDesignEvents instance.
 
@@ -100,6 +110,12 @@ class PluvialDesignEvents(ExpandMethod):
             The file path to the rainfall time series in NetCDF format.
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/rainfall".
+        rps : List[float], optional
+            Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
+        event_names : List[str], optional
+            List of event names for the design events, by "p_event{i}", where i is the event number.
+        wildcard : str, optional
+            The wildcard key for expansion over the design events, by default "event".
         **params
             Additional parameters to pass to the PluvialDesignEvents Params instance.
 
@@ -109,17 +125,31 @@ class PluvialDesignEvents(ExpandMethod):
         :py:class:`PluvialDesignEvents Output <hydroflows.methods.rainfall.pluvial_design_events.Output>`
         :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
         """
-        self.params: Params = Params(event_root=event_root, **params)
+        if rps is None:
+            rps = [1, 2, 5, 10, 20, 50, 100]
+        if event_names is None:
+            event_names = Ref(
+                ref=f"$wildcards.{wildcard}",
+                value=[f"p_event{int(i+1):02d}" for i in range(len(rps))],
+            )
+        elif len(event_names) != len(rps):
+            raise ValueError("event_names should have the same length as rps")
+        self.params: Params = Params(
+            event_root=event_root,
+            rps=rps,
+            event_names=event_names,
+            wildcard=wildcard,
+            **params,
+        )
         self.input: Input = Input(precip_nc=precip_nc)
+        wc = "{" + wildcard + "}"
         self.output: Output = Output(
-            event_names=[f"p_event{int(i+1):02d}" for i in range(len(self.params.rps))],
-            event_yaml=self.params.event_root / "{event}.yml",
-            event_csv=self.params.event_root / "{event}.csv",
+            event_yaml=self.params.event_root / f"{wc}.yml",
+            event_csv=self.params.event_root / f"{wc}.csv",
             event_set=self.params.event_root / "event_set.yml",
         )
-        # expand refs
-        self.expand_refs: dict = {"event": "event_names"}
-        # self.expand_output_keys: List[str] = ["event_yaml", "event_csv"]
+        # set wildcards and its expand values
+        self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
         """Run the Pluvial design events method."""
