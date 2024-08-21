@@ -122,6 +122,9 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
+    sim_subfolder: str = "simulations"
+    """The subfolder relative to the basemodel where the simulation folders are stored."""
+
     sfincs_config: Dict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
 
@@ -142,11 +145,12 @@ class SfincsUpdateForcing(Method):
         sfincs_inp: Path,
         event_yaml: Path,
         event_name: Optional[str] = None,
+        sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a SfincsUpdateForcing instance.
 
-        SFINCS simulations are stored in a simulations/{event_name} subdirectory of the basemodel.
+        SFINCS simulations are stored in {basemodel}/{sim_subfolder}/{event_name}.
 
         Parameters
         ----------
@@ -156,6 +160,8 @@ class SfincsUpdateForcing(Method):
             The path to the event description file
         event_name : str, optional
             The name of the event, by default derived from the event_yaml file name stem.
+        sim_subfolder : Path, optional
+            The subfolder relative to the basemodel where the simulation folders are stored.
         **params
             Additional parameters to pass to the SfincsUpdateForcing instance.
             See :py:class:`sfincs_update_forcing Params <hydroflows.methods.sfincs.sfincs_update_forcing.Params>`.
@@ -171,10 +177,12 @@ class SfincsUpdateForcing(Method):
         if event_name is None:
             # event name is the stem of the event file
             event_name = self.input.event_yaml.stem
-        self.params: Params = Params(event_name=event_name, **params)
+        self.params: Params = Params(
+            event_name=event_name, sim_subfolder=sim_subfolder, **params
+        )
 
         sfincs_out_inp = (
-            self.input.sfincs_inp.parent / "simulations" / event_name / "sfincs.inp"
+            self.input.sfincs_inp.parent / sim_subfolder / event_name / "sfincs.inp"
         )
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
