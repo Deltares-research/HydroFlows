@@ -13,6 +13,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
+from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
@@ -338,7 +339,7 @@ class ExpandMethod(Method, ABC):
             if not isinstance(value, Path):
                 continue
             for wc, vlist in self.expand_wildcards.items():
-                if "{" + wc + "}" in str(value):
+                if any(get_wildcards(value, [wc])):
                     for v in vlist:
                         path = Path(str(value).format(**{wc: v}))
                         paths.append((key, path))

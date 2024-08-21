@@ -1,6 +1,8 @@
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
+from hydroflows.utils.parsers import get_wildcards
+
 if TYPE_CHECKING:
     from hydroflows.workflow.method import Method
     from hydroflows.workflow.rule import Rule
@@ -43,7 +45,7 @@ class JinjaSnakeRule:
             quote_str=True,
         )
         for key, val in result.items():
-            if wildcards and any("{" + wc + "}" in val for wc in wildcards):
+            if wildcards and any(get_wildcards(val, wildcards)):
                 result[key] = self._expand_variable(val, wildcards)
             else:
                 result[key] = self._parse_variable(val)
@@ -60,7 +62,7 @@ class JinjaSnakeRule:
         )
         wildcards = self.rule.wildcards["expand"]
         for key, val in result.items():
-            if wildcards and any("{" + wc + "}" in str(val) for wc in wildcards):
+            if wildcards and any(get_wildcards(val, wildcards)):
                 result[key] = self._expand_variable(val, wildcards)
             else:
                 result[key] = self._parse_variable(val)
@@ -100,13 +102,12 @@ class JinjaSnakeRule:
 
     def _expand_variable(self, val: str, wildcards: List) -> Any:
         expand_lst = []
-        for wc in wildcards:
-            if "{" + wc + "}" in val:
-                expand_lst.append(f"{wc}={wc.upper()}")
-        for wc in set(self.rule.wildcards["explode"]) - set(wildcards):
-            if "{" + wc + "}" in val:
-                # escape wildcard in the value which is not expanded
-                val = val.replace("{" + wc + "}", "{{" + wc + "}}")
+        for wc in get_wildcards(val, wildcards):
+            expand_lst.append(f"{wc}={wc.upper()}")
+        escape_wc = list(set(self.rule.wildcards["explode"]) - set(wildcards))
+        for wc in get_wildcards(val, escape_wc):
+            # escape wildcard in the value which is not expanded
+            val = val.replace("{" + wc + "}", "{{" + wc + "}}")
         if len(expand_lst) == 0:
             return val
         expand_str = ", ".join(expand_lst)
