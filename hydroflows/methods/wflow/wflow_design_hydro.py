@@ -184,8 +184,6 @@ class WflowDesignHydro(ExpandMethod):
 
     def run(self):
         """Run the WflowDesignHydro method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
         root = self.output.event_set_yaml.parent
 
         # read the provided wflow time series
