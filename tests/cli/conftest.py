@@ -6,7 +6,7 @@ from click.testing import CliRunner
 
 
 @pytest.fixture()
-def cli_obj():
+def cli_obj() -> CliRunner:
     """Yield a click.testing.CliRunner to invoke the CLI."""
     class_ = CliRunner
 

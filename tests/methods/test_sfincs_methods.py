@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Optional
 
 import pytest
+from hydromt_sfincs import SfincsModel
 
 from hydroflows.methods import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
 from hydroflows.methods.sfincs.sfincs_run import SfincsRun
@@ -29,67 +30,71 @@ def copy_tree(
             copy_tree(path, dst / path.name, ignore, level + 1, max_level)
 
 
-def test_sfincs_build(rio_region, rio_test_data, tmp_path):
-    input = {"region": str(rio_region)}
+@pytest.mark.requires_data()
+def test_sfincs_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+    sfincs_root = Path(tmp_path, "model")
+    sfincs_build = SfincsBuild(
+        region=str(rio_region),
+        sfincs_root=str(sfincs_root),
+        res=100.0,
+        river_upa=10.0,
+        data_libs=str(rio_test_data),
+    )
+    assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
+    assert sfincs_build.params.river_upa == 10.0
 
-    sfincs_inp = Path(tmp_path, "model", "sfincs.inp")
-    sfincs_region = Path(tmp_path, "model", "gis", "region.geojson")
-    output = {"sfincs_inp": str(sfincs_inp), "sfincs_region": str(sfincs_region)}
-    params = {"data_libs": str(rio_test_data), "res": 100.0, "river_upa": 10.0}
-    SfincsBuild(input=input, output=output, params=params).run()
-    assert sfincs_inp.exists()
-    assert sfincs_region.exists()
+    sfincs_build.run_with_checks()
 
 
-def test_sfincs_update(rio_sfincs_model, tmp_path, test_data_dir):
+@pytest.mark.requires_data()
+def test_sfincs_update(rio_sfincs_model: Path, test_data_dir: Path, tmp_path: Path):
     tmp_root = Path(tmp_path, "model")
     copy_tree(rio_sfincs_model.parent, tmp_root, max_level=0)
-    sfincs_inp_event = Path(tmp_root, "event", "sfincs.inp")
+    event_yaml = test_data_dir / "event_rp010.yml"
 
-    input = {
-        "sfincs_inp": str(tmp_root / "sfincs.inp"),
-        "event_catalog": str(test_data_dir / "events.yml"),
-    }
-    output = {"sfincs_inp": str(sfincs_inp_event)}
-    params = {"event_name": "rp050"}
-
-    SfincsUpdateForcing(input=input, output=output, params=params).run()
-
-    assert sfincs_inp_event.is_file()
+    sf = SfincsUpdateForcing(
+        sfincs_inp=str(tmp_root / "sfincs.inp"),
+        event_yaml=str(event_yaml),
+        event_name="rp010",
+    )
+    assert sf.output.sfincs_out_inp == tmp_root / "simulations" / "rp010" / "sfincs.inp"
+    sf.run_with_checks()
 
 
+@pytest.mark.requires_data()
 @pytest.mark.skipif(not SFINCS_EXE.exists(), reason="sfincs executable not found")
 @pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_sfincs_run(rio_sfincs_model, tmp_path):
+def test_sfincs_run(rio_sfincs_model: Path, tmp_path: Path):
     tmp_root = Path(tmp_path, "model")
     copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis", "subgrid"])
     sfincs_inp = Path(tmp_root, "sfincs.inp")
     sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
+
+    # modify the tstop to a short time
+    sf = SfincsModel(root=tmp_root, mode="r+")
+    sf.set_config("tref", "20191231 000000")
+    sf.set_config("tstart", "20191231 000000")
+    sf.set_config("tstop", "20191231 010000")
+    sf.write_config()
+
     assert sfincs_inp.is_file()
-
-    input = {"sfincs_inp": str(sfincs_inp)}
-    output = {"sfincs_map": str(sfincs_map)}
-    params = {"sfincs_exe": str(SFINCS_EXE)}
-
-    SfincsRun(input=input, output=output, params=params).run()
-
-    assert sfincs_map.is_file()
+    sf_run = SfincsRun(sfincs_inp=str(sfincs_inp), sfincs_exe=SFINCS_EXE)
+    assert sf_run.output.sfincs_map == sfincs_map
+    sf_run.run_with_checks()
 
 
-def test_sfincs_postprocess(rio_sfincs_model, tmp_path):
+@pytest.mark.requires_data()
+def test_sfincs_postprocess(rio_sfincs_model: Path, tmp_path: Path):
     tmp_root = Path(tmp_path, "model")
     copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])
+    tmp_hazard_root = Path(tmp_path, "hazard")
 
-    fn_sfincs_event_inp = Path(tmp_path, "model", "sfincs.inp")
-    fn_sfincs_dep = Path(tmp_path, "model", "subgrid", "dep_subgrid.tif")
-    fn_sfincs_inun_tif = Path(tmp_path, "model", "event.tif")
+    sf_post = SfincsPostprocess(
+        sfincs_map=str(tmp_root / "sfincs_map.nc"),
+        sfincs_subgrid_dep=str(tmp_root / "subgrid" / "dep_subgrid.tif"),
+        hazard_root=str(tmp_hazard_root),
+        event_name="test",
+    )
+    assert sf_post.output.hazard_tif == tmp_hazard_root / "test.tif"
 
-    input = {
-        "sfincs_inp": str(fn_sfincs_event_inp),
-        "sfincs_dep": str(fn_sfincs_dep),
-    }
-    output = {"sfincs_inun": str(fn_sfincs_inun_tif)}
-
-    SfincsPostprocess(input=input, output=output).run()
-
-    assert fn_sfincs_inun_tif.is_file()
+    sf_post.run_with_checks()

@@ -1,0 +1,5 @@
+name: rp050
+forcings:
+  - type: rainfall
+    path: rainfall_rp050.csv
+probability: 0.02

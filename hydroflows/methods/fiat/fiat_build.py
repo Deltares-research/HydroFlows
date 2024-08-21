@@ -4,12 +4,13 @@ from pathlib import Path
 
 import geopandas as gpd
 import hydromt_fiat
-from hydromt.config import configread
+from hydromt.config import configread, configwrite
 from hydromt_fiat.fiat import FiatModel
-from pydantic import BaseModel, FilePath
 
 from hydroflows._typing import ListOfStr
-from hydroflows.methods.method import HYDROMT_CONFIG_DIR, Method
+from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["FIATBuild"]
 
@@ -20,21 +21,21 @@ FIAT_DATA_PATH = Path(
 ).as_posix()
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters.
 
     This class represents the input data
     required for the :py:class:`FIATBuild` method.
     """
 
-    region: FilePath
+    region: Path
     """
     The file path to the geometry file that defines the region of interest
     for constructing a FIAT model.
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters.
 
     This class represents the output data
@@ -45,8 +46,8 @@ class Output(BaseModel):
     """The file path to the FIAT configuration (toml) file."""
 
 
-class Params(BaseModel):
-    """Parameters.
+class Params(Parameters):
+    """Parameters for the :py:class:`FIATBuild`.
 
     Instances of this class are used in the :py:class:`FIATBuild`
     method to define the required settings.
@@ -56,6 +57,9 @@ class Params(BaseModel):
     :py:class:`hydromt_fiat.fiat.FiatModel`
         For more details on the FiatModel used in hydromt_fiat.
     """
+
+    fiat_root: Path
+    """The path to the root directory where the FIAT model will be created."""
 
     data_libs: ListOfStr = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
@@ -74,18 +78,40 @@ class Params(BaseModel):
 
 
 class FIATBuild(Method):
-    """Rule for building FIAT.
-
-    This class utilizes the :py:class:`Params <hydroflows.methods.fiat.fiat_build.Params>`,
-    :py:class:`Input <hydroflows.methods.fiat.fiat_build.Input>`, and
-    :py:class:`Output <hydroflows.methods.fiat.fiat_build.Output>` classes to build
-    a FIAT model.
-    """
+    """Rule for building FIAT."""
 
     name: str = "fiat_build"
-    params: Params = Params()
-    input: Input
-    output: Output
+
+    def __init__(
+        self,
+        region: Path,
+        fiat_root: Path = "models/fiat",
+        **params,
+    ) -> None:
+        """Create and validate a FIATBuild instance.
+
+        Parameters
+        ----------
+        region : Path
+            The file path to the geometry file that defines the region of interest
+            for constructing a FIAT model.
+        fiat_root : Path
+            The path to the root directory where the FIAT model will be created, by default "models/fiat".
+        **params
+            Additional parameters to pass to the FIATBuild instance.
+            See :py:class:`fiat_build Params <hydroflows.methods.fiat.sfincs_build.Params>`.
+
+        See Also
+        --------
+        :py:class:`fiat_build Input <~hydroflows.methods.fiat.fiat_build.Input>`,
+        :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`,
+        :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
+        :py:class:`hydromt_fiat.fiat.FIATModel`
+            For more details on the FIATModel used in hydromt_fiat
+        """
+        self.params: Params = Params(fiat_root=fiat_root, **params)
+        self.input: Input = Input(region=region)
+        self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
         """Run the FIATBuild method."""
@@ -99,7 +125,7 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         opt.update({"setup_region": {"region": {"geom": region_gdf}}})
         # Setup the model
-        root = self.output.fiat_cfg.parent
+        root = self.params.fiat_root
         model = FiatModel(
             root=root,
             mode="w+",
@@ -107,6 +133,9 @@ class FIATBuild(Method):
         )
         # Build the model
         model.build(opt=opt)
+
+        # Write opt as yaml
+        configwrite(root / "fiat_build.yaml", opt)
 
 
 if __name__ == "__main__":

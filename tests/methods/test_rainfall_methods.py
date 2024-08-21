@@ -5,8 +5,8 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import yaml
 
+from hydroflows.events import EventSet
 from hydroflows.methods import GetERA5Rainfall, PluvialDesignEvents
 
 
@@ -30,43 +30,52 @@ def precip_time_series_nc():
     return da
 
 
-def test_pluvial_design_hyeto(precip_time_series_nc, tmp_path):
+def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     precip_time_series_nc.to_netcdf(fn_time_series_nc)
 
-    input = {"time_series_nc": str(fn_time_series_nc)}
-    params = {
-        "rps": [1, 10, 100],
-    }
+    rps = [1, 10, 100]
+    p_events = PluvialDesignEvents(
+        precip_nc=str(fn_time_series_nc),
+        event_root=Path(tmp_path, "data"),
+        rps=rps,
+    )
 
-    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
+    assert len(p_events.params.event_names) == len(rps)
 
-    output = {"event_catalog": str(fn_data_catalog)}
+    p_events.run_with_checks()
 
-    PluvialDesignEvents(input=input, params=params, output=output).run()
-    assert fn_data_catalog.exists()
+    # TODO separate this into a new test function?
+    # read data back and check if all event paths are absolute and existing, length is correct
+    fn_event_set = p_events.output.event_set_yaml
+    event_set = EventSet.from_yaml(fn_event_set)
+    assert isinstance(event_set.events, list)
+    assert len(event_set.events) == len(rps)
 
-    with open(fn_data_catalog, "r") as f:
-        events = yaml.safe_load(f)
-    assert isinstance(events["events"], list)
-    assert len(events["events"]) == len(params["rps"])
+    # are all paths absolute
+    assert all([Path(event["path"]).is_absolute() for event in event_set.events])
+    assert all([Path(event["path"]).exists() for event in event_set.events])
 
     # test max value is 1
-    filename = events["events"][-1]["forcings"][0]["path"]
+    event = event_set.get_event("p_event01")
+    filename = event.forcings[0].path
     fn_csv = fn_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0
 
 
-def test_get_ERA5_rainfall(sfincs_region_path, tmp_path):
-    input = {"sfincs_region": str(sfincs_region_path)}
+def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
+    get_era5 = GetERA5Rainfall(
+        region=str(sfincs_region_path),
+        data_root=str(tmp_path / "data"),
+        filename="era5.nc",
+        start_date="2023-11-01",
+        end_date="2023-12-31",
+    )
+    assert get_era5.output.precip_nc == tmp_path / "data" / "era5.nc"
+    get_era5.run_with_checks()
 
-    fn_time_series = Path(tmp_path, "era5_data.nc")
-    output = {"time_series_nc": str(fn_time_series)}
-
-    params = {"start_date": "2000-01-01", "end_date": "2010-12-31"}
-
-    GetERA5Rainfall(input=input, output=output, params=params).run()
-    assert fn_time_series.exists()
+    da = xr.open_dataarray(get_era5.output.precip_nc)
+    assert da["time"].min() == pd.Timestamp("2023-11-01")

@@ -1,0 +1,24 @@
+{% macro add_rule(rule) %}
+rule {{ rule.rule_id }}:
+    input:
+        {% for key, value in rule.input.items() %}
+        {{ key }}={{ value }},
+        {% endfor %}
+    {% if rule.params %}
+    params:
+        {% for key, value in rule.params.items() %}
+        {{ key }}={{ value }},
+        {% endfor %}
+    {% endif %}
+    output:
+        {% for key, value in rule.output.items() %}
+        {{ key }}={{ value }},
+        {% endfor %}
+    shell:
+        """
+        hydroflows method {{ rule.method_name }} \
+        {% for key, value in rule.shell_args.items() %}
+        {{ key }}="{{ '{' }}{{ value }}{{ '}' }}" \
+        {% endfor %}
+        """
+{% endmacro %}

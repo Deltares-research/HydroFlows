@@ -10,45 +10,61 @@ import xarray as xr
 from hydroflows.methods import WflowBuild, WflowDesignHydro, WflowUpdateForcing
 
 
-def test_wflow_build(rio_region, rio_test_data, tmp_path):
-    input = {"region": str(rio_region)}
+@pytest.mark.requires_data()
+def test_wflow_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+    # required inputs
+    region = rio_region.as_posix()
+    wflow_root = Path(tmp_path, "wflow_model")
 
-    params = {
-        "data_libs": [str(rio_test_data)],
-        "gauges": None,
-        "upstream_area": 10,
-        "plot_fig": False,
-    }
+    # some additional params
+    data_libs = rio_test_data.as_posix()
+    gauges = None
+    upstream_area = 10
+    plot_fig = False
 
-    fn_wflow_toml = Path(tmp_path, "model", "wflow.toml")
-    output = {"wflow_toml": str(fn_wflow_toml)}
+    rule = WflowBuild(
+        region=region,
+        wflow_root=wflow_root,
+        data_libs=data_libs,
+        gauges=gauges,
+        upstream_area=upstream_area,
+        plot_fig=plot_fig,
+    )
 
-    WflowBuild(input=input, params=params, output=output).run()
-
-    assert fn_wflow_toml.exists()
+    rule.run_with_checks()
 
     # FIXME: add params gauges, then uncomment this
     # fn_geoms = Path(fn_wflow_toml.parent, "staticgeoms", "gauges_locs.geojson")
     # assert fn_geoms.exists()
 
 
-def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
+@pytest.mark.requires_data()
+def test_wflow_update_forcing(
+    rio_wflow_model: Path, rio_test_data: Path, tmp_path: Path
+):
     # copy the wflow model to the tmp_path
     root = tmp_path / "model"
     shutil.copytree(rio_wflow_model.parent, root)
-    fn_wflow_toml_updated = Path(root, "sims", "sim1", "wflow_sim1.toml")
+    # required inputs
+    wflow_toml = Path(root, rio_wflow_model.name)
+    start_time = "2020-02-01"
+    end_time = "2020-02-10"
 
-    input = {"wflow_toml": str(root / rio_wflow_model.name)}
-    params = {"data_libs": [str(rio_test_data)]}
-    output = {"wflow_toml": str(fn_wflow_toml_updated)}
+    # additional param
+    data_libs = rio_test_data.as_posix()
 
-    WflowUpdateForcing(input=input, params=params, output=output).run()
+    rule = WflowUpdateForcing(
+        wflow_toml=wflow_toml,
+        start_time=start_time,
+        end_time=end_time,
+        data_libs=data_libs,
+    )
 
-    assert fn_wflow_toml_updated.exists()
+    rule.run_with_checks()
 
 
 @pytest.fixture()
-def time_series_nc():
+def time_series_nc() -> xr.DataArray:
     rng = np.random.default_rng(12345)
     normal = pd.DataFrame(
         rng.random(size=(365 * 100, 2)) * 100,
@@ -70,17 +86,20 @@ def time_series_nc():
     return da
 
 
-def test_wflow_design_hydro(time_series_nc, tmp_path):
+def test_wflow_design_hydro(time_series_nc: xr.DataArray, tmp_path: Path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
     time_series_nc.to_netcdf(fn_time_series_nc)
 
-    input = {"time_series_nc": str(fn_time_series_nc)}
+    # required inputs
+    discharge_nc = str(fn_time_series_nc)
+    event_root = Path(tmp_path, "events")
 
-    fn_data_catalog = Path(tmp_path, "data", "catalog.yml")
-
-    output = {"event_catalog": str(fn_data_catalog)}
-
-    WflowDesignHydro(input=input, output=output).run()
-    assert fn_data_catalog.exists()
+    m = WflowDesignHydro(
+        discharge_nc=discharge_nc,
+        event_root=event_root,
+        wildcard="q_event",
+    )
+    assert "{q_event}" in str(m.output.event_csv)
+    m.run_with_checks()

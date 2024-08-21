@@ -13,27 +13,21 @@ optional
 - hydroflows create: create a new workflow
 """
 
-import os
 from pathlib import Path
-from typing import Optional
+from typing import Dict, Literal, Optional
 
 import click
 
-from hydroflows import __version__, log
-from hydroflows.methods import METHODS
-from hydroflows.utils import (
-    adjust_config,
-    copy_single_file,
-    copy_templates,
-    create_folders,
-)
+from hydroflows import __version__
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.workflow import Workflow
 
 
 # Copied from rasterio.rio.options
-def _cb_key_val(ctx, param, value):
+def _cb_key_val(ctx: click.Context, param: str, value: str) -> Dict[str, str]:
     """Convert key-value pairs to dictionary.
 
-    click callback to validate `--opt KEY1=VAL1 --opt KEY2=VAL2` and collect
+    click callback to validate `KEY1=VAL1 KEY2=VAL2` and collect
     in a dictionary like the one below, which is what the CLI function receives.
     If no value or `None` is received then an empty dictionary is returned.
 
@@ -55,13 +49,11 @@ def _cb_key_val(ctx, param, value):
                 )
             else:
                 k, v = pair.split("=", 1)
-                k = k.lower()
-                v = v.lower()
                 out[k] = None if v.lower() in ["none", "null", "nil", "nada"] else v
         return out
 
 
-def print_license(ctx, param, value):
+def print_license(ctx: click.Context, param: str, value: str) -> Optional[Dict]:
     """Print the license for hydroflows."""
     if not value:
         return {}
@@ -69,7 +61,7 @@ def print_license(ctx, param, value):
     ctx.exit()
 
 
-def print_info(ctx, param, value):
+def print_info(ctx: click.Context, param: str, value: str) -> Optional[Dict]:
     """Print a copyright statement for hydroflows."""
     if not value:
         return {}
@@ -114,125 +106,97 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
         ctx.obj = {}
 
 
-opt_input = click.option(
-    "-i",
-    "--input",
-    multiple=True,
+@cli.command(short_help="Run a method with a set of key-word arguments.")
+@click.argument("METHOD", type=str, nargs=1)
+@click.argument(
+    "KWARGS",
+    nargs=-1,
     callback=_cb_key_val,
-    required=True,
-    help="Set required input file(s) for the method",
 )
-opt_output = click.option(
-    "-o",
-    "--output",
-    multiple=True,
-    callback=_cb_key_val,
-    required=True,
-    help="Specify the output of the method",
-)
-opt_params = click.option(
-    "-p",
-    "--params",
-    multiple=True,
-    callback=_cb_key_val,
-    required=False,
-    help="Set the parameters for the method",
-)
-
-
-@cli.command(short_help="Run a method with set inputs, outputs and parameters")
-@click.argument("RUNNER", type=str)
-@opt_input
-@opt_output
-@opt_params
 @verbose_opt
 @quiet_opt
 @overwrite_opt
 @click.pass_context
-def run(ctx, runner, input, output, params, verbose, quiet, overwrite):
-    """Run a method with set inputs, outputs and parameters."""
-    append = not overwrite
-    log_level = max(10, 30 - 10 * (verbose - quiet))
-    logger = log.setuplog(
-        f"run_{runner}",
-        os.path.join(os.getcwd(), f"hydroflows_run_{runner}.log"),
-        log_level=log_level,
-        append=append,
-    )
-    if runner not in METHODS:
-        raise ValueError(f"Method {runner} not implemented")
+def method(
+    ctx: click.Context, method: str, kwargs: Dict[str, str], verbose, quiet, overwrite
+):
+    """Run a method with a set of key-word arguments.
+
+    RUNNER is the name of the method to run, e.g., 'build_wflow'.
+    KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
+    """
     try:
-        logger.info(f"Input: {input}")
-        logger.info(f"Parameters: {params}")
-        logger.info(f"Output: {output}")
-
-        if params:
-            method = METHODS[runner](input=input, output=output, params=params)
-        else:
-            method = METHODS[runner](input=input, output=output)
-
-        method.run()
-
+        Method.from_kwargs(method, **kwargs).run_with_checks()
     except Exception as e:
-        logger.exception(e)  # catch and log errors
-        raise
-    finally:
-        # close logger gracefully
-        for handler in logger.handlers[:]:
-            handler.close()
-            logger.removeHandler(handler)
+        click.echo(f"Error: {e}")
+        ctx.exit(1)
 
 
-opt_region = click.option(
-    "-r",
-    "--region",
-    required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=Path),
-    help="Path to a model region vector file",
-)
-
-opt_config = click.option(
-    "-c",
-    "--config",
-    required=False,
-    type=click.Path(exists=True, file_okay=True, path_type=Path),
-    help="Path to a custom SnakeMake configurations file",
-)
-
-
-@cli.command(short_help="Create a new project folder structure and copy templates")
+@cli.command(short_help="Create a workflow file.")
 @click.argument(
-    "ROOT",
-    type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
+    "WORKFLOW",
+    type=click.Path(exists=True, file_okay=True),
 )
-@opt_region
-@opt_config
+# TODO support output dir requires adapting relative paths in the workflow file.
+# for now we assume the workflow file is in the output dir.
+# @click.argument(
+#     "OUTPUT_DIR",
+#     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
+# )
+@click.option(
+    "--fmt",
+    required=False,
+    type=click.Choice(["smk"]),
+    help="Choose the format of the workflow file.",
+    default="smk",
+)
 @click.pass_context
-def init(
-    ctx,
-    root: Path,
-    region: Optional[Path] = None,
-    config: Optional[Path] = None,
+def create(
+    ctx: click.Context,
+    workflow: Path,
+    # output_dir: Path,
+    fmt: Literal["smk"] = "smk",
 ) -> None:
-    """Initialize a new project."""
-    create_folders(root)
-    copy_templates(root)
-    # Work with extra input on initialization
-    cfg_kwargs = {}
-    if region is not None:
-        cfg_kwargs["REGION_FILE"] = Path(
-            "data",
-            "input",
-            region.name,
-        ).as_posix()
-        cfg_kwargs["REGION"] = region.stem
-        copy_single_file(region, Path(root, cfg_kwargs["REGION_FILE"]))
-    # Adjusting the config file i
-    adjust_config(
-        Path(root, "workflow", "snake_config", "config.yaml"),
-        extra=config,
-        **cfg_kwargs,
-    )
+    """Create a workflow file.
+
+    Parameters
+    ----------
+    WORKFLOW : Path
+        The hydroflows workflow file to use as template.
+    FORMAT : Literal["smk"]
+        The format of the workflow file.
+    """
+    wf = Workflow.from_yaml(workflow)
+    match fmt:
+        case "smk":
+            wf.to_snakemake(Path(workflow).with_suffix(".smk"))
+        case _:
+            click.echo(f"Error: Unknown format {fmt}")
+            ctx.exit(1)
+
+
+@cli.command(short_help="Run a workflow file.")
+@click.argument(
+    "WORKFLOW",
+    type=click.Path(exists=True, file_okay=True),
+)
+@click.pass_context
+def run(
+    ctx: click.Context,
+    workflow: Path,
+) -> None:
+    """Create a workflow file.
+
+    Parameters
+    ----------
+    WORKFLOW : Path
+        The hydroflows workflow file to use as template.
+    """
+    try:
+        Workflow.from_yaml(workflow).run()
+    except Exception as e:
+        click.echo(f"Error: {e}")
+        ctx.exit(1)
 
 
 if __name__ == "__main__":
