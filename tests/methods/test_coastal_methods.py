@@ -111,7 +111,6 @@ def test_get_waterlevel_rps(waterlevel_timeseries: xr.DataArray, tmp_path: Path)
 
 def test_coastal_design_events(
     tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
-    waterlevel_rps: xr.Dataset,
     tmp_path: Path,
 ):
     data_dir = Path(tmp_path, "coastal_rps")
@@ -120,14 +119,10 @@ def test_coastal_design_events(
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
 
-    waterlevel_rps.to_netcdf(data_dir / "waterlevel_rps.nc")
-
     rule = CoastalDesignEvents(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
-        waterlevel_rps=data_dir / "waterlevel_rps.nc",
         event_root=str(data_dir / "events"),
-        rps=waterlevel_rps["rps"].values.tolist(),
     )
 
     rule.run_with_checks()

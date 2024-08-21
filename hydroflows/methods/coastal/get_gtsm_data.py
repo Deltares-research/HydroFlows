@@ -43,6 +43,9 @@ class Output(Parameters):
     tide_nc: Path
     """Path to output file containing tide .nc timeseries"""
 
+    bnd_locations: Path
+    """Path to output file containing point locations associated with the timeseries."""
+
 
 class Params(Parameters):
     """Params for the :py:class:`GetGTSMData` method."""
@@ -105,28 +108,28 @@ class GetGTSMData(Method):
         waterlevel_path = self.params.data_root / "gtsm_waterlevel.nc"
         surge_path = self.params.data_root / "gtsm_surge.nc"
         tide_path = self.params.data_root / "gtsm_tide.nc"
+        bnd_locations = self.params.data_root / "gtsm_locations.gpkg"
         self.output: Output = Output(
-            waterlevel_nc=waterlevel_path, surge_nc=surge_path, tide_nc=tide_path
+            waterlevel_nc=waterlevel_path,
+            surge_nc=surge_path,
+            tide_nc=tide_path,
+            bnd_locations=bnd_locations,
         )
 
     def run(self):
         """Run GetGTSMData method."""
         gdf = gpd.read_file(self.input.region).to_crs(4326)
         stations = get_gtsm_station(gdf, self.params.gtsm_loc / "gtsm_locs.gpkg")
-        # stations = get_gtsm_station(
-        #     gdf.centroid.x, gdf.centroid.y, self.params.gtsm_loc / "gtsm_locs.gpkg"
-        # )
-        stations = stations["stations"].values
 
         variables = {
             "s": {
                 "var": "surge",
-                "stations": stations,
+                "stations": stations["stations"].values,
                 "outpath": self.output.surge_nc,
             },
             "h": {
                 "var": "waterlevel",
-                "stations": stations,
+                "stations": stations["stations"].values,
                 "outpath": self.output.waterlevel_nc,
             },
         }
@@ -149,6 +152,8 @@ class GetGTSMData(Method):
         h = xr.open_dataarray(self.output.waterlevel_nc)
         t = h - s
         t.to_netcdf(self.output.tide_nc)
+
+        stations.to_file(self.output.bnd_locations, driver="GPKG")
 
 
 def get_gtsm_station(

@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import List, Optional
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
-from hydromt.stats import get_peak_hydrographs, get_peaks
+from hydromt.stats import eva, get_peak_hydrographs, get_peaks
 
 from hydroflows._typing import ListOfFloat
 from hydroflows.events import Event, EventSet
@@ -26,9 +27,6 @@ class Input(Parameters):
     tide_timeseries: Path
     """Path to tides timeseries data."""
 
-    waterlevel_rps: Path
-    """Path to the total still waterlevel return values dataset."""
-
 
 class Output(Parameters):
     """Output parameters for the :py:class:`CoastalDesginEvents` method."""
@@ -39,9 +37,6 @@ class Output(Parameters):
 
     event_csv: Path
     """Path to event timeseries csv file"""
-
-    # bnd_locations: Path
-    # """Path to file containing water level locations"""
 
     event_set_yaml: Path
     """The path to the event set yml file,
@@ -92,7 +87,6 @@ class CoastalDesignEvents(ExpandMethod):
         self,
         surge_timeseries: Path,
         tide_timeseries: Path,
-        waterlevel_rps: Path,
         event_root: Path = Path("data/events/coastal"),
         rps: Optional[List[float]] = None,
         event_names: Optional[List[str]] = None,
@@ -144,7 +138,6 @@ class CoastalDesignEvents(ExpandMethod):
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,
             tide_timeseries=tide_timeseries,
-            waterlevel_rps=waterlevel_rps,
         )
 
         wc = "{" + wildcard + "}"
@@ -152,7 +145,6 @@ class CoastalDesignEvents(ExpandMethod):
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
             event_set_yaml=self.params.event_root / "coastal_events.yml",
-            # bnd_locations=self.params.event_root / "coastal_locations.gpkg",
         )
 
         # set wildcards and its expand values
@@ -162,7 +154,6 @@ class CoastalDesignEvents(ExpandMethod):
         """Run CoastalDesignEvents method."""
         da_surge = xr.open_dataarray(self.input.surge_timeseries)
         da_tide = xr.open_dataarray(self.input.tide_timeseries)
-        da_rps = xr.open_dataset(self.input.waterlevel_rps)
 
         # check if all dims are the same
         if not (da_surge.dims == da_tide.dims):
@@ -170,7 +161,6 @@ class CoastalDesignEvents(ExpandMethod):
         if "stations" not in da_surge.dims:
             da_surge = da_surge.expand_dims(dim={"stations": 1})
             da_tide = da_tide.expand_dims(dim={"stations": 1})
-            da_rps = da_rps.expand_dims(dim={"stations": 1})
 
         da_mhws_peaks = get_peaks(
             da=da_tide,
@@ -188,20 +178,30 @@ class CoastalDesignEvents(ExpandMethod):
             .transpose("time", "peak", ...)
             .mean("peak")
         )
+        # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
+        if "stations" not in tide_hydrographs.dims:
+            tide_hydrographs = tide_hydrographs.expand_dims(dim={"stations": 1})
+            tide_hydrographs["stations"] = da_tide["stations"]
 
-        da_surge_peaks = get_peaks(da_surge, "BM", min_dist=6 * 24 * 10)
+        da_surge_eva = eva(
+            da_surge, ev_type="BM", min_dist=6 * 24 * 10, rps=np.array(self.params.rps)
+        )
         surge_hydrographs = (
             get_peak_hydrographs(
                 da_surge,
-                da_surge_peaks,
+                da_surge_eva["peaks"],
                 wdw_size=int(6 * 24 * self.params.ndays),
                 normalize=False,
             )
             .transpose("time", "peak", ...)
             .mean("peak")
         )
+        # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
+        if "stations" not in surge_hydrographs.dims:
+            surge_hydrographs = surge_hydrographs.expand_dims(dim={"stations": 1})
+            surge_hydrographs["stations"] = da_surge["stations"]
 
-        nontidal_rp = da_rps["return_values"] - tide_hydrographs
+        nontidal_rp = da_surge_eva["return_values"] - tide_hydrographs
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
         h_hydrograph = h_hydrograph.assign_coords(
             time=pd.to_datetime(self.params.t0)
@@ -230,21 +230,6 @@ class CoastalDesignEvents(ExpandMethod):
 
         event_catalog = EventSet(events=events_list)
         event_catalog.to_yaml(self.output.event_set_yaml)
-
-        # # TODO: move to get_data ?
-        # locs = []
-        # for station in h_hydrograph.stations:
-        #     locs.append(
-        #         Point(
-        #             h_hydrograph.sel(stations=station).lon.values,
-        #             h_hydrograph.sel(stations=station).lat.values,
-        #         )
-        #     )
-
-        # locations = gpd.GeoDataFrame(
-        #     {"index": h_hydrograph.stations.values, "geometry": locs}, crs=4326
-        # )
-        # locations.to_file(self.output.bnd_locations, driver="GPKG")
 
         if self.params.plot_fig:
             figs_dir = Path(root, "figs")
