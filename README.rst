@@ -38,7 +38,7 @@ then create a conda environment file from the pyproject.toml and install all dep
    cd HydroFlows
    python make_env.py
    conda env create -f environment.yml
-   conda activate hydraflows
+   conda activate hydroflows
    pip install .
 
 Using pip
