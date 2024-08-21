@@ -152,6 +152,9 @@ class PluvialDesignEvents(ExpandMethod):
 
     def run(self):
         """Run the Pluvial design events method."""
+        # check if the input files and the output directory exist
+        self.check_input_output_paths()
+
         da = xr.open_dataarray(self.input.precip_nc)
         time_dim = self.params.time_dim
         if da.ndim > 1 or time_dim not in da.dims:

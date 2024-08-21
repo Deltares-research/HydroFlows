@@ -87,6 +87,7 @@ deps_not_in_conda = [
   "hydromt_fiat",
   "sphinx_autosummary_accessors",
   "sphinx_design",
+  "autodoc_pydantic"
 ]
 
 [project.scripts]

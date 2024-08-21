@@ -50,6 +50,7 @@ class Workflow:
         self.config: WorkflowConfig = (
             WorkflowConfig(**config) if isinstance(config, dict) else config
         )
+        self.config._workflow_name = self.name
         self.wildcards: Wildcards = Wildcards(wildcards=wildcards)
         self.rules: Rules = Rules()
 
