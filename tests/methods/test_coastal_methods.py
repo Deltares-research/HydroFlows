@@ -8,10 +8,12 @@ import pytest
 import xarray as xr
 
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
+from hydroflows.methods.coastal.coastal_events_from_rp_data import (
+    CoastalEventFromRPData,
+)
 from hydroflows.methods.coastal.create_tide_surge_timeseries import TideSurgeTimeseries
 from hydroflows.methods.coastal.get_coast_rp import COASTRP_PATH, GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GTSM_ROOT, GetGTSMData
-from hydroflows.methods.coastal.get_waterlevel_rps import GetWaterlevelRPS
 
 
 @pytest.fixture()
@@ -96,19 +98,6 @@ def test_get_coast_rp(rio_region: Path, tmp_path: Path):
     rule.run_with_checks()
 
 
-def test_get_waterlevel_rps(waterlevel_timeseries: xr.DataArray, tmp_path: Path):
-    data_dir = Path(tmp_path, "waterlevel")
-    data_dir.mkdir()
-    waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
-    waterlevel_timeseries.close()
-
-    rule = GetWaterlevelRPS(
-        waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc", data_root=data_dir
-    )
-
-    rule.run_with_checks()
-
-
 def test_coastal_design_events(
     tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
     tmp_path: Path,
@@ -122,6 +111,30 @@ def test_coastal_design_events(
     rule = CoastalDesignEvents(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
+        event_root=str(data_dir / "events"),
+    )
+
+    rule.run_with_checks()
+
+
+def test_coastal_event_from_rp_data(
+    tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    waterlevel_rps: xr.Dataset,
+    tmp_path: Path,
+):
+    data_dir = Path(tmp_path, "coastal_events")
+    data_dir.mkdir()
+    t, s = tide_surge_timeseries
+    t.to_netcdf(data_dir / "tide_timeseries.nc")
+    s.to_netcdf(data_dir / "surge_timeseries.nc")
+
+    rps = waterlevel_rps
+    rps.to_netcdf(data_dir / "waterlevel_rps.nc")
+
+    rule = CoastalEventFromRPData(
+        surge_timeseries=data_dir / "surge_timeseries.nc",
+        tide_timeseries=data_dir / "tide_timeseries.nc",
+        rp_dataset=data_dir / "waterlevel_rps.nc",
         event_root=str(data_dir / "events"),
     )
 
