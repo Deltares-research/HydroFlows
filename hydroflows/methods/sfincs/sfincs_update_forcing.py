@@ -17,11 +17,7 @@ __all__ = ["SfincsUpdateForcing"]
 
 
 def parse_event_sfincs(
-    root: Path,
-    event: Event,
-    out_root: Path,
-    sfincs_config: Optional[Dict] = None,
-    bnd_locs: Optional[gpd.GeoDataFrame] = None,
+    root: Path, event: Event, out_root: Path, sfincs_config: Optional[Dict] = None
 ) -> None:
     """Parse event and update SFINCS model with event forcing.
 
@@ -37,8 +33,6 @@ def parse_event_sfincs(
         The path to the output directory where the updated SFINCS model will be saved.
     sfincs_config : dict, optional
         The SFINCS simulation config settings to update sfincs_inp, by default {}.
-    bnd_locs : gpd.GeoDataFrame, optional
-        The boundary point locations for the waterlevel timeseries, by default None.
     """
     # check if out_root is a subdirectory of root
     if sfincs_config is None:
@@ -138,9 +132,6 @@ class Params(Parameters):
     sfincs_config: Dict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
 
-    bnd_locations: Optional[Path] = None
-    """Path to GIS vector file describing sfincs bnd locations"""
-
 
 class SfincsUpdateForcing(Method):
     """Rule for updating Sfincs forcing with data from an event catalog.
@@ -207,9 +198,5 @@ class SfincsUpdateForcing(Method):
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
         parse_event_sfincs(
-            root=root,
-            event=event,
-            out_root=out_root,
-            sfincs_config=self.params.sfincs_config,
-            bnd_locs=self.params.bnd_locations,
+            root, event, out_root, sfincs_config=self.params.sfincs_config
         )
