@@ -4,7 +4,6 @@
 from pathlib import Path
 from typing import Dict, Optional
 
-import geopandas as gpd
 import numpy as np
 from hydromt_sfincs import SfincsModel
 
@@ -17,7 +16,11 @@ __all__ = ["SfincsUpdateForcing"]
 
 
 def parse_event_sfincs(
-    root: Path, event: Event, out_root: Path, sfincs_config: Optional[Dict] = None
+    root: Path,
+    event: Event,
+    out_root: Path,
+    bnd_locs: Path = None,
+    sfincs_config: Optional[Dict] = None,
 ) -> None:
     """Parse event and update SFINCS model with event forcing.
 
@@ -129,6 +132,9 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
+    bnd_locs: Path = None
+    """Path to file with waterlevel boundary points. Required for forcing type water_level."""
+
     sfincs_config: Dict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
 
@@ -197,6 +203,7 @@ class SfincsUpdateForcing(Method):
         # update sfincs model with event forcing
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
+        bnd_locs = self.params.bnd_locs
         parse_event_sfincs(
-            root, event, out_root, sfincs_config=self.params.sfincs_config
+            root, event, out_root, bnd_locs, sfincs_config=self.params.sfincs_config
         )
