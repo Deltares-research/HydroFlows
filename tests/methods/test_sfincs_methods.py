@@ -56,8 +56,9 @@ def test_sfincs_update(rio_sfincs_model: Path, test_data_dir: Path, tmp_path: Pa
         sfincs_inp=str(tmp_root / "sfincs.inp"),
         event_yaml=str(event_yaml),
         event_name="rp010",
+        sim_subfolder="sim",
     )
-    assert sf.output.sfincs_out_inp == tmp_root / "simulations" / "rp010" / "sfincs.inp"
+    assert sf.output.sfincs_out_inp == tmp_root / "sim" / "rp010" / "sfincs.inp"
     sf.run_with_checks()
 
 
