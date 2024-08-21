@@ -182,7 +182,10 @@ class SfincsUpdateForcing(Method):
         )
 
         sfincs_out_inp = (
-            self.input.sfincs_inp.parent / sim_subfolder / event_name / "sfincs.inp"
+            self.input.sfincs_inp.parent
+            / self.params.sim_subfolder
+            / self.params.event_name
+            / "sfincs.inp"
         )
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 

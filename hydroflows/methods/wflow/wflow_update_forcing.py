@@ -127,7 +127,9 @@ class WflowUpdateForcing(Method):
             **params,
         )
         self.input: Input = Input(wflow_toml=wflow_toml)
-        wflow_out_toml = self.input.wflow_toml.parent / sim_subfolder / "wflow_sbm.toml"
+        wflow_out_toml = (
+            self.input.wflow_toml.parent / self.params.sim_subfolder / "wflow_sbm.toml"
+        )
         self.output: Output = Output(wflow_out_toml=wflow_out_toml)
 
     def run(self):

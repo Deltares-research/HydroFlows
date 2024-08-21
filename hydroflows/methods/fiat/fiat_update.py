@@ -123,7 +123,11 @@ class FIATUpdateHazard(ReduceMethod):
         )
 
         # output root is the simulation folder
-        fiat_root = self.input.fiat_cfg.parent / sim_subfolder / event_set_name
+        fiat_root = (
+            self.input.fiat_cfg.parent
+            / self.params.sim_subfolder
+            / self.params.event_set_name
+        )
         self.output: Output = Output(
             fiat_hazard=fiat_root / "hazard_nc",
             fiat_out_cfg=fiat_root / "settings.toml",
