@@ -1,10 +1,96 @@
 import io
 import os
+from pathlib import Path
+from typing import List
 
 import pytest
 import yaml
 
-from hydroflows.workflow import Method, Ref, Rule, Workflow, WorkflowConfig
+from hydroflows.workflow import (
+    ExpandMethod,
+    Method,
+    Parameters,
+    ReduceMethod,
+    Ref,
+    Rule,
+    Workflow,
+    WorkflowConfig,
+)
+
+
+class ExpandMethodInput(Parameters):
+    input_file: Path
+
+
+class ExpandMethodOutput(Parameters):
+    output_file: Path
+    output_file2: Path
+
+
+class ExpandMethodParams(Parameters):
+    root: Path
+    events: list[str]
+    wildcard: str = "wildcard"
+
+
+class MockExpandMethod(ExpandMethod):
+    def __init__(
+        self,
+        input_file: Path,
+        root: Path,
+        events: List[str],
+        wildcard: str = "wildcard",
+    ) -> None:
+        self.input = ExpandMethodInput(input_file=input_file)
+        self.params = ExpandMethodParams(root=root, events=events, wildcard=wildcard)
+        wc = "{" + wildcard + "}"
+        self.output = ExpandMethodOutput(
+            output_file=self.params.root / f"{wc}.yml",
+            output_file2=self.params.root / f"{wc}_2.yml",
+        )
+        self.set_expand_wildcards(wildcard, self.params.events)
+
+    def run(self):
+        for event in self.params.events:
+            fmt_dict = {self.params.wildcard: event}
+            event_file = Path(str(self.output.output_file).format(**fmt_dict))
+            test_data = {event: "test"}
+            with open(event_file, "w") as f:
+                yaml.dumps(test_data, f)
+        with open(self.output.output_file2, "w") as f:
+            yaml.dumps({"test_file": "2nd_test_file"}, f)
+
+
+class ReduceInput(Parameters):
+    first_file: Path
+    second_file: Path
+
+
+class ReduceParams(Parameters):
+    name: str
+    root: Path
+
+
+class ReduceOutput(Parameters):
+    output_file: Path
+
+
+class MockReduceMethod(ReduceMethod):
+    def __init__(
+        self, first_file: Path, second_file: Path, name: str, root: Path
+    ) -> None:
+        self.input = ReduceInput(first_file=first_file, second_file=second_file)
+        self.params = ReduceParams(root=root, name=name)
+        self.output = ReduceOutput(output_file=root / "output_file.yml")
+
+    def run(self):
+        data = {
+            "input1": self.input.first_file,
+            "input2": self.input.second_file,
+            "name": self.params.name,
+        }
+        with open(self.output.output_file, "w") as f:
+            yaml.dumps(data, f)
 
 
 @pytest.fixture
@@ -92,6 +178,14 @@ def test_workflow_from_yaml(tmpdir, workflow):
 def test_workflow_to_snakemake(tmpdir, workflow):
     snakefile = os.path.join(tmpdir, "snakefile.smk")
     workflow.to_snakemake(snakefile)
+    with open(snakefile, "r") as f:
+        smk = f.read()
+    assert "snakefile.config.yml" in smk
+    smk = smk.replace("snakefile.config.yml", "sfincs_pluvial.config.yml")
+    with open("examples/sfincs_pluvial.smk", "r") as f:
+        smk2 = f.read()
+
+    assert smk == smk2
 
 
 def test_workflow_to_yaml(tmpdir, workflow):
