@@ -1,19 +1,18 @@
 """Pluvial design events method."""
 
 from pathlib import Path
-from typing import Any, List, Literal, Optional
+from typing import List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from pydantic import ValidationInfo, field_validator, model_validator
+from pydantic import model_validator
 
 from hydroflows._typing import ListOfFloat, ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 
 __all__ = ["PluvialDesignEvents"]
 
@@ -59,8 +58,8 @@ class Params(Parameters):
     wildcard: str = "event"
     """The wildcard key for expansion over the design events."""
 
-    # Note: requires rps and wildcard which should be defined before this
-    event_names: ListOfStr
+    # Note: set by model_validator based on rps if not provided
+    event_names: Optional[ListOfStr] = None
     """List of event names associated with return periods."""
 
     durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
@@ -88,23 +87,16 @@ class Params(Parameters):
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
 
-    @field_validator("event_names", mode="before")
-    @classmethod
-    def _validate_event_names(cls, v: Any, info: ValidationInfo):
-        """Use rps to define event names if not provided."""
-        if v is None:
-            rps = info.data["rps"]
-            wildcard = info.data["wildcard"]
-            v = Ref(
-                ref=f"$wildcards.{wildcard}",
-                value=[f"p_event{int(i+1):02d}" for i in range(len(rps))],
-            )
-        return v
-
     @model_validator(mode="after")
-    def _calculate_keys(self) -> Any:
-        if len(self.event_names) != len(self.rps):
+    def _validate_event_names(self):
+        """Use rps to define event names if not provided."""
+        if self.event_names is None:
+            self.event_names = [f"p_event{int(i+1):02d}" for i in range(len(self.rps))]
+        elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
+        # create a reference to the event wildcard
+        if "event_names" not in self._refs:
+            self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
 class PluvialDesignEvents(ExpandMethod):

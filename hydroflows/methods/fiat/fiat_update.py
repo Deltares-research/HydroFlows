@@ -136,7 +136,7 @@ class FIATUpdateHazard(ReduceMethod):
             / self.params.event_set_name
         )
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard_nc",
+            fiat_hazard=fiat_root / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
         )
 

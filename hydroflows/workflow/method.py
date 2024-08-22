@@ -106,27 +106,23 @@ class Method(ABC):
 
     ## SERIALIZATION METHODS
 
-    @property
-    def kwargs(self) -> Dict[str, Any]:
-        """Return the minimal set of keyword-arguments which result in the same method parametrization."""
-        init_kw = inspect.signature(self.__init__).parameters
-        in_kw = {k: v for k, v in self.input.to_dict("json").items() if k in init_kw}
-        out_kw = {k: v for k, v in self.output.to_dict("json").items() if k in init_kw}
-        kw = {**in_kw, **out_kw, **self.params.to_dict("json")}
-        return kw
-
-    @property
-    def kwargs_with_refs(self) -> Dict[str, Any]:
-        """Return the keyword-arguments with references."""
-        init_kw = inspect.signature(self.__init__).parameters
-        opt = dict(
-            mode="json", return_refs=True, exclude_defaults=True, posix_path=True
+    def to_kwargs(
+        self,
+        mode="json",
+        exclude_defaults=True,
+        posix_path=False,
+        return_refs=False,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Return flattened keyword-arguments which result in the same method parametrization."""
+        kwargs = dict(
+            mode=mode, posix_path=posix_path, return_refs=return_refs, **kwargs
         )
-        in_kw = {k: v for k, v in self.input.to_dict(**opt).items() if k in init_kw}
-        out_kw = {k: v for k, v in self.output.to_dict(**opt).items() if k in init_kw}
-        params_kw = self.params.to_dict(**opt)
-        kw = {**in_kw, **out_kw, **params_kw}
-        return kw
+        par = inspect.signature(self.__init__).parameters
+        in_kw = {k: v for k, v in self.input.to_dict(**kwargs).items() if k in par}
+        out_kw = {k: v for k, v in self.output.to_dict(**kwargs).items() if k in par}
+        params_kw = self.params.to_dict(exclude_defaults=exclude_defaults, **kwargs)
+        return {**in_kw, **out_kw, **params_kw}
 
     @property
     def dict(self) -> Dict[str, Dict]:
@@ -221,7 +217,8 @@ class Method(ABC):
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
         # parse all values to strings to test serialization
-        kw = {k: str(v) for k, v in self.kwargs.items()}
+        kw = self.to_kwargs(exclude_defaults=False, posix_path=True)
+        kw = {k: str(v) for k, v in kw.items()}
         m = self.from_kwargs(self.name, **kw)
         assert m.dict == self.dict
 
