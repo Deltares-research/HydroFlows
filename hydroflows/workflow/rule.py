@@ -1,5 +1,6 @@
 """HydroFlows Rule class."""
 
+import warnings
 import weakref
 from itertools import product
 from pathlib import Path
@@ -7,7 +8,8 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
 
-from hydroflows.workflow.method import ExpandMethod, Method
+from hydroflows.utils.parsers import get_wildcards
+from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 
 if TYPE_CHECKING:
     from hydroflows.workflow.method_parameters import Parameters
@@ -63,6 +65,10 @@ class Rule:
         if isinstance(self.method, ExpandMethod):
             for wc, val in self.method.expand_wildcards.items():
                 self.workflow.wildcards.set(wc, val)
+
+        # detect and validate wildcards
+        self._detect_wildcards()
+        self._validate_wildcards()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -154,14 +160,20 @@ class Rule:
             for field, value in self.method.dict[sec].items():
                 if not isinstance(value, (str, Path)):
                     continue
-                value = str(value)
-                for wc in known_wildcards:
-                    if "{" + str(wc) + "}" in value:
-                        if wc not in wildcards[sec]:
-                            wildcards[sec].append(wc)
-                        if wc not in wildcard_fields:
-                            wildcard_fields[wc] = []
-                        wildcard_fields[wc].append(field)
+                val_wildcards = get_wildcards(value)
+                # loop over wildcards that are known and in the value
+                for wc in set(val_wildcards) & set(known_wildcards):
+                    if wc not in wildcards[sec]:
+                        wildcards[sec].append(wc)
+                    if wc not in wildcard_fields:
+                        wildcard_fields[wc] = []
+                    wildcard_fields[wc].append(field)
+                # loop over wildcards that are not known
+                for wc in set(val_wildcards) - set(known_wildcards):
+                    # raise warning if wildcard is not known
+                    warnings.warn(
+                        f"Wildcard {wc} not found in workflow wildcards.", stacklevel=2
+                    )
 
         # organize wildcards in expand, reduce and explode
         wc_in_params = set(wildcards["input"] + wildcards["params"])
@@ -175,6 +187,23 @@ class Rule:
         # set the wildcard properties
         self._wildcards = wildcards_dict
         self._wildcard_fields = wildcard_fields
+
+    def _validate_wildcards(self) -> None:
+        """Validate wildcards based on method type."""
+        if self.wildcards["expand"] and not isinstance(self.method, ExpandMethod):
+            wcs = self.wildcards["expand"]
+            inputs = self.method.dict["input"]
+            raise ValueError(f"wildcard(s) {wcs} missing on inputs {inputs}")
+        elif isinstance(self.method, ExpandMethod) and not self.wildcards["expand"]:
+            outputs = self.method.dict["output"]
+            raise ValueError(f"wildcard(s) missing on outputs {outputs}")
+        if self.wildcards["reduce"] and not isinstance(self.method, ReduceMethod):
+            wcs = self.wildcards["reduce"]
+            outputs = self.method.dict["output"]
+            raise ValueError(f"wildcard(s) {wcs} missing on outputs {outputs}")
+        elif isinstance(self.method, ReduceMethod) and not self.wildcards["reduce"]:
+            inputs = self.method.dict["input"]
+            raise ValueError(f"wildcard(s) missing on inputs {inputs}")
 
     def method_wildcard_instance(self, wildcards: Dict) -> Method:
         """Return a new method instance with wildcards replaced by values."""
