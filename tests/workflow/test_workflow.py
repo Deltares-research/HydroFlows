@@ -1,8 +1,10 @@
-import pytest
-import yaml
+import io
 import os
 
-from hydroflows.workflow import Workflow, WorkflowConfig, Method, Rule, Ref
+import pytest
+import yaml
+
+from hydroflows.workflow import Method, Ref, Rule, Workflow, WorkflowConfig
 
 
 @pytest.fixture
@@ -17,6 +19,11 @@ def mock_method(mocker):
     mocker.patch.multiple(Method, __abstractmethods__=set())
     instance = Method()
     return instance
+
+
+@pytest.fixture
+def workflow():
+    return Workflow.from_yaml("examples/sfincs_pluvial.yml")
 
 
 def test_workflow_init(w):
@@ -55,11 +62,9 @@ def test_workflow_get_ref(w):
     assert ref.value == w.config.rps
 
 
-def test_workflow_from_yaml(tmpdir):
-    yaml_fn = "examples/sfincs_pluvial.yml"
-    w = Workflow.from_yaml(file=yaml_fn)
-    assert isinstance(w, Workflow)
-    assert w.rules[0].rule_id == "sfincs_build"
+def test_workflow_from_yaml(tmpdir, workflow):
+    assert isinstance(workflow, Workflow)
+    assert workflow.rules[0].rule_id == "sfincs_build"
 
     test_yml = {
         "config": {"region": "data/test_region.geojson", "rps": [5, 10, 50]},
@@ -84,5 +89,30 @@ def test_workflow_from_yaml(tmpdir):
         Workflow.from_yaml(test_file)
 
 
-def test_workflow_to_snakemake():
-    pass
+def test_workflow_to_snakemake(tmpdir, workflow):
+    snakefile = os.path.join(tmpdir, "snakefile.smk")
+    workflow.to_snakemake(snakefile)
+
+
+def test_workflow_to_yaml(tmpdir, workflow):
+    test_file = os.path.join(tmpdir, "test.yml")
+    workflow.to_yaml(test_file)
+    w2 = Workflow.from_yaml(test_file)
+    assert workflow.config == w2.config
+    assert workflow.wildcards == w2.wildcards
+    assert all(
+        [
+            w_rule.rule_id == w2_rule.rule_id
+            for w_rule, w2_rule in zip(workflow.rules, w2.rules)
+        ]
+    )
+
+
+def test_workflow_run(mocker, workflow):
+    mocker.patch("hydroflows.workflow.Rule.run")
+    mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
+    workflow.run(dryrun=True)
+    captured_stdout = mock_stdout.getvalue()
+    assert "Running dryrun in /tmp/hydroflows_" in captured_stdout
+    for rule in workflow.rules:
+        assert rule.rule_id in captured_stdout
