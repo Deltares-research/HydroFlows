@@ -1,9 +1,10 @@
-from typing import Dict, Union
+from pathlib import Path
+from typing import Dict, List, Union
 
-from pydantic import BeforeValidator, Json
+from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated
 
-from hydroflows.utils.parsers import str_to_list
+from hydroflows.utils.parsers import get_wildcards, str_to_list
 
 ListOfStr = Annotated[
     list[str],
@@ -22,7 +23,15 @@ ListOfFloat = Annotated[
 
 JsonDict = Union[Dict, Json]
 
-# WildcardPath = Annotated[
-#     Path,
-#     BeforeValidator(lambda x: Path(x) if isinstance(x, str) else x),
-# ]
+
+def _check_path_has_wildcard(path: Union[Path, List[Path]]) -> Path:
+    """Check if a path contains a wildcard."""
+    if isinstance(path, Path) and not any(get_wildcards(path)):
+        raise ValueError(f"Path {path} does not contain any wildcards")
+    return path
+
+
+WildcardPath = Annotated[
+    Path,
+    AfterValidator(_check_path_has_wildcard),
+]
