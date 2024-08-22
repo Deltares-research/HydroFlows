@@ -109,7 +109,7 @@ class Workflow:
             workflow.add_rule_from_kwargs(**rule)
         return workflow
 
-    def to_snakemake(self, snakefile: Path) -> None:
+    def to_snakemake(self, snakefile: Path, dryrun: bool = False) -> None:
         """Save the workflow to a snakemake workflow."""
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
@@ -125,6 +125,7 @@ class Workflow:
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
+            dryrun=dryrun,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
