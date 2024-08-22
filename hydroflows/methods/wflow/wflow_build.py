@@ -125,9 +125,6 @@ class WflowBuild(Method):
 
     def run(self):
         """Run the WflowBuild method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         logger = setuplog("build", log_level=20)
 
         # create the hydromt model

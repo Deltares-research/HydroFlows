@@ -105,9 +105,6 @@ class SfincsRun(Method):
 
     def run(self) -> None:
         """Run the SfincsRun method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # make sure model_root is an absolute path
         model_root = self.input.sfincs_inp.parent.resolve()
 
