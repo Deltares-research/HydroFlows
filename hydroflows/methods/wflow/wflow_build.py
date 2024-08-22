@@ -86,6 +86,10 @@ class WflowBuild(Method):
 
     name: str = "wflow_build"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(
         self,
         region: Path,

@@ -73,6 +73,12 @@ class FIATUpdateHazard(ReduceMethod):
 
     name: str = "fiat_update_hazard"
 
+    _test_kwargs = {
+        "fiat_cfg": Path("fiat.toml"),
+        "event_set_yaml": Path("event_set.yaml"),
+        "hazard_maps": Path("hazard_{event}.nc"),
+    }
+
     def __init__(
         self,
         fiat_cfg: Path,

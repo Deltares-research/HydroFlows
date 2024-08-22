@@ -85,6 +85,12 @@ class WflowUpdateForcing(Method):
 
     name: str = "wflow_update_forcing"
 
+    _test_kwargs = {
+        "wflow_toml": Path("wflow.toml"),
+        "start_time": datetime(1990, 1, 1),
+        "end_time": datetime(1990, 1, 2),
+    }
+
     def __init__(
         self,
         wflow_toml: Path,

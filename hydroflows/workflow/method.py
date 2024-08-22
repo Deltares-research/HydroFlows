@@ -29,6 +29,9 @@ class Method(ABC):
     # name of the method, should be replaced in subclass
     name: ClassVar[str] = "abstract_method"
 
+    # Define the method kwargs for testing
+    _test_kwargs = {}
+
     @abstractmethod
     def __init__(self) -> None:
         """Create a new method instance with input, output and params."""
@@ -106,9 +109,9 @@ class Method(ABC):
     def kwargs(self) -> Dict[str, Any]:
         """Return the minimal set of keyword-arguments which result in the same method parametrization."""
         init_kw = inspect.signature(self.__init__).parameters
-        in_kw = {k: v for k, v in self.dict["input"].items() if k in init_kw}
-        out_kw = {k: v for k, v in self.dict["output"].items() if k in init_kw}
-        kw = {**in_kw, **out_kw, **self.dict.get("params", {})}
+        in_kw = {k: v for k, v in self.input.to_dict("json").items() if k in init_kw}
+        out_kw = {k: v for k, v in self.output.to_dict("json").items() if k in init_kw}
+        kw = {**in_kw, **out_kw, **self.params.to_dict("json")}
         return kw
 
     @property
@@ -194,6 +197,11 @@ class Method(ABC):
 
     @classmethod
     def _get_subclasses(cls) -> Generator[type["Method"], None, None]:
+        # FIXME use entrypoints to get all subclasses
+        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
+
+        from hydroflows import methods as _  # noqa: F401
+
         for subclass in cls.__subclasses__():
             yield from subclass._get_subclasses()
             yield subclass
@@ -201,10 +209,6 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
-        # FIXME use entrypoints to get all subclasses
-        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
-        from hydroflows import methods as _  # noqa: F401
-
         for subclass in cls._get_subclasses():
             if subclass.name == name:
                 return subclass
@@ -215,11 +219,11 @@ class Method(ABC):
 
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
-        kw = self.kwargs
-        m = self.from_kwargs(kw)
+        # parse all values to strings to test serialization
+        kw = {k: str(v) for k, v in self.kwargs.items()}
+        m = self.from_kwargs(self.name, **kw)
         assert m.dict == self.dict
 
-    @classmethod
     def _test_unique_keys(self) -> None:
         """Check if the method input, output and params keys are unique."""
         inputs = list(self.input.model_fields.keys())
@@ -231,15 +235,21 @@ class Method(ABC):
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
 
-    @classmethod
     def _test_method_kwargs(self) -> None:
         """Test if all method __init__ arguments are in input, output or params."""
         init_kw = inspect.signature(self.__init__).parameters
+        # skip
         in_kw = self.input.model_fields.keys()
         out_kw = self.output.model_fields.keys()
         params_kw = self.params.model_fields.keys()
         all_kw = list(in_kw) + list(out_kw) + list(params_kw)
         for k in init_kw:
+            # skip self, *args, **kwargs
+            if k == "self" or init_kw[k].kind in (
+                inspect.Parameter.VAR_KEYWORD,
+                inspect.Parameter.VAR_POSITIONAL,
+            ):
+                continue
             if k not in all_kw:
                 raise ValueError(
                     f"Method __init__ argument {k} not in input, output or params"
