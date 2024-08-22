@@ -7,15 +7,13 @@ import pytest
 import yaml
 
 from hydroflows.workflow import (
-    ExpandMethod,
-    Method,
     Parameters,
-    ReduceMethod,
     Ref,
     Rule,
     Workflow,
     WorkflowConfig,
 )
+from hydroflows.workflow.method import ExpandMethod, ReduceMethod
 
 
 class ExpandMethodInput(Parameters):
@@ -34,6 +32,8 @@ class ExpandMethodParams(Parameters):
 
 
 class MockExpandMethod(ExpandMethod):
+    name: str = "mock_expand_method"
+
     def __init__(
         self,
         input_file: Path,
@@ -67,7 +67,6 @@ class ReduceInput(Parameters):
 
 
 class ReduceParams(Parameters):
-    name: str
     root: Path
 
 
@@ -76,11 +75,11 @@ class ReduceOutput(Parameters):
 
 
 class MockReduceMethod(ReduceMethod):
-    def __init__(
-        self, first_file: Path, second_file: Path, name: str, root: Path
-    ) -> None:
+    name: str = "mock_reduce_method"
+
+    def __init__(self, first_file: Path, second_file: Path, root: Path) -> None:
         self.input = ReduceInput(first_file=first_file, second_file=second_file)
-        self.params = ReduceParams(root=root, name=name)
+        self.params = ReduceParams(root=root)
         self.output = ReduceOutput(output_file=root / "output_file.yml")
 
     def run(self):
@@ -101,29 +100,57 @@ def w():
 
 
 @pytest.fixture
-def mock_method(mocker):
-    mocker.patch.multiple(Method, __abstractmethods__=set())
-    instance = Method()
-    return instance
+def workflow_yaml_dict():
+    return {
+        "config": {
+            "input_file": "tests/_data/rio_region.geojson",
+            "events": [1, 2, 3],
+            "root": "",
+        },
+        "rules": [
+            {
+                "method": "mock_expand_method",
+                "kwargs": {
+                    "input_file": "$config.input_file",
+                    "events": "$config.events",
+                    "root": "$config.root",
+                },
+            },
+            {
+                "method": "mock_reduce_method",
+                "kwargs": {
+                    "first_input_file": "$rules.mock_expand_method.output.output_file",
+                    "second_input_file": "$rules.mock_expand_method.output.output_file2",
+                    "root": "$config.root",
+                },
+            },
+        ],
+    }
 
 
-@pytest.fixture
-def workflow():
-    return Workflow.from_yaml("examples/sfincs_pluvial.yml")
+def get_workflow(workflow_yaml_dict, tmpdir):
+    workflow_yaml_dict["config"]["root"] = tmpdir
+    fp = tmpdir / "test.yml"
+    with open(fp, "w") as f:
+        yaml.dumps(workflow_yaml_dict, f, sort_keys=False)
+    return Workflow.from_yaml(fp)
 
 
 def test_workflow_init(w):
     assert isinstance(w.config, WorkflowConfig)
     assert isinstance(w.wildcards.wildcards, dict)
-    assert w.config._workflow_name == "wf_instance"
+    assert w.name == "wf_instance"
 
 
-def test_workflow_repr(w, mock_method):
-    w.add_rule(method=mock_method, rule_id="mock_rule")
+def test_workflow_repr(w):
+    mock_expand_method = MockExpandMethod(
+        input_file="test.yml", root="", events=["1", "2"]
+    )
+    w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     repr_str = w.__repr__()
     assert "region1" in repr_str
     assert "region2" in repr_str
-    assert "mock_rule" in repr_str
+    assert "mock_expand_rule" in repr_str
 
 
 def test_workflow_add_rule(w, mock_method):
