@@ -128,7 +128,7 @@ class Workflow:
         )
         with open(snakefile, "w") as f:
             f.write(_str)
-        with open(configfile, "w") as f:
+        with open(Path(snakefile).parent / configfile, "w") as f:
             yaml.dump(self.config.to_dict(mode="json"), f)
 
     def to_yaml(self, file: str) -> None:
