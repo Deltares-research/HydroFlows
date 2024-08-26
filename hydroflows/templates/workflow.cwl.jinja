@@ -1,0 +1,45 @@
+cwlVersion: v1.2
+class: Workflow
+
+requirements:
+    ScatterFeatureRequirement: {}
+
+{# This maps to snake config #}
+inputs:
+    {% for key,value in workflow.config%}
+    {{key}}: {{value}}
+    {% endfor %}
+
+{# This maps to snake rule all #}
+outputs:
+    {% for key,value in workflow.results%}
+    {{key}}:
+        type: {{value.type}}
+        outputSource: {{value.source}}
+    {% endfor %}
+
+{# 
+For explode methods (n to n) we need scatter requirement
+For reduce methods (n to 1) we need MultipleInputFeatureRequirements
+For expand methods (1 to n) we dont need anything here (outputs defined as arrays in CWL method file)
+#}
+steps:
+    {% for step in workflow.rules %}
+    {{ step.rule_id }}
+    {% if step._wildcards.input and not step._wildcards.output %}
+        requirements:
+            MultipleInputFeatureRequirement: {}
+    {% elif step._wildcards.input %}
+        scatter: {{ }}
+        scatterMethod: dotproduct
+    {% endif %}
+        in:
+            {% for key,value in step.input.items() %}
+            {{key}}: {{value}}
+            {% endfor %}
+        out:
+        {% for output in step.output %}
+        - {{output}}
+        {% endfor %}        
+        run: {{step.cwl_file}}
+    {% endfor %}

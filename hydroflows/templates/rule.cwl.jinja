@@ -1,0 +1,39 @@
+cwlVersion: v1.2
+class: CommandLineTool
+
+requirements:
+    InlineJavascriptRequirement: {}
+
+baseCommand: ["hydroflows", "method", "{{rule.method_name}}"]
+
+inputs:
+    {% for key,value in rule.input.items() %}
+    {{key}}:
+        type: File
+        inputBinding:
+            prefix: {{key}}=
+            separate: false
+    {% endfor %}
+    {% for key,value in rule.params.items() %}
+    {{key}}:
+        type: {{value.type}}?
+        inputBinding:
+            prefix: {{key}}=
+            separate: false
+        default: {{value.value}}
+    {% endfor %}
+
+outputs:
+    {% for key,value in rule.output.items()%}
+    {{key}}:
+    {# For expand methods only the type needs to be File[]
+    Double check how the outputEval construction works for array outputs#}
+        type: {{value.type}}
+        outputBinding:
+            glob: "{{value.value}}"
+            outputEval: |
+                ${
+                    self[0].basename="{{value}}";
+                    return self
+                }
+    {% endfor %}
