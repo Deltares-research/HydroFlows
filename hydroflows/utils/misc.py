@@ -51,3 +51,10 @@ def copy_single_file(
         target,
         dest,
     )
+
+
+class SafeFormatDict(dict):
+    """A dictionary that returns the key if the key is not found."""
+
+    def __missing__(self, key):
+        return "{" + key + "}"

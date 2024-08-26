@@ -6,17 +6,17 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
-from hydroflows.methods.method import Method
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["WflowBuild"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`WflowBuild` method."""
 
     region: Path
@@ -27,7 +27,7 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`WflowBuild` method."""
 
     wflow_toml: Path
@@ -36,7 +36,7 @@ class Output(BaseModel):
     """
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`WflowBuild` method.
 
     See Also
@@ -115,9 +115,9 @@ class WflowBuild(Method):
         """
         self.params: Params = Params(wflow_root=wflow_root, **params)
         self.input: Input = Input(region=region)
-
-        wflow_toml = self.params.wflow_root / "simulations" / "wflow_toml"
-        self.output: Output = Output(wflow_toml=wflow_toml)
+        self.output: Output = Output(
+            wflow_toml=self.params.wflow_root / "simulations" / "wflow_toml"
+        )
 
     def run(self):
         """Run the WflowBuild method."""

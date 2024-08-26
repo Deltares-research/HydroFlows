@@ -5,14 +5,13 @@ import subprocess
 from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel
-
-from hydroflows.methods.method import Method
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsRun"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters.
 
     This class represents the input data
@@ -23,7 +22,7 @@ class Input(BaseModel):
     """The path to the SFINCS model configuration (inp) file."""
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters.
 
     This class represents the output data
@@ -34,7 +33,7 @@ class Output(BaseModel):
     """The path to the SFINCS sfincs_map.nc output file."""
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters.
 
     Instances of this class are used in the :py:class:`SfincsRun`
@@ -56,13 +55,25 @@ class SfincsRun(Method):
 
     name: str = "sfincs_run"
 
-    def __init__(self, sfincs_inp: str, **params) -> "SfincsRun":
+    def __init__(
+        self,
+        sfincs_inp: str,
+        sfincs_exe: Optional[Path] = None,
+        vm: Optional[Literal["docker", "singularity"]] = None,
+        **params,
+    ) -> "SfincsRun":
         """Create and validate a sfincs_run instance.
+
+        Either sfincs_exe or vm must be specified.
 
         Parameters
         ----------
         sfincs_inp : str
             Path to the SFINCS input file.
+        sfincs_exe : Path, optional
+            Path to the SFINCS Windows executable.
+        vm : Literal["docker", "singularity"], optional
+            The virtual machine environment to use.
         **params
             Additional parameters to pass to the SfincsRun instance.
             See :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`.
@@ -73,10 +84,10 @@ class SfincsRun(Method):
         :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
         :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
         """
-        self.params: Params = Params(**params)
+        self.params: Params = Params(sfincs_exe=sfincs_exe, vm=vm, **params)
         self.input: Input = Input(sfincs_inp=sfincs_inp)
         self.output: Output = Output(
-            sfincs_map=Path(sfincs_inp).parent / "sfincs_map.nc"
+            sfincs_map=self.input.sfincs_inp.parent / "sfincs_map.nc"
         )
 
     def run(self) -> None:

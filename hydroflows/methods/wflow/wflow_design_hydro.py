@@ -2,23 +2,24 @@
 
 import os
 from pathlib import Path
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
-from pydantic import BaseModel
 
 from hydroflows._typing import ListOfFloat
-from hydroflows.events import Event, EventCatalog
-from hydroflows.methods.method import ExpandMethod
+from hydroflows.events import Event, EventSet
+from hydroflows.workflow.method import ExpandMethod
+from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.reference import Ref
 
 __all__ = ["WflowDesignHydro"]
 
 
-class Input(BaseModel):
+class Input(Parameters):
     """Input parameters for the :py:class:`WflowDesignHydro` method."""
 
     discharge_nc: Path
@@ -35,26 +36,24 @@ class Input(BaseModel):
     """
 
 
-class Output(BaseModel):
+class Output(Parameters):
     """Output parameters for the :py:class:`WflowDesignHydro` method."""
-
-    events: List[str]
-    """List of event names derived from the design events."""
 
     event_yaml: Path
     """The path to the event description file,
-    see also :py:class:`hydroflows.workflows.events.Event`."""
+    see also :py:class:`hydroflows.events.Event`."""
 
     event_csv: Path
     """The path to the event csv timeseries file."""
 
-    event_catalog: Path
-    """The path to the event catalog yml file,
-    see also :py:class:`hydroflows.workflows.events.EventCatalog` class.
+    event_set_yaml: Path
+    """The path to the event set yml file that contains the derived
+    fluvial event configurations. This event set can be created from
+    a dictionary using the :py:class:`hydroflows.events.EventSet` class.
     """
 
 
-class Params(BaseModel):
+class Params(Parameters):
     """Parameters for the :py:class:`WflowDesignHydro` method.
 
     See Also
@@ -66,6 +65,15 @@ class Params(BaseModel):
 
     event_root: Path
     """"Root folder to save the derived design events."""
+
+    rps: ListOfFloat
+    """Return periods of of design events."""
+
+    event_names: List[str]
+    """List of event names derived from the design events."""
+
+    wildcard: str = "event"
+    """The wildcard key for expansion over the design events."""
 
     # parameters for the get_peaks function
     ev_type: Literal["BM", "POT"] = "BM"
@@ -98,10 +106,6 @@ class Params(BaseModel):
     """Number of largest peaks to get hydrograph.
     If None (default) all peaks are used."""
 
-    # return periods of interest
-    rps: ListOfFloat = [1, 2, 5, 10, 20, 50, 100]
-    """Return periods of interest."""
-
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hydrograph
     per location and return period, as well as the EVA fits."""
@@ -115,10 +119,15 @@ class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
     name: str = "wflow_design_hydro"
-    expand_refs: dict = {"event": "events"}
 
     def __init__(
-        self, discharge_nc: Path, event_root: Path = "data/events/discharge", **params
+        self,
+        discharge_nc: Path,
+        event_root: Path = "data/events/discharge",
+        rps: Optional[List[float]] = None,
+        event_names: Optional[List[str]] = None,
+        wildcard: str = "event",
+        **params,
     ) -> None:
         """Create and validate a WflowDesignHydro instance.
 
@@ -128,6 +137,12 @@ class WflowDesignHydro(ExpandMethod):
             The file path to the discharge time series in NetCDF format.
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/discharge".
+        rps : List[float], optional
+            Return periods of the design events, by default [1, 2, 5, 10, 20, 50, 100].
+        event_names : List[str], optional
+            List of event names of the design events, by default "q_event{i}", where i is the event number.
+        wildcard : str, optional
+            The wildcard key for expansion over the design events, by default "event".
         **params
             Additional parameters to pass to the WflowDesignHydro Params instance.
             See :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`.
@@ -141,20 +156,35 @@ class WflowDesignHydro(ExpandMethod):
             For more details on the event selection, EVA and peak hydrographs
             using HydroMT.
         """
-        self.params: Params = Params(event_root=event_root, **params)
-        self.input: Input = Input(discharge_nc=discharge_nc)
-        self.output: Output = Output(
-            events=[f"q_event{int(i+1):02d}" for i in range(len(self.params.rps))],
-            event_yaml=Path(event_root, "{event}.yml"),
-            event_csv=Path(event_root, "{event}.csv"),
-            event_catalog=Path(event_root, "event_catalog.yml"),
+        if rps is None:
+            rps = [1, 2, 5, 10, 20, 50, 100]
+        if event_names is None:
+            event_names = Ref(
+                ref=f"$wildcards.{wildcard}",
+                value=[f"q_event{int(i+1):02d}" for i in range(len(rps))],
+            )
+        elif len(event_names) != len(rps):
+            raise ValueError("event_names should have the same length as rps")
+        self.params: Params = Params(
+            event_root=event_root,
+            rps=rps,
+            event_names=event_names,
+            wildcard=wildcard,
+            **params,
         )
+        self.input: Input = Input(discharge_nc=discharge_nc)
+        wc = "{" + wildcard + "}"
+        self.output: Output = Output(
+            event_yaml=self.params.event_root / f"{wc}.yml",
+            event_csv=self.params.event_root / f"{wc}.csv",
+            event_set_yaml=self.params.event_root / "fluvial_events.yml",
+        )
+        # set wildcard
+        self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
         """Run the WflowDesignHydro method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-        root = self.output.event_catalog.parent
+        root = self.output.event_set_yaml.parent
 
         # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
@@ -232,7 +262,7 @@ class WflowDesignHydro(ExpandMethod):
         ).transpose(time_dim, "peak", index_dim)
 
         # calculate the mean design hydrograph per rp
-        q_hydrograph = da_q_hydrograph.mean("peak") * da_rps
+        q_hydrograph: xr.DataArray = da_q_hydrograph.mean("peak") * da_rps
 
         # make sure there are no negative values
         q_hydrograph = xr.where(q_hydrograph < 0, 0, q_hydrograph)
@@ -244,28 +274,25 @@ class WflowDesignHydro(ExpandMethod):
         q_hydrograph = q_hydrograph.reset_coords(drop=True)
 
         events_list = []
-        for name, rp in zip(self.output.events, q_hydrograph.rps.values):
-            # save q_rp as csv files
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(
-                str(self.output.event_csv).format(event=name)
-            )
-
-            # save event description file
+        for name, rp in zip(self.params.event_names, q_hydrograph["rps"].values):
+            fmt_dict = {self.params.wildcard: name}
+            # save q_rp as csv file
+            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
+            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            # save event yaml file
+            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "discharge", "path": f"{name}.csv"}],
+                forcings=[{"type": "discharge", "path": forcing_file.name}],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(str(self.output.event_yaml).format(event=name))
-            events_list.append(event)
+            event.to_yaml(event_file)
+            events_list.append({"name": name, "path": event_file.name})
 
-        # make a data catalog
-        event_catalog = EventCatalog(
-            root=root,
-            events=events_list,
-        )
-        event_catalog.to_yaml(self.output.event_catalog)
+        # make and save event set yaml file
+        event_set = EventSet(events=events_list)
+        event_set.to_yaml(self.output.event_set_yaml)
 
         # save plots
         if self.params.plot_fig:

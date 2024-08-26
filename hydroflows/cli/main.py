@@ -14,20 +14,20 @@ optional
 """
 
 from pathlib import Path
-from typing import Literal
+from typing import Dict, Literal, Optional
 
 import click
 
 from hydroflows import __version__
-from hydroflows.methods.method import Method
-from hydroflows.workflow import Workflow
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.workflow import Workflow
 
 
 # Copied from rasterio.rio.options
-def _cb_key_val(ctx, param, value):
+def _cb_key_val(ctx: click.Context, param: str, value: str) -> Dict[str, str]:
     """Convert key-value pairs to dictionary.
 
-    click callback to validate `--opt KEY1=VAL1 --opt KEY2=VAL2` and collect
+    click callback to validate `KEY1=VAL1 KEY2=VAL2` and collect
     in a dictionary like the one below, which is what the CLI function receives.
     If no value or `None` is received then an empty dictionary is returned.
 
@@ -53,7 +53,7 @@ def _cb_key_val(ctx, param, value):
         return out
 
 
-def print_license(ctx, param, value):
+def print_license(ctx: click.Context, param: str, value: str) -> Optional[Dict]:
     """Print the license for hydroflows."""
     if not value:
         return {}
@@ -61,7 +61,7 @@ def print_license(ctx, param, value):
     ctx.exit()
 
 
-def print_info(ctx, param, value):
+def print_info(ctx: click.Context, param: str, value: str) -> Optional[Dict]:
     """Print a copyright statement for hydroflows."""
     if not value:
         return {}
@@ -117,13 +117,19 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 @quiet_opt
 @overwrite_opt
 @click.pass_context
-def method(ctx, method, kwargs, verbose, quiet, overwrite):
+def method(
+    ctx: click.Context, method: str, kwargs: Dict[str, str], verbose, quiet, overwrite
+):
     """Run a method with a set of key-word arguments.
 
     RUNNER is the name of the method to run, e.g., 'build_wflow'.
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
-    Method.from_kwargs(method, **kwargs).run_with_checks()
+    try:
+        Method.from_kwargs(method, **kwargs).run_with_checks()
+    except Exception as e:
+        click.echo(f"Error: {e}")
+        ctx.exit(1)
 
 
 @cli.command(short_help="Create a workflow file.")
@@ -146,7 +152,7 @@ def method(ctx, method, kwargs, verbose, quiet, overwrite):
 )
 @click.pass_context
 def create(
-    ctx,
+    ctx: click.Context,
     workflow: Path,
     # output_dir: Path,
     fmt: Literal["smk"] = "smk",
@@ -165,7 +171,8 @@ def create(
         case "smk":
             wf.to_snakemake(Path(workflow).with_suffix(".smk"))
         case _:
-            raise ValueError(f"Unknown format {fmt}")
+            click.echo(f"Error: Unknown format {fmt}")
+            ctx.exit(1)
 
 
 @cli.command(short_help="Run a workflow file.")
@@ -175,7 +182,7 @@ def create(
 )
 @click.pass_context
 def run(
-    ctx,
+    ctx: click.Context,
     workflow: Path,
 ) -> None:
     """Create a workflow file.
@@ -185,7 +192,11 @@ def run(
     WORKFLOW : Path
         The hydroflows workflow file to use as template.
     """
-    Workflow.from_yaml(workflow).run()
+    try:
+        Workflow.from_yaml(workflow).run()
+    except Exception as e:
+        click.echo(f"Error: {e}")
+        ctx.exit(1)
 
 
 if __name__ == "__main__":

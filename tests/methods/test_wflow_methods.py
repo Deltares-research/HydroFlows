@@ -10,7 +10,8 @@ import xarray as xr
 from hydroflows.methods import WflowBuild, WflowDesignHydro, WflowUpdateForcing
 
 
-def test_wflow_build(rio_region, rio_test_data, tmp_path):
+@pytest.mark.requires_data()
+def test_wflow_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
     # required inputs
     region = rio_region.as_posix()
     wflow_root = Path(tmp_path, "wflow_model")
@@ -37,7 +38,10 @@ def test_wflow_build(rio_region, rio_test_data, tmp_path):
     # assert fn_geoms.exists()
 
 
-def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
+@pytest.mark.requires_data()
+def test_wflow_update_forcing(
+    rio_wflow_model: Path, rio_test_data: Path, tmp_path: Path
+):
     # copy the wflow model to the tmp_path
     root = tmp_path / "model"
     shutil.copytree(rio_wflow_model.parent, root)
@@ -60,7 +64,7 @@ def test_wflow_update_forcing(rio_wflow_model, rio_test_data, tmp_path):
 
 
 @pytest.fixture()
-def time_series_nc():
+def time_series_nc() -> xr.DataArray:
     rng = np.random.default_rng(12345)
     normal = pd.DataFrame(
         rng.random(size=(365 * 100, 2)) * 100,
@@ -82,7 +86,7 @@ def time_series_nc():
     return da
 
 
-def test_wflow_design_hydro(time_series_nc, tmp_path):
+def test_wflow_design_hydro(time_series_nc: xr.DataArray, tmp_path: Path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
     os.makedirs(fn_time_series_nc.parent, exist_ok=True)
@@ -92,9 +96,10 @@ def test_wflow_design_hydro(time_series_nc, tmp_path):
     discharge_nc = str(fn_time_series_nc)
     event_root = Path(tmp_path, "events")
 
-    rule = WflowDesignHydro(
+    m = WflowDesignHydro(
         discharge_nc=discharge_nc,
         event_root=event_root,
+        wildcard="q_event",
     )
-
-    rule.run_with_checks()
+    assert "{q_event}" in str(m.output.event_csv)
+    m.run_with_checks()

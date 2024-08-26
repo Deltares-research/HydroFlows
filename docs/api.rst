@@ -65,9 +65,9 @@ Workflow related methods
 .. autosummary::
    :toctree: _generated
 
-   hydroflows.workflows.events.Forcing
-   hydroflows.workflows.events.Hazard
-   hydroflows.workflows.events.Impact
-   hydroflows.workflows.events.Event
-   hydroflows.workflows.events.Roots
-   hydroflows.workflows.events.EventCatalog
+   hydroflows.events.Forcing
+   hydroflows.events.Hazard
+   hydroflows.events.Impact
+   hydroflows.events.Event
+   hydroflows.events.Roots
+   hydroflows.events.EventCatalog

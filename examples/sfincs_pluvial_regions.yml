@@ -13,7 +13,7 @@ rules:
   - method: get_ERA5_rainfall
     kwargs:
       region: $rules.sfincs_build.output.sfincs_region
-      data_input_root: data/input/{region}/rainfall
+      data_root: data/input/{region}/rainfall
   - method: pluvial_design_events
     kwargs:
       precip_nc: "$rules.get_ERA5_rainfall.output.precip_nc"
