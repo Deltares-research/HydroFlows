@@ -19,7 +19,7 @@ rule {{ rule.rule_id }}:
         {% endfor %}
     {% if script %}
     script:
-        "scripts/run_method_snake.py"
+        "{{ script }}"
     {% else %}
     shell:
         """

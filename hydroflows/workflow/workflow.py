@@ -128,10 +128,12 @@ class Workflow:
         run_env : Literal["shell", "script"], optional
             The environment in which to run the methods, by default "shell".
         """
-        script = run_env == "script"
         snakefile = Path(snakefile).resolve()
         configfile = snakefile.with_suffix(".config.yml")
-        scriptfile = snakefile.parent / "script" / "run_method_snake.py"
+        script = run_env == "script"
+        if script:
+            script_relpath = "script/run_method_snake.py"
+            scriptfile = snakefile.parent / script_relpath
 
         # create and write snakefile
         template_env = Environment(
@@ -148,8 +150,7 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
             dryrun=dryrun,
-            script=script,
-            scriptfile=scriptfile.name,
+            script=script_relpath if script else None,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
@@ -164,7 +165,7 @@ class Workflow:
         if script:
             scriptfile.parent.mkdir(parents=True, exist_ok=True)
             # copy file from templates folder
-            src = Path(HYDROMT_CONFIG_DIR) / "run_method_snake.py"
+            src = HYDROMT_CONFIG_DIR / "run_method_snake.py"
             shutil.copy2(src, scriptfile)
 
     def to_yaml(self, file: str) -> None:
