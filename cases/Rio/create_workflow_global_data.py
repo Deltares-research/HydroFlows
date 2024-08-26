@@ -29,8 +29,9 @@ conf = WorkflowConfig(
     end_date="2023-12-31",
     plot_fig=True,
     depth_min=0.05,
-    sfincs_exe="bin/sfincs/sfincs.exe",
-    fiat_exe="bin/fiat/fiat.exe",
+    sim_subfolder="design_events",  # not working for now so I have to manuually specify it in the method
+    sfincs_exe="../bin/sfincs/sfincs.exe",
+    fiat_exe="../bin/fiat/fiat.exe",
 )
 
 # %% Create a workflow
@@ -75,6 +76,7 @@ w.add_rule(pluvial_events, rule_id="pluvial_events")
 # %%
 sfincs_update = SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
+    sim_subfolder="design_events",
     event_yaml=pluvial_events.output.event_yaml,
 )
 w.add_rule(sfincs_update, rule_id="sfincs_update")
