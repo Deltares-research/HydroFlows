@@ -15,6 +15,6 @@ rule all:
 
 {% for rule in rules %}
 {% with rule=rule %}
-{{ add_rule(rule, dryrun) }}
+{{ add_rule(rule, dryrun, script) }}
 {% endwith %}
 {% endfor %}

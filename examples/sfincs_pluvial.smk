@@ -42,7 +42,7 @@ rule fiat_build:
         --dryrun \
         """
 
-rule get_ERA5_rainfall:
+rule get_rainfall:
     input:
         region=rules.sfincs_build.output.sfincs_region,
     output:
@@ -56,7 +56,7 @@ rule get_ERA5_rainfall:
 
 rule pluvial_design_events:
     input:
-        precip_nc=rules.get_ERA5_rainfall.output.precip_nc,
+        precip_nc=rules.get_rainfall.output.precip_nc,
     params:
         event_root="data/events/rainfall",
         rps=config["rps"],

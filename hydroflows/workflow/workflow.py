@@ -4,16 +4,18 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import os
+import shutil
 import tempfile
 from pathlib import Path
 from pprint import pformat
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Literal, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 
 from hydroflows import __version__
+from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
@@ -109,28 +111,61 @@ class Workflow:
             workflow.add_rule_from_kwargs(**rule)
         return workflow
 
-    def to_snakemake(self, snakefile: Path, dryrun: bool = False) -> None:
-        """Save the workflow to a snakemake workflow."""
+    def to_snakemake(
+        self,
+        snakefile: Path,
+        dryrun: bool = False,
+        run_env: Literal["shell", "script"] = "shell",
+    ) -> None:
+        """Save the workflow to a snakemake workflow.
+
+        Parameters
+        ----------
+        snakefile : Path
+            The path to the snakefile.
+        dryrun : bool, optional
+            Run the workflow in dryrun mode, by default False.
+        run_env : Literal["shell", "script"], optional
+            The environment in which to run the methods, by default "shell".
+        """
+        script = run_env == "script"
+        snakefile = Path(snakefile).resolve()
+        configfile = snakefile.with_suffix(".config.yml")
+        scriptfile = snakefile.parent / "script" / "run_method_snake.py"
+
+        # create and write snakefile
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = Path(snakefile).with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile,
+            configfile=configfile.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
             dryrun=dryrun,
+            script=script,
+            scriptfile=scriptfile.name,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
+
+        # write yml config
+        conf_dict = self.config.to_dict(mode="json")
+        if script:
+            conf_dict.update(dryrun=dryrun)
         with open(configfile, "w") as f:
-            yaml.dump(self.config.to_dict(mode="json"), f)
+            yaml.dump(conf_dict, f)
+
+        if script:
+            scriptfile.parent.mkdir(parents=True, exist_ok=True)
+            # copy file from templates folder
+            src = Path(HYDROMT_CONFIG_DIR) / "run_method_snake.py"
+            shutil.copy2(src, scriptfile)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
