@@ -51,6 +51,10 @@ class GetERA5Rainfall(Method):
 
     name: str = "get_ERA5_rainfall"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(self, region: Path, data_root: Path = "data/input", **params):
         """Create and validate a GetERA5Rainfall instance.
 
@@ -78,9 +82,6 @@ class GetERA5Rainfall(Method):
 
     def run(self):
         """Run the GetERA5Rainfall method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # read the region polygon file
         gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region).to_crs("EPSG:4326")
         # Calculate the centroid of each polygon

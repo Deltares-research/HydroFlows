@@ -13,6 +13,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
+from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
@@ -28,6 +29,9 @@ class Method(ABC):
 
     # name of the method, should be replaced in subclass
     name: ClassVar[str] = "abstract_method"
+
+    # Define the method kwargs for testing
+    _test_kwargs = {}
 
     @abstractmethod
     def __init__(self) -> None:
@@ -102,27 +106,23 @@ class Method(ABC):
 
     ## SERIALIZATION METHODS
 
-    @property
-    def kwargs(self) -> Dict[str, Any]:
-        """Return the minimal set of keyword-arguments which result in the same method parametrization."""
-        init_kw = inspect.signature(self.__init__).parameters
-        in_kw = {k: v for k, v in self.dict["input"].items() if k in init_kw}
-        out_kw = {k: v for k, v in self.dict["output"].items() if k in init_kw}
-        kw = {**in_kw, **out_kw, **self.dict.get("params", {})}
-        return kw
-
-    @property
-    def kwargs_with_refs(self) -> Dict[str, Any]:
-        """Return the keyword-arguments with references."""
-        init_kw = inspect.signature(self.__init__).parameters
-        opt = dict(
-            mode="json", return_refs=True, exclude_defaults=True, posix_path=True
+    def to_kwargs(
+        self,
+        mode="json",
+        exclude_defaults=True,
+        posix_path=False,
+        return_refs=False,
+        **kwargs,
+    ) -> Dict[str, Any]:
+        """Return flattened keyword-arguments which result in the same method parametrization."""
+        kwargs = dict(
+            mode=mode, posix_path=posix_path, return_refs=return_refs, **kwargs
         )
-        in_kw = {k: v for k, v in self.input.to_dict(**opt).items() if k in init_kw}
-        out_kw = {k: v for k, v in self.output.to_dict(**opt).items() if k in init_kw}
-        params_kw = self.params.to_dict(**opt)
-        kw = {**in_kw, **out_kw, **params_kw}
-        return kw
+        par = inspect.signature(self.__init__).parameters
+        in_kw = {k: v for k, v in self.input.to_dict(**kwargs).items() if k in par}
+        out_kw = {k: v for k, v in self.output.to_dict(**kwargs).items() if k in par}
+        params_kw = self.params.to_dict(exclude_defaults=exclude_defaults, **kwargs)
+        return {**in_kw, **out_kw, **params_kw}
 
     @property
     def dict(self) -> Dict[str, Dict]:
@@ -194,6 +194,11 @@ class Method(ABC):
 
     @classmethod
     def _get_subclasses(cls) -> Generator[type["Method"], None, None]:
+        # FIXME use entrypoints to get all subclasses
+        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
+
+        from hydroflows import methods as _  # noqa: F401
+
         for subclass in cls.__subclasses__():
             yield from subclass._get_subclasses()
             yield subclass
@@ -201,10 +206,6 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
-        # FIXME use entrypoints to get all subclasses
-        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
-        from hydroflows import methods as _  # noqa: F401
-
         for subclass in cls._get_subclasses():
             if subclass.name == name:
                 return subclass
@@ -215,11 +216,12 @@ class Method(ABC):
 
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
-        kw = self.kwargs
-        m = self.from_kwargs(kw)
+        # parse all values to strings to test serialization
+        kw = self.to_kwargs(exclude_defaults=False, posix_path=True)
+        kw = {k: str(v) for k, v in kw.items()}
+        m = self.from_kwargs(self.name, **kw)
         assert m.dict == self.dict
 
-    @classmethod
     def _test_unique_keys(self) -> None:
         """Check if the method input, output and params keys are unique."""
         inputs = list(self.input.model_fields.keys())
@@ -231,15 +233,21 @@ class Method(ABC):
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
 
-    @classmethod
     def _test_method_kwargs(self) -> None:
         """Test if all method __init__ arguments are in input, output or params."""
         init_kw = inspect.signature(self.__init__).parameters
+        # skip
         in_kw = self.input.model_fields.keys()
         out_kw = self.output.model_fields.keys()
         params_kw = self.params.model_fields.keys()
         all_kw = list(in_kw) + list(out_kw) + list(params_kw)
         for k in init_kw:
+            # skip self, *args, **kwargs
+            if k == "self" or init_kw[k].kind in (
+                inspect.Parameter.VAR_KEYWORD,
+                inspect.Parameter.VAR_POSITIONAL,
+            ):
+                continue
             if k not in all_kw:
                 raise ValueError(
                     f"Method __init__ argument {k} not in input, output or params"
@@ -338,7 +346,7 @@ class ExpandMethod(Method, ABC):
             if not isinstance(value, Path):
                 continue
             for wc, vlist in self.expand_wildcards.items():
-                if "{" + wc + "}" in str(value):
+                if any(get_wildcards(value, [wc])):
                     for v in vlist:
                         path = Path(str(value).format(**{wc: v}))
                         paths.append((key, path))

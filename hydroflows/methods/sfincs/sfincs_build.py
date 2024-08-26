@@ -88,6 +88,10 @@ class SfincsBuild(Method):
 
     name: str = "sfincs_build"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(
         self,
         region: Path,
@@ -128,9 +132,6 @@ class SfincsBuild(Method):
 
     def run(self):
         """Run the SfincsBuild method."""
-        # check if the input files and the output directory exist
-        self.check_input_output_paths()
-
         # read the configuration
         opt = configread(self.params.default_config)
         # TODO merge config
