@@ -8,7 +8,7 @@ from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.events import EventSet
-from hydroflows.utils import make_relative_paths
+from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 

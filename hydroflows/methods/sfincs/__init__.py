@@ -1,6 +1,6 @@
 """SFINCS methods submodule."""
 
-from .sfincs_build import SfincsBuild
-from .sfincs_postprocess import SfincsPostprocess
-from .sfincs_run import SfincsRun
-from .sfincs_update_forcing import SfincsUpdateForcing
+from hydroflows.methods.sfincs.sfincs_build import SfincsBuild
+from hydroflows.methods.sfincs.sfincs_postprocess import SfincsPostprocess
+from hydroflows.methods.sfincs.sfincs_run import SfincsRun
+from hydroflows.methods.sfincs.sfincs_update_forcing import SfincsUpdateForcing

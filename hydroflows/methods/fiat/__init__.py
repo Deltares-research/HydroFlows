@@ -1,5 +1,5 @@
 """FIAT methods submodule."""
 
-from .fiat_build import FIATBuild
-from .fiat_run import FIATRun
-from .fiat_update import FIATUpdateHazard
+from hydroflows.methods.fiat.fiat_build import FIATBuild
+from hydroflows.methods.fiat.fiat_run import FIATRun
+from hydroflows.methods.fiat.fiat_update import FIATUpdateHazard
