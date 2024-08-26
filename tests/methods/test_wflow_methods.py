@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from hydroflows.methods import WflowBuild, WflowDesignHydro, WflowUpdateForcing
+from hydroflows.methods.wflow import WflowBuild, WflowDesignHydro, WflowUpdateForcing
 
 
 @pytest.mark.requires_data()
