@@ -29,7 +29,7 @@ conf = WorkflowConfig(
     res=50,
     rps=[1, 2, 5, 10, 20, 50, 100],
     river_upa=10,
-    continent="south_america",
+    continent="South America",
     risk=True,
     start_date="1990-01-01",
     end_date="2023-12-31",
@@ -67,8 +67,8 @@ fiat_build = FIATBuild(
         str(w.get_ref("$config.models_root_folder")),
         "fiat",
     ),
-    config=w.get_ref("$config.hydromt_fiat_config"),
     data_libs=w.get_ref("$config.data_libs"),
+    config=w.get_ref("$config.hydromt_fiat_config"),
     continent=w.get_ref("$config.continent"),
 )
 
