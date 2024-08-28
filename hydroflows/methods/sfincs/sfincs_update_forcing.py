@@ -7,6 +7,7 @@ from typing import Dict, Optional
 import numpy as np
 from hydromt_sfincs import SfincsModel
 
+from hydroflows._typing import JsonDict
 from hydroflows.events import Event
 from hydroflows.utils import make_relative_paths
 from hydroflows.workflow.method import Method
@@ -125,7 +126,7 @@ class Params(Parameters):
     sim_subfolder: str = "simulations"
     """The subfolder relative to the basemodel where the simulation folders are stored."""
 
-    sfincs_config: Dict = {}
+    sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
 
 
@@ -139,6 +140,11 @@ class SfincsUpdateForcing(Method):
     """
 
     name: str = "sfincs_update_forcing"
+
+    _test_kwargs = {
+        "sfincs_inp": Path("sfincs.inp"),
+        "event_yaml": Path("event1.yaml"),
+    }
 
     def __init__(
         self,
@@ -182,7 +188,10 @@ class SfincsUpdateForcing(Method):
         )
 
         sfincs_out_inp = (
-            self.input.sfincs_inp.parent / sim_subfolder / event_name / "sfincs.inp"
+            self.input.sfincs_inp.parent
+            / self.params.sim_subfolder
+            / self.params.event_name
+            / "sfincs.inp"
         )
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 

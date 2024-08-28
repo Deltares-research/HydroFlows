@@ -142,7 +142,7 @@ class Rule:
         """Return the rule as a dictionary."""
         out = {
             "method": self.method.name,
-            "kwargs": self.method.kwargs_with_refs,
+            "kwargs": self.method.to_kwargs(return_refs=True, posix_path=True),
         }
         if self.rule_id != self.method.name:
             out["rule_id"] = self.rule_id
@@ -210,7 +210,7 @@ class Rule:
         if not wildcards:
             return self.method
 
-        kwargs = self.method.kwargs.copy()
+        kwargs = self.method.to_kwargs()
         for key in kwargs:
             if key in self._all_wildcard_fields:
                 if not any(isinstance(v, list) for v in wildcards.values()):
