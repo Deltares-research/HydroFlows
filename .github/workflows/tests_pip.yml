@@ -1,8 +1,10 @@
 name: Tests with pip install
 
 on:
+  workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - tests/*
       - hydroflows/*
