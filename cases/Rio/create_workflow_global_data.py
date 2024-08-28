@@ -2,12 +2,12 @@
 import os
 
 from hydroflows import Workflow
-from hydroflows.methods import (
-    FIATBuild,
-    FIATRun,
-    FIATUpdateHazard,
+from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
+from hydroflows.methods.rainfall import (
     GetERA5Rainfall,
     PluvialDesignEvents,
+)
+from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsPostprocess,
     SfincsRun,
