@@ -4,6 +4,8 @@ import os
 from os.path import isfile, join
 from pathlib import Path
 
+__all__ = ["make_relative_paths"]
+
 
 def make_relative_paths(config: dict, src: Path, dst: Path) -> dict:
     """Return a config where existing file paths are replaced with relative paths.

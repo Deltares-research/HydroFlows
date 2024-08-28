@@ -2,6 +2,8 @@ import inspect
 
 import pytest
 
+# load subclasses to discover all methods
+from hydroflows.methods import fiat, rainfall, sfincs, wflow  # noqa: F401
 from hydroflows.workflow import Method
 
 ALL_METHODS = [m for m in Method._get_subclasses() if not inspect.isabstract(m)]
