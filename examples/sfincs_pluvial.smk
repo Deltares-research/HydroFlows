@@ -124,6 +124,8 @@ rule fiat_update_hazard:
         fiat_cfg=rules.fiat_build.output.fiat_cfg,
         event_set_yaml=rules.pluvial_design_events.output.event_set_yaml,
         hazard_maps=expand("data/output/hazard/{event}.tif", event=EVENT),
+    params:
+        event_set_name="pluvial_events",
     output:
         fiat_hazard="models/fiat/simulations/pluvial_events/hazard.nc",
         fiat_out_cfg="models/fiat/simulations/pluvial_events/settings.toml",
@@ -133,6 +135,7 @@ rule fiat_update_hazard:
         fiat_cfg="{input.fiat_cfg}" \
         event_set_yaml="{input.event_set_yaml}" \
         hazard_maps="{input.hazard_maps}" \
+        event_set_name="{params.event_set_name}" \
         """
 
 rule fiat_run:

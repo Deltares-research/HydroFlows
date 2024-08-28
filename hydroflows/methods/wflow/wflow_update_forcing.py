@@ -44,9 +44,8 @@ class Params(Parameters):
     end_time: datetime
     """The end time of the period for which we want to generate forcing."""
 
-    sim_name: str
-    """"The name of the subdirectory of the basemodel in which the
-    forcing along with the updated config will be saved."""
+    sim_subfolder: str
+    """"The subfolder relative to the basemodel where the simulation folders are stored."""
 
     timestep: int = 86400  # in seconds
     """The timestep for generated forcing in seconds."""
@@ -86,12 +85,18 @@ class WflowUpdateForcing(Method):
 
     name: str = "wflow_update_forcing"
 
+    _test_kwargs = {
+        "wflow_toml": Path("wflow.toml"),
+        "start_time": datetime(1990, 1, 1),
+        "end_time": datetime(1990, 1, 2),
+    }
+
     def __init__(
         self,
         wflow_toml: Path,
         start_time: datetime,
         end_time: datetime,
-        sim_name: str = "default",
+        sim_subfolder: str = "simulations/default",
         **params,
     ):
         """Create and validate a WflowUpdateForcing instance.
@@ -107,9 +112,8 @@ class WflowUpdateForcing(Method):
             The start time of the period for which we want to generate forcing.
         end_time:datetime
             The end time of the period for which we want to generate forcing
-        sim_name : str, optional
-           The name of the subdirectory of the basemodel in which the
-           forcing along with the updated config will be saved, by default "default".
+        sim_subfolder : str, optional
+            The subfolder relative to the basemodel where the simulation folders are stored.
         **params
             Additional parameters to pass to the WflowUpdateForcing instance.
             See :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`.
@@ -123,11 +127,14 @@ class WflowUpdateForcing(Method):
             For more details on the WflowModel used in hydromt_wflow.
         """
         self.params: Params = Params(
-            start_time=start_time, end_time=end_time, sim_name=sim_name, **params
+            start_time=start_time,
+            end_time=end_time,
+            sim_subfolder=sim_subfolder,
+            **params,
         )
         self.input: Input = Input(wflow_toml=wflow_toml)
         wflow_out_toml = (
-            self.input.wflow_toml.parent / "simulations" / sim_name / "wflow_sbm.toml"
+            self.input.wflow_toml.parent / self.params.sim_subfolder / "wflow_sbm.toml"
         )
         self.output: Output = Output(wflow_out_toml=wflow_out_toml)
 

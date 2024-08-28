@@ -1,11 +1,12 @@
 """FIAT updating submodule/ rules."""
 
 from pathlib import Path
-from typing import List, Union
+from typing import List, Optional, Union
 
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
+from hydroflows._typing import WildcardPath
 from hydroflows.events import EventSet
 from hydroflows.utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
@@ -23,7 +24,7 @@ class Input(Parameters):
     see also :py:class:`hydroflows.events.Event`."""
 
     # single path should also be allowed for validation !
-    hazard_maps: Union[Path, List[Path]]
+    hazard_maps: Union[WildcardPath, List[Path]]
     """List of paths to hazard maps the event description file."""
 
 
@@ -44,6 +45,12 @@ class Params(Parameters):
     :py:class:`hydromt_fiat.fiat.FiatModel`
         For more details on the setup_hazard method used in hydromt_fiat
     """
+
+    event_set_name: str
+    """The name of the event set"""
+
+    sim_subfolder: str = "simulations"
+    """The subfolder relative to the basemodel where the simulation folders are stored."""
 
     map_type: str = "water_depth"
     """"The data type of each map specified in the data catalog. A single map type
@@ -67,16 +74,24 @@ class FIATUpdateHazard(ReduceMethod):
 
     name: str = "fiat_update_hazard"
 
+    _test_kwargs = {
+        "fiat_cfg": Path("fiat.toml"),
+        "event_set_yaml": Path("event_set.yaml"),
+        "hazard_maps": Path("hazard_{event}.nc"),
+    }
+
     def __init__(
         self,
         fiat_cfg: Path,
         event_set_yaml: Path,
         hazard_maps: Union[Path, List[Path]],
+        event_set_name: Optional[str] = None,
+        sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
 
-        FIAT simulations are stored in a simulations/{event_name} subdirectory of the basemodel.
+        FIAT simulations are stored in {basemodel}/{sim_subfolder}/{event_set_name}.
 
         Parameters
         ----------
@@ -84,8 +99,11 @@ class FIATUpdateHazard(ReduceMethod):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
-        hazard_maps : Union[Path, List[Path]]
-            The path to the hazard maps.
+        hazard_maps : Path or List[Path]
+            The path to the hazard maps. If a single path is provided, it should contain a wildcard.
+        sim_subfolder : Path, optional
+            The subfolder relative to the basemodel where the simulation folders are stored.
+
         **params
             Additional parameters to pass to the FIATUpdateHazard instance.
             See :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`.
@@ -97,24 +115,30 @@ class FIATUpdateHazard(ReduceMethod):
         :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`
 
         """
-        self.params: Params = Params(**params)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
         )
-        # NOTE: FIAT runs with full event sets with RPs. Name of event set is the stem of the event set file
-        event_set_name = self.input.event_set_yaml.stem
-        fiat_hazard = (
-            self.input.fiat_cfg.parent / "simulations" / event_set_name / "hazard.nc"
+        if event_set_name is None:
+            # NOTE: FIAT runs with full event sets with RPs.
+            # Name of event set is the stem of the event set file
+            event_set_name = self.input.event_set_yaml.stem
+
+        self.params: Params = Params(
+            event_set_name=event_set_name, sim_subfolder=sim_subfolder, **params
         )
-        fiat_out_cfg = (
+
+        # output root is the simulation folder
+        fiat_root = (
             self.input.fiat_cfg.parent
-            / "simulations"
-            / event_set_name
-            / "settings.toml"
+            / self.params.sim_subfolder
+            / self.params.event_set_name
         )
-        self.output: Output = Output(fiat_hazard=fiat_hazard, fiat_out_cfg=fiat_out_cfg)
+        self.output: Output = Output(
+            fiat_hazard=fiat_root / "hazard.nc",
+            fiat_out_cfg=fiat_root / "settings.toml",
+        )
 
     def run(self):
         """Run the FIATUpdateHazard method."""
