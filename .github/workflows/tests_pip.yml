@@ -5,17 +5,9 @@ on:
   push:
     branches:
       - main
-    paths:
-      - tests/*
-      - hydroflows/*
-      - pyproject.toml
   pull_request:
     branches:
       - main
-    paths:
-      - tests/*
-      - hydroflows/*
-      - pyproject.toml
 
 
 jobs:
@@ -47,10 +39,9 @@ jobs:
       - name: Install hydroflows
         run: |
           pip install --upgrade pip
-          pip install .[test,io,extra]
+          pip install .
 
       # run test
       - name: Test
         run: |
-          export NUMBA_DISABLE_JIT=1
           python -m pytest -m "not requires_data" --verbose
