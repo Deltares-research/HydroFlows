@@ -52,4 +52,3 @@ jobs:
         run: |
           export NUMBA_DISABLE_JIT=1
           python -m pytest -m "not requires_data" --verbose
-          
