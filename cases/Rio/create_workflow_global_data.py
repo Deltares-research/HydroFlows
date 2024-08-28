@@ -27,7 +27,7 @@ conf = WorkflowConfig(
     hydromt_sfincs_config="hydromt_config/sfincs_build_global.yaml",
     hydromt_fiat_config="hydromt_config/fiat_build_global.yaml",
     res=50,
-    rps=[1, 2, 5, 10, 20, 50, 100],
+    rps=[2, 10, 100],
     river_upa=10,
     continent="South America",
     risk=True,
@@ -45,10 +45,8 @@ w = Workflow(config=conf)
 sfincs_build = SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root=os.path.join(
-        str(
-            w.get_ref("$config.setup_scenario")
-        ),  # Ask Dirk about the type error (expected str, bytes or os.PathLike object, not Ref) without the str
-        str(w.get_ref("$config.models_root_folder")),
+        conf.setup_scenario,
+        conf.models_root_folder,
         "sfincs",
     ),
     default_config=w.get_ref("$config.hydromt_sfincs_config"),
@@ -63,8 +61,8 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 fiat_build = FIATBuild(
     region=sfincs_build.output.sfincs_region,
     fiat_root=os.path.join(
-        str(w.get_ref("$config.setup_scenario")),
-        str(w.get_ref("$config.models_root_folder")),
+        conf.setup_scenario,
+        conf.models_root_folder,
         "fiat",
     ),
     data_libs=w.get_ref("$config.data_libs"),
@@ -78,9 +76,9 @@ w.add_rule(fiat_build, rule_id="fiat_build")
 get_precip = GetERA5Rainfall(
     region=sfincs_build.output.sfincs_region,
     data_root=os.path.join(
-        str(w.get_ref("$config.setup_scenario")),
-        str(w.get_ref("$config.data_root_folder")),
-        str(w.get_ref("$config.sim_subfolder")),
+        conf.setup_scenario,
+        conf.data_root_folder,
+        conf.sim_subfolder,
         "input",
     ),
     start_date=w.get_ref("$config.start_date"),
@@ -92,9 +90,9 @@ w.add_rule(get_precip, rule_id="get_precip")
 pluvial_events = PluvialDesignEvents(
     precip_nc=get_precip.output.precip_nc,
     event_root=os.path.join(
-        str(w.get_ref("$config.setup_scenario")),
-        str(w.get_ref("$config.data_root_folder")),
-        str(w.get_ref("$config.sim_subfolder")),
+        conf.setup_scenario,
+        conf.data_root_folder,
+        conf.sim_subfolder,
         "events",
         "rainfall",
     ),
@@ -124,9 +122,9 @@ sfincs_postprocess = SfincsPostprocess(
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
     hazard_root=os.path.join(
-        str(w.get_ref("$config.setup_scenario")),
-        str(w.get_ref("$config.data_root_folder")),
-        str(w.get_ref("$config.sim_subfolder")),
+        conf.setup_scenario,
+        conf.data_root_folder,
+        conf.sim_subfolder,
         "output",
         "hazard",
     ),
