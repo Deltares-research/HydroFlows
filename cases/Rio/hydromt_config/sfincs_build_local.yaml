@@ -7,6 +7,7 @@ setup_grid_from_region:
 
 setup_dep:
   datasets_dep:
+    - elevtn: local_DTM
     - elevtn: fabdem
       mask: osm_landareas
 
@@ -22,6 +23,7 @@ setup_mask_bounds:
 
 setup_subgrid:
   datasets_dep:
+    - elevtn: local_DTM
     - elevtn: fabdem
       mask: osm_landareas
     - elevtn: gebco  # add bathymetry; used to avoid extrapolation
@@ -32,7 +34,7 @@ setup_subgrid:
   #   - centerlines: grit
   #     manning': 0.035
   write_dep_tif: True
-  nr_subgrid_pixels: 5  # 20m resolution
+  nr_subgrid_pixels: 10 # 5m resolution
   nbins: 8
 
 setup_river_inflow:

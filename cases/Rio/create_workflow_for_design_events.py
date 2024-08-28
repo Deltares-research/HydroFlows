@@ -16,15 +16,16 @@ from hydroflows.methods.sfincs import (
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 # %% Create a workflow config
+setup_scenario_name = "global"  # or select between local and global
 
 conf = WorkflowConfig(
     region="setup_data/region.gpkg",
     data_libs="setup_data/data_catalog.yml",
-    setup_scenario="global_setup_models",
+    setup_scenario=f"{setup_scenario_name}_setup_models",
     models_root_folder="models",
     data_root_folder="data",
     sim_subfolder="design_events",
-    hydromt_sfincs_config="hydromt_config/sfincs_build_global.yaml",
+    hydromt_sfincs_config=f"hydromt_config/sfincs_build_{setup_scenario_name}.yaml",
     hydromt_fiat_config="hydromt_config/fiat_build_global.yaml",
     res=50,
     rps=[2, 10, 100],
@@ -37,6 +38,7 @@ conf = WorkflowConfig(
     depth_min=0.05,
     sfincs_exe="../bin/sfincs/sfincs.exe",
     fiat_exe="../bin/fiat/fiat.exe",
+    local_precip_path="preprocessed_data/output_scalar_resampled_precip_station11.nc",
 )
 
 # %% Create a workflow
@@ -73,22 +75,26 @@ fiat_build = FIATBuild(
 w.add_rule(fiat_build, rule_id="fiat_build")
 
 # %%
-get_precip = GetERA5Rainfall(
-    region=sfincs_build.output.sfincs_region,
-    data_root=os.path.join(
-        conf.setup_scenario,
-        conf.data_root_folder,
-        conf.sim_subfolder,
-        "input",
-    ),
-    start_date=w.get_ref("$config.start_date"),
-    end_date=w.get_ref("$config.end_date"),
-)
-w.add_rule(get_precip, rule_id="get_precip")
+if setup_scenario_name == "global":
+    get_precip = GetERA5Rainfall(
+        region=sfincs_build.output.sfincs_region,
+        data_root=os.path.join(
+            conf.setup_scenario,
+            conf.data_root_folder,
+            conf.sim_subfolder,
+            "input",
+        ),
+        start_date=w.get_ref("$config.start_date"),
+        end_date=w.get_ref("$config.end_date"),
+    )
+    w.add_rule(get_precip, rule_id="get_precip")
+    precip_nc = get_precip.output.precip_nc
+else:
+    precip_nc = w.get_ref("$config.local_precip_path")
 
 # %%
 pluvial_events = PluvialDesignEvents(
-    precip_nc=get_precip.output.precip_nc,
+    precip_nc=precip_nc,
     event_root=os.path.join(
         conf.setup_scenario,
         conf.data_root_folder,
@@ -100,6 +106,7 @@ pluvial_events = PluvialDesignEvents(
     wildcard="pluvial_event",
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")
+
 
 # %%
 sfincs_update = SfincsUpdateForcing(
@@ -155,6 +162,6 @@ w.add_rule(fiat_run, rule_id="fiat_run")
 w.run(dryrun=True)
 
 # %% Write the workflow to a Snakefile
-w.to_snakemake("pluvial_design_events_workflow.smk")
+w.to_snakemake(f"{setup_scenario_name}_pluvial_design_events_workflow.smk")
 
 # %%
