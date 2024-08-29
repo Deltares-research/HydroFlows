@@ -98,7 +98,7 @@ class JinjaSnakeRule:
     @property
     def shell_args(self) -> Dict[str, str]:
         """Get the rule shell arguments."""
-        return {key: self._parse_shell_variable(key) for key in self.method.kwargs}
+        return {key: self._parse_shell_variable(key) for key in self.method.to_kwargs()}
 
     def _expand_variable(self, val: str, wildcards: List) -> Any:
         expand_lst = []

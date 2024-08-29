@@ -58,6 +58,11 @@ class FIATRun(Method):
 
     name: str = "fiat_run"
 
+    _test_kwargs = {
+        "fiat_cfg": Path("fiat.toml"),
+        "fiat_bin": Path("fiat.exe"),
+    }
+
     def __init__(self, fiat_cfg: Path, fiat_bin: Path, **params):
         """Create and validate a fiat_run instance.
 

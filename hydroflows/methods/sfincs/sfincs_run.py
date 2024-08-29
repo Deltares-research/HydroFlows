@@ -5,6 +5,8 @@ import subprocess
 from pathlib import Path
 from typing import Literal, Optional
 
+from pydantic import model_validator
+
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -49,11 +51,22 @@ class Params(Parameters):
     docker_tag: str = "latest"
     """The Docker tag to specify the version of the Docker image to use."""
 
+    @model_validator(mode="after")
+    def check_vm_or_exe(self) -> None:
+        """Check if either vm or sfincs_exe is specified."""
+        if self.vm is None and self.sfincs_exe is None:
+            raise ValueError("Either vm or sfincs_exe must be specified.")
+
 
 class SfincsRun(Method):
     """Rule for running a Sfincs model."""
 
     name: str = "sfincs_run"
+
+    _test_kwargs = {
+        "sfincs_inp": Path("sfincs.inp"),
+        "sfincs_exe": Path("sfincs.exe"),
+    }
 
     def __init__(
         self,
