@@ -5,8 +5,8 @@ from typing import List, Optional
 
 
 def str_to_list(v: str) -> list[str]:
-    """Split comma and space seperated string to list."""
-    # remove withespace and [] at the beginning and end
+    """Split comma and space separated string to list."""
+    # remove whitespace and [] at the beginning and end
     v = v.strip("[] ")
     # split by comma but not inside quotes
     regex = r"[^,\s\"']+|\"([^\"]*)\"|'([^']*)'"

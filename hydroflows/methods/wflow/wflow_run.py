@@ -46,13 +46,20 @@ class WflowRun(Method):
 
     name: str = "wflow_run"
 
-    def __init__(self, wflow_toml: Path, **params) -> "WflowRun":
+    _test_kwargs = {
+        "wflow_toml": Path("wflow.toml"),
+        "wflow_bin": Path("wflow_cli.exe"),
+    }
+
+    def __init__(self, wflow_toml: Path, wflow_bin: Path, **params) -> "WflowRun":
         """Create and validate a WflowRun instance.
 
         Parameters
         ----------
         wflow_toml : Path
             The file path to the Wflow (toml) configuration file.
+        wflow_bin : Path
+            The path to the Wflow executable
         **params
             Additional parameters to pass to the WflowRun Params instance.
             See :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`.
@@ -63,7 +70,7 @@ class WflowRun(Method):
         :py:class:`wflow_run Output <hydroflows.methods.wflow.wflow_run.Output>`
         :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`
         """
-        self.params: Params = Params(**params)
+        self.params: Params = Params(wflow_bin=wflow_bin, **params)
         self.input: Input = Input(wflow_toml=wflow_toml)
         self.output: Output = Output(
             wflow_output_timeseries=self.input.wflow_toml.parent

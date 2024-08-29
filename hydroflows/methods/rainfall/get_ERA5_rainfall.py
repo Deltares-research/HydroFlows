@@ -51,6 +51,10 @@ class GetERA5Rainfall(Method):
 
     name: str = "get_ERA5_rainfall"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(self, region: Path, data_root: Path = "data/input", **params):
         """Create and validate a GetERA5Rainfall instance.
 

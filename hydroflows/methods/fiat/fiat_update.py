@@ -6,6 +6,7 @@ from typing import List, Optional, Union
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
+from hydroflows._typing import WildcardPath
 from hydroflows.events import EventSet
 from hydroflows.utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
@@ -23,7 +24,7 @@ class Input(Parameters):
     see also :py:class:`hydroflows.events.Event`."""
 
     # single path should also be allowed for validation !
-    hazard_maps: Union[Path, List[Path]]
+    hazard_maps: Union[WildcardPath, List[Path]]
     """List of paths to hazard maps the event description file."""
 
 
@@ -73,6 +74,12 @@ class FIATUpdateHazard(ReduceMethod):
 
     name: str = "fiat_update_hazard"
 
+    _test_kwargs = {
+        "fiat_cfg": Path("fiat.toml"),
+        "event_set_yaml": Path("event_set.yaml"),
+        "hazard_maps": Path("hazard_{event}.nc"),
+    }
+
     def __init__(
         self,
         fiat_cfg: Path,
@@ -93,7 +100,7 @@ class FIATUpdateHazard(ReduceMethod):
         event_set_yaml : Path
             The path to the event description file.
         hazard_maps : Path or List[Path]
-            The path to the hazard maps.
+            The path to the hazard maps. If a single path is provided, it should contain a wildcard.
         sim_subfolder : Path, optional
             The subfolder relative to the basemodel where the simulation folders are stored.
 
@@ -123,9 +130,13 @@ class FIATUpdateHazard(ReduceMethod):
         )
 
         # output root is the simulation folder
-        fiat_root = self.input.fiat_cfg.parent / sim_subfolder / event_set_name
+        fiat_root = (
+            self.input.fiat_cfg.parent
+            / self.params.sim_subfolder
+            / self.params.event_set_name
+        )
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard_nc",
+            fiat_hazard=fiat_root / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
         )
 
