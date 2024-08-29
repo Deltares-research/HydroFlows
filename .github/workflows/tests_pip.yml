@@ -39,7 +39,7 @@ jobs:
       - name: Install hydroflows
         run: |
           pip install --upgrade pip
-          pip install .
+          pip install .[test]
 
       # run test
       - name: Test
