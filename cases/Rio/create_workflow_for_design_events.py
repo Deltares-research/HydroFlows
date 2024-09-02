@@ -1,3 +1,5 @@
+"""Script to generate workflow files for the Rio case."""
+
 # %% Import packages  # noqa: D100
 import os
 
