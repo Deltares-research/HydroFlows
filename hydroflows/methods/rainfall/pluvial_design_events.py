@@ -87,6 +87,10 @@ class Params(Parameters):
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
 
+    save_idf_csv: bool = True
+    """Determines whether to save the calculated IDF curve values
+    per return period in a csv format."""
+
     @model_validator(mode="after")
     def _validate_event_names(self):
         """Use rps to define event names if not provided."""
@@ -192,6 +196,14 @@ class PluvialDesignEvents(ExpandMethod):
         ds_idf["return_values"] = xr.where(
             ds_idf["return_values"] < 0, 0, ds_idf["return_values"]
         )
+
+        if self.params.save_idf_csv:
+            df_idf = (
+                ds_idf["return_values"]
+                .rename({"rps": "Return period\n[year]"})
+                .to_pandas()
+            )
+            df_idf.to_csv(Path(self.output.event_csv.parent, "idf.csv"), index=True)
 
         # Get design events hyetograph for each return period
         p_hyetograph: xr.DataArray = get_hyetograph(
