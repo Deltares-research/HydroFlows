@@ -8,6 +8,7 @@ setup_grid_from_region:
 setup_dep:
   datasets_dep:
     - elevtn: local_DTM
+    - elevtn: local_DEM
     - elevtn: fabdem
       mask: osm_landareas
 
@@ -24,6 +25,7 @@ setup_mask_bounds:
 setup_subgrid:
   datasets_dep:
     - elevtn: local_DTM
+    - elevtn: local_DEM
     - elevtn: fabdem
       mask: osm_landareas
     - elevtn: gebco  # add bathymetry; used to avoid extrapolation

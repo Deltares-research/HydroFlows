@@ -19,18 +19,18 @@ df_split["time"] = pd.to_datetime(df_split["time"], format="mixed")
 
 df_split["Station_ID"] = pd.to_numeric(df_split["Station_ID"])
 
-df_station_11 = df_split[df_split["Station_ID"] == station_to_export].sort_values(
+df_station = df_split[df_split["Station_ID"] == station_to_export].sort_values(
     by="time"
 )
-df_station_11.set_index("time", inplace=True)
+df_station.set_index("time", inplace=True)
 
-df_station_11 = df_station_11[["precipitation"]]
+df_station = df_station[["precipitation"]]
 
 time_range = pd.date_range(time_start, time_end, freq="1H")
-duplicated_index = df_station_11.index.duplicated(keep="first")
-df_station_11_res = df_station_11[~duplicated_index].resample("1H").mean()
+duplicated_index = df_station.index.duplicated(keep="first")
+df_station_res = df_station[~duplicated_index].resample("1H").mean()
 
-ds_station_11_res = xr.Dataset.from_dataframe(df_station_11_res)
+ds_station_res = xr.Dataset.from_dataframe(df_station_res)
 
 out_root = os.getcwd()
 parent_dir = os.path.dirname(out_root)
@@ -39,5 +39,5 @@ new_folder = os.path.join(parent_dir, "preprocessed_data")
 if not os.path.exists(new_folder):
     os.makedirs(new_folder)
 
-out_fn = "output_scalar_resampled_precip_station11.nc"
-ds_station_11_res.to_netcdf(os.path.join(new_folder, out_fn))
+out_fn = f"output_scalar_resampled_precip_station{station_to_export}.nc"
+ds_station_res.to_netcdf(os.path.join(new_folder, out_fn))

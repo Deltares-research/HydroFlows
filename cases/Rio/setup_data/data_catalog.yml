@@ -306,3 +306,9 @@ local_DTM:
   driver: raster
   filesystem: local
   crs: 31983
+local_DEM:
+  data_type: RasterDataset
+  path: MDT_GERAL_5m.tif
+  driver: raster
+  filesystem: local
+  crs: 31983
