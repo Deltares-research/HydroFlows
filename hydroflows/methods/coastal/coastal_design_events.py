@@ -1,5 +1,6 @@
 """Create hydrographs for coastal waterlevels."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -62,7 +63,7 @@ class Params(Parameters):
     ndays: int = 6
     """Duration of derived events in days."""
 
-    t0: str = "2020-01-01"
+    t0: datetime = datetime(2020, 1, 1)
     """Arbitrary time of event peak."""
 
     plot_fig: bool = True
@@ -149,7 +150,7 @@ class CoastalDesignEvents(ExpandMethod):
             tide_timeseries=tide_timeseries,
         )
 
-        wc = "{" + wildcard + "}"
+        wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
@@ -157,7 +158,7 @@ class CoastalDesignEvents(ExpandMethod):
         )
 
         # set wildcards and its expand values
-        self.set_expand_wildcard(wildcard, self.params.event_names)
+        self.set_expand_wildcard(self.params.wildcard, self.params.event_names)
 
     def run(self):
         """Run CoastalDesignEvents method."""
@@ -171,21 +172,31 @@ class CoastalDesignEvents(ExpandMethod):
             da_surge = da_surge.expand_dims(dim={"stations": 1})
             da_tide = da_tide.expand_dims(dim={"stations": 1})
 
+        # check the time resolution of the input data and make sure it is the same
+        surge_freq = pd.infer_freq(da_surge.time.values)
+        tide_freq = pd.infer_freq(da_tide.time.values)
+        if surge_freq != tide_freq:
+            raise ValueError("Time resolution of input datasets do not match")
+        wdw_ndays = pd.Timedelta(f"{self.params.ndays}D")
+        wdw_size = int(wdw_ndays / pd.Timedelta(tide_freq))
+        min_dist = int(pd.Timedelta("10D") / pd.Timedelta(tide_freq))
+
         da_mhws_peaks = get_peaks(
             da=da_tide,
             ev_type="BM",
-            min_dist=6 * 24 * 10,  # FIXME use da_tide time resolution
+            min_dist=min_dist,
             period="29.5D",
         )
         tide_hydrographs = (
             get_peak_hydrographs(
                 da_tide,
                 da_mhws_peaks,
-                wdw_size=int(6 * 24 * self.params.ndays),
+                wdw_size=wdw_size,
                 normalize=False,
             )
             .transpose("time", "peak", ...)
             .mean("peak")
+            .load()
         )
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
         if "stations" not in tide_hydrographs.dims:
@@ -193,17 +204,18 @@ class CoastalDesignEvents(ExpandMethod):
             tide_hydrographs["stations"] = da_tide["stations"]
 
         da_surge_eva = eva(
-            da_surge, ev_type="BM", min_dist=6 * 24 * 10, rps=np.array(self.params.rps)
-        )
+            da_surge, ev_type="BM", min_dist=min_dist, rps=np.array(self.params.rps)
+        ).load()
         surge_hydrographs = (
             get_peak_hydrographs(
                 da_surge,
                 da_surge_eva["peaks"],
-                wdw_size=int(6 * 24 * self.params.ndays),
+                wdw_size=wdw_size,
                 normalize=False,
             )
             .transpose("time", "peak", ...)
             .mean("peak")
+            .load()
         )
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
         if "stations" not in surge_hydrographs.dims:
@@ -212,10 +224,10 @@ class CoastalDesignEvents(ExpandMethod):
 
         nontidal_rp = da_surge_eva["return_values"] - tide_hydrographs
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
-        h_hydrograph = h_hydrograph.assign_coords(
-            time=pd.to_datetime(self.params.t0)
-            + pd.to_timedelta(10 * h_hydrograph["time"], unit="min")
+        time = pd.to_datetime(self.params.t0) + (
+            h_hydrograph["time"].values * pd.Timedelta(tide_freq)
         )
+        h_hydrograph = h_hydrograph.assign_coords(time=time)
 
         root = self.output.event_set_yaml.parent
         events_list = []
