@@ -2,101 +2,15 @@
 
 # from datetime.datetime import strftime
 from pathlib import Path
-from typing import Dict, Optional
-
-import numpy as np
-from hydromt_sfincs import SfincsModel
+from typing import Optional
 
 from hydroflows._typing import JsonDict
 from hydroflows.events import Event
-from hydroflows.utils import make_relative_paths
+from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsUpdateForcing"]
-
-
-def parse_event_sfincs(
-    root: Path, event: Event, out_root: Path, sfincs_config: Optional[Dict] = None
-) -> None:
-    """Parse event and update SFINCS model with event forcing.
-
-    This method requires that the out_root is a subdirectory of the root directory.
-
-    Parameters
-    ----------
-    root : Path
-        The path to the SFINCS model configuration (inp) file.
-    event : Event
-        The event object containing the event description.
-    out_root : Path
-        The path to the output directory where the updated SFINCS model will be saved.
-    sfincs_config : dict, optional
-        The SFINCS simulation config settings to update sfincs_inp, by default {}.
-    """
-    # check if out_root is a subdirectory of root
-    if sfincs_config is None:
-        sfincs_config = {}
-    if not out_root.is_relative_to(root):
-        raise ValueError("out_root should be a subdirectory of root")
-
-    # Init sfincs and update root, config
-    sf = SfincsModel(root=root, mode="r", write_gis=False)
-
-    # get event time range
-    event.read_forcing_data()
-
-    # update model simulation time range
-    fmt = "%Y%m%d %H%M%S"  # sfincs inp time format
-    dt_sec = (event.time_range[1] - event.time_range[0]).total_seconds()
-    sf.config.update(
-        {
-            "tref": event.time_range[0].strftime(fmt),
-            "tstart": event.time_range[0].strftime(fmt),
-            "tstop": event.time_range[1].strftime(fmt),
-            "dtout": dt_sec,  # save only single output
-            "dtmaxout": dt_sec,
-        }
-    )
-    if sfincs_config:
-        sf.config.update(sfincs_config)
-
-    # Set forcings, update config with relative paths
-    config = make_relative_paths(sf.config, root, out_root)
-    for forcing in event.forcings:
-        match forcing.type:
-            case "water_level":
-                sf.setup_waterlevel_forcing(
-                    timeseries=forcing.data,
-                    merge=False,
-                )
-                config.update({"bzsfile": "sfincs.bzs"})
-
-            case "discharge":
-                all_locs = sf.forcing["dis"].vector.to_gdf()
-                # find overlapping indexes
-                locs = all_locs.loc[np.int64(forcing.data.columns)]
-                sf.setup_discharge_forcing(
-                    timeseries=forcing.data, merge=False, locations=locs
-                )
-                config.update({"disfile": "sfincs.dis"})
-                config.update({"srcfile": "sfincs.src"})
-
-            case "rainfall":
-                # if rainfall occurs, a stability issue in SFINCS makes sfincs crash when the courant condition is
-                # set to (default) 0.5. Therefore set to 0.1
-                sf.setup_config(alpha=0.1)
-                sf.setup_precip_forcing(
-                    timeseries=forcing.data,
-                )
-                config.update({"precipfile": "sfincs.precip"})
-
-    # change root and update config
-    sf.set_root(out_root, mode="w+")
-    sf.setup_config(**config)
-    # Write forcing and config only
-    sf.write_forcing()
-    sf.write_config()
 
 
 class Input(Parameters):

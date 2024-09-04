@@ -4,7 +4,7 @@ from .method import Method
 from .method_parameters import Parameters
 from .reference import Ref
 from .rule import Rule
-from .workflow import Workflow
+from .workflow import Wildcards, Workflow
 from .workflow_config import WorkflowConfig
 
 __all__ = [
@@ -12,6 +12,7 @@ __all__ = [
     "Parameters",
     "Ref",
     "Rule",
+    "Wildcards",
     "Workflow",
     "WorkflowConfig",
 ]

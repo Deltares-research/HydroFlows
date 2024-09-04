@@ -4,6 +4,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pooch
 import pytest
 import rasterio
@@ -91,7 +92,12 @@ def rio_region(test_data_dir) -> Path:
 def tmp_csv(tmp_path: Path) -> Path:
     """Create a temporary csv file."""
     csv_file = tmp_path / "file.csv"
-    csv_file.write_text("")
+    # create dummy timeseries data
+    times = pd.date_range(start="2021-01-01", periods=10, freq="D")
+    data = np.ones(len(times))
+    df = pd.DataFrame(data, index=times, columns=["data"])
+    # write to csv
+    df.to_csv(csv_file)
     return csv_file
 
 

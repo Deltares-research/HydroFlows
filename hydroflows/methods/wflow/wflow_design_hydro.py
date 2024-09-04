@@ -293,7 +293,7 @@ class WflowDesignHydro(ExpandMethod):
             event = Event(
                 name=name,
                 forcings=[{"type": "discharge", "path": forcing_file.name}],
-                probability=1 / rp,
+                return_period=rp,
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
