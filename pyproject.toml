@@ -16,7 +16,7 @@ dependencies = [
   "click",                    # CLI
   "geopandas",                # Reading vector data
   "hydromt>=0.9.4",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@main", # hydromt plugin for FIAT models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@hotfixes", # hydromt plugin for FIAT models
   "hydromt_sfincs",           # hydromt plugin for sfincs models
   "hydromt_wflow",            # hydromt plugin for wflow models
   "matplotlib",               # plotting
