@@ -7,7 +7,11 @@ import pytest
 import xarray as xr
 
 from hydroflows.events import EventSet
-from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
+from hydroflows.methods.rainfall import (
+    GetERA5Rainfall,
+    PluvialDesignEvents,
+    PluvialHistoricalEvents,
+)
 
 
 @pytest.fixture()
@@ -79,3 +83,23 @@ def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
 
     da = xr.open_dataarray(get_era5.output.precip_nc)
     assert da["time"].min() == pd.Timestamp("2023-11-01")
+
+
+def test_pluvial_historical_events(precip_time_series_nc: xr.DataArray, tmp_path: Path):
+    # write time series to file
+    fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
+    os.makedirs(fn_time_series_nc.parent, exist_ok=True)
+    precip_time_series_nc.to_netcdf(fn_time_series_nc)
+
+    events_dates = {
+        "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
+        "p_event02": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
+    }
+
+    p_events = PluvialHistoricalEvents(
+        precip_nc=str(fn_time_series_nc),
+        events_dates=events_dates,
+        event_root=Path(tmp_path, "data"),
+    )
+
+    p_events.run_with_checks()
