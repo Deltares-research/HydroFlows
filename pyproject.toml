@@ -72,6 +72,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
+  "pulp==2.7.0",    # pin needed for snakemake
   "snakemake",      # needed for testing snake file
 
 ]
