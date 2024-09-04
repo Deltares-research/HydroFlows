@@ -5,6 +5,7 @@ from typing import Optional
 
 from hydromt_sfincs import SfincsModel, utils
 
+from hydroflows._typing import JsonDict
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -40,7 +41,7 @@ class Params(Parameters):
     depth_min: float = 0.05
     """Minimum depth to consider as "flooding."""
 
-    raster_kwargs: dict = {}
+    raster_kwargs: JsonDict = {}
     """Kwargs to pass to writer of inundation raster."""
 
 
@@ -48,6 +49,11 @@ class SfincsPostprocess(Method):
     """Rule for postprocessing Sfincs output to an inundation map."""
 
     name: str = "sfincs_postprocess"
+
+    _test_kwargs = {
+        "sfincs_map": Path("sfincs_map.nc"),
+        "sfincs_subgrid_dep": Path("subgrid/dep_subgrid.tif"),
+    }
 
     def __init__(
         self,

@@ -7,12 +7,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfInt
+from hydroflows._typing import ListOfFloat, ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 
 __all__ = ["PluvialDesignEvents"]
 
@@ -55,11 +55,12 @@ class Params(Parameters):
     rps: ListOfFloat
     """Return periods of interest."""
 
-    event_names: List[str]
-    """List of event names associated with return periods."""
-
     wildcard: str = "event"
     """The wildcard key for expansion over the design events."""
+
+    # Note: set by model_validator based on rps if not provided
+    event_names: Optional[ListOfStr] = None
+    """List of event names associated with return periods."""
 
     durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
     """Intensity Duration Frequencies provided as multiply of the data time step."""
@@ -86,11 +87,26 @@ class Params(Parameters):
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
 
+    @model_validator(mode="after")
+    def _validate_event_names(self):
+        """Use rps to define event names if not provided."""
+        if self.event_names is None:
+            self.event_names = [f"p_event{int(i+1):02d}" for i in range(len(self.rps))]
+        elif len(self.event_names) != len(self.rps):
+            raise ValueError("event_names should have the same length as rps")
+        # create a reference to the event wildcard
+        if "event_names" not in self._refs:
+            self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+
 
 class PluvialDesignEvents(ExpandMethod):
     """Rule for generating pluvial design events."""
 
     name: str = "pluvial_design_events"
+
+    _test_kwargs = {
+        "precip_nc": Path("precip.nc"),
+    }
 
     def __init__(
         self,
@@ -126,13 +142,6 @@ class PluvialDesignEvents(ExpandMethod):
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
-        if event_names is None:
-            event_names = Ref(
-                ref=f"$wildcards.{wildcard}",
-                value=[f"p_event{int(i+1):02d}" for i in range(len(rps))],
-            )
-        elif len(event_names) != len(rps):
-            raise ValueError("event_names should have the same length as rps")
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,
@@ -141,7 +150,7 @@ class PluvialDesignEvents(ExpandMethod):
             **params,
         )
         self.input: Input = Input(precip_nc=precip_nc)
-        wc = "{" + wildcard + "}"
+        wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
