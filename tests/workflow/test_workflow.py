@@ -27,21 +27,18 @@ class TestMethodOutput(Parameters):
     output_file2: Path
 
 
-class TestMethodParams(Parameters):
-    root: Path
-
-
 class TestMethod(Method):
     name: str = "test_method"
 
-    def __init__(self, input_file1: Path, input_file2: Path, root: Path) -> None:
+    def __init__(self, input_file1: Path, input_file2: Path) -> None:
         self.input: TestMethodInput = TestMethodInput(
             input_file1=input_file1, input_file2=input_file2
         )
-        self.params: TestMethodParams = TestMethodParams(root=root)
+        # NOTE: possible wildcards in the input file directory
+        # are forwarded using the parent of the input file
         self.output: TestMethodOutput = TestMethodOutput(
-            output_file1=self.params.root / "output1",
-            output_file2=self.params.root / "output2",
+            output_file1=self.input.input_file1.parent / "output1",
+            output_file2=self.input.input_file2.parent / "output2",
         )
 
     def run(self):
@@ -82,20 +79,21 @@ class MockExpandMethod(ExpandMethod):
         )
         wc = "{" + self.params.wildcard + "}"
         self.output: ExpandMethodOutput = ExpandMethodOutput(
-            output_file=self.params.root / f"{wc}.yml",
-            output_file2=self.params.root / f"{wc}_2.yml",
+            output_file=self.params.root / wc / "file.yml",
+            output_file2=self.params.root / wc / "file2.yml",
         )
         self.set_expand_wildcard(wildcard, self.params.events)
 
     def run(self):
-        for event in self.params.events:
-            fmt_dict = {self.params.wildcard: event}
-            event_file = Path(str(self.output.output_file).format(**fmt_dict))
-            test_data = {event: "test"}
-            with open(event_file, "w") as f:
-                yaml.dump(test_data, f)
-        with open(self.output.output_file2, "w") as f:
-            yaml.dump({"test_file": "2nd_test_file"}, f)
+        self.check_input_output_paths(False)
+        # for event in self.params.events:
+        #     fmt_dict = {self.params.wildcard: event}
+        #     event_file = Path(str(self.output.output_file).format(**fmt_dict))
+        #     test_data = {event: "test"}
+        #     with open(event_file, "w") as f:
+        #         yaml.dump(test_data, f)
+        # with open(self.output.output_file2, "w") as f:
+        #     yaml.dump({"test_file": "2nd_test_file"}, f)
 
 
 class ReduceInput(Parameters):
@@ -197,7 +195,6 @@ def create_workflow_with_mock_methods(
     mock_method = TestMethod(
         input_file1=w.get_ref("$rules.mock_expand_rule.output.output_file"),
         input_file2=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
-        root=root / "{region}",
     )
 
     w.add_rule(mock_method, rule_id="mock_rule")
@@ -205,7 +202,7 @@ def create_workflow_with_mock_methods(
     mock_reduce_method = MockReduceMethod(
         first_file=w.get_ref("$rules.mock_rule.output.output_file1"),
         second_file=w.get_ref("$rules.mock_rule.output.output_file2"),
-        root=root / "{region}",
+        root=root / "out_{region}",
     )
 
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
@@ -228,10 +225,11 @@ def test_workflow_repr(w: Workflow, mock_expand_method):
 
 def test_workflow_add_rule(w: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(w)
-    assert len(w.rules) == 2
+    assert len(w.rules) == 3
     assert isinstance(w.rules[0], Rule)
     assert w.rules[0].rule_id == "mock_expand_rule"
-    assert w.rules[1].rule_id == "mock_reduce_rule"
+    assert w.rules[1].rule_id == "mock_rule"
+    assert w.rules[2].rule_id == "mock_reduce_rule"
 
 
 def test_workflow_rule_from_kwargs(w: Workflow, mocker, mock_expand_method):
@@ -251,7 +249,7 @@ def test_workflow_get_ref(w: Workflow, tmp_path):
     assert ref.value == w.config.rps
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
-    assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}.yml"
+    assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}/file.yml"
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):

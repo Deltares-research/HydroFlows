@@ -39,6 +39,7 @@ class Method(ABC):
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
+        # NOTE: wildcards on outputs should be defined on file parent, not the file name itself!
         self.output: Parameters = Parameters()
         self.params: Parameters = Parameters()
 
@@ -138,6 +139,7 @@ class Method(ABC):
         out_dict = {
             "input": self.input.to_dict(**dump_kwargs),
             "output": self.output.to_dict(**dump_kwargs),
+            "params": {},
         }
         if hasattr(self, "_params"):  # params are optional
             out_dict["params"] = self.params.model_dump(**dump_kwargs)
