@@ -86,14 +86,6 @@ class MockExpandMethod(ExpandMethod):
 
     def run(self):
         self.check_input_output_paths(False)
-        # for event in self.params.events:
-        #     fmt_dict = {self.params.wildcard: event}
-        #     event_file = Path(str(self.output.output_file).format(**fmt_dict))
-        #     test_data = {event: "test"}
-        #     with open(event_file, "w") as f:
-        #         yaml.dump(test_data, f)
-        # with open(self.output.output_file2, "w") as f:
-        #     yaml.dump({"test_file": "2nd_test_file"}, f)
 
 
 class ReduceInput(Parameters):
