@@ -105,6 +105,13 @@ class Method(ABC):
     def __repr__(self) -> str:
         return f"Method(name={self.name}; parameters={pformat(self.dict)})"
 
+    def __eq__(self, other):
+        return (
+            self.__dict__ == other.__dict__
+            and self.__class__ == other.__class__
+            and self.name == other.name
+        )
+
     ## SERIALIZATION METHODS
 
     def to_kwargs(
