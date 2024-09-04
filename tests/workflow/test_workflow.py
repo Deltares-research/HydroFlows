@@ -139,18 +139,25 @@ def mock_expand_method():
     return MockExpandMethod(input_file="test.yml", root="", events=["1", "2"])
 
 
-def create_workflow_with_mock_methods(w, root="", input_file="test.yml"):
+def create_workflow_with_mock_methods(
+    w: Workflow, root: Path | None = None, input_file="test.yml"
+):
     # create initial input file for workflow
-    if isinstance(root, Path):
-        with open(root / input_file, "w") as f:
-            yaml.dump(dict(test="test"), f)
+    if root:
+        for wild_card in w.wildcards.get("region"):
+            (root / wild_card).mkdir()
+            with open(root / wild_card / input_file, "w") as f:
+                yaml.dump(dict(test="test"), f)
+    else:
+        root = Path("./")
 
     mock_expand_method = MockExpandMethod(
         input_file=root / "{region}" / input_file,
-        root=root,
+        root=root / "{region}",
         events=["1", "2"],
-        wildcard="region",
+        wildcard="event",
     )
+
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     mock_reduce_method = MockReduceMethod(
         first_file=w.get_ref("$rules.mock_expand_rule.output.output_file"),
@@ -175,7 +182,7 @@ def test_workflow_repr(w: Workflow, mock_expand_method):
     assert "mock_expand_rule" in repr_str
 
 
-def test_workflow_add_rule(w: Workflow):
+def test_workflow_add_rule(w: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(w)
     assert len(w.rules) == 2
     assert isinstance(w.rules[0], Rule)
@@ -200,7 +207,7 @@ def test_workflow_get_ref(w: Workflow, tmp_path):
     assert ref.value == w.config.rps
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
-    assert ref.value == Path("{wildcard}.yml")
+    assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}.yml"
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
@@ -271,7 +278,30 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
 def test_workflow_run(mocker, w, tmp_path):
     w = create_workflow_with_mock_methods(w, root=tmp_path)
     mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
-    w.run(dryrun=True, missing_file_error=True)
+    w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
     captured_stdout = mock_stdout.getvalue()
     for rule in w.rules:
         assert rule.rule_id in captured_stdout
+
+    # Run workflow without region wildcard
+    w = Workflow(name="test_workflow")
+    root = tmp_path / "test_root"
+    root.mkdir()
+    input_file = "test.txt"
+    with open(root / input_file, "w") as f:
+        f.write("")
+    mock_expand_method = MockExpandMethod(
+        input_file=root / input_file,
+        root=root,
+        events=["1", "2"],
+        wildcard="event",
+    )
+
+    w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
+    mock_reduce_method = MockReduceMethod(
+        first_file=w.get_ref("$rules.mock_expand_rule.output.output_file"),
+        second_file=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+        root=root,
+    )
+    w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
+    w.run(dryrun=True, missing_file_error=True)
