@@ -14,7 +14,41 @@ from hydroflows.workflow import (
     Workflow,
     WorkflowConfig,
 )
-from hydroflows.workflow.method import ExpandMethod, ReduceMethod
+from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+
+
+class TestMethodInput(Parameters):
+    input_file1: Path
+    input_file2: Path
+
+
+class TestMethodOutput(Parameters):
+    output_file1: Path
+    output_file2: Path
+
+
+class TestMethodParams(Parameters):
+    root: Path
+
+
+class TestMethod(Method):
+    name: str = "test_method"
+
+    def __init__(self, input_file1: Path, input_file2: Path, root: Path) -> None:
+        self.input: TestMethodInput = TestMethodInput(
+            input_file1=input_file1, input_file2=input_file2
+        )
+        self.params: TestMethodParams = TestMethodParams(root=root)
+        self.output: TestMethodOutput = TestMethodOutput(
+            output_file1=self.params.root / "output1",
+            output_file2=self.params.root / "output2",
+        )
+
+    def run(self):
+        with open(self.output.output_file1, "w") as f:
+            f.write("")
+        with open(self.output.output_file2, "w") as f:
+            f.write("")
 
 
 class ExpandMethodInput(Parameters):
@@ -159,11 +193,21 @@ def create_workflow_with_mock_methods(
     )
 
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
-    mock_reduce_method = MockReduceMethod(
-        first_file=w.get_ref("$rules.mock_expand_rule.output.output_file"),
-        second_file=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+
+    mock_method = TestMethod(
+        input_file1=w.get_ref("$rules.mock_expand_rule.output.output_file"),
+        input_file2=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
         root=root / "{region}",
     )
+
+    w.add_rule(mock_method, rule_id="mock_rule")
+
+    mock_reduce_method = MockReduceMethod(
+        first_file=w.get_ref("$rules.mock_rule.output.output_file1"),
+        second_file=w.get_ref("$rules.mock_rule.output.output_file2"),
+        root=root / "{region}",
+    )
+
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     return w
 
