@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
+from pydantic import model_validator
 
+from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 
 
 class Input(Parameters):
@@ -49,7 +50,10 @@ class Params(Parameters):
     event_root: Path
     """Root folder to save the derived design events."""
 
-    event_names: List[str]
+    rps: ListOfFloat
+    """Return periods of rp_dataset."""
+
+    event_names: Optional[ListOfStr] = None
     """List of event names for the design events."""
 
     wildcard: str = "event"
@@ -63,6 +67,17 @@ class Params(Parameters):
 
     plot_fig: bool = True
     """Make hydrograph plots"""
+
+    @model_validator(mode="after")
+    def _validate_event_names(self):
+        """Use rps to define event names if not provided."""
+        if self.event_names is None:
+            self.event_names = [f"h_event{int(i+1):02d}" for i in range(len(self.rps))]
+        elif len(self.event_names) != len(self.rps):
+            raise ValueError("event_names should have the same length as rps")
+        # create a reference to the event wildcard
+        if "event_names" not in self._refs:
+            self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
 class CoastalEventFromRPData(ExpandMethod):
@@ -79,11 +94,19 @@ class CoastalEventFromRPData(ExpandMethod):
 
     name: str = "coastal_events_rp_data"
 
+    _test_kwargs = {
+        "surge_timeseries": "surge.nc",
+        "tide_timeseries": "tide.nc",
+        "rp_dataset": "rp_dataset.nc",
+        "rps": [10, 50, 100],
+    }
+
     def __init__(
         self,
         surge_timeseries: Path,
         tide_timeseries: Path,
         rp_dataset: Path,
+        rps: Optional[List[float]] = None,
         event_root: Path = Path("data/events/coastal"),
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",
@@ -99,8 +122,8 @@ class CoastalEventFromRPData(ExpandMethod):
             Path to tides timeseries data.
         rp_dataset : Path
             Path to return period dataset.
-        waterlevel_rps : Path
-            Path to the total still waterlevel return values dataset.
+        rps : List[float], optional
+            List of return periods in the rp_dataset, by default None and extracted from rp_dataset.
         event_root : Path, optional
             Folder root of ouput event catalog file, by default "data/interim/coastal"
         event_names : List[str], optional
@@ -120,25 +143,19 @@ class CoastalEventFromRPData(ExpandMethod):
             rp_dataset=rp_dataset,
         )
 
-        rp_data = xr.open_dataset(self.input.rp_dataset)
-        rps = rp_data["rps"].values
-
-        if event_names is None:
-            event_names = Ref(
-                ref=f"$wildcards.{wildcard}",
-                value=[f"h_event{int(i+1):02d}" for i in range(len(rps))],
-            )
-        elif len(event_names) != len(rps):
-            raise ValueError("event_names should have the same length as rps")
+        if rps is None:
+            rp_data = xr.open_dataset(self.input.rp_dataset)
+            rps = rp_data["rps"].values
 
         self.params: Params = Params(
             event_root=event_root,
             event_names=event_names,
             wildcard=wildcard,
+            rps=rps,
             **params,
         )
 
-        wc = "{" + wildcard + "}"
+        wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
@@ -155,6 +172,8 @@ class CoastalEventFromRPData(ExpandMethod):
         da_rps = xr.open_dataset(self.input.rp_dataset)
 
         # check if all dims are the same
+        if not set(self.params.rps) == set(list(da_rps["rps"].values)):
+            raise ValueError("Return periods in rp_dataset do not match rps")
         if not (da_surge.dims == da_tide.dims):
             raise ValueError("Dimensions of input datasets do not match")
         if "stations" not in da_surge.dims:

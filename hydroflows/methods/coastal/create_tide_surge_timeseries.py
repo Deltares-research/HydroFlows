@@ -53,6 +53,10 @@ class TideSurgeTimeseries(Method):
 
     name: str = "create_tide_surge_timeseries"
 
+    _test_kwargs = {
+        "waterlevel_timeseries": Path("waterlevel.nc"),
+    }
+
     def __init__(
         self,
         waterlevel_timeseries: Path,

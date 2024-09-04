@@ -80,6 +80,8 @@ class GetGTSMData(Method):
 
     name: str = "get_gtsm_data"
 
+    _test_kwargs = {"region": "region.geojson"}
+
     def __init__(
         self,
         region: Path,

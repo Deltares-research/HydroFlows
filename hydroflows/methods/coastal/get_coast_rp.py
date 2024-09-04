@@ -48,6 +48,10 @@ class GetCoastRP(Method):
 
     name: str = "get_coast_rp"
 
+    _test_kwargs = {
+        "region": "region.geojson",
+    }
+
     def __init__(
         self,
         region: Path,

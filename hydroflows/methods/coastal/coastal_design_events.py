@@ -8,12 +8,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import eva, get_peak_hydrographs, get_peaks
+from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat
+from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 
 __all__ = ["CoastalDesignEvents"]
 
@@ -53,7 +53,7 @@ class Params(Parameters):
     rps: ListOfFloat
     """Return periods of interest."""
 
-    event_names: List[str]
+    event_names: Optional[ListOfStr] = None
     """List of event names for the design events."""
 
     wildcard: str = "event"
@@ -67,6 +67,17 @@ class Params(Parameters):
 
     plot_fig: bool = True
     """Make hydrograph plots"""
+
+    @model_validator(mode="after")
+    def _validate_event_names(self):
+        """Use rps to define event names if not provided."""
+        if self.event_names is None:
+            self.event_names = [f"h_event{int(i+1):02d}" for i in range(len(self.rps))]
+        elif len(self.event_names) != len(self.rps):
+            raise ValueError("event_names should have the same length as rps")
+        # create a reference to the event wildcard
+        if "event_names" not in self._refs:
+            self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
 class CoastalDesignEvents(ExpandMethod):
@@ -82,6 +93,11 @@ class CoastalDesignEvents(ExpandMethod):
     """
 
     name: str = "coastal_design_events"
+
+    _test_kwargs = {
+        "surge_timeseries": "surge.nc",
+        "tide_timeseries": "tide.nc",
+    }
 
     def __init__(
         self,
@@ -120,13 +136,6 @@ class CoastalDesignEvents(ExpandMethod):
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
-        if event_names is None:
-            event_names = Ref(
-                ref=f"$wildcards.{wildcard}",
-                value=[f"h_event{int(i+1):02d}" for i in range(len(rps))],
-            )
-        elif len(event_names) != len(rps):
-            raise ValueError("event_names should have the same length as rps")
 
         self.params: Params = Params(
             event_root=event_root,
