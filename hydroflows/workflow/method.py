@@ -39,7 +39,6 @@ class Method(ABC):
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
-        # NOTE: wildcards on outputs should be defined on file parent, not the file name itself!
         self.output: Parameters = Parameters()
         self.params: Parameters = Parameters()
 
