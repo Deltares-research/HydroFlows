@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import List, Optional, Union
 
-import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfPath, WildcardPath
@@ -157,12 +156,7 @@ class FIATUpdateHazard(ReduceMethod):
             root=root,
             mode="w+",
         )
-        # TODO: hydromt_fiat does not automatically read the region, and region is needed!
         model.read()
-        region_fn = Path(root / "exposure", "region.gpkg")
-        region_gdf = gpd.read_file(region_fn).to_crs(4326)
-
-        model.setup_region({"geom": region_gdf})
 
         # Make all paths relative in the config
         config = {
