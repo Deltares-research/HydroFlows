@@ -7,6 +7,8 @@ from hydroflows.cli.main import cli
 
 
 class MockMethod:
+    name = "test_method"
+
     def __init__(self, file_in, file_out, **params):
         assert isinstance(file_in, str)
         assert isinstance(file_out, str)
@@ -26,7 +28,7 @@ def test_cli_main(cli_obj: CliRunner):
 
 
 def test_cli_run_help(cli_obj: CliRunner):
-    result: Result = cli_obj.invoke(cli, ["run", "--help"], echo=True)
+    result: Result = cli_obj.invoke(cli, ["method", "--help"], echo=True)
     assert result.exit_code == 0
 
 
@@ -40,7 +42,5 @@ def test_cli_run_method(cli_obj: CliRunner, monkeypatch: MonkeyPatch):
     ]
 
     # uses the MockMethod class above
-    result: Result = cli_obj.invoke(
-        cli, ["method", "test_method", "-v"] + kwargs, echo=True
-    )
+    result: Result = cli_obj.invoke(cli, ["method", "test_method"] + kwargs, echo=True)
     assert result.exit_code == 0
