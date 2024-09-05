@@ -15,6 +15,7 @@ from hydroflows.workflow import (
     WorkflowConfig,
 )
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+from hydroflows.workflow.workflow import Wildcards
 
 
 class TestMethodInput(Parameters):
@@ -288,7 +289,16 @@ def test_workflow_to_snakemake(w: Workflow, tmp_path):
     w.to_snakemake(snakefile=snake_file)
     assert "snake_file.config.yml" in os.listdir(tmp_path)
     assert "snake_file.smk" in os.listdir(tmp_path)
-    subprocess.run(["snakemake", "-s", str(snake_file), "--dry-run"]).check_returncode()
+    subprocess.run(
+        [
+            "snakemake",
+            "-s",
+            str(snake_file),
+            "--dry-run",
+            "--configfile",
+            (tmp_path / "snake_file.config.yml").as_posix(),
+        ]
+    ).check_returncode()
 
 
 def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
