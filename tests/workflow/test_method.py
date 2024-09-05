@@ -1,4 +1,6 @@
+import os
 import re
+from pathlib import Path
 from pprint import pformat
 
 import pytest
@@ -11,6 +13,22 @@ from hydroflows.workflow import Method, Parameters
 @pytest.fixture()
 def test_method():
     return TestMethod(input_file1="test_file1", input_file2="test_file2", param="param")
+
+
+def create_method(
+    root: Path,
+    input_file1="test_file1",
+    input_file2="test_file2",
+    param="param",
+    write_inputs=True,
+) -> TestMethod:
+    input_file1 = root / input_file1
+    input_file2 = root / input_file2
+    if write_inputs:
+        for input_file in [input_file1, input_file2]:
+            with open(input_file, "w") as f:
+                f.write("")
+    return TestMethod(input_file1=input_file1, input_file2=input_file2, param=param)
 
 
 def test_method_param_props(test_method):
@@ -92,3 +110,44 @@ def test_get_subclass():
         Method._get_subclass("fake_method")
     method_subclass = Method._get_subclass("fiat_build")
     assert issubclass(method_subclass, FIATBuild)
+
+
+def test_dryrun(tmp_path):
+    test_method = create_method(root=tmp_path)
+    test_method.dryrun()
+    dir_files = os.listdir(tmp_path)
+    assert "test_file1" in dir_files
+    assert "test_file2" in dir_files
+    assert "output1" in dir_files
+    assert "output2" in dir_files
+
+
+def test_run_with_checks(tmp_path):
+    test_method = create_method(
+        root=tmp_path,
+    )
+    test_method.run_with_checks()
+
+
+def test_check_input_output_paths(tmp_path, capsys):
+    test_method: TestMethod = create_method(root=tmp_path, write_inputs=False)
+    with pytest.raises(
+        FileNotFoundError,
+        match=re.escape(
+            f"Input file {test_method.name}.input.input_file1 not found: {test_method.input.input_file1}"
+        ),
+    ):
+        test_method.check_input_output_paths()
+    test_method.check_input_output_paths(missing_file_error=False)
+    captured = capsys.readouterr()
+    assert "input_file1" in captured.out
+    assert "test_file1" in captured.out
+    assert "input_file2" in captured.out
+    assert "test_file2" in captured.out
+    # check if files are written
+    assert "test_file1" in os.listdir(tmp_path)
+    assert "test_file2" in os.listdir(tmp_path)
+
+    test_method = create_method(root=tmp_path)
+    # Check if it runs without errors
+    test_method.check_input_output_paths()
