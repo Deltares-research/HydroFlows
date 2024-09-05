@@ -203,7 +203,7 @@ def create_workflow_with_mock_methods(
 
 def test_workflow_init(w: Workflow):
     assert isinstance(w.config, WorkflowConfig)
-    assert isinstance(w.wildcards.wildcards, dict)
+    assert isinstance(w.wildcards, Wildcards)
     assert w.name == "wf_instance"
 
 
