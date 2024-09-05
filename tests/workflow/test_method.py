@@ -4,7 +4,7 @@ from pathlib import Path
 from pprint import pformat
 
 import pytest
-from mock_methods import TestMethod
+from mock_methods import MockExpandMethod, TestMethod
 
 from hydroflows.methods.fiat import FIATBuild
 from hydroflows.workflow import Method, Parameters
@@ -15,7 +15,7 @@ def test_method():
     return TestMethod(input_file1="test_file1", input_file2="test_file2", param="param")
 
 
-def create_method(
+def create_test_method(
     root: Path,
     input_file1="test_file1",
     input_file2="test_file2",
@@ -113,7 +113,7 @@ def test_get_subclass():
 
 
 def test_dryrun(tmp_path):
-    test_method = create_method(root=tmp_path)
+    test_method = create_test_method(root=tmp_path)
     test_method.dryrun()
     dir_files = os.listdir(tmp_path)
     assert "test_file1" in dir_files
@@ -123,14 +123,14 @@ def test_dryrun(tmp_path):
 
 
 def test_run_with_checks(tmp_path):
-    test_method = create_method(
+    test_method = create_test_method(
         root=tmp_path,
     )
     test_method.run_with_checks()
 
 
 def test_check_input_output_paths(tmp_path, capsys):
-    test_method: TestMethod = create_method(root=tmp_path, write_inputs=False)
+    test_method: TestMethod = create_test_method(root=tmp_path, write_inputs=False)
     with pytest.raises(
         FileNotFoundError,
         match=re.escape(
@@ -148,6 +148,50 @@ def test_check_input_output_paths(tmp_path, capsys):
     assert "test_file1" in os.listdir(tmp_path)
     assert "test_file2" in os.listdir(tmp_path)
 
-    test_method = create_method(root=tmp_path)
+    test_method = create_test_method(root=tmp_path)
     # Check if it runs without errors
     test_method.check_input_output_paths()
+
+
+def test_output_paths(tmp_path):
+    test_method = create_test_method(root=tmp_path)
+    paths = test_method._output_paths
+    assert isinstance(paths[0], tuple)
+    assert paths[0][0] == "output_file1"
+    assert paths[0][1] == tmp_path / "output1"
+
+
+def test_check_output_exists(tmp_path):
+    test_method = create_test_method(root=tmp_path, write_inputs=False)
+    with pytest.raises(
+        FileNotFoundError,
+        match=re.escape(
+            f"Output file {test_method.name}.output.output_file1 not found: {test_method.output.output_file1}"
+        ),
+    ):
+        test_method.check_output_exists()
+
+
+def test_set_expand_wildcards(tmp_path):
+    input_file = tmp_path / "test"
+    mock_expand_method = MockExpandMethod(
+        input_file=input_file, root=tmp_path, events=["1", "2"]
+    )
+    assert mock_expand_method._expand_wildcards == {"wildcard": ["1", "2"]}
+
+
+def test_expand_output_paths(tmp_path):
+    input_file = tmp_path / "test"
+    mock_expand_method = MockExpandMethod(
+        input_file=input_file, root=tmp_path, events=["1", "2"]
+    )
+
+    output_paths = mock_expand_method._output_paths
+    assert len(output_paths) == 4
+    assert output_paths[0][1] == tmp_path / "1" / "file.yml"
+    assert output_paths[3][1] == tmp_path / "2" / "file2.yml"
+    mock_expand_method = MockExpandMethod(
+        input_file=input_file, root=tmp_path, events=["1", "2", "3", "4"]
+    )
+    output_paths = mock_expand_method._output_paths
+    assert len(output_paths) == 8
