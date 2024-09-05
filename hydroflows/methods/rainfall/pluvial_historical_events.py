@@ -18,7 +18,7 @@ class Input(Parameters):
     precip_nc: Path
     """
     The file path to the rainfall time series in NetCDF format which are used
-    to derive historical events of interest. This file should contain a time dimension
+    to derive the historical events of interest. This file should contain a time dimension
     This time series can be derived either by the
     :py:class:`hydroflows.methods.rainfall.get_ERA5_rainfall.GetERA5Rainfall`
     or can be directly supplied by the user.
@@ -61,7 +61,7 @@ class Params(Parameters):
     """Root folder to save the derived historical events."""
 
     wildcard: str = "event"
-    """The wildcard key for expansion over the design events."""
+    """The wildcard key for expansion over the historical events."""
 
     time_dim: str = "time"
     """Time dimension of the input time series provided in :py:class:`Input` class."""
@@ -105,7 +105,7 @@ class PluvialHistoricalEvents(ExpandMethod):
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/rainfall".
         wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
+            The wildcard key for expansion over the historical events, by default "event".
         **params
             Additional parameters to pass to the PluvialHistoricalEvents instance.
 
