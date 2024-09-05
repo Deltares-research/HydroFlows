@@ -6,8 +6,12 @@ from typing import Optional
 import pytest
 from hydromt_sfincs import SfincsModel
 
-from hydroflows.methods import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
-from hydroflows.methods.sfincs.sfincs_run import SfincsRun
+from hydroflows.methods.sfincs import (
+    SfincsBuild,
+    SfincsPostprocess,
+    SfincsRun,
+    SfincsUpdateForcing,
+)
 
 SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
 

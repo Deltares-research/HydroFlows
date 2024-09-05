@@ -1,6 +1,8 @@
 """Wflow methods submodule."""
 
-from .wflow_build import WflowBuild
-from .wflow_design_hydro import WflowDesignHydro
-from .wflow_run import WflowRun
-from .wflow_update_forcing import WflowUpdateForcing
+from hydroflows.methods.wflow.wflow_build import WflowBuild
+from hydroflows.methods.wflow.wflow_design_hydro import WflowDesignHydro
+from hydroflows.methods.wflow.wflow_run import WflowRun
+from hydroflows.methods.wflow.wflow_update_forcing import WflowUpdateForcing
+
+__all__ = ["WflowBuild", "WflowDesignHydro", "WflowRun", "WflowUpdateForcing"]
