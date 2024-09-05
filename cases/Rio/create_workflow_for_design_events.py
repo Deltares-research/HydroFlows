@@ -105,6 +105,7 @@ pluvial_events = PluvialDesignEvents(
         "rainfall",
     ),
     rps=w.get_ref("$config.rps"),
+    distribution="gumb",
     wildcard="pluvial_event",
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")

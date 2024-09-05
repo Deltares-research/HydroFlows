@@ -71,6 +71,11 @@ class Params(Parameters):
     ev_type: Literal["BM", "POT"] = "BM"
     """Method to select events/peaks. Valid options are 'BM' for block maxima or 'POT' for Peak over threshold."""
 
+    distribution: Optional[str] = None
+    """EVA distribution used. If None (default) the optimal block maxima
+    distribution ("gumb" or "gev" for BM and "exp" or "gpd" for POT) is selected
+    based on the AIC criterium."""
+
     qthresh: float = 0.95
     """Quantile threshold used with peaks over threshold method."""
 
@@ -118,6 +123,7 @@ class PluvialDesignEvents(ExpandMethod):
         event_root: Path = Path("data/events/rainfall"),
         rps: Optional[ListOfFloat] = None,
         event_names: Optional[List[str]] = None,
+        distribution: Optional[str] = None,
         wildcard: str = "event",
         **params,
     ) -> None:
@@ -133,6 +139,10 @@ class PluvialDesignEvents(ExpandMethod):
             Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
         event_names : List[str], optional
             List of event names for the design events, by "p_event{i}", where i is the event number.
+        distribution : str, optional
+            Short name of distribution. If None (default) the optimal block maxima
+            distribution ("gumb" or "gev" for BM and "exp" or "gpd" for POT) is selected
+            based on the AIC criterium.
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
         **params
@@ -150,6 +160,7 @@ class PluvialDesignEvents(ExpandMethod):
             event_root=event_root,
             rps=rps,
             event_names=event_names,
+            distribution=distribution,
             wildcard=wildcard,
             **params,
         )
@@ -185,6 +196,7 @@ class PluvialDesignEvents(ExpandMethod):
         ds_idf = eva_idf(
             da,
             ev_type=self.params.ev_type,
+            distribution=self.params.distribution,
             durations=self.params.durations,
             rps=np.maximum(1.001, self.params.rps),
             qthresh=self.params.qthresh,
@@ -300,7 +312,7 @@ def eva_idf(
         List of durations, provided as multiply of the data time step,
         by default [1, 2, 3, 6, 12, 24, 36, 48]
     distribution : str, optional
-        Short name of distribution, by default 'gumb'
+        Short name of distribution, by default 'None'
     rps : np.ndarray, optional
         Array of return periods, by default [2, 5, 10, 25, 50, 100, 250, 500]
     **kwargs :
