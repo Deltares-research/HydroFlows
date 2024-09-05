@@ -16,12 +16,14 @@ setup_mask_active:
   drop_area: 10  # drop small areas [km2]
 
 setup_mask_bounds:
-  - btype: waterlevel
-    include_mask: osm_coastlines  # add buffer on the fly
-    include_mask_buffer: 300 # buffer distance [m]
-  - btype: waterlevel
-    include_mask: lagoon  # add buffer on the fly
-    include_mask_buffer: 300 # buffer distance [m]
+  btype: waterlevel
+  include_mask: osm_coastlines  # add buffer on the fly
+  include_mask_buffer: 300 # buffer distance [m]
+
+setup_mask_bounds2:
+  btype: waterlevel
+  include_mask: lagoon  # add buffer on the fly
+  include_mask_buffer: 300 # buffer distance [m]
 
 setup_subgrid:
   datasets_dep:
