@@ -7,7 +7,7 @@ import pytest
 import xarray as xr
 
 from hydroflows.events import EventSet
-from hydroflows.methods import GetERA5Rainfall, PluvialDesignEvents
+from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 
 
 @pytest.fixture()

@@ -24,6 +24,7 @@ rule sfincs_build:
         region="{input.region}" \
         sfincs_root="{params.sfincs_root}" \
         res="{params.res}" \
+        --dryrun \
         """
 
 rule fiat_build:
@@ -38,9 +39,10 @@ rule fiat_build:
         hydroflows method fiat_build \
         region="{input.region}" \
         fiat_root="{params.fiat_root}" \
+        --dryrun \
         """
 
-rule get_ERA5_rainfall:
+rule get_rainfall:
     input:
         region=rules.sfincs_build.output.sfincs_region,
     output:
@@ -49,11 +51,12 @@ rule get_ERA5_rainfall:
         """
         hydroflows method get_ERA5_rainfall \
         region="{input.region}" \
+        --dryrun \
         """
 
 rule pluvial_design_events:
     input:
-        precip_nc=rules.get_ERA5_rainfall.output.precip_nc,
+        precip_nc=rules.get_rainfall.output.precip_nc,
     params:
         event_root="data/events/rainfall",
         rps=config["rps"],
@@ -69,12 +72,13 @@ rule pluvial_design_events:
         event_root="{params.event_root}" \
         rps="{params.rps}" \
         event_names="{params.event_names}" \
+        --dryrun \
         """
 
 rule sfincs_update_forcing:
     input:
         sfincs_inp=rules.sfincs_build.output.sfincs_inp,
-        event_yaml=rules.pluvial_design_events.output.event_yaml,
+        event_yaml="data/events/rainfall/{event}.yml",
     params:
         event_name="{event}",
     output:
@@ -85,6 +89,7 @@ rule sfincs_update_forcing:
         sfincs_inp="{input.sfincs_inp}" \
         event_yaml="{input.event_yaml}" \
         event_name="{params.event_name}" \
+        --dryrun \
         """
 
 rule sfincs_run:
@@ -99,6 +104,7 @@ rule sfincs_run:
         hydroflows method sfincs_run \
         sfincs_inp="{input.sfincs_inp}" \
         sfincs_exe="{params.sfincs_exe}" \
+        --dryrun \
         """
 
 rule sfincs_postprocess:
@@ -117,6 +123,7 @@ rule sfincs_postprocess:
         sfincs_subgrid_dep="{input.sfincs_subgrid_dep}" \
         hazard_root="{params.hazard_root}" \
         event_name="{params.event_name}" \
+        --dryrun \
         """
 
 rule fiat_update_hazard:
@@ -136,6 +143,7 @@ rule fiat_update_hazard:
         event_set_yaml="{input.event_set_yaml}" \
         hazard_maps="{input.hazard_maps}" \
         event_set_name="{params.event_set_name}" \
+        --dryrun \
         """
 
 rule fiat_run:
@@ -150,4 +158,5 @@ rule fiat_run:
         hydroflows method fiat_run \
         fiat_cfg="{input.fiat_cfg}" \
         fiat_bin="{params.fiat_bin}" \
+        --dryrun \
         """

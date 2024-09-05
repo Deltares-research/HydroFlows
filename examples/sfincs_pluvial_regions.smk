@@ -25,6 +25,7 @@ rule sfincs_build:
         region="{input.region}" \
         sfincs_root="{params.sfincs_root}" \
         res="{params.res}" \
+        --dryrun \
         """
 
 rule get_ERA5_rainfall:
@@ -39,6 +40,7 @@ rule get_ERA5_rainfall:
         hydroflows method get_ERA5_rainfall \
         region="{input.region}" \
         data_root="{params.data_root}" \
+        --dryrun \
         """
 
 rule pluvial_design_events:
@@ -59,12 +61,13 @@ rule pluvial_design_events:
         event_root="{params.event_root}" \
         rps="{params.rps}" \
         event_names="{params.event_names}" \
+        --dryrun \
         """
 
 rule sfincs_update_forcing:
     input:
         sfincs_inp=rules.sfincs_build.output.sfincs_inp,
-        event_yaml=rules.pluvial_design_events.output.event_yaml,
+        event_yaml="data/output/{region}/events/{event}.yml",
     params:
         event_name="{event}",
     output:
@@ -75,6 +78,7 @@ rule sfincs_update_forcing:
         sfincs_inp="{input.sfincs_inp}" \
         event_yaml="{input.event_yaml}" \
         event_name="{params.event_name}" \
+        --dryrun \
         """
 
 rule sfincs_run:
@@ -89,6 +93,7 @@ rule sfincs_run:
         hydroflows method sfincs_run \
         sfincs_inp="{input.sfincs_inp}" \
         sfincs_exe="{params.sfincs_exe}" \
+        --dryrun \
         """
 
 rule sfincs_postprocess:
@@ -107,4 +112,5 @@ rule sfincs_postprocess:
         sfincs_subgrid_dep="{input.sfincs_subgrid_dep}" \
         hazard_root="{params.hazard_root}" \
         event_name="{params.event_name}" \
+        --dryrun \
         """

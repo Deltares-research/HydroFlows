@@ -196,11 +196,7 @@ class Method(ABC):
 
     @classmethod
     def _get_subclasses(cls) -> Generator[type["Method"], None, None]:
-        # FIXME use entrypoints to get all subclasses
-        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
-
-        from hydroflows import methods as _  # noqa: F401
-
+        """Get all imported subclasses of the Method class."""
         for subclass in cls.__subclasses__():
             yield from subclass._get_subclasses()
             yield subclass
@@ -208,11 +204,14 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
+        from hydroflows.methods import METHODS  # avoid circular import
+
+        name = name.lower()
         for subclass in cls._get_subclasses():
-            if subclass.name == name:
+            if subclass.name.lower() == name or subclass.__name__.lower() == name:
                 return subclass
-        known_methods = [m.name for m in cls._get_subclasses()]
-        raise ValueError(f"Unknown method: {name}, select from {known_methods}")
+        # if not found, try to import the module using entry points
+        return METHODS.load(name)
 
     ## TESTING METHODS
 
