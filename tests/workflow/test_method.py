@@ -4,10 +4,10 @@ from pathlib import Path
 from pprint import pformat
 
 import pytest
-from mock_methods import MockExpandMethod, TestMethod
 
 from hydroflows.methods.fiat import FIATBuild
 from hydroflows.workflow import Method, Parameters
+from tests.conftest import MockExpandMethod, TestMethod
 
 
 @pytest.fixture()

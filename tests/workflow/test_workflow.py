@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from mock_methods import MockExpandMethod, MockReduceMethod, TestMethod
 
 from hydroflows.workflow import (
     Ref,
@@ -13,6 +12,8 @@ from hydroflows.workflow import (
     Workflow,
     WorkflowConfig,
 )
+from hydroflows.workflow.workflow import Wildcards
+from tests.conftest import MockExpandMethod, MockReduceMethod, TestMethod
 
 
 @pytest.fixture()
@@ -96,7 +97,7 @@ def create_workflow_with_mock_methods(
 
 def test_workflow_init(w: Workflow):
     assert isinstance(w.config, WorkflowConfig)
-    assert isinstance(w.wildcards.wildcards, dict)
+    assert isinstance(w.wildcards, Wildcards)
     assert w.name == "wf_instance"
 
 
@@ -181,7 +182,16 @@ def test_workflow_to_snakemake(w: Workflow, tmp_path):
     w.to_snakemake(snakefile=snake_file)
     assert "snake_file.config.yml" in os.listdir(tmp_path)
     assert "snake_file.smk" in os.listdir(tmp_path)
-    subprocess.run(["snakemake", "-s", str(snake_file), "--dry-run"]).check_returncode()
+    subprocess.run(
+        [
+            "snakemake",
+            "-s",
+            str(snake_file),
+            "--dry-run",
+            "--configfile",
+            (tmp_path / "snake_file.config.yml").as_posix(),
+        ]
+    ).check_returncode()
 
 
 def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
