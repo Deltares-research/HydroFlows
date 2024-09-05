@@ -120,7 +120,12 @@ class JinjaSnakeRule:
             dict_keys = val.split(".")[1:]
             val = 'config["' + '"]["'.join(dict_keys) + '"]'
         elif isinstance(val, str) and val.startswith("$rules."):
-            val = val[1:]
+            ref = self.rule.workflow.get_ref(val)
+            # exclude reference to snake expand(..) fields
+            if ref.is_expand_field:
+                val = ref.get_str_value()
+            else:
+                val = val[1:]
         elif isinstance(val, str) and val.startswith("$wildcards."):
             val = val.split(".")[1].upper()
         return str(val)

@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from hydroflows.utils import adjust_config
+from hydroflows.utils.misc import adjust_config
 
 
 @pytest.fixture()

@@ -6,9 +6,9 @@ from typing import List, Optional, Union
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import WildcardPath
+from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.events import EventSet
-from hydroflows.utils import make_relative_paths
+from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -24,7 +24,7 @@ class Input(Parameters):
     see also :py:class:`hydroflows.events.EventSet`."""
 
     # single path should also be allowed for validation !
-    hazard_maps: Union[WildcardPath, List[Path]]
+    hazard_maps: Union[WildcardPath, ListOfPath]
     """List of paths to hazard maps the event description file."""
 
 

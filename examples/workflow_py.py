@@ -3,9 +3,11 @@
 import os
 
 from hydroflows import Workflow
-from hydroflows.methods import (
+from hydroflows.methods.rainfall import (
     GetERA5Rainfall,
     PluvialDesignEvents,
+)
+from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsRun,
     SfincsUpdateForcing,

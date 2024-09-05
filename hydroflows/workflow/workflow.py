@@ -109,8 +109,24 @@ class Workflow:
             workflow.add_rule_from_kwargs(**rule)
         return workflow
 
-    def to_snakemake(self, snakefile: Path) -> None:
-        """Save the workflow to a snakemake workflow."""
+    def to_snakemake(
+        self,
+        snakefile: Path,
+        dryrun: bool = False,
+    ) -> None:
+        """Save the workflow to a snakemake workflow.
+
+        Parameters
+        ----------
+        snakefile : Path
+            The path to the snakefile.
+        dryrun : bool, optional
+            Run the workflow in dryrun mode, by default False.
+        run_env : Literal["shell", "script"], optional
+            The environment in which to run the methods, by default "shell".
+        """
+        snakefile = Path(snakefile).resolve()
+        configfile = snakefile.with_suffix(".config.yml")
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
@@ -125,6 +141,7 @@ class Workflow:
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
+            dryrun=dryrun,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
