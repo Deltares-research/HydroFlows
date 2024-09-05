@@ -4,18 +4,16 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from pprint import pformat
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 
 from hydroflows import __version__
-from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
@@ -115,7 +113,6 @@ class Workflow:
         self,
         snakefile: Path,
         dryrun: bool = False,
-        run_env: Literal["shell", "script"] = "shell",
     ) -> None:
         """Save the workflow to a snakemake workflow.
 
@@ -130,43 +127,26 @@ class Workflow:
         """
         snakefile = Path(snakefile).resolve()
         configfile = snakefile.with_suffix(".config.yml")
-        script = run_env == "script"
-        if script:
-            script_relpath = "script/run_method_snake.py"
-            scriptfile = snakefile.parent / script_relpath
-
-        # create and write snakefile
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
+        configfile = Path(snakefile).with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile.name,
+            configfile=configfile,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
             dryrun=dryrun,
-            script=script_relpath if script else None,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
-
-        # write yml config
-        conf_dict = self.config.to_dict(mode="json")
-        if script:
-            conf_dict.update(dryrun=dryrun)
         with open(configfile, "w") as f:
-            yaml.dump(conf_dict, f)
-
-        if script:
-            scriptfile.parent.mkdir(parents=True, exist_ok=True)
-            # copy file from templates folder
-            src = HYDROMT_CONFIG_DIR / "run_method_snake.py"
-            shutil.copy2(src, scriptfile)
+            yaml.dump(self.config.to_dict(mode="json"), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
