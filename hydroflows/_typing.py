@@ -21,6 +21,11 @@ ListOfFloat = Annotated[
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
 ]
 
+ListOfPath = Annotated[
+    List[Path],
+    BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
+]
+
 JsonDict = Union[Dict, Json]
 
 

@@ -113,12 +113,12 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
     nargs=-1,
     callback=_cb_key_val,
 )
-@verbose_opt
-@quiet_opt
-@overwrite_opt
+@click.option(
+    "--dry_run", "--dryrun", is_flag=True, help="Perform a dry_run of the method."
+)
 @click.pass_context
 def method(
-    ctx: click.Context, method: str, kwargs: Dict[str, str], verbose, quiet, overwrite
+    ctx: click.Context, method: str, kwargs: Dict[str, str], dry_run: bool = False
 ):
     """Run a method with a set of key-word arguments.
 
@@ -126,7 +126,11 @@ def method(
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
     try:
-        Method.from_kwargs(method, **kwargs).run_with_checks()
+        method: Method = Method.from_kwargs(method, **kwargs)
+        if dry_run:
+            method.dryrun(missing_file_error=True)
+        else:
+            method.run_with_checks()
     except Exception as e:
         click.echo(f"Error: {e}")
         ctx.exit(1)

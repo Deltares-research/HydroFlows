@@ -5,7 +5,7 @@ import os
 import sys
 from datetime import datetime
 
-from . import __version__
+from hydroflows import __version__
 
 timestr = datetime.now().strftime("%Y%m%dT%H%M%S")
 datestr = datetime.now().strftime("%Y%m%d")

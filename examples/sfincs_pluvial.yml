@@ -12,11 +12,12 @@ rules:
     kwargs:
       region: $rules.sfincs_build.output.sfincs_region
   - method: get_ERA5_rainfall
+    rule_id: get_rainfall
     kwargs:
       region: $rules.sfincs_build.output.sfincs_region
   - method: pluvial_design_events
     kwargs:
-      precip_nc: $rules.get_ERA5_rainfall.output.precip_nc
+      precip_nc: $rules.get_rainfall.output.precip_nc
       rps: $config.rps
   - method: sfincs_update_forcing
     kwargs:

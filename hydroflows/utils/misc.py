@@ -1,8 +1,9 @@
 """Some extra utilty."""
-import shutil
 from pathlib import Path
 
 import yaml
+
+__all__ = ["adjust_config"]
 
 
 def adjust_config(
@@ -40,21 +41,3 @@ more sophisticated on a later date.
     # Write it back to the drive
     with open(config, "w") as _w:
         yaml.dump(cfg, _w, sort_keys=False)
-
-
-def copy_single_file(
-    target: Path | str,
-    dest: Path | str,
-):
-    """Copy as single file from one location to another."""
-    shutil.copy2(
-        target,
-        dest,
-    )
-
-
-class SafeFormatDict(dict):
-    """A dictionary that returns the key if the key is not found."""
-
-    def __missing__(self, key):
-        return "{" + key + "}"
