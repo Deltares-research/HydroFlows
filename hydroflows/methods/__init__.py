@@ -23,6 +23,7 @@ __eps__ = {
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
     "wflow_design_hydro": "hydroflows.methods.wflow.wflow_design_hydro:WflowDesignHydro",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
+    "floodmarks_validation": "hydroflows.methods.validation.floodmarks:FloodmarksValidation",
 }
 
 

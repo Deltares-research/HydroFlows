@@ -12,22 +12,23 @@ from hydroflows.workflow.method_parameters import Parameters
 class Input(Parameters):
     """Input parameters for the :py:class:`FloodmarksValidation` method."""
 
-    floodmarks_geom = Path
+    floodmarks_geom: Path
     """
-    The file path to the geometry file (shapefile or geojson) including the location of the
-    floodmarks as points, as well as an attribute/property with cooresponding water
-    levels at these locations.
+    The file path to a geometry file (shapefile or GeoJSON) containing the locations of
+    floodmarks as points. This file should include an attribute/property representing the
+    corresponding water levels at each location.
     """
 
-    flood_hazard_map = Path
+    flood_hazard_map: Path
     """
-    The file path to the generated flood hazard map for validation, in TIFF format.
+    The file path to the flood hazard map to be used for validation, provided in TIFF format.
     """
 
     region: Path
     """
-    The file path to the geometry file including the area used for simulating the hazards.
-    An example of such a file could be the SFINCS region GeoJSON.
+    The file path to the geometry file representing the area used for hazard simulation.
+    This is used to define flood marks outside the model domain.
+    An example of this file could be a GeoJSON of the SFINCS region.
     """
 
 
@@ -45,7 +46,8 @@ class Params(Parameters):
     """Root folder to save the derived validation scores."""
 
     waterlevel_prop: str
-    """Observed water level property of the input floodmarks geometry file provided in :py:class:`Input` class."""
+    """The property name representing the observed water level in the input floodmarks geometry file,
+    as provided in the :py:class:`Input` class."""
 
     filename: str = "validation_scores_floodmarks.csv"
     """The filename for the produced validation scores csv file."""
@@ -57,17 +59,19 @@ class FloodmarksValidation(Method):
     name: str = "floodmarks_validation"
 
     _test_kwargs = {
-        "floodmarks_geom": Path("region.geojson"),
+        "floodmarks_geom": Path("floodmarks.geojson"),
+        "flood_hazard_map": Path("hazard_map_output.tif"),
         "region": Path("region.geojson"),
+        "waterlevel_prop": "water_level_obs",
     }
 
     def __init__(
         self,
         floodmarks_geom: Path,
-        region: Path,
         flood_hazard_map: Path,
+        region: Path,
+        waterlevel_prop: str,
         scores_root: Path = "data/validation",
-        waterlevel_prop: str = "water_level_obs",
         **params,
     ):
         """Create and validate a FloodmarksValidation instance.
@@ -75,15 +79,18 @@ class FloodmarksValidation(Method):
         Parameters
         ----------
         floodmarks_geom : Path
-            The file path to the geometry file including floodmarks.
+           Path to the geometry file (shapefile or GeoJSON) with floodmark locations as
+           points. The corresponding water levels are defined by the property specified
+           in :py:attr:`waterlevel_prop`.
         region : Path
-            text.
+            Path to the geometry file defining the area for hazard simulation,
+            such as the SFINCS region GeoJSON.
         flood_hazard_map : Path
-            The file path to the generated flood hazard map for validation.
+            The file path to the flood hazard map to be used for validation.
         scores_root : Path, optional
             The root folder to save the derived validation scores, by default "data/validation".
         waterlevel_prop : Str
-            text
+            The property name for the observed water levels in the floodmarks geometry file
         **params
             Additional parameters to pass to the FloodmarksValidation instance.
 
