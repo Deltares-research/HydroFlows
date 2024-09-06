@@ -48,8 +48,10 @@ def test_event_dates_dict():
 
     validated_python = ta.validate_python(dates)
     validated_json = ta.validate_python(json.loads(json.dumps(dates)))
+    validated_json2 = ta.validate_python(json.loads(json.dumps(f"{dates}")))
 
     assert validated_python == validated_json
+    assert validated_python == validated_json2
     with pytest.raises(ValidationError):
         ta.validate_python({"p_event1": {"startdate": "2005-03-04 09:00"}})
     with pytest.raises(ValidationError):

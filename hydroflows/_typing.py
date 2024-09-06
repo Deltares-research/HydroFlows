@@ -47,5 +47,7 @@ EventDatesDict = Annotated[
     Dict[
         str, TypedDict("EventDatesDict", {"startdate": datetime, "enddate": datetime})
     ],
-    BeforeValidator(lambda x: json.loads(x) if isinstance(x, str) else x),
+    BeforeValidator(
+        lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
+    ),
 ]
