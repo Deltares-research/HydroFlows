@@ -26,9 +26,7 @@ conf = WorkflowConfig(
 w = Workflow(name="fluvial_hazard", config=conf)
 
 # %% build SFINCS model
-sfincs_build = SfincsBuild(
-    region="data/test_region.geojson", sfincs_root="models/sfincs"
-)
+sfincs_build = SfincsBuild(region="data/region.geojson", sfincs_root="models/sfincs")
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
 # %% build WFLOW model
@@ -57,7 +55,7 @@ w.add_rule(wflow_run, rule_id="wflow_run")
 fluvial_events = WflowDesignHydro(
     discharge_nc=wflow_run.output.wflow_output_timeseries,
     rps=w.get_ref("$config.rps"),
-    wildcard="fluvial_event",
+    wildcard="event",
     event_root="data/events",
 )
 w.add_rule(fluvial_events, rule_id="fluvial_events")
