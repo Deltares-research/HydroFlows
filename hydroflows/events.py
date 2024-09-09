@@ -21,25 +21,6 @@ __all__ = ["EventSet"]
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 
 
-def _rel_to_abs_path(data: Dict, keys: List[str], root: Path) -> Dict:
-    for key in keys:
-        if key in data and not Path(data[key]).is_absolute():
-            data[key] = root / Path(data[key])
-    return data
-
-
-def _abs_to_rel_path(data: Dict, keys: List[str], root: Path, serialize=True) -> Dict:
-    for key in keys:
-        if key not in data or data[key] is None:
-            continue
-        path = Path(data[key])
-        if path.is_relative_to(root):
-            path = path.relative_to(root)
-        if serialize:
-            data[key] = path.as_posix()
-    return data
-
-
 class Forcing(BaseModel):
     """A forcing for the event."""
 
@@ -396,3 +377,22 @@ class EventSet(BaseModel):
         """
         event = {"name": name, "path": path}
         self.events.append(event)
+
+
+def _rel_to_abs_path(data: Dict, keys: List[str], root: Path) -> Dict:
+    for key in keys:
+        if key in data and not Path(data[key]).is_absolute():
+            data[key] = root / Path(data[key])
+    return data
+
+
+def _abs_to_rel_path(data: Dict, keys: List[str], root: Path, serialize=True) -> Dict:
+    for key in keys:
+        if key not in data or data[key] is None:
+            continue
+        path = Path(data[key])
+        if path.is_relative_to(root):
+            path = path.relative_to(root)
+        if serialize:
+            data[key] = path.as_posix()
+    return data

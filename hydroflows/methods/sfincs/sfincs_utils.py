@@ -7,7 +7,7 @@ import geopandas as gdf
 from hydromt_sfincs import SfincsModel
 
 from hydroflows.events import Event, Forcing
-from hydroflows.utils import make_relative_paths
+from hydroflows.utils.path_utils import make_relative_paths
 
 
 def _check_forcing_locs(
