@@ -130,6 +130,9 @@ fiat_run = FIATRun(
 )
 w.add_rule(fiat_run, rule_id="fiat_run")
 
+# %% print the workflow
+print(w)
+
 # %% Test the workflow
 w.run(dryrun=True)
 
