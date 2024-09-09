@@ -20,7 +20,7 @@ snakemake -s sfincs_pluvial.smk -n # dry run as we don't have the sfincs model
 ```python
 from hydroflows import Workflow
 
-workflow = Workflow('sfincs_pluvial.yaml')
+workflow = Workflow.from_yaml('sfincs_pluvial.yaml')
 workflow.to_snakemake('sfincs_pluvial.smk')
 ```
 
@@ -37,6 +37,6 @@ hydroflows run sfincs_pluvial.yaml
 ```python
 from hydroflows import Workflow
 
-workflow = Workflow('sfincs_pluvial.yaml')
+workflow = Workflow.from_yaml('sfincs_pluvial.yaml')
 workflow.run()
 ```
