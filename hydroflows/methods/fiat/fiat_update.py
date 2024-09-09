@@ -135,7 +135,7 @@ class FIATUpdateHazard(ReduceMethod):
             / self.params.event_set_name
         )
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard.nc",
+            fiat_hazard=fiat_root / "hazard" / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
         )
 
@@ -202,9 +202,12 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
-        model.write_grid(fn=str(self.output.fiat_hazard))
+        hazard_out = fn = self.output.fiat_hazard.relative_to(
+            self.output.fiat_out_cfg.parent
+        ).as_posix()
+        model.write_grid(hazard_out)
         model.set_config("hazard.settings.var_as_band", True)
-        model.set_config("hazard.file", self.output.fiat_hazard.name)
+        model.set_config("hazard.file", hazard_out)
 
         # Write the config
-        model.write_config()
+        model.write_config(config_root=out_root)
