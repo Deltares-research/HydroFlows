@@ -10,6 +10,7 @@ import yaml
 from pydantic import (
     BaseModel,
     ConfigDict,
+    FilePath,
     SerializerFunctionWrapHandler,
     model_serializer,
     model_validator,
@@ -29,7 +30,7 @@ class Forcing(BaseModel):
     type: Literal["water_level", "discharge", "rainfall"]
     """The type of the forcing."""
 
-    path: Path
+    path: FilePath  # file must exist
     """The path to the forcing data."""
 
     tstart: Optional[datetime] = None
@@ -44,7 +45,7 @@ class Forcing(BaseModel):
     scale_add: Optional[float] = None
     """An additive scale factor for the forcing."""
 
-    locs_path: Optional[Path] = None
+    locs_path: Optional[FilePath] = None  # file must exist
     """The path to the locations file for the forcing data."""
 
     locs_id_col: Optional[str] = None
@@ -81,10 +82,6 @@ class Forcing(BaseModel):
 
     def read_data(self) -> Any:
         """Read the data."""
-        # update and check path
-        if not self.path.exists():
-            raise IOError(f"Forcing {self.path} does not exist.")
-
         # read forcing data
         if self.path.suffix == ".csv":
             self._read_csv()
@@ -250,7 +247,7 @@ class Event(BaseModel):
             self.set_time_range_from_forcings()
 
 
-EventDict = TypedDict("EventDict", {"name": str, "path": Path})
+EventDict = TypedDict("EventDict", {"name": str, "path": FilePath})
 
 
 class EventSet(BaseModel):

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import numpy as np
@@ -33,7 +32,7 @@ def precip_time_series_nc():
 def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Path):
     # write time series to file
     fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
-    os.makedirs(fn_time_series_nc.parent, exist_ok=True)
+    fn_time_series_nc.parent.mkdir(exist_ok=True)
     precip_time_series_nc.to_netcdf(fn_time_series_nc)
 
     rps = [1, 10, 100]
