@@ -1,10 +1,14 @@
+.. _api_wflow:
+
 .. currentmodule:: hydroflows.methods.wflow
 
 Wflow related methods
 =====================
 
-WflowBuild
-----------
+Several methods are available to build, run and postprocessing Wflow hydrological models.
+
+Wflow build model
+-----------------
 
 .. autosummary::
    :toctree: ../_generated
@@ -14,8 +18,8 @@ WflowBuild
    wflow_build.Params
    wflow_build.Output
 
-WflowUpdateForcing
-------------------
+Wflow update forcing
+--------------------
 
 .. autosummary::
    :toctree: ../_generated
@@ -25,19 +29,8 @@ WflowUpdateForcing
    wflow_update_forcing.Params
    wflow_update_forcing.Output
 
-WflowDesignHydro
-----------------
-
-.. autosummary::
-   :toctree: ../_generated
-
-   wflow_design_hydro.WflowDesignHydro
-   wflow_design_hydro.Input
-   wflow_design_hydro.Params
-   wflow_design_hydro.Output
-
-WflowRun
---------
+Wflow run
+---------
 
 .. autosummary::
    :toctree: ../_generated
@@ -46,3 +39,14 @@ WflowRun
    wflow_run.Input
    wflow_run.Params
    wflow_run.Output
+
+Wflow design hydrographs
+------------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   wflow_design_hydro.WflowDesignHydro
+   wflow_design_hydro.Input
+   wflow_design_hydro.Params
+   wflow_design_hydro.Output
