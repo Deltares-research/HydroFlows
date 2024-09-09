@@ -174,6 +174,7 @@ class WflowUpdateForcing(Method):
             dem_forcing_fn=self.params.dem_forcing_src,
             pet_method=self.params.pet_calc_method,
             skip_pet=False,
+            chunksize=100,
         )
 
         if self.output.wflow_out_toml.is_relative_to(root):
@@ -191,4 +192,4 @@ class WflowUpdateForcing(Method):
             mode="w+",
         )
         w.write_config(config_name=self.output.wflow_out_toml.name)
-        w.write_forcing(freq_out="1Y")
+        w.write_forcing(freq_out="3M")
