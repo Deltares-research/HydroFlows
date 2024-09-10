@@ -9,7 +9,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
-from pydantic import model_validator
+from pydantic import PositiveInt, model_validator
 
 from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
@@ -99,9 +99,10 @@ class Params(Parameters):
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
 
-    warm_up_years: int = 2
-    """Number of (initial) years to exclude from the discharge timeseries
-    as a warm-up period."""
+    warm_up_years: PositiveInt = None
+    """The number of initial years (positive integer) to exclude from the discharge time series
+    as a warm-up period, typically used when the data is generated through
+    hydrological modeling and requires an initial warm-up phase."""
 
     n_peaks: int = None
     """Number of largest peaks to get hydrograph.
@@ -203,12 +204,15 @@ class FluvialDesignEvents(ExpandMethod):
         for dim in [time_dim, index_dim]:
             if dim not in da.dims:
                 raise ValueError(f"{dim} not a dimension in, {self.input.discharge_nc}")
-        # warm up period from the start of the time series up to warm_up_years to exclude
-        warm_up_period = da[time_dim].values[0] + pd.Timedelta(
-            self.params.warm_up_years, "A"
-        )
-        # keep timeseries only after the warm up period
-        da = da.sel({time_dim: slice(warm_up_period, None)})
+
+        # Check if warm_up_years is not None
+        if self.params.warm_up_years is not None:
+            # warm up period from the start of the time series up to warm_up_years to exclude
+            warm_up_period = da[time_dim].values[0] + pd.Timedelta(
+                self.params.warm_up_years, "A"
+            )
+            # Keep timeseries only after the warm-up period
+            da = da.sel({time_dim: slice(warm_up_period, None)})
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
