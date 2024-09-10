@@ -22,8 +22,8 @@ __eps__ = {
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
-    "wflow_design_hydro": "hydroflows.methods.wflow.wflow_design_hydro:WflowDesignHydro",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
+    "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
 }
 
 

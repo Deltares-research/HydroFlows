@@ -1,4 +1,4 @@
-"""Wflow design hydrograph method."""
+"""Fluvial design events method."""
 
 import os
 from pathlib import Path
@@ -16,16 +16,16 @@ from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["WflowDesignHydro"]
+__all__ = ["FluvialDesignEvents"]
 
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`WflowDesignHydro` method."""
+    """Input parameters for the :py:class:`FluvialDesignEvents` method."""
 
     discharge_nc: Path
-    """The file path to the discharge time series in NetCDF format which are used
+    """The file path to the discharge time series in NetCDF format which is used
     to apply EVA and derive design events. This file contains an index dimension and a time
-    dimension for several Sfincs boundary points, .
+    dimension for several Sfincs boundary points.
 
     - The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
       series at specific locations.
@@ -37,7 +37,7 @@ class Input(Parameters):
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`WflowDesignHydro` method."""
+    """Output parameters for the :py:class:`FluvialDesignEvents` method."""
 
     event_yaml: Path
     """The path to the event description file,
@@ -54,7 +54,7 @@ class Output(Parameters):
 
 
 class Params(Parameters):
-    """Parameters for the :py:class:`WflowDesignHydro` method.
+    """Parameters for the :py:class:`FluvialDesignEvents` method.
 
     See Also
     --------
@@ -127,10 +127,10 @@ class Params(Parameters):
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
-class WflowDesignHydro(ExpandMethod):
+class FluvialDesignEvents(ExpandMethod):
     """Rule for generating fluvial design events."""
 
-    name: str = "wflow_design_hydro"
+    name: str = "fluvial_design_events"
 
     _test_kwargs = {
         "discharge_nc": Path("discharge.nc"),
@@ -145,7 +145,7 @@ class WflowDesignHydro(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a WflowDesignHydro instance.
+        """Create and validate a FluvialDesignEvents instance.
 
         Parameters
         ----------
@@ -160,14 +160,14 @@ class WflowDesignHydro(ExpandMethod):
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
         **params
-            Additional parameters to pass to the WflowDesignHydro Params instance.
-            See :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`.
+            Additional parameters to pass to the FluvialDesignEvents Params instance.
+            See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
 
         See Also
         --------
-        :py:class:`wflow_design_hydro Input <hydroflows.methods.wflow.wflow_design_hydro.Input>`
-        :py:class:`wflow_design_hydro Output <hydroflows.methods.wflow.wflow_design_hydro.Output>`
-        :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`
+        :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
+        :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
+        :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
         :py:class:`hydromt.stats.extremes`
             For more details on the event selection, EVA and peak hydrographs
             using HydroMT.
@@ -192,10 +192,10 @@ class WflowDesignHydro(ExpandMethod):
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
-        """Run the WflowDesignHydro method."""
+        """Run the FluvialDesignEvents method."""
         root = self.output.event_set_yaml.parent
 
-        # read the provided wflow time series
+        # read the provided time series
         da = xr.open_dataarray(self.input.discharge_nc)
         time_dim = self.params.time_dim
         index_dim = self.params.index_dim
