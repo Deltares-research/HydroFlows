@@ -4,4 +4,4 @@
    :toctree: ../_generated
 
    Workflow
-   Wildcards
+   WorkflowConfig

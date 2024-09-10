@@ -2,7 +2,7 @@
 
 Event
 -----
-Describes an event, including forcing data, and timne range of a simulation
+Describes an event, including forcing data, and time range of a simulation
 
 .. autosummary::
    :toctree: ../_generated

@@ -3,6 +3,8 @@
 Creating a workflow file
 ========================
 
+.. _workflow_template:
+
 Workflow template
 -----------------
 
@@ -41,16 +43,16 @@ description, several additional keyword arguments may be provided that are used 
 may be described under the method's ``Params``. For instance, In ``kwargs`` you could add ``plot_fig: False`` to the
 method to suppress plotting of the hyetographs resulting from this method.
 
-Creating a workflow file from the template
-------------------------------------------
+Creating a workflow file from the template in a selected language
+-----------------------------------------------------------------
 
-Even though the workflow file can be run directly from hydroflows, it is in most cases required to translate the
-workflow into a typical workflow language such as Snakemake. This is because e.g. Snakemake offers many additional
-functionalities to run workflow much more efficiently than HydroFlows. For instance, in Snakemake you may provide
-arguments that allow you to allocate certain resources to rules, or balance loads of jobs to several subprocesses or
-even nodes on a HPC cluster. This becomes necessary when you wish to compute a large number of permutations of events
-(e.g. ensemble forecast, multi-climate, or compound events sets) or simply a very large event-set (e.g. 1000s of
-synthetic events).
+Even though the workflow file can be :ref:`run <run_workflow>` directly from HydroFlows, it is in most cases required
+to translate the workflow into a typical workflow language such as Snakemake. This is because e.g. Snakemake offers
+many additional functionalities to run workflow much more efficiently than HydroFlows. For instance, in Snakemake you
+may provide arguments that allow you to allocate certain resources to rules, or balance loads of jobs to several
+subprocesses or even nodes on a HPC cluster. This becomes necessary when you wish to compute a large number of
+permutations of events (e.g. ensemble forecast, multi-climate, or compound events sets) or simply a very large
+event-set (e.g. 1000s of synthetic events).
 
 .. note::
 
@@ -61,32 +63,83 @@ synthetic events).
 
     .. tab-item:: CLI
 
+        The CLI contains a separate ``--help`` for the ``create`` command.
+
         .. code-block:: shell
 
             $ hydroflows create --help
 
         .. program-output:: hydroflows create --help
 
-        This shows that to create a workflow, a workflow template is needed
+        This shows that to create a workflow, a workflow template is needed as described :ref:`here
+        <workflow_template>`. Running the command with the above template (see ``examples/sfincs_pluvial.yml``) as
+        follows:
+
+        .. code-block:: shell
+
+            $ hydroflows create sfincs_pluvial.yml
+
+        yields a file ``sfincs_pluvial.smk`` which contains a Snakemake (default) workflow which you can then implement
+        in a compute environment of choice.
+
+        .. literalinclude:: ../../examples/sfincs_pluvial.smk
+            :language: yaml
+
+        The earlier mentioned wildcards and their expansion and reduction are parsed
+        automatically. The connections between the rules is organized via their inputs and outputs.
 
     .. tab-item:: API
 
-        To create a workflow from scratch, you may start an empty workflow instance...
+        Within the API, a workflow template file can be loaded into a ``Workflow`` instance as follows:
 
-Modifying a workflow from the template
---------------------------------------
-The ``.yaml`` file can simply be manipulated by a text editor to alter the workflow.
+        .. code-block:: python
 
+            from hydroflows import Workflow
+
+            workflow = Workflow.from_yaml("sfincs_pluvial.yml")
+            print(workflow)
+
+        which returns
+
+        .. program-output:: python user_guide/read_workflow.py
+
+        The workflow can also be built up from scratch by starting an empty workflow, creating rules that use each
+        other's outputs as inputs and adding these rules to the workflow consecutively. We here show that until the
+        ``sfincs_run`` rule for brevity:
+
+        .. literalinclude:: setup_workflow.py
+            :language: python
+
+        A few things worth noting:
+
+        * ``WorkflowConfig`` provides the general configuration options
+        * ``workflow.get_ref`` is used to ensure outputs of one rule are made inputs to a next rule
+        * input/output intelligence can also be directly derived from a rule under ``<rule>.output``.
+        * wildcard names can be defined within each rule (e.g. ``"pluvial_event"``).
+
+        Writing to snakemake can easily be done as follows:
+
+        .. code-block:: python
+
+            workflow.to_snakemake(f"sfincs_pluvial.smk")
+
+.. _run_workflow:
 
 Running a workflow
 ------------------
-Before parsing your workflow to a defined language, we strongly recommend to perform a smaller test run of your
-workflow in a smaller environment (e.g. your own desktop/laptop computer). To this end, modify the ``.yaml`` template
-to reduce the problem as shown above, and then you may run it as follows:
+The workflow can be run in your local environment. This does not yield scalability as would be the case if you use
+e.g. Snakemake or CWL. This can be useful for instance to test your workflow. Also dry-running is possible to see if
+the input-output logic is correct.
 
 .. tab-set::
 
     .. tab-item:: CLI
+
+        .. note::
+
+            Dry running is not yet possible on CLI.
+
+        You may run the workflow directly as follows:
 
         .. code-block:: shell
 
@@ -94,11 +147,24 @@ to reduce the problem as shown above, and then you may run it as follows:
 
     .. tab-item:: API
 
+        Dry-running in the API can be done as follows:
+
         .. code-block:: python
 
             from hydroflows import Workflow
 
-            workflow = Workflow('sfincs_pluvial.yaml')
+            workflow = Workflow.from_yaml('sfincs_pluvial.yaml')
+            workflow.run(dryrun=True)
+
+            workflow.run()
+
+        Running in the API can be done as follows:
+
+        .. code-block:: python
+
+            from hydroflows import Workflow
+
+            workflow = Workflow.from_yaml('sfincs_pluvial.yaml')
             workflow.run()
 
 This will execute all steps in your workflow on your local environment. Naturally make sure that the right python
