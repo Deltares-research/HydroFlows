@@ -24,6 +24,7 @@ __eps__ = {
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
     "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
+    "fluvial_historical_events": "hydroflows.methods.discharge.fluvial_historical_events:FluvialHistoricalEvents",
 }
 
 
