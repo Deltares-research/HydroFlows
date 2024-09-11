@@ -9,7 +9,7 @@ from hydromt_sfincs import SfincsModel
 
 from hydroflows._typing import JsonDict
 from hydroflows.events import Event
-from hydroflows.utils import make_relative_paths
+from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 

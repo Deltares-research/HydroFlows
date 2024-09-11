@@ -39,6 +39,7 @@ class Method(ABC):
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
+        # NOTE: wildcards on outputs should be defined on file parent, not the file name itself!
         self.output: Parameters = Parameters()
         self.params: Parameters = Parameters()
 
@@ -104,6 +105,13 @@ class Method(ABC):
     def __repr__(self) -> str:
         return f"Method(name={self.name}; parameters={pformat(self.dict)})"
 
+    def __eq__(self, other):
+        return (
+            self.__dict__ == other.__dict__
+            and self.__class__ == other.__class__
+            and self.name == other.name
+        )
+
     ## SERIALIZATION METHODS
 
     def to_kwargs(
@@ -138,6 +146,7 @@ class Method(ABC):
         out_dict = {
             "input": self.input.to_dict(**dump_kwargs),
             "output": self.output.to_dict(**dump_kwargs),
+            "params": {},
         }
         if hasattr(self, "_params"):  # params are optional
             out_dict["params"] = self.params.model_dump(**dump_kwargs)
@@ -194,11 +203,7 @@ class Method(ABC):
 
     @classmethod
     def _get_subclasses(cls) -> Generator[type["Method"], None, None]:
-        # FIXME use entrypoints to get all subclasses
-        # for now we need to import the hydroflows.methods module to 'discover' all subclasses
-
-        from hydroflows import methods as _  # noqa: F401
-
+        """Get all imported subclasses of the Method class."""
         for subclass in cls.__subclasses__():
             yield from subclass._get_subclasses()
             yield subclass
@@ -206,11 +211,14 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
+        from hydroflows.methods import METHODS  # avoid circular import
+
+        name = name.lower()
         for subclass in cls._get_subclasses():
-            if subclass.name == name:
+            if subclass.name.lower() == name or subclass.__name__.lower() == name:
                 return subclass
-        known_methods = [m.name for m in cls._get_subclasses()]
-        raise ValueError(f"Unknown method: {name}, select from {known_methods}")
+        # if not found, try to import the module using entry points
+        return METHODS.load(name)
 
     ## TESTING METHODS
 

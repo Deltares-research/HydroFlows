@@ -11,7 +11,7 @@ import pytest
 import xarray as xr
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows.methods import FIATBuild, FIATRun, FIATUpdateHazard
+from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
 
 FIAT_DATA_PATH = Path(
     os.path.dirname(hydromt_fiat.__file__),
