@@ -13,9 +13,13 @@ from hydroflows.utils.path_utils import make_relative_paths
 def _check_forcing_locs(
     forcing: Forcing, sf: SfincsModel, ftype=Literal["bzs", "dis"]
 ) -> Optional[gdf.GeoDataFrame]:
-    if not forcing.locs and ftype in sf.forcing:
+    if forcing.locs is None and ftype in sf.forcing:
         locs = cast(gdf.GeoDataFrame, sf.forcing[ftype].vector.to_gdf())
         # find overlapping indexes
+        try:
+            forcing.data.columns = forcing.data.columns.map(int)
+        except ValueError:
+            pass
         loc_names = list(set(locs.index) & set(forcing.data.columns))
         if len(loc_names) == 0:
             raise ValueError("No overlapping locations indices found")
