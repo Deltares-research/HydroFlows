@@ -100,8 +100,8 @@ def test_method_from_kwargs():
 
 
 def test_get_subclass():
-    method_subclass = Method._get_subclass("fiat_build")
-    assert issubclass(method_subclass, FIATBuild)
+    method_subclass = Method._get_subclass("test_method")
+    assert issubclass(method_subclass, TestMethod)
 
 
 def test_dryrun(tmp_path):
