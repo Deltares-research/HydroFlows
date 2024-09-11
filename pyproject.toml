@@ -27,7 +27,7 @@ dependencies = [
   "jinja2",                   # templating
 ]
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.rst"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
