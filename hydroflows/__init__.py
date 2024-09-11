@@ -3,10 +3,12 @@
 __version__ = "0.1.0.dev"
 
 
-from hydroflows.workflow import Method, Workflow
+from hydroflows.workflow import Method, Wildcards, Workflow, WorkflowConfig
 
 __all__ = [
     "__version__",
-    "Workflow",
     "Method",
+    "Wildcards",
+    "Workflow",
+    "WorkflowConfig",
 ]
