@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-from hydroflows.methods.fiat import FIATBuild
 from hydroflows.workflow import Method, Parameters
 from tests.conftest import MockExpandMethod, TestMethod
 
