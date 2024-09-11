@@ -6,9 +6,9 @@ setup_config:
 
 setup_basemaps:
   region: <region> # placeholder for model region
-  res: <res>, # Placeholder for model resolution
-  hydrography_fn: merit_hydro,
-  basin_index_fn: merit_hydro_index,
+  res: 0.0041667
+  hydrography_fn: merit_hydro
+  basin_index_fn: merit_hydro_index
   upscale_method: ihu
 
 setup_rivers:
@@ -18,14 +18,22 @@ setup_rivers:
   rivdph_method: powlaw
   min_rivdph: 1
   min_rivwth: 30
-  slope_len: 2e3
-  smooth_len: 5e3
+  slope_len: 2000
+  smooth_len: 5000
   elevtn_map: dem_subgrid
   river_routing: local-inertial
 
 setup_floodplains:
   floodplain_type: 1d
   hydrography_fn: merit_hydro
+
+setup_gauges:
+  gauges_fn: <gauges> # Placeholder
+  snap_to_river: True
+  derive_subcatch: True
+  index_col: index
+  basename: bounds
+  toml_output: netcdf
 
 setup_reservoirs:
   reservoirs_fn: hydro_reservoirs

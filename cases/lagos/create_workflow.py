@@ -32,21 +32,20 @@ if __name__ == "__main__":
     pass
     # %%
     ## General setup of workflow
-    setup_scenario_name = "global"  # for now
+    scenario = "global"  # for now
 
     conf = WorkflowConfig(
-        region="data/region_lagoon.geojson",
-        data_libs="data/data_catalog.yml",
-        setup_scenario=f"{setup_scenario_name}_setup_models",
-        models_root_folder="models",
-        data_root_folder="data",
-        sim_subfolder="design_events",
-        hydromt_sfincs_config=f"hydromt_config/sfincs_{setup_scenario_name}_config.yml",
-        hydromt_wflow_config=f"hydromt_config/wflow_{setup_scenario_name}_config.yml",
-        hydromt_fiat_config=f"hydromt_config/fiat_{setup_scenario_name}_config.yml",
+        region="data/build/region_small.geojson",
+        data_libs="data/build/data_catalog.yml",
+        model_dir="models",
+        data_dir="data",
+        simu_dir="design_events",
+        hydromt_sfincs_config=f"hydromt_config/sfincs_{scenario}_config.yml",
+        hydromt_wflow_config=f"hydromt_config/wflow_{scenario}_config.yml",
+        hydromt_fiat_config=f"hydromt_config/fiat_{scenario}_config.yml",
         sfincs_res=50,
         wflow_res=0.0041667,
-        rps=[2, 10, 100],
+        rps=[5, 10, 25],
         river_upa=10,
         continent="Africa",
         risk=True,
@@ -68,8 +67,7 @@ if __name__ == "__main__":
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
         sfincs_root=os.path.join(
-            conf.setup_scenario,
-            conf.models_root_folder,
+            conf.model_dir,
             "sfincs",
         ),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
@@ -84,8 +82,7 @@ if __name__ == "__main__":
     wflow_build = WflowBuild(
         region=sfincs_build.output.sfincs_region,
         wflow_root=os.path.join(
-            conf.setup_scenario,
-            conf.models_root_folder,
+            conf.model_dir,
             "wflow",
         ),
         default_config=w.get_ref("$config.hydromt_wflow_config"),
@@ -100,8 +97,7 @@ if __name__ == "__main__":
     fiat_build = FIATBuild(
         region=sfincs_build.output.sfincs_region,
         fiat_root=os.path.join(
-            conf.setup_scenario,
-            conf.models_root_folder,
+            conf.model_dir,
             "fiat",
         ),
         data_libs=w.get_ref("$config.data_libs"),
@@ -115,6 +111,7 @@ if __name__ == "__main__":
     # Update forcing
     wflow_update = WflowUpdateForcing(
         wflow_toml=wflow_build.output.wflow_toml,
+        data_libs=w.get_ref("$config.data_libs"),
         start_time=w.get_ref("$config.start_date"),
         end_time=w.get_ref("$config.end_date"),
     )
@@ -138,13 +135,12 @@ if __name__ == "__main__":
 
     ## Pluvial events
     # Get the data
-    if setup_scenario_name == "global":
+    if scenario == "global":
         get_precip = GetERA5Rainfall(
             region=sfincs_build.output.sfincs_region,
             data_root=os.path.join(
-                conf.setup_scenario,
-                conf.data_root_folder,
-                conf.sim_subfolder,
+                conf.data_dir,
+                conf.simu_dir,
                 "input",
             ),
             start_date=w.get_ref("$config.start_date"),
@@ -172,7 +168,7 @@ if __name__ == "__main__":
     # Sfincs update with precip
     sfincs_update = SfincsUpdateForcing(
         sfincs_inp=sfincs_build.output.sfincs_inp,
-        sim_subfolder=w.get_ref("$config.sim_subfolder"),
+        sim_subfolder=w.get_ref("$config.simu_dir"),
         event_yaml="data/events/{all_events}.yml",
     )
     w.add_rule(sfincs_update, rule_id="sfincs_update")
@@ -190,9 +186,8 @@ if __name__ == "__main__":
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),
         hazard_root=os.path.join(
-            conf.setup_scenario,
-            conf.data_root_folder,
-            conf.sim_subfolder,
+            conf.data_dir,
+            conf.simu_dir,
             "output",
             "hazard",
         ),
@@ -209,7 +204,7 @@ if __name__ == "__main__":
         fiat_cfg=fiat_build.output.fiat_cfg,
         event_set_yaml="data/events/{event_set}.yml",
         event_set_name="{event_set}",
-        sim_subfolder=w.get_ref("$config.sim_subfolder"),
+        sim_subfolder=w.get_ref("$config.simu_dir"),
         hazard_maps=sfincs_post.output.hazard_tif,
         risk=w.get_ref("$config.risk"),
     )
@@ -226,6 +221,6 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(f"{setup_scenario_name}_pluvial_design_events_workflow.smk")
+    w.to_snakemake(f"{scenario}_workflow.smk")
 
     # %%
