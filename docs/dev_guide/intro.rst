@@ -1,7 +1,7 @@
 
 
-Developments
-============
+Dev guide
+=========
 
 Text to be added
 
