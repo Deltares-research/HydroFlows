@@ -140,7 +140,6 @@ class Workflow:
             configfile=configfile,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
-            result_rule=snake_rules[-1],
             dryrun=dryrun,
         )
         with open(snakefile, "w") as f:
