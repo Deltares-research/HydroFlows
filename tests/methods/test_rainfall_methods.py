@@ -40,6 +40,8 @@ def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Pat
         precip_nc=str(fn_time_series_nc),
         event_root=Path(tmp_path, "data"),
         rps=rps,
+        ev_type="BM",
+        distribution="gev",
     )
 
     assert len(p_events.params.event_names) == len(rps)
