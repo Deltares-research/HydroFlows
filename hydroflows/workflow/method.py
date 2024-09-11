@@ -39,6 +39,7 @@ class Method(ABC):
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
+        # NOTE: wildcards on outputs should be defined on file parent, not the file name itself!
         self.output: Parameters = Parameters()
         self.params: Parameters = Parameters()
 
@@ -103,6 +104,13 @@ class Method(ABC):
 
     def __repr__(self) -> str:
         return f"Method(name={self.name}; parameters={pformat(self.dict)})"
+
+    def __eq__(self, other):
+        return (
+            self.__dict__ == other.__dict__
+            and self.__class__ == other.__class__
+            and self.name == other.name
+        )
 
     ## SERIALIZATION METHODS
 
