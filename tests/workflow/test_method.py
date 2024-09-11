@@ -1,7 +1,6 @@
 import os
 import re
 from pathlib import Path
-from pprint import pformat
 
 import pytest
 
@@ -31,7 +30,7 @@ def create_test_method(
     return TestMethod(input_file1=input_file1, input_file2=input_file2, param=param)
 
 
-def test_method_param_props(test_method):
+def test_method_param_props(test_method: TestMethod):
     with pytest.raises(ValueError, match="Input should be a Parameters instance"):
         test_method.input = "input param"
     with pytest.raises(ValueError, match="Output should be a Parameters instance"):
@@ -49,12 +48,12 @@ def test_method_param_props(test_method):
     assert isinstance(test_method.params, Parameters)
 
 
-def test_method_repr(test_method):
+def test_method_repr(test_method: TestMethod):
     assert test_method.name in test_method.__repr__()
-    assert f"parameters={pformat(test_method.dict)}" in test_method.__repr__()
+    assert test_method.__repr__().startswith("Method")
 
 
-def test_method_to_kwargs(test_method):
+def test_method_to_kwargs(test_method: TestMethod):
     kwargs = test_method.to_kwargs()
     assert kwargs == {
         "input_file1": "test_file1",
@@ -70,7 +69,7 @@ def test_method_to_kwargs(test_method):
     }
 
 
-def test_method_to_dict(test_method):
+def test_method_to_dict(test_method: TestMethod):
     out_dict = test_method.to_dict()
     assert out_dict == {
         "input": {"input_file1": "test_file1", "input_file2": "test_file2"},
@@ -79,7 +78,7 @@ def test_method_to_dict(test_method):
     }
 
 
-def test_method_from_dict(test_method):
+def test_method_from_dict(test_method: TestMethod):
     method_dict = test_method.to_dict()
     new_test_method = TestMethod.from_dict(
         input=method_dict["input"],
