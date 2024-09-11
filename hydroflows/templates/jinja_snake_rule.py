@@ -81,7 +81,7 @@ class JinjaSnakeRule:
         return {key: self._parse_variable(val) for key, val in result.items()}
 
     @property
-    def rule_all_input(self) -> Dict[str, str]:
+    def rule_all_input(self) -> str:
         """Get the rule all input (output paths with expand)."""
         result = self.method.output.to_dict(
             mode="json",
@@ -90,10 +90,11 @@ class JinjaSnakeRule:
             quote_str=True,
         )
         wildcards = self.rule.workflow.wildcards.names
-        for key, val in result.items():
-            if key in self.rule._all_wildcard_fields:
-                result[key] = self._expand_variable(val, wildcards)
-        return result
+        # get first key and value of the output
+        key, val = next(iter(result.items()))
+        if key in self.rule._all_wildcard_fields:
+            val = self._expand_variable(val, wildcards)
+        return val
 
     @property
     def shell_args(self) -> Dict[str, str]:
