@@ -159,7 +159,7 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # TODO: hydromt_fiat does not automatically read the region, and region is needed!
         model.read()
-        region_fn = Path(root / "exposure", "region.gpkg")
+        region_fn = Path(root / "exposure", "region.geojson")
         region_gdf = gpd.read_file(region_fn).to_crs(4326)
 
         model.setup_region({"geom": region_gdf})
@@ -208,7 +208,9 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
-        model.write_grid(fn=str(self.output.fiat_hazard))
+        # pass relative file path
+        fn = self.output.fiat_hazard.relative_to(out_root)
+        model.write_grid(fn=str(fn))
         model.set_config("hazard.settings.var_as_band", True)
         model.set_config("hazard.file", self.output.fiat_hazard.name)
 

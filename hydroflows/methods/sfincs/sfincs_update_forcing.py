@@ -83,9 +83,6 @@ def parse_event_sfincs(
                 config.update({"srcfile": "sfincs.src"})
 
             case "rainfall":
-                # if rainfall occurs, a stability issue in SFINCS makes sfincs crash when the courant condition is
-                # set to (default) 0.5. Therefore set to 0.1
-                sf.setup_config(alpha=0.1)
                 sf.setup_precip_forcing(
                     timeseries=forcing.data,
                 )
