@@ -82,6 +82,7 @@ def time_series_nc() -> xr.DataArray:
         },
         attrs=dict(_FillValue=-9999),
     )
+    da.name = "Q"
 
     return da
 
@@ -100,6 +101,7 @@ def test_wflow_design_hydro(time_series_nc: xr.DataArray, tmp_path: Path):
         discharge_nc=discharge_nc,
         event_root=event_root,
         wildcard="q_event",
+        var_name="Q",
     )
     assert "{q_event}" in str(m.output.event_csv)
     m.run_with_checks()

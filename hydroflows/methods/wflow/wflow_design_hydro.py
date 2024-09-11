@@ -266,9 +266,11 @@ class WflowDesignHydro(ExpandMethod):
         da_rps = da_rps.assign_coords(rps=self.params.rps)
 
         # hydrographs based on the n highest peaks
-        dims = da_peaks.dims + ("peak",)
+        dims = list(da_peaks.dims) + [
+            "peak",
+        ]
         if da_peaks[index_dim].size > 1:
-            dims += (index_dim,)
+            dims += [dims.pop(dims.index(index_dim))]
         da_q_hydrograph = design_events.get_peak_hydrographs(
             da.squeeze(),
             da_peaks,
