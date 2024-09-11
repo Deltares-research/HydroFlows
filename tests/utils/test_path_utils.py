@@ -40,15 +40,18 @@ def test_make_relative_paths(tmp_path: Path):
         make_relative_paths(data, src, dst)
 
 
-def test_rel_to_abs_path():
+def test_rel_to_abs_path(tmp_path: Path):
+    file2 = tmp_path / "file2.txt"
     data = {
         "file1": "relative/path/to/file1.txt",
-        "file2": "/absolute/path/to/file2.txt",
+        "file2": file2,  # abs path is not changed
+        "file3": file2.as_posix(),  # abs path is not changed
     }
     root = Path("/base/root")
     expected = {
         "file1": Path("/base/root/relative/path/to/file1.txt"),
-        "file2": Path("/absolute/path/to/file2.txt"),
+        "file2": file2,
+        "file3": file2.as_posix(),
     }
     result = rel_to_abs_path(data, root)
     assert result == expected

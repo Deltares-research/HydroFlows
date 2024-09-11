@@ -1,7 +1,7 @@
 """Utils for model path operations."""
 
 import os
-from pathlib import Path, PurePath
+from pathlib import Path
 from typing import Dict, List, Optional
 
 __all__ = ["make_relative_paths"]
@@ -43,7 +43,7 @@ def rel_to_abs_path(data: Dict, root: Path, keys: Optional[List[str]] = None) ->
     if keys is None:
         keys = [key for key in data if isinstance(data[key], (str, Path))]
     for key in keys:
-        if key in data and not PurePath(data[key]).is_absolute():
+        if key in data and not Path(data[key]).is_absolute():
             data_out[key] = Path(root) / data[key]
     return data_out
 
