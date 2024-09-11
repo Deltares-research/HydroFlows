@@ -4,18 +4,16 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import os
-import shutil
 import tempfile
 from pathlib import Path
 from pprint import pformat
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 
 from hydroflows import __version__
-from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
