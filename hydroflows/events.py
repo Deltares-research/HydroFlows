@@ -17,6 +17,8 @@ from pydantic import (
 )
 from typing_extensions import TypedDict
 
+from hydroflows.utils.path_utils import abs_to_rel_path, rel_to_abs_path
+
 __all__ = ["EventSet"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
@@ -67,7 +69,7 @@ class Forcing(BaseModel):
         """Set the paths to relative to root if not absolute."""
         if isinstance(data, dict) and "_root" in data:
             root = Path(data.pop("_root"))
-            data = _rel_to_abs_path(data, ["path", "locs_path"], root)
+            data = rel_to_abs_path(data, root, ["path", "locs_path"])
         return data
 
     @model_serializer(mode="wrap", when_used="json")
@@ -75,8 +77,8 @@ class Forcing(BaseModel):
         """Serialize paths as relative to root."""
         data = nxt(self)
         if self._root:
-            data = _abs_to_rel_path(
-                data, ["path", "locs_path"], Path(self._root), serialize=True
+            data = abs_to_rel_path(
+                data, Path(self._root), keys=["path", "locs_path"], serialize=True
             )
         return data
 
@@ -285,7 +287,7 @@ class EventSet(BaseModel):
             root = Path(data["root"])
             events = []
             for event in data["events"]:
-                events.append(_rel_to_abs_path(event, ["path"], root))
+                events.append(rel_to_abs_path(event, root, ["path"]))
             data["events"] = events
         return data
 
@@ -297,7 +299,7 @@ class EventSet(BaseModel):
             events = []
             for event in data["events"]:
                 events.append(
-                    _abs_to_rel_path(event, ["path"], self.root, serialize=True)
+                    abs_to_rel_path(event, self.root, keys=["path"], serialize=True)
                 )
             data["events"] = events
             data["root"] = self.root.as_posix()
@@ -374,22 +376,3 @@ class EventSet(BaseModel):
         """
         event = {"name": name, "path": path}
         self.events.append(event)
-
-
-def _rel_to_abs_path(data: Dict, keys: List[str], root: Path) -> Dict:
-    for key in keys:
-        if key in data and not Path(data[key]).is_absolute():
-            data[key] = root / Path(data[key])
-    return data
-
-
-def _abs_to_rel_path(data: Dict, keys: List[str], root: Path, serialize=True) -> Dict:
-    for key in keys:
-        if key not in data or data[key] is None:
-            continue
-        path = Path(data[key])
-        if path.is_relative_to(root):
-            path = path.relative_to(root)
-        if serialize:
-            data[key] = path.as_posix()
-    return data
