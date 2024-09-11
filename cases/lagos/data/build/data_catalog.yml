@@ -1,0 +1,313 @@
+meta:
+  root: p:\11209169-003-up2030\data\ARTIFACT\lagos
+  version: v2024.3
+chirps:
+  data_type: RasterDataset
+  path: chirps.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: meteo
+    paper_doi: 10.1038/sdata.2015.66
+    paper_ref: Funk et al (2015)
+    source_license: CC
+    source_url: https://www.chc.ucsb.edu/data/chirps
+    source_version: v2.0
+  crs: 4326
+chirps_global:
+  data_type: RasterDataset
+  path: chirps_global.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: meteo
+    paper_doi: 10.3133/ds832
+    paper_ref: Funk et al (2014)
+    source_license: CC
+    source_url: https://www.chc.ucsb.edu/data/chirps
+    source_version: v2.0
+  crs: 4326
+era5_daily_zarr:
+  data_type: RasterDataset
+  path: era5_daily_zarr.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: meteo
+    notes: Extracted from Copernicus Climate Data Store; resampled by Deltares to
+      daily frequency
+    paper_doi: 10.1002/qj.3803
+    paper_ref: Hersbach et al. (2019)
+    source_license: https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products
+    source_url: https://doi.org/10.24381/cds.bd0915c6
+    source_version: ERA5 daily data on pressure levels
+  crs: 4326
+era5_hourly_zarr:
+  data_type: RasterDataset
+  path: era5_hourly_zarr.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: meteo
+    notes: Extracted from Copernicus Climate Data Store
+    paper_doi: 10.1002/qj.3803
+    paper_ref: Hersbach et al. (2019)
+    source_license: https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products
+    source_url: https://doi.org/10.24381/cds.adbb2d47
+    source_version: ERA5 hourly data on single levels from 1940 to present
+  crs: 4326
+era5_orography:
+  data_type: RasterDataset
+  path: era5_orography.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: meteo
+    notes: Extracted from Copernicus Climate Data Store
+    paper_doi: 10.1002/qj.3803
+    paper_ref: Hersbach et al. (2019)
+    source_license: https://cds.climate.copernicus.eu/cdsapp/#!/terms/licence-to-use-copernicus-products
+    source_url: https://apps.ecmwf.int/codes/grib/param-db?id=129
+  crs: 4326
+esa_worldcover:
+  data_type: RasterDataset
+  path: esa_worldcover.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: landuse
+    source_license: CC BY 4.0
+    source_url: https://doi.org/10.5281/zenodo.5571936
+    source_version: v100
+  crs: 4326
+fabdem:
+  data_type: RasterDataset
+  path: fabdem.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: CC BY-NC-SA 4.0
+    paper_ref: Hawker et al. (2022)
+    source_license: CC BY-NC-SA 4.0
+    source_url: https://data.bris.ac.uk/data/dataset/25wfy0f9ukoge2gs7a5mqpq2j7
+    source_version: 1.0
+  crs: 4326
+gebco:
+  data_type: RasterDataset
+  path: gebco.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.5285/a29c5465-b138-234d-e053-6c86abc040b9
+    paper_ref: Weatherall et al (2020)
+    source_license: https://www.gebco.net/data_and_products/gridded_bathymetry_data/#a1
+    source_url: https://www.bodc.ac.uk/data/open_download/gebco/gebco_2020/geotiff/
+    source_version: 2020
+    unit: m+MSL
+  crs: 4326
+globcover:
+  data_type: RasterDataset
+  path: globcover.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: landuse
+    paper_doi: 10.1594/PANGAEA.787668
+    paper_ref: Arino et al (2012)
+    source_license: CC-BY-3.0
+    source_url: http://due.esrin.esa.int/page_globcover.php
+    source_version: v2.3
+  crs: 4326
+grdc:
+  data_type: GeoDataFrame
+  path: grdc.csv
+  driver: csv
+  driver_kwargs:
+    index_col: 0
+  filesystem: local
+  meta:
+    category: observed data
+    notes: GRDC-Station Catalogue, last downloaded 2020-07-16
+    source_license: https://www.bafg.de/GRDC/EN/02_srvcs/21_tmsrs/210_prtl/tou.html;jsessionid=A56D50D4A36D3D8707CBF00CBD71F106.live11291?nn=2862854
+    source_url: https://portal.grdc.bafg.de/applications/public.html?publicuser=PublicUser#dataDownload/StationCatalogue
+  crs: 4326
+hydro_lakes:
+  data_type: GeoDataFrame
+  path: hydro_lakes.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: surface water
+    notes: HydroLAKES.v10_extract
+    source_author: Arjen Haag
+    source_version: 1.0
+  crs: 4326
+hydro_reservoirs:
+  data_type: GeoDataFrame
+  path: hydro_reservoirs.gpkg
+  driver: vector
+  filesystem: local
+  nodata: -99
+  meta:
+    category: surface water
+    notes: GRanD.v1.1_HydroLAKES.v10_JRC.2016
+    source_author: Alessia Matano
+    source_version: 1.0
+  crs: 4326
+lagoon:
+  data_type: GeoDataFrame
+  path: lagoon.geojson
+  driver: vector
+  filesystem: local
+  meta:
+    category: surface water
+    notes: From hydro lakes
+    source_version: 1.0
+  crs: 4326
+merit_basins_cat:
+  data_type: GeoDataFrame
+  path: merit_basins_cat.gpkg
+  driver: vector
+  filesystem: local
+merit_basins_riv:
+  data_type: GeoDataFrame
+  path: merit_basins_riv.gpkg
+  driver: vector
+  filesystem: local
+merit_hydro:
+  data_type: RasterDataset
+  path: merit_hydro/{variable}.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.1029/2019WR024873
+    paper_ref: Yamazaki et al. (2019)
+    source_license: CC-BY-NC 4.0 or ODbL 1.0
+    source_url: http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_Hydro
+    source_version: 1.0
+  crs: 4326
+merit_hydro_ihu:
+  data_type: RasterDataset
+  path: merit_hydro_ihu/{variable}.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.5194/hess-2020-582
+    paper_ref: Eilander et al. (2021)
+    source_license: ODC-By 1.0
+    source_url: https://zenodo.org/record/5166932#.YVbxJ5pByUk
+    source_doi: 10.5281/zenodo.5166932
+    source_version: 1.0
+  crs: 4326
+merit_hydro_ihu_index:
+  data_type: GeoDataFrame
+  path: merit_hydro_ihu_index.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.5194/hess-25-5287-2021
+    paper_ref: Eilander et al. (2021)
+    source_license: CC-BY-NC 4.0
+    source_url: https://zenodo.org/record/5166932#.YVbxJ5pByUk
+  crs: 4326
+merit_hydro_index:
+  data_type: GeoDataFrame
+  path: merit_hydro_index.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.5194/hess-25-5287-2021
+    paper_ref: Eilander et al. (2021)
+    source_license: CC-BY-NC 4.0
+  crs: 4326
+modis_lai:
+  data_type: RasterDataset
+  path: modis_lai.nc
+  driver: netcdf
+  filesystem: local
+  meta:
+    category: landuse
+    notes: this dataset has been extracted from GEE ('MODIS/006/MCD15A3H') for the
+      period '2003-01-01', '2017-12-31'
+    paper_doi: 10.5067/MODIS/MCD15A3H.006
+    paper_ref: Myneni et al (2015)
+    source_license: https://lpdaac.usgs.gov/data/data-citation-and-policies/
+    source_url: https://lpdaac.usgs.gov/products/mcd15a3hv006/
+    source_version: MCD15A3H V006
+  crs: 4326
+osm_coastlines:
+  data_type: GeoDataFrame
+  path: osm_coastlines.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: geography
+    notes: OpenStreetMap coastlines water polygons, last updated 2020-01-09T05:29
+    source_author: OpenStreetMap
+    source_license: ODbL
+    source_url: https://osmdata.openstreetmap.de/data/coastlines.html
+    source_version: 1.0
+  crs: 4326
+osm_landareas:
+  data_type: GeoDataFrame
+  path: osm_landareas.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: geography
+    notes: OpenStreetMap coastlines land polygons, last updated 2020-01-09T05:29
+    source_author: OpenStreetMap
+    source_license: ODbL
+    source_url: https://osmdata.openstreetmap.de/data/coastlines.html
+    source_version: 1.0
+  crs: 4326
+rivers_lin2019_v1:
+  data_type: GeoDataFrame
+  path: rivers_lin2019_v1.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: hydrography
+    paper_doi: 10.5281/zenodo.3552776
+    paper_ref: Lin et al. (2019)
+    source_license: CC-BY-NC 4.0
+    source_url: https://zenodo.org/record/3552776#.YVbOrppByUk
+    source_version: 1
+soilgrids:
+  data_type: RasterDataset
+  path: soilgrids/{variable}.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: soil
+    notes: "soilthickness is based on 1) soilgrids (global) and 2) dataset for Eurasia\
+      \ (ESDAC, 2004; Panagos et al., 2012): ESDAC, 2004. The european soil database\
+      \ distribution version 2.0, european commission and the European soil bureau\n\
+      \ network.  esdac.jrc.ec.europa.eu, accessed: 2017-11-17.  Panagos, P., Van\
+      \ Liedekerke, M., Jones, A., Montanarella, L., 2012. European soil data centre:\
+      \ Response to european policy support  and public data requirements. Land Use\
+      \ Policy 29 (2), 329\xC3\xA2\xE2\u201A\xAC\xE2\u20AC\u0153338. \n"
+    paper_doi: 10.1371/journal.pone.0169748
+    paper_ref: Hengl et al. (2017)
+    source_license: ODbL
+    source_url: https://www.isric.org/explore/soilgrids/faq-soilgrids-2017
+    source_version: 2017
+  crs: 4326
+vito:
+  data_type: RasterDataset
+  path: vito.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: landuse
+    paper_doi: 10.5281/zenodo.3939038
+    paper_ref: Buchhorn et al (2020)
+    source_url: https://land.copernicus.eu/global/products/lc
+    source_version: v2.0.2
+  crs: 4326
