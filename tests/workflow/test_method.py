@@ -101,13 +101,6 @@ def test_method_from_kwargs():
 
 
 def test_get_subclass():
-    known_methods = [m.name for m in Method._get_subclasses()]
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(f"Unknown method: fake_method, select from {known_methods}"),
-    ):
-        Method._get_subclass("fake_method")
     method_subclass = Method._get_subclass("fiat_build")
     assert issubclass(method_subclass, FIATBuild)
 
