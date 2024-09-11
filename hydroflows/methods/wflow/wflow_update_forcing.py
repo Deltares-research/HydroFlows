@@ -8,6 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
 from hydroflows._typing import ListOfStr
+from hydroflows.methods.wflow.wflow_utils import shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -193,3 +194,14 @@ class WflowUpdateForcing(Method):
         )
         w.write_config(config_name=self.output.wflow_out_toml.name)
         w.write_forcing(freq_out="3M")
+
+        # Shift the starttime back by one timestep and re-write config
+        w.set_config(
+            "starttime",
+            shift_time(
+                w.get_config("starttime"),
+                delta=-w.get_config("timestepsecs"),
+                units="seconds",
+            ),
+        )
+        w.write_config(config_name=self.output.wflow_out_toml.name)
