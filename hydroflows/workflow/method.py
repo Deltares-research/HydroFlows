@@ -138,6 +138,7 @@ class Method(ABC):
         out_dict = {
             "input": self.input.to_dict(**dump_kwargs),
             "output": self.output.to_dict(**dump_kwargs),
+            "params": {},
         }
         if hasattr(self, "_params"):  # params are optional
             out_dict["params"] = self.params.model_dump(**dump_kwargs)

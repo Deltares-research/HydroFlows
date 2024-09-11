@@ -115,7 +115,6 @@ class Workflow:
         self,
         snakefile: Path,
         dryrun: bool = False,
-        run_env: Literal["shell", "script"] = "shell",
     ) -> None:
         """Save the workflow to a snakemake workflow.
 
@@ -130,12 +129,6 @@ class Workflow:
         """
         snakefile = Path(snakefile).resolve()
         configfile = snakefile.with_suffix(".config.yml")
-        script = run_env == "script"
-        if script:
-            script_relpath = "script/run_method_snake.py"
-            scriptfile = snakefile.parent / script_relpath
-
-        # create and write snakefile
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
@@ -150,23 +143,11 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             result_rule=snake_rules[-1],
             dryrun=dryrun,
-            script=script_relpath if script else None,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
-
-        # write yml config
-        conf_dict = self.config.to_dict(mode="json")
-        if script:
-            conf_dict.update(dryrun=dryrun)
-        with open(configfile, "w") as f:
-            yaml.dump(conf_dict, f)
-
-        if script:
-            scriptfile.parent.mkdir(parents=True, exist_ok=True)
-            # copy file from templates folder
-            src = HYDROMT_CONFIG_DIR / "run_method_snake.py"
-            shutil.copy2(src, scriptfile)
+        with open(snakefile.parent / configfile, "w") as f:
+            yaml.dump(self.config.to_dict(mode="json"), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
