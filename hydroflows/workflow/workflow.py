@@ -133,7 +133,7 @@ class Workflow:
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = Path(snakefile).with_suffix(".config.yml").name
+        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
