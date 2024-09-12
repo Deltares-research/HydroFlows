@@ -145,7 +145,6 @@ class GetGTSMData(Method):
                 data_path=self.params.gtsm_loc
                 / r"*2/{var}/reanalysis_{var}_{dt}_{year}_*_v1.nc",
                 dt=self.params.timestep,
-                # var=var,
                 **kwargs,
             )
 
@@ -159,8 +158,6 @@ class GetGTSMData(Method):
 
 
 def get_gtsm_station(
-    # x: float,
-    # y: float,
     region: gpd.GeoDataFrame,
     stations_fn: Path,
 ) -> gpd.GeoDataFrame:
@@ -181,8 +178,6 @@ def get_gtsm_station(
         GTSM station ID and coordinates
     """
     gdf = gpd.read_file(stations_fn).drop_duplicates(subset="geometry")
-    # idx = gdf.sindex.nearest(Point(x, y))[1]
-    # return gdf.iloc[idx]
     return gdf.clip(region)
 
 
@@ -254,7 +249,6 @@ def export_gtsm_data(
 
     fns = glob.glob(str(tmpdir / f"{var}_*.nc"))
     fn_out = outpath
-    # if len(fns) > 1:
     ds = xr.open_mfdataset(fns).load()
     ds.to_netcdf(fn_out, encoding=encoding)
     ds.close()

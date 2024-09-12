@@ -1,9 +1,9 @@
 """Create coastal design events from tide,surge timeseries and return period dataset."""
 
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
-import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
@@ -11,6 +11,7 @@ from pydantic import model_validator
 
 from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
+from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -62,7 +63,7 @@ class Params(Parameters):
     ndays: int = 6
     """Duration of derived events in days."""
 
-    t0: str = "2020-01-01"
+    t0: datetime = datetime(2020, 1, 1)
     """Arbitrary time of event peak."""
 
     plot_fig: bool = True
@@ -163,7 +164,7 @@ class CoastalEventFromRPData(ExpandMethod):
         )
 
         # set wildcards and its expand values
-        self.set_expand_wildcard(wildcard, self.params.event_names)
+        self.set_expand_wildcard(self.params.wildcard, self.params.event_names)
 
     def run(self):
         """Run CoastalEventsFromRPData method."""
@@ -258,28 +259,3 @@ class CoastalEventFromRPData(ExpandMethod):
             for station in h_hydrograph.stations:
                 fig_file = figs_dir / f"hydrographs_stationID_{station.values}.png"
                 plot_hydrographs(h_hydrograph.sel(stations=station), fig_file)
-
-
-def plot_hydrographs(
-    da_hydrograph: xr.DataArray,
-    savepath: Path,
-) -> None:
-    """Plot and save hydrographs.
-
-    Parameters
-    ----------
-    da_hydrograph : xr.DataArray
-        DataArray containing hydrographs. Has rps and time dimensions.
-    savepath : Path
-        Save path for figure.
-    """
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot()
-
-    da_hydrograph.rename({"rps": "Return Period [year]"}).plot.line(ax=ax, x="time")
-    ax.set_xlabel("Time")
-    ax.set_ylabel("Waterlevel [m+MSL]")
-    ax.set_title("Coastal Waterlevel Hydrographs")
-    ax.grid(True)
-    fig.tight_layout()
-    fig.savefig(savepath, dpi=150, bbox_inches="tight")

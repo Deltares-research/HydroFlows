@@ -6,8 +6,8 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
-from shapely import Point
 
+from hydroflows.methods.coastal.coastal_utils import clip_coastrp
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -96,29 +96,3 @@ class GetCoastRP(Method):
         ).to_dataset(name="return_values")
         coast_rp = clip_coastrp(coast_rp, region)
         coast_rp.to_netcdf(self.output.rps_nc)
-
-
-def clip_coastrp(coast_rp: xr.DataArray, region: gpd.GeoDataFrame) -> xr.DataArray:
-    """Clip COAST-RP to given region.
-
-    Parameters
-    ----------
-    coast_rp : xr.DataArray
-        DataArray containing COAST-RP data with lat,lon coords.
-    region : gpd.GeoDataFrame
-        Region GeoDataFrame
-
-    Returns
-    -------
-    xr.DataArray
-        Clipped COAST-RP DataArray
-    """
-    points = []
-    for station in coast_rp.stations:
-        point = Point(
-            coast_rp.sel(stations=station).lon.values,
-            coast_rp.sel(stations=station).lat.values,
-        )
-        if region.contains(point)[0]:
-            points.append(station)
-    return coast_rp.sel(stations=points)
