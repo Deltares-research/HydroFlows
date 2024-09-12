@@ -164,11 +164,11 @@ class PluvialHistoricalEvents(ExpandMethod):
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=event_name,
-                forcings=[{"type": "rainfall", "path": forcing_file.name}],
+                forcings=[{"type": "rainfall", "path": forcing_file}],
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": event_name, "path": event_file.name})
+            events_list.append({"name": event_name, "path": event_file})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)
