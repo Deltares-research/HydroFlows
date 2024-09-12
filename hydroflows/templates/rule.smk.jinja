@@ -1,4 +1,4 @@
-{% macro add_rule(rule, dryrun, script) %}
+{% macro add_rule(rule, dryrun) %}
 rule {{ rule.rule_id }}:
     input:
         {% for key, value in rule.input.items() %}

@@ -47,8 +47,8 @@ def test_event_dates_dict():
     }
 
     validated_python = ta.validate_python(dates)
-    validated_json = ta.validate_python(json.loads(json.dumps(dates)))
-    validated_json2 = ta.validate_python(json.loads(json.dumps(f"{dates}")))
+    validated_json = ta.validate_python(json.dumps(dates))
+    validated_json2 = ta.validate_python(f"{dates}")
 
     assert validated_python == validated_json
     assert validated_python == validated_json2

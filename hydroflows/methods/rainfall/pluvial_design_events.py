@@ -1,7 +1,7 @@
 """Pluvial design events method."""
 
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Dict, List, Literal, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -69,12 +69,13 @@ class Params(Parameters):
     """Minimum distance between events/peaks measured in days."""
 
     ev_type: Literal["BM", "POT"] = "BM"
-    """Method to select events/peaks. Valid options are 'BM' for block maxima or 'POT' for Peak over threshold."""
+    """Method to select events/peaks. Valid options are 'BM' for block
+    maxima or 'POT' for Peak over threshold."""
 
     distribution: Optional[str] = None
-    """EVA distribution used. If None (default) the optimal block maxima
-    distribution ("gumb" or "gev" for BM and "exp" or "gpd" for POT) is selected
-    based on the AIC criterium."""
+    """Type of extreme value distribution corresponding with `ev_type`.
+    Options are "gumb" or "gev" for BM, and "exp" or "gpd" for POT.
+    If None (default) is used, "gumb" is selected for BM and "exp" for POT."""
 
     qthresh: float = 0.95
     """Quantile threshold used with peaks over threshold method."""
@@ -97,8 +98,8 @@ class Params(Parameters):
     per return period in a csv format."""
 
     @model_validator(mode="after")
-    def _validate_event_names(self):
-        """Use rps to define event names if not provided."""
+    def _validate_model(self):
+        # validate event_names
         if self.event_names is None:
             self.event_names = [f"p_event{int(i+1):02d}" for i in range(len(self.rps))]
         elif len(self.event_names) != len(self.rps):
@@ -106,6 +107,22 @@ class Params(Parameters):
         # create a reference to the event wildcard
         if "event_names" not in self._refs:
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+
+        # validate distribution
+        acceptable_distributions: Dict[str, list] = {
+            "BM": ["gumb", "gev"],
+            "POT": ["exp", "gpd"],
+        }
+        if self.distribution is None:
+            acceptable_distributions.get(self.ev_type)[0]
+        else:
+            # Get the acceptable set of distributions for the current ev_type
+            valid_distributions = acceptable_distributions.get(self.ev_type)
+            # Check if the provided distribution is in the set of valid options
+            if self.distribution not in valid_distributions:
+                raise ValueError(
+                    f"For ev_type '{self.ev_type}', distribution must be one of {valid_distributions}."
+                )
 
 
 class PluvialDesignEvents(ExpandMethod):
@@ -123,6 +140,7 @@ class PluvialDesignEvents(ExpandMethod):
         event_root: Path = Path("data/events/rainfall"),
         rps: Optional[ListOfFloat] = None,
         event_names: Optional[List[str]] = None,
+        ev_type: Literal["BM", "POT"] = "BM",
         distribution: Optional[str] = None,
         wildcard: str = "event",
         **params,
@@ -139,10 +157,13 @@ class PluvialDesignEvents(ExpandMethod):
             Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
         event_names : List[str], optional
             List of event names for the design events, by "p_event{i}", where i is the event number.
+        ev_type: Literal["BM", "POT"]
+            Method to select events/peaks. Valid options are 'BM' (default)
+            for block maxima or 'POT' for Peak over threshold.
         distribution : str, optional
-            Short name of distribution. If None (default) the optimal block maxima
-            distribution ("gumb" or "gev" for BM and "exp" or "gpd" for POT) is selected
-            based on the AIC criterium.
+            Type of extreme value distribution corresponding with `ev_type`.
+            Options are "gumb" or "gev" for BM, and "exp" or "gpd" for POT.
+            If None (default) is used, "gumb" is selected for BM and "exp" for POT.
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
         **params
@@ -160,6 +181,7 @@ class PluvialDesignEvents(ExpandMethod):
             event_root=event_root,
             rps=rps,
             event_names=event_names,
+            ev_type=ev_type,
             distribution=distribution,
             wildcard=wildcard,
             **params,
@@ -252,12 +274,12 @@ class PluvialDesignEvents(ExpandMethod):
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "rainfall", "path": forcing_file.name}],
-                probability=1 / rp,
+                forcings=[{"type": "rainfall", "path": forcing_file}],
+                return_period=rp,
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file.name})
+            events_list.append({"name": name, "path": event_file})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)

@@ -21,7 +21,7 @@ from hydroflows.workflow.workflow_config import WorkflowConfig
 setup_scenario_name = "global"  # or select between local and global
 
 conf = WorkflowConfig(
-    region="setup_data/region.gpkg",
+    region="setup_data/region.geojson",
     data_libs="setup_data/data_catalog.yml",
     setup_scenario=f"{setup_scenario_name}_setup_models",
     models_root_folder="models",

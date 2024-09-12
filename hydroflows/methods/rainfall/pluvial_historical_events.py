@@ -1,5 +1,6 @@
 """Pluvial historical events method."""
 
+import warnings
 from pathlib import Path
 
 import xarray as xr
@@ -100,7 +101,7 @@ class PluvialHistoricalEvents(ExpandMethod):
         ----------
         precip_nc : Path
             The file path to the rainfall time series in NetCDF format.
-        event_dates : Dict
+        events_dates : Dict
             The dictionary mapping event names to their start and end date/time information.
         event_root : Path, optional
             The root folder to save the derived design events, by default "data/events/rainfall".
@@ -147,19 +148,27 @@ class PluvialHistoricalEvents(ExpandMethod):
             fmt_dict = {self.params.wildcard: event_name}
             forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
 
-            da.sel(time=slice(start_time_event, end_time_event)).to_pandas().round(
-                2
-            ).to_csv(forcing_file)
+            # Select the time slice for the event
+            event_da = da.sel(time=slice(start_time_event, end_time_event))
+
+            if event_da.size == 0:
+                warnings.warn(
+                    f"Time slice for event '{event_name}' (from {start_time_event} to {end_time_event}) "
+                    "returns no data.",
+                    stacklevel=2,
+                )
+
+            event_da.to_pandas().round(2).to_csv(forcing_file)
 
             # save event description yaml file
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=event_name,
-                forcings=[{"type": "rainfall", "path": forcing_file.name}],
+                forcings=[{"type": "rainfall", "path": forcing_file}],
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": event_name, "path": event_file.name})
+            events_list.append({"name": event_name, "path": event_file})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)
