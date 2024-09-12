@@ -4,6 +4,9 @@ from pathlib import Path
 
 import geopandas as gpd
 import hydromt
+import pandas as pd
+import xarray as xr
+from sklearn.metrics import mean_squared_error, r2_score
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -35,6 +38,9 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FloodmarksValidation` method."""
 
+    validation_scores_geom: Path
+    """The path to the geometry file with the derived validation scores."""
+
     validation_scores_csv: Path
     """The path to the CSV file with the derived validation scores."""
 
@@ -42,10 +48,10 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`PluvialDesignEvents` method."""
 
-    scores_root: Path
+    out_root: Path
     """Root folder to save the derived validation scores."""
 
-    waterlevel_prop: str
+    waterlevel_col: str
     """The property name representing the observed water level in the input floodmarks geometry file,
     as provided in the :py:class:`Input` class."""
 
@@ -62,7 +68,7 @@ class FloodmarksValidation(Method):
         "floodmarks_geom": Path("floodmarks.geojson"),
         "flood_hazard_map": Path("hazard_map_output.tif"),
         "region": Path("region.geojson"),
-        "waterlevel_prop": "water_level_obs",
+        "waterlevel_col": "water_level_obs",
     }
 
     def __init__(
@@ -70,8 +76,8 @@ class FloodmarksValidation(Method):
         floodmarks_geom: Path,
         flood_hazard_map: Path,
         region: Path,
-        waterlevel_prop: str,
-        scores_root: Path = "data/validation",
+        waterlevel_col: str,
+        out_root: Path = "data/validation",
         **params,
     ):
         """Create and validate a FloodmarksValidation instance.
@@ -81,7 +87,7 @@ class FloodmarksValidation(Method):
         floodmarks_geom : Path
            Path to the geometry file (shapefile or GeoJSON) with floodmark locations as
            points. The corresponding water levels are defined by the property specified
-           in :py:attr:`waterlevel_prop`.
+           in :py:attr:`waterlevel_col`.
         region : Path
             Path to the geometry file defining the area for hazard simulation,
             such as the SFINCS region GeoJSON.
@@ -89,7 +95,7 @@ class FloodmarksValidation(Method):
             The file path to the flood hazard map to be used for validation.
         scores_root : Path, optional
             The root folder to save the derived validation scores, by default "data/validation".
-        waterlevel_prop : Str
+        waterlevel_col : Str
             The property name for the observed water levels in the floodmarks geometry file
         **params
             Additional parameters to pass to the FloodmarksValidation instance.
@@ -101,7 +107,7 @@ class FloodmarksValidation(Method):
         :py:class:`FloodmarksValidation Params <hydroflows.methods.validation.floodmarks_validation.Params>`
         """
         self.params: Params = Params(
-            scores_root=scores_root, waterlevel_prop=waterlevel_prop, **params
+            out_root=out_root, waterlevel_col=waterlevel_col, **params
         )
         self.input: Input = Input(
             floodmarks_geom=floodmarks_geom,
@@ -109,7 +115,9 @@ class FloodmarksValidation(Method):
             region=region,
         )
         self.output: Output = Output(
-            validation_scores_csv=self.params.scores_root / self.params.filename
+            validation_scores_geom=self.params.out_root
+            / f"{self.input.floodmarks_geom.stem}_validation.gpkg",
+            validation_scores_csv=self.params.out_root / self.params.filename,
         )
 
     def run(self):
@@ -136,34 +144,33 @@ class FloodmarksValidation(Method):
         floodmap = hydromt.io.open_raster(self.input.flood_hazard_map)
 
         # Sample the floodmap at the floodmark locs
-        samples = floodmap.raster.sample(gdf_in_region)
-
-        # Extract modeled values for each point, handling NaN as non-flooded areas
-        modeled_values = []
-        for idx in samples.index:
-            x_coord = samples["x"].sel(index=idx).values
-            y_coord = samples["y"].sel(index=idx).values
-            # Extract scalar value from the array
-            modeled_value = floodmap.sel(x=x_coord, y=y_coord).values.item()
-            modeled_values.append(modeled_value)
+        samples: xr.DataArray = floodmap.raster.sample(gdf_in_region)
 
         # Assign the modeled values to the gdf
-        gdf_in_region.loc[:, "modeled_value"] = modeled_values
+        gdf_in_region.loc[:, "modeled_value"] = samples.fillna(0).values
 
-        # Handle NaN values in 'is_flooded'
-        gdf_in_region.loc[:, "is_flooded"] = ~gdf_in_region["modeled_value"].isna()
+        # Set 'is_flooded' to True if 'modeled_value' is greater than 0
+        gdf_in_region.loc[:, "is_flooded"] = gdf_in_region["modeled_value"] > 0
 
         # Calculate the difference between observed and modeled values
         gdf_in_region.loc[:, "difference"] = (
-            gdf_in_region[self.params.waterlevel_prop] - gdf_in_region["modeled_value"]
+            gdf_in_region[self.params.waterlevel_col] - gdf_in_region["modeled_value"]
         )
 
-        # Filter out non-flooded areas
-        # valid_data = gdf_in_region.dropna(subset=['modeled_value', self.params.waterlevel_prop])
+        # Calculate RMSE and R²
+        rmse = mean_squared_error(
+            gdf_in_region[self.params.waterlevel_col],
+            gdf_in_region["modeled_value"],
+            squared=False,
+        )
+        r2 = r2_score(
+            gdf_in_region[self.params.waterlevel_col], gdf_in_region["modeled_value"]
+        )
 
-        # Calculate RMSE and R² only for the flooded areas
-        # rmse = np.sqrt(mean_squared_error(valid_data[self.params.waterlevel_prop], valid_data['modeled_value']))
-        # r2 = r2_score(valid_data[self.params.waterlevel_prop], valid_data['modeled_value'])
+        # Create a df with the scores and convert it to a csv
+        metrics = {"rmse": [rmse], "r2": [r2]}
+        df_metrics = pd.DataFrame(metrics)
+        df_metrics.to_csv(self.output.validation_scores_csv, index=False)
 
-        # Export gdf as a csv
-        gdf_in_region.to_csv(self.output.validation_scores_csv)
+        # Export the validated gdf
+        gdf_in_region.to_file(self.output.validation_scores_geom, driver="GPKG")

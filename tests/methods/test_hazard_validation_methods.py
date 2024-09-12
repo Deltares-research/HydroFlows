@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from hydroflows.methods.validation import FloodmarksValidation
+from hydroflows.methods.hazard_validation import FloodmarksValidation
 
 
 @pytest.fixture()
@@ -30,7 +30,7 @@ def hazard_map_data(rio_region: Path) -> xr.DataArray:
 @pytest.fixture()
 def hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
     # Set root
-    root = Path(tmp_path, "hazard_map_output.tif")
+    root = Path(tmp_path, "hazard_map.tif")
     hazard_map_data.rio.set_crs("EPSG:4326", inplace=True)
 
     # Save the DataArray to a GeoTIFF file
@@ -45,10 +45,10 @@ def test_floodmarks_validation(
 
     rule = FloodmarksValidation(
         floodmarks_geom=tmp_floodmark_points,
-        region=rio_region,
         flood_hazard_map=hazard_map,
-        waterlevel_prop="water_level_obs",
-        scores_root=out_root,
+        region=rio_region,
+        waterlevel_col="water_level_obs",
+        out_root=out_root,
     )
 
     assert (
