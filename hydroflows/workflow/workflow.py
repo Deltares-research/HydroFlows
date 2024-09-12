@@ -137,7 +137,7 @@ class Workflow:
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile,
+            configfile=configfile.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,

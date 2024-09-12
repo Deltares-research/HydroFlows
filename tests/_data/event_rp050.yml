@@ -2,4 +2,4 @@ name: rp050
 forcings:
   - type: rainfall
     path: rainfall_rp050.csv
-probability: 0.02
+return_period: 50
