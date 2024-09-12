@@ -182,17 +182,26 @@ class CoastalEventFromRPData(ExpandMethod):
             da_tide = da_tide.expand_dims(dim={"stations": 1})
             da_rps = da_rps.expand_dims(dim={"stations": 1})
 
+        # check the time resolution of the input data and make sure it is the same
+        surge_freq = pd.infer_freq(da_surge.time.values)
+        tide_freq = pd.infer_freq(da_tide.time.values)
+        if surge_freq != tide_freq:
+            raise ValueError("Time resolution of input datasets do not match")
+        wdw_ndays = pd.Timedelta(f"{self.params.ndays}D")
+        wdw_size = int(wdw_ndays / pd.Timedelta(tide_freq))
+        min_dist = int(pd.Timedelta("10D") / pd.Timedelta(tide_freq))
+
         da_mhws_peaks = get_peaks(
             da=da_tide,
             ev_type="BM",
-            min_dist=6 * 24 * 10,  # FIXME use da_tide time resolution
+            min_dist=min_dist,  # FIXME use da_tide time resolution
             period="29.5D",
         )
         tide_hydrographs = (
             get_peak_hydrographs(
                 da_tide,
                 da_mhws_peaks,
-                wdw_size=int(6 * 24 * self.params.ndays),
+                wdw_size=wdw_size,
                 normalize=False,
             )
             .transpose("time", "peak", ...)
@@ -206,13 +215,13 @@ class CoastalEventFromRPData(ExpandMethod):
         da_surge_peaks = get_peaks(
             da_surge,
             ev_type="BM",
-            min_dist=6 * 24 * 10,
+            min_dist=min_dist,
         )
         surge_hydrographs = (
             get_peak_hydrographs(
                 da_surge,
                 da_surge_peaks,
-                wdw_size=int(6 * 24 * self.params.ndays),
+                wdw_size=wdw_size,
                 normalize=False,
             )
             .transpose("time", "peak", ...)
@@ -225,10 +234,10 @@ class CoastalEventFromRPData(ExpandMethod):
 
         nontidal_rp = da_rps["return_values"] - tide_hydrographs
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
-        h_hydrograph = h_hydrograph.assign_coords(
-            time=pd.to_datetime(self.params.t0)
-            + pd.to_timedelta(10 * h_hydrograph["time"], unit="min")
+        time = pd.to_datetime(self.params.t0) + (
+            h_hydrograph["time"].values * pd.Timedelta(tide_freq)
         )
+        h_hydrograph = h_hydrograph.assign_coords(time=time)
 
         root = self.output.event_set_yaml.parent
         events_list = []
