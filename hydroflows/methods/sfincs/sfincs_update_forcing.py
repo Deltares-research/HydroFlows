@@ -37,9 +37,6 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
-    bnd_locs: Path = None
-    """Path to file with waterlevel boundary points. Required for forcing type water_level."""
-
     sim_subfolder: str = "simulations"
     """The subfolder relative to the basemodel where the simulation folders are stored."""
 
@@ -124,7 +121,6 @@ class SfincsUpdateForcing(Method):
         # update sfincs model with event forcing
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
-        bnd_locs = self.params.bnd_locs
         parse_event_sfincs(
-            root, event, out_root, bnd_locs, sfincs_config=self.params.sfincs_config
+            root, event, out_root, sfincs_config=self.params.sfincs_config
         )

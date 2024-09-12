@@ -28,6 +28,9 @@ class Input(Parameters):
     tide_timeseries: Path
     """Path to tides timeseries data."""
 
+    bnd_locations: Path
+    """Path to file with locations corresponding to timeseries data."""
+
 
 class Output(Parameters):
     """Output parameters for the :py:class:`CoastalDesginEvents` method."""
@@ -65,6 +68,9 @@ class Params(Parameters):
 
     t0: datetime = datetime(2020, 1, 1)
     """Arbitrary time of event peak."""
+
+    locs_col_id: str = "stations"
+    """Name of locations identifier. Defaults to \"stations\"."""
 
     plot_fig: bool = True
     """Make hydrograph plots"""
@@ -104,6 +110,7 @@ class CoastalDesignEvents(ExpandMethod):
         self,
         surge_timeseries: Path,
         tide_timeseries: Path,
+        bnd_locations: Path,
         event_root: Path = Path("data/events/coastal"),
         rps: Optional[List[float]] = None,
         event_names: Optional[List[str]] = None,
@@ -148,6 +155,7 @@ class CoastalDesignEvents(ExpandMethod):
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,
             tide_timeseries=tide_timeseries,
+            bnd_locations=bnd_locations,
         )
 
         wc = "{" + self.params.wildcard + "}"
@@ -165,12 +173,14 @@ class CoastalDesignEvents(ExpandMethod):
         da_surge = xr.open_dataarray(self.input.surge_timeseries)
         da_tide = xr.open_dataarray(self.input.tide_timeseries)
 
+        locs_col_id = self.params.locs_col_id
         # check if all dims are the same
         if not (da_surge.dims == da_tide.dims):
             raise ValueError("Dimensions of input datasets do not match")
-        if "stations" not in da_surge.dims:
-            da_surge = da_surge.expand_dims(dim={"stations": 1})
-            da_tide = da_tide.expand_dims(dim={"stations": 1})
+        if locs_col_id not in da_surge.dims or locs_col_id not in da_tide.dims:
+            raise ValueError(
+                f"Locations identifier {locs_col_id} not found in input data."
+            )
 
         # check the time resolution of the input data and make sure it is the same
         surge_freq = pd.infer_freq(da_surge.time.values)
@@ -199,9 +209,9 @@ class CoastalDesignEvents(ExpandMethod):
             .load()
         )
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
-        if "stations" not in tide_hydrographs.dims:
-            tide_hydrographs = tide_hydrographs.expand_dims(dim={"stations": 1})
-            tide_hydrographs["stations"] = da_tide["stations"]
+        if locs_col_id not in tide_hydrographs.dims:
+            tide_hydrographs = tide_hydrographs.expand_dims(dim={locs_col_id: 1})
+            tide_hydrographs[locs_col_id] = da_tide[locs_col_id]
 
         da_surge_eva = eva(
             da_surge, ev_type="BM", min_dist=min_dist, rps=np.array(self.params.rps)
@@ -218,9 +228,9 @@ class CoastalDesignEvents(ExpandMethod):
             .load()
         )
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
-        if "stations" not in surge_hydrographs.dims:
-            surge_hydrographs = surge_hydrographs.expand_dims(dim={"stations": 1})
-            surge_hydrographs["stations"] = da_surge["stations"]
+        if locs_col_id not in surge_hydrographs.dims:
+            surge_hydrographs = surge_hydrographs.expand_dims(dim={locs_col_id: 1})
+            surge_hydrographs[locs_col_id] = da_surge[locs_col_id]
 
         nontidal_rp = da_surge_eva["return_values"] - tide_hydrographs
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
@@ -242,7 +252,14 @@ class CoastalDesignEvents(ExpandMethod):
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "water_level", "path": forcing_file.name}],
+                forcings=[
+                    {
+                        "type": "water_level",
+                        "path": forcing_file.name,
+                        "locs_path": self.input.bnd_locations,
+                        "locs_id_col": locs_col_id,
+                    }
+                ],
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
@@ -255,6 +272,11 @@ class CoastalDesignEvents(ExpandMethod):
         if self.params.plot_fig:
             figs_dir = Path(root, "figs")
             figs_dir.mkdir(parents=True, exist_ok=True)
-            for station in h_hydrograph.stations:
+            for station in h_hydrograph[locs_col_id]:
                 fig_file = figs_dir / f"hydrographs_stationID_{station.values}.png"
-                plot_hydrographs(h_hydrograph.sel(stations=station), fig_file)
+                plot_hydrographs(
+                    h_hydrograph.where(
+                        h_hydrograph[locs_col_id].isin(station.values), drop=True
+                    ),
+                    fig_file,
+                )

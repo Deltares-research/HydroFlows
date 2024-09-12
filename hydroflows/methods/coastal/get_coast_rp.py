@@ -84,6 +84,7 @@ class GetCoastRP(Method):
     def run(self) -> None:
         """Run GetCoastRP Method."""
         region = gpd.read_file(self.input.region)
+        # TODO: Remove after implementation #173
         coast_rp = xr.open_dataset(self.input.coastrp_fn).rename(
             {
                 "station_x_coordinate": "lon",
