@@ -5,10 +5,12 @@ from typing import List, Union
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pooch
 import pytest
 import rasterio
 import rasterio.transform
+import xarray as xr
 import yaml
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
@@ -99,6 +101,30 @@ def tmp_csv(tmp_path: Path) -> Path:
     csv_file = tmp_path / "file.csv"
     csv_file.write_text("")
     return csv_file
+
+
+@pytest.fixture()
+def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
+    # Generating datetime index
+    dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
+
+    # set a seed for reproducibility
+    np.random.seed(0)
+    # Generating random rainfall data
+    data = np.random.rand(len(dates))
+
+    da = xr.DataArray(
+        data,
+        dims=("time"),
+        coords={"time": dates},
+        name="tp",
+        attrs={"long_name": "Total precipitation", "units": "mm"},
+    )
+
+    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    da.to_netcdf(fn_time_series_nc)
+
+    return fn_time_series_nc
 
 
 @pytest.fixture()
