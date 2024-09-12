@@ -6,9 +6,9 @@ from typing import List, Optional, Union
 import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import WildcardPath
+from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.events import EventSet
-from hydroflows.utils import make_relative_paths
+from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -21,10 +21,10 @@ class Input(Parameters):
 
     event_set_yaml: Path
     """The path to the event description file, used to filter hazard maps,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.events.EventSet`."""
 
     # single path should also be allowed for validation !
-    hazard_maps: Union[WildcardPath, List[Path]]
+    hazard_maps: Union[WildcardPath, ListOfPath]
     """List of paths to hazard maps the event description file."""
 
 
@@ -159,7 +159,7 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # TODO: hydromt_fiat does not automatically read the region, and region is needed!
         model.read()
-        region_fn = Path(root / "exposure", "region.gpkg")
+        region_fn = Path(root / "exposure", "region.geojson")
         region_gdf = gpd.read_file(region_fn).to_crs(4326)
 
         model.setup_region({"geom": region_gdf})
@@ -192,7 +192,7 @@ class FIATUpdateHazard(ReduceMethod):
                     break
 
         # get return periods
-        rps = [1 / event_set.get_event(name).probability for name in hazard_names]
+        rps = [event_set.get_event(name).return_period for name in hazard_names]
 
         # Setup the hazard map
         # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
@@ -208,7 +208,9 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
-        model.write_grid(fn=str(self.output.fiat_hazard))
+        # pass relative file path
+        fn = self.output.fiat_hazard.relative_to(out_root)
+        model.write_grid(fn=str(fn))
         model.set_config("hazard.settings.var_as_band", True)
         model.set_config("hazard.file", self.output.fiat_hazard.name)
 

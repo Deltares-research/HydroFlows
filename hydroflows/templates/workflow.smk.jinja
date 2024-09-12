@@ -9,12 +9,12 @@ configfile: "{{ configfile }}"
 
 rule all:
     input:
-        {% for key, value in result_rule.rule_all_input.items() %}
-        {{ key }}={{ value }},
+        {% for rule in rules %}
+        {{ rule.rule_all_input }},
         {% endfor %}
 
 {% for rule in rules %}
 {% with rule=rule %}
-{{ add_rule(rule) }}
+{{ add_rule(rule, dryrun) }}
 {% endwith %}
 {% endfor %}
