@@ -112,6 +112,7 @@ class CoastalEventFromRPData(ExpandMethod):
         self,
         surge_timeseries: Path,
         tide_timeseries: Path,
+        bnd_locations: Path,
         rp_dataset: Path,
         rps: Optional[List[float]] = None,
         event_root: Path = Path("data/events/coastal"),
@@ -147,6 +148,7 @@ class CoastalEventFromRPData(ExpandMethod):
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,
             tide_timeseries=tide_timeseries,
+            bnd_locations=bnd_locations,
             rp_dataset=rp_dataset,
         )
 
@@ -266,7 +268,7 @@ class CoastalEventFromRPData(ExpandMethod):
                 forcings=[
                     {
                         "type": "water_level",
-                        "path": forcing_file.name,
+                        "path": forcing_file,
                         "locs_path": self.input.bnd_locations,
                         "locs_id_col": locs_col_id,
                     }
@@ -275,7 +277,7 @@ class CoastalEventFromRPData(ExpandMethod):
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file.name})
+            events_list.append({"name": name, "path": event_file})
 
         event_catalog = EventSet(events=events_list)
         event_catalog.to_yaml(self.output.event_set_yaml)
@@ -288,6 +290,6 @@ class CoastalEventFromRPData(ExpandMethod):
                 plot_hydrographs(
                     h_hydrograph.where(
                         h_hydrograph[locs_col_id].isin(station.values), drop=True
-                    ),
+                    ).squeeze(),
                     fig_file,
                 )

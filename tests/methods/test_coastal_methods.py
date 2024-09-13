@@ -2,10 +2,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Tuple
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from shapely.geometry import Point
 
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
 from hydroflows.methods.coastal.coastal_events_from_rp_data import (
@@ -29,7 +31,7 @@ def waterlevel_timeseries() -> xr.DataArray:
         coords={"time": dates},
         name="h",
     )
-
+    da = da.expand_dims(dim={"stations": 1})
     return da
 
 
@@ -44,7 +46,8 @@ def tide_surge_timeseries() -> Tuple[xr.DataArray, xr.DataArray]:
 
     t = xr.DataArray(data=data1, dims=("time"), coords={"time": dates}, name="t")
     s = xr.DataArray(data=data2, dims=("time"), coords={"time": dates}, name="s")
-
+    t = t.expand_dims(dim={"stations": 1})
+    s = s.expand_dims(dim={"stations": 1})
     return t, s
 
 
@@ -54,8 +57,14 @@ def waterlevel_rps() -> xr.Dataset:
         coords=dict(rps=("rps", [1, 10, 100])),
         data_vars=dict(return_values=(["rps"], np.array([0.5, 1, 1.5]))),
     )
-
+    rps = rps.expand_dims(dim={"stations": 1})
     return rps
+
+
+@pytest.fixture()
+def bnd_locations() -> gpd.GeoDataFrame:
+    bnds = gpd.GeoDataFrame(data={"stations": [1]}, geometry=[Point(1, 1)], crs=4326)
+    return bnds
 
 
 @pytest.mark.skipif(not GTSM_ROOT.exists(), reason="No access to GTSM data")
@@ -100,6 +109,7 @@ def test_get_coast_rp(rio_region: Path, tmp_path: Path):
 
 def test_coastal_design_events(
     tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    bnd_locations: gpd.GeoDataFrame,
     tmp_path: Path,
 ):
     data_dir = Path(tmp_path, "coastal_rps")
@@ -107,11 +117,14 @@ def test_coastal_design_events(
     t, s = tide_surge_timeseries
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
+    bnds = bnd_locations
+    bnds.to_file(data_dir / "bnd_locations.gpkg", driver="GPKG")
 
     rule = CoastalDesignEvents(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
-        event_root=str(data_dir / "events"),
+        bnd_locations=data_dir / "bnd_locations.gpkg",
+        event_root=str(data_dir),
     )
 
     rule.run_with_checks()
@@ -119,6 +132,7 @@ def test_coastal_design_events(
 
 def test_coastal_event_from_rp_data(
     tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    bnd_locations: gpd.GeoDataFrame,
     waterlevel_rps: xr.Dataset,
     tmp_path: Path,
 ):
@@ -128,14 +142,18 @@ def test_coastal_event_from_rp_data(
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
 
+    bnds = bnd_locations
+    bnds.to_file(data_dir / "bnd_locations.gpkg", driver="GPKG")
+
     rps = waterlevel_rps
     rps.to_netcdf(data_dir / "waterlevel_rps.nc")
 
     rule = CoastalEventFromRPData(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
+        bnd_locations=data_dir / "bnd_locations.gpkg",
         rp_dataset=data_dir / "waterlevel_rps.nc",
-        event_root=str(data_dir / "events"),
+        event_root=str(data_dir),
     )
 
     rule.run_with_checks()
