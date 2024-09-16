@@ -3,25 +3,48 @@ class: CommandLineTool
 
 requirements:
     InlineJavascriptRequirement: {}
+    InitialWorkDirRequirement:
+        listing:
+        {% for key, value in rule.input.items()%}
+        - $(inputs.{{key}})
+        {% endfor %}
 
 baseCommand: ["hydroflows", "method", "{{rule.method_name}}"]
 
 inputs:
     {% for key,value in rule.input.items() %}
     {{key}}:
-        type: File
+        type: {{value.type}}
         inputBinding:
             prefix: {{key}}=
             separate: false
     {% endfor %}
+    {% if rule.input_wildcards %}
+    {{rule.input_wildcards}}:
+        type: string
+    {% endif %}
     {% for key,value in rule.params.items() %}
     {{key}}:
         type: {{value.type}}?
         inputBinding:
             prefix: {{key}}=
             separate: false
+        {% if value.separator %}
+            itemSeparator: {{value.separator}}
+        default:
+        {% for item in value.value%}
+            - {{item}}
+        {% endfor %}
+        {% elif value.value%}
         default: {{value.value}}
+        {% endif %}
     {% endfor %}
+    dryrun:
+        type: boolean
+        inputBinding:
+            prefix: --dryrun
+            position: 1
+        default: true
 
 outputs:
     {% for key,value in rule.output.items()%}
@@ -30,10 +53,15 @@ outputs:
     Double check how the outputEval construction works for array outputs#}
         type: {{value.type}}
         outputBinding:
-            glob: "{{value.value}}"
+            glob:
+            {% for item in value.value%}
+            - "{{item}}"
+            {% endfor %}
             outputEval: |
                 ${
-                    self[0].basename="{{value}}";
+                    {% for item in value.value%}
+                    self[{{loop.index0}}].basename = "{{item}}";
+                    {% endfor %}
                     return self
                 }
     {% endfor %}

@@ -4,42 +4,45 @@ class: Workflow
 requirements:
     ScatterFeatureRequirement: {}
 
-{# This maps to snake config #}
+{# This maps to workflow config #}
 inputs:
-    {% for key,value in workflow.config%}
-    {{key}}: {{value}}
+    {% for key,value in inputs.items()%}
+    {{key}}: {{value.type}}
     {% endfor %}
 
-{# This maps to snake rule all #}
+{# This covers all outputs of all steps #}
 outputs:
-    {% for key,value in workflow.results%}
+    {% for key, value in outputs.items()%}
     {{key}}:
         type: {{value.type}}
-        outputSource: {{value.source}}
+        outputSource: {{value.source}}/{{key}}
     {% endfor %}
 
 {# 
 For explode methods (n to n) we need scatter requirement
-For reduce methods (n to 1) we need MultipleInputFeatureRequirements
+For reduce methods (n to 1) we need MultipleInputFeatureRequirements and array type inputs in CWL method file
 For expand methods (1 to n) we dont need anything here (outputs defined as arrays in CWL method file)
 #}
 steps:
-    {% for step in workflow.rules %}
-    {{ step.rule_id }}
-    {% if step._wildcards.input and not step._wildcards.output %}
+    {% for step_id, step in steps.items() %}
+    {{ step_id }}:
+    {% if step.reduce %}
         requirements:
             MultipleInputFeatureRequirement: {}
-    {% elif step._wildcards.input %}
-        scatter: {{ }}
+    {% elif step.scatter %}
+        scatter:
+        {% for item in step.scatter%}
+          - {{item}}
+        {% endfor %}
         scatterMethod: dotproduct
     {% endif %}
         in:
-            {% for key,value in step.input.items() %}
+            {% for key,value in step.ins.items() %}
             {{key}}: {{value}}
             {% endfor %}
         out:
-        {% for output in step.output %}
-        - {{output}}
+        {% for output in step.outs %}
+          - {{output}}
         {% endfor %}        
-        run: {{step.cwl_file}}
+        run: {{step.cwlfile}}
     {% endfor %}
