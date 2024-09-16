@@ -82,6 +82,10 @@ class FIATBuild(Method):
 
     name: str = "fiat_build"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(
         self,
         region: Path,

@@ -109,26 +109,42 @@ class Workflow:
             workflow.add_rule_from_kwargs(**rule)
         return workflow
 
-    def to_snakemake(self, snakefile: Path) -> None:
-        """Save the workflow to a snakemake workflow."""
+    def to_snakemake(
+        self,
+        snakefile: Path,
+        dryrun: bool = False,
+    ) -> None:
+        """Save the workflow to a snakemake workflow.
+
+        Parameters
+        ----------
+        snakefile : Path
+            The path to the snakefile.
+        dryrun : bool, optional
+            Run the workflow in dryrun mode, by default False.
+        run_env : Literal["shell", "script"], optional
+            The environment in which to run the methods, by default "shell".
+        """
+        snakefile = Path(snakefile).resolve()
+        configfile = snakefile.with_suffix(".config.yml")
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = Path(snakefile).with_suffix(".config.yml").name
+        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile,
+            configfile=configfile.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
-            result_rule=snake_rules[-1],
+            dryrun=dryrun,
         )
         with open(snakefile, "w") as f:
             f.write(_str)
-        with open(configfile, "w") as f:
+        with open(snakefile.parent / configfile, "w") as f:
             yaml.dump(self.config.to_dict(mode="json"), f)
 
     def to_yaml(self, file: str) -> None:

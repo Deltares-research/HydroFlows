@@ -1,17 +1,18 @@
 """Workflow and components."""
 
-from .method import Method
-from .method_parameters import Parameters
-from .reference import Ref
-from .rule import Rule
-from .workflow import Workflow
-from .workflow_config import WorkflowConfig
+from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.reference import Ref
+from hydroflows.workflow.rule import Rule
+from hydroflows.workflow.workflow import Wildcards, Workflow
+from hydroflows.workflow.workflow_config import WorkflowConfig
 
 __all__ = [
     "Method",
     "Parameters",
     "Ref",
     "Rule",
+    "Wildcards",
     "Workflow",
     "WorkflowConfig",
 ]

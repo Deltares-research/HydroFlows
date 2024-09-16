@@ -1,11 +1,14 @@
-{% macro add_rule(rule) %}
+{% macro add_rule(rule, dryrun) %}
 rule {{ rule.rule_id }}:
     input:
         {% for key, value in rule.input.items() %}
         {{ key }}={{ value }},
         {% endfor %}
-    {% if rule.params %}
+    {% if rule.params or (script and rule.rule_id != rule.method_name) %}
     params:
+        {% if script and rule.rule_id != rule.method_name %}
+        _method_name="{{ rule.method_name }}",
+        {% endif %}
         {% for key, value in rule.params.items() %}
         {{ key }}={{ value }},
         {% endfor %}
@@ -14,11 +17,19 @@ rule {{ rule.rule_id }}:
         {% for key, value in rule.output.items() %}
         {{ key }}={{ value }},
         {% endfor %}
+    {% if script %}
+    script:
+        "{{ script }}"
+    {% else %}
     shell:
         """
         hydroflows method {{ rule.method_name }} \
         {% for key, value in rule.shell_args.items() %}
         {{ key }}="{{ '{' }}{{ value }}{{ '}' }}" \
         {% endfor %}
+        {% if dryrun %}
+        --dryrun \
+        {% endif %}
         """
+    {% endif %}
 {% endmacro %}

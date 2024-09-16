@@ -81,7 +81,7 @@ class JinjaSnakeRule:
         return {key: self._parse_variable(val) for key, val in result.items()}
 
     @property
-    def rule_all_input(self) -> Dict[str, str]:
+    def rule_all_input(self) -> str:
         """Get the rule all input (output paths with expand)."""
         result = self.method.output.to_dict(
             mode="json",
@@ -90,15 +90,16 @@ class JinjaSnakeRule:
             quote_str=True,
         )
         wildcards = self.rule.workflow.wildcards.names
-        for key, val in result.items():
-            if key in self.rule._all_wildcard_fields:
-                result[key] = self._expand_variable(val, wildcards)
-        return result
+        # get first key and value of the output
+        key, val = next(iter(result.items()))
+        if key in self.rule._all_wildcard_fields:
+            val = self._expand_variable(val, wildcards)
+        return val
 
     @property
     def shell_args(self) -> Dict[str, str]:
         """Get the rule shell arguments."""
-        return {key: self._parse_shell_variable(key) for key in self.method.kwargs}
+        return {key: self._parse_shell_variable(key) for key in self.method.to_kwargs()}
 
     def _expand_variable(self, val: str, wildcards: List) -> Any:
         expand_lst = []
@@ -120,7 +121,12 @@ class JinjaSnakeRule:
             dict_keys = val.split(".")[1:]
             val = 'config["' + '"]["'.join(dict_keys) + '"]'
         elif isinstance(val, str) and val.startswith("$rules."):
-            val = val[1:]
+            ref = self.rule.workflow.get_ref(val)
+            # exclude reference to snake expand(..) fields
+            if ref.is_expand_field:
+                val = ref.get_str_value()
+            else:
+                val = val[1:]
         elif isinstance(val, str) and val.startswith("$wildcards."):
             val = val.split(".")[1].upper()
         return str(val)

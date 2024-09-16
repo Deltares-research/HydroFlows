@@ -86,6 +86,10 @@ class WflowBuild(Method):
 
     name: str = "wflow_build"
 
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+    }
+
     def __init__(
         self,
         region: Path,
@@ -116,7 +120,7 @@ class WflowBuild(Method):
         self.params: Params = Params(wflow_root=wflow_root, **params)
         self.input: Input = Input(region=region)
         self.output: Output = Output(
-            wflow_toml=self.params.wflow_root / "simulations" / "wflow_toml"
+            wflow_toml=self.params.wflow_root / "wflow_sbm.toml"
         )
 
     def run(self):
@@ -158,7 +162,7 @@ class WflowBuild(Method):
             if opt[f"setup_{key}"].get(f"{key}_fn") not in w.data_catalog.sources:
                 opt.pop(f"setup_{key}")
 
-        # chech whether the sfincs src file was generated
+        # check whether the sfincs src file was generated
         gauges = self.params.gauges
         if gauges is None or not gauges.is_file():  # remove placeholder
             opt.pop("setup_gauges")

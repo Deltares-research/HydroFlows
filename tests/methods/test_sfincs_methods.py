@@ -1,3 +1,4 @@
+import datetime
 import platform
 import shutil
 from pathlib import Path
@@ -6,8 +7,14 @@ from typing import Optional
 import pytest
 from hydromt_sfincs import SfincsModel
 
-from hydroflows.methods import SfincsBuild, SfincsPostprocess, SfincsUpdateForcing
-from hydroflows.methods.sfincs.sfincs_run import SfincsRun
+from hydroflows.events import Event
+from hydroflows.methods.sfincs import (
+    SfincsBuild,
+    SfincsPostprocess,
+    SfincsRun,
+    SfincsUpdateForcing,
+)
+from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 
 SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
 
@@ -99,3 +106,67 @@ def test_sfincs_postprocess(rio_sfincs_model: Path, tmp_path: Path):
     assert sf_post.output.hazard_tif == tmp_hazard_root / "test.tif"
 
     sf_post.run_with_checks()
+
+
+def test_parse_event_sfincs(test_data_dir: Path, tmp_path: Path):
+    # copy the sf model to a temporary directory
+    sfincs_root = test_data_dir / "sfincs_model"
+    tmp_root = Path(tmp_path, "model")
+    copy_tree(sfincs_root, tmp_root)
+
+    # get dummy location within the model domain
+    # read gis/region.geojson
+    sf = SfincsModel(root=tmp_root, mode="r")
+    sf.read()
+    # create dummy bnd points
+    sf.setup_waterlevel_bnd_from_mask(merge=False)
+    gdf_bnd = sf.forcing["bzs"].vector.to_gdf().iloc[[0]].reset_index()
+    gdf_bnd["index"] = 1
+    tmp_bnd = Path(tmp_path, "bzs.geojson")
+    gdf_bnd.to_file(tmp_bnd, driver="GeoJSON")
+    # create dummy scr points
+    if "dis" in sf.forcing:
+        gdf_src = sf.forcing["dis"].vector.to_gdf().iloc[[0]].reset_index()
+        gdf_src["index"] = 1
+        tmp_src = Path(tmp_path, "dis.geojson")
+        gdf_src.to_file(tmp_src, driver="GeoJSON")
+    else:
+        tmp_src = tmp_bnd
+
+    # create a tmp time series file
+    tmp_csv = Path(tmp_path, "timeseries.csv")
+    with open(tmp_csv, "w") as f:
+        f.write("time,1\n2020-01-01,1.0\n2020-01-02,1.0\n")
+
+    # create a dummy event
+    event = Event(
+        name="test",
+        forcings=[
+            {
+                "type": "water_level",
+                "path": tmp_csv,
+                "scale_mult": 2.0,
+                "locs_path": tmp_bnd,
+            },
+            {
+                "type": "rainfall",
+                "path": tmp_csv,
+                "scale_add": 2.0,
+            },
+            {
+                "type": "discharge",
+                "path": tmp_csv,
+                "locs_path": tmp_src,
+            },
+        ],
+    )
+
+    parse_event_sfincs(root=tmp_root, event=event, out_root=tmp_root / "sim" / "test")
+
+    sf = SfincsModel(root=tmp_root / "sim" / "test", mode="r")
+    sf.read()
+    assert sf.config["tstart"] == datetime.datetime(2020, 1, 1, 0, 0)
+    assert (sf.forcing["bzs"].index.values == 1).all()
+    assert (sf.forcing["bzs"].values == 2).all()
+    assert (sf.forcing["precip"].values == 3).all()
+    assert (sf.forcing["dis"].values == 1).all()

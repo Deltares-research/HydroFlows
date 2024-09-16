@@ -1,46 +1,24 @@
-import os
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
-import pytest
 import xarray as xr
 
 from hydroflows.events import EventSet
-from hydroflows.methods import GetERA5Rainfall, PluvialDesignEvents
+from hydroflows.methods.rainfall import (
+    GetERA5Rainfall,
+    PluvialDesignEvents,
+    PluvialHistoricalEvents,
+)
 
 
-@pytest.fixture()
-def precip_time_series_nc():
-    # Generating datetime index
-    dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
-
-    # set a seed for reproducibility
-    np.random.seed(0)
-    # Generating random rainfall data
-    data = np.random.rand(len(dates))
-
-    da = xr.DataArray(
-        data,
-        dims=("time"),
-        coords={"time": dates},
-        name="tp",
-        attrs={"long_name": "Total precipitation", "units": "mm"},
-    )
-    return da
-
-
-def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Path):
-    # write time series to file
-    fn_time_series_nc = Path(tmp_path, "data", "output_scalar.nc")
-    os.makedirs(fn_time_series_nc.parent, exist_ok=True)
-    precip_time_series_nc.to_netcdf(fn_time_series_nc)
-
+def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     rps = [1, 10, 100]
     p_events = PluvialDesignEvents(
-        precip_nc=str(fn_time_series_nc),
+        precip_nc=tmp_precip_time_series_nc,
         event_root=Path(tmp_path, "data"),
         rps=rps,
+        ev_type="BM",
+        distribution="gev",
     )
 
     assert len(p_events.params.event_names) == len(rps)
@@ -61,7 +39,7 @@ def test_pluvial_design_hyeto(precip_time_series_nc: xr.DataArray, tmp_path: Pat
     # test max value is 1
     event = event_set.get_event("p_event01")
     filename = event.forcings[0].path
-    fn_csv = fn_time_series_nc.parent / filename
+    fn_csv = tmp_precip_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0
 
@@ -79,3 +57,18 @@ def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
 
     da = xr.open_dataarray(get_era5.output.precip_nc)
     assert da["time"].min() == pd.Timestamp("2023-11-01")
+
+
+def test_pluvial_historical_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
+    events_dates = {
+        "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
+        "p_event02": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
+    }
+
+    p_events = PluvialHistoricalEvents(
+        precip_nc=tmp_precip_time_series_nc,
+        events_dates=events_dates,
+        event_root=Path(tmp_path, "data"),
+    )
+
+    p_events.run_with_checks()

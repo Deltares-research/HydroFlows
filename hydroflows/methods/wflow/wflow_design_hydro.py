@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
+from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat
+from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 
 __all__ = ["WflowDesignHydro"]
 
@@ -69,11 +69,12 @@ class Params(Parameters):
     rps: ListOfFloat
     """Return periods of of design events."""
 
-    event_names: List[str]
-    """List of event names derived from the design events."""
-
     wildcard: str = "event"
     """The wildcard key for expansion over the design events."""
+
+    # Note: set by model_validator based on rps if not provided
+    event_names: Optional[ListOfStr] = None
+    """List of event names derived from the design events."""
 
     # parameters for the get_peaks function
     ev_type: Literal["BM", "POT"] = "BM"
@@ -114,11 +115,26 @@ class Params(Parameters):
     wdw_size_days: int = 6
     """Duration for hydrograph in days."""
 
+    @model_validator(mode="after")
+    def _validate_event_names(self):
+        """Use rps to define event names if not provided."""
+        if self.event_names is None:
+            self.event_names = [f"q_event{int(i+1):02d}" for i in range(len(self.rps))]
+        elif len(self.event_names) != len(self.rps):
+            raise ValueError("event_names should have the same length as rps")
+        # create a reference to the event wildcard
+        if "event_names" not in self._refs:
+            self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+
 
 class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
     name: str = "wflow_design_hydro"
+
+    _test_kwargs = {
+        "discharge_nc": Path("discharge.nc"),
+    }
 
     def __init__(
         self,
@@ -158,13 +174,6 @@ class WflowDesignHydro(ExpandMethod):
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
-        if event_names is None:
-            event_names = Ref(
-                ref=f"$wildcards.{wildcard}",
-                value=[f"q_event{int(i+1):02d}" for i in range(len(rps))],
-            )
-        elif len(event_names) != len(rps):
-            raise ValueError("event_names should have the same length as rps")
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,
@@ -173,7 +182,7 @@ class WflowDesignHydro(ExpandMethod):
             **params,
         )
         self.input: Input = Input(discharge_nc=discharge_nc)
-        wc = "{" + wildcard + "}"
+        wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
@@ -283,12 +292,12 @@ class WflowDesignHydro(ExpandMethod):
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "discharge", "path": forcing_file.name}],
-                probability=1 / rp,
+                forcings=[{"type": "discharge", "path": forcing_file}],
+                return_period=rp,
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file.name})
+            events_list.append({"name": name, "path": event_file})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)

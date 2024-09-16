@@ -142,7 +142,7 @@ class Rule:
         """Return the rule as a dictionary."""
         out = {
             "method": self.method.name,
-            "kwargs": self.method.kwargs_with_refs,
+            "kwargs": self.method.to_kwargs(return_refs=True, posix_path=True),
         }
         if self.rule_id != self.method.name:
             out["rule_id"] = self.rule_id
@@ -210,21 +210,29 @@ class Rule:
         if not wildcards:
             return self.method
 
-        kwargs = self.method.kwargs.copy()
+        kwargs = self.method.to_kwargs()
+        reduce_fields = []
+        for wc in self.wildcards["reduce"]:
+            reduce_fields.extend(self.wildcard_fields[wc])
+        reduce_fields = list(set(reduce_fields))  # keep unique values
+        if reduce_fields:
+            # make sure all values are a list
+            # then take the product of the lists
+            wc_list = [
+                val if isinstance(val, list) else [val] for val in wildcards.values()
+            ]
+            wildcards_reduce: List[Dict] = [
+                dict(zip(wildcards.keys(), wc)) for wc in list(product(*wc_list))
+            ]
         for key in kwargs:
-            if key in self._all_wildcard_fields:
-                if not any(isinstance(v, list) for v in wildcards.values()):
-                    # explode method
-                    # wildcards = {wc: v, ...}
-                    kwargs[key] = str(kwargs[key]).format(**wildcards)
-                else:
-                    # reduce method -> turn values into lists
-                    # wildcards = {wc: [v1, v2, ...], ...}
-                    wc_values: List[Tuple] = list(product(*wildcards.values()))
-                    kwargs[key] = [
-                        str(kwargs[key]).format(**dict(zip(wildcards.keys(), wc)))
-                        for wc in wc_values
-                    ]
+            if key in reduce_fields:
+                # reduce method -> turn values into lists
+                # wildcards = {wc: [v1, v2, ...], ...}
+                kwargs[key] = [str(kwargs[key]).format(**d) for d in wildcards_reduce]
+            elif key in self._all_wildcard_fields:
+                # explode method
+                # wildcards = {wc: v, ...}
+                kwargs[key] = str(kwargs[key]).format(**wildcards)
         return self.method.from_kwargs(**kwargs)
 
     def wildcard_product(self) -> List[Dict[str, str]]:
