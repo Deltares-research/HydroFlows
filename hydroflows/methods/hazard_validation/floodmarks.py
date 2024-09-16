@@ -1,11 +1,13 @@
 """Validate simulated hazard maps using floodmarks method."""
 
 from pathlib import Path
+from typing import Literal
 
 import geopandas as gpd
 import hydromt
 import pandas as pd
 import xarray as xr
+from shapely.geometry import Point
 from sklearn.metrics import mean_squared_error, r2_score
 
 from hydroflows.workflow.method import Method
@@ -17,7 +19,7 @@ class Input(Parameters):
 
     floodmarks_geom: Path
     """
-    The file path to a geometry file (shapefile or GeoJSON) containing the locations of
+    The file path to a geometry file (shapefile, GeoJSON or GeoPackage) containing the locations of
     floodmarks as points. This file should include an attribute/property representing the
     corresponding water levels at each location.
     """
@@ -52,8 +54,13 @@ class Params(Parameters):
     """Root folder to save the derived validation scores."""
 
     waterlevel_col: str
-    """The property name representing the observed water level in the input floodmarks geometry file,
+    """The column/attribute name representing the observed water level in the input floodmarks geometry file,
     as provided in the :py:class:`Input` class."""
+
+    waterlevel_unit: Literal["m", "cm"] = "m"
+    """The unit (length) of the observed floodmarks in the input geometry file,
+    as provided in the :py:class:`Input` class. Valid options are 'm' for meters
+    maxima or 'cm' for centimeters."""
 
     filename: str = "validation_scores_floodmarks.csv"
     """The filename for the produced validation scores csv file."""
@@ -77,7 +84,8 @@ class FloodmarksValidation(Method):
         flood_hazard_map: Path,
         region: Path,
         waterlevel_col: str,
-        out_root: Path = "data/validation",
+        waterlevel_unit: Literal["m", "cm"] = "m",
+        out_root: Path = Path("data/validation"),
         **params,
     ):
         """Create and validate a FloodmarksValidation instance.
@@ -85,7 +93,7 @@ class FloodmarksValidation(Method):
         Parameters
         ----------
         floodmarks_geom : Path
-           Path to the geometry file (shapefile or GeoJSON) with floodmark locations as
+           Path to the geometry file (shapefile, GeoJSON or GeoPackage) with floodmark locations as
            points. The corresponding water levels are defined by the property specified
            in :py:attr:`waterlevel_col`.
         region : Path
@@ -97,6 +105,9 @@ class FloodmarksValidation(Method):
             The root folder to save the derived validation scores, by default "data/validation".
         waterlevel_col : Str
             The property name for the observed water levels in the floodmarks geometry file
+        waterlevel_unit : Literal["m", "cm"]
+            Obsevred floodmarks unit. Valid options are 'm' (default)
+            for meters or 'cm' centimeters.
         **params
             Additional parameters to pass to the FloodmarksValidation instance.
 
@@ -107,7 +118,10 @@ class FloodmarksValidation(Method):
         :py:class:`FloodmarksValidation Params <hydroflows.methods.validation.floodmarks_validation.Params>`
         """
         self.params: Params = Params(
-            out_root=out_root, waterlevel_col=waterlevel_col, **params
+            out_root=out_root,
+            waterlevel_col=waterlevel_col,
+            waterlevel_unit=waterlevel_unit,
+            **params,
         )
         self.input: Input = Input(
             floodmarks_geom=floodmarks_geom,
@@ -116,12 +130,21 @@ class FloodmarksValidation(Method):
         )
         self.output: Output = Output(
             validation_scores_geom=self.params.out_root
-            / f"{self.input.floodmarks_geom.stem}_validation.gpkg",
+            / f"{self.input.floodmarks_geom.stem}_validation{self.input.floodmarks_geom.suffix}",
             validation_scores_csv=self.params.out_root / self.params.filename,
         )
 
     def run(self):
         """Run the FloodmarksValidation method."""
+        # File extension to driver mapping
+        driver_map = {".shp": "ESRI Shapefile", ".geojson": "GeoJSON", ".gpkg": "GPKG"}
+
+        driver = driver_map.get(self.input.floodmarks_geom.suffix, None)
+        if driver is None:
+            raise ValueError(
+                f"Unsupported file extension: {self.input.floodmarks_geom.suffix}"
+            )
+
         # Read the floodmarks and the region files
         gdf = gpd.read_file(self.input.floodmarks_geom)
         region = gpd.read_file(self.input.region)
@@ -140,6 +163,8 @@ class FloodmarksValidation(Method):
             f"Floodmarks inside the simulated region: {num_floodmarks_inside}, Floodmarks outside: {num_floodmarks_outside}"
         )
 
+        gdf_in_region["geometry"] = gdf_in_region["geometry"].apply(multipoint_to_point)
+
         # Read the floodmap
         floodmap = hydromt.io.open_raster(self.input.flood_hazard_map)
 
@@ -148,6 +173,12 @@ class FloodmarksValidation(Method):
 
         # Assign the modeled values to the gdf
         gdf_in_region.loc[:, "modeled_value"] = samples.fillna(0).values
+
+        # If the observed water level is in cm convert it to m
+        if self.params.waterlevel_unit == "cm":
+            gdf_in_region.loc[:, self.params.waterlevel_col] = (
+                gdf_in_region.loc[:, self.params.waterlevel_col] / 100
+            )
 
         # Set 'is_flooded' to True if 'modeled_value' is greater than 0
         gdf_in_region.loc[:, "is_flooded"] = gdf_in_region["modeled_value"] > 0
@@ -173,4 +204,32 @@ class FloodmarksValidation(Method):
         df_metrics.to_csv(self.output.validation_scores_csv, index=False)
 
         # Export the validated gdf
-        gdf_in_region.to_file(self.output.validation_scores_geom, driver="GPKG")
+        gdf_in_region.to_file(self.output.validation_scores_geom, driver=driver)
+
+
+def multipoint_to_point(geometry):
+    """Convert MultiPoint to Point.
+
+    This function converts a `MultiPoint` geometry into a single `Point` by taking the first point in the collection.
+    It ensures that if the input geometry is of type `MultiPoint`, it returns the first point in the geometry collection.
+    If the geometry is not a `MultiPoint`, it returns the original geometry as it is.
+    The function also supports 3D geometries (Point with z-coordinate).
+
+    Parameters
+    ----------
+    geometry : shapely.geometry (e.g., Point, MultiPoint)
+        The input geometry to be evaluated and converted if it is a MultiPoint.
+
+    Returns
+    -------
+    shapely.geometry.Point or original geometry:
+        - If the input geometry is a `MultiPoint`, the function returns a `Point` object corresponding to the first point
+          in the collection (preserving the z-coordinate if present).
+        - If the input geometry is not a `MultiPoint`, the original geometry is returned unchanged.
+    """
+    if geometry.geom_type == "MultiPoint":  # Check if geometry is of type MultiPoint
+        points = geometry.geoms  # Access the individual points in the MultiPoint
+        if len(points) > 0:  # Check if there are points in the MultiPoint
+            # Return the first point (handle 3D if z-coordinate is present)
+            return Point(points[0].x, points[0].y, getattr(points[0], "z", 0))
+    return geometry  # Return the original geometry if it's not a MultiPoint
