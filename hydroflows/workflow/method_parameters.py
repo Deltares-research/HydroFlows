@@ -84,16 +84,13 @@ class Parameters(BaseModel):
             elif return_refs and k in self._refs and k not in exclude_ref_keys:
                 # return cross-references (str)
                 out_dict[k] = self._refs[k]
-            elif posix_path and isinstance(org_val, Path):
-                # convert Path to posix path;
-                # NOTE this could also be done with a custom pydantic Serializer but then
-                # all Path fields would need to be replaced by a custom annotated PathField
-                out_dict[k] = org_val.as_posix()
-                if quote_str:
-                    out_dict[k] = f'"{out_dict[k]}"'
-            elif quote_str and isinstance(org_val, str):
-                out_dict[k] = f'"{v}"'
-            else:
-                out_dict[k] = v
+                continue  # skip further processing (quote_str)
+
+            if posix_path and isinstance(org_val, Path):
+                # convert Path to posix path (str)
+                v = org_val.as_posix()
+            if quote_str and isinstance(v, str):
+                v = f'"{v}"'
+            out_dict[k] = v
 
         return out_dict
