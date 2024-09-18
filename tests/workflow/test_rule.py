@@ -2,7 +2,7 @@ import re
 from weakref import ReferenceType
 
 import pytest
-from conftest import ExpandMethodOutput, MockExpandMethod, MockReduceMethod
+from conftest import ExpandMethodOutput, MockExpandMethod, MockReduceMethod, TestMethod
 
 from hydroflows.workflow import Rule
 
@@ -50,13 +50,12 @@ def test_detect_wildcards(workflow):
     }
 
     reduce_method = MockReduceMethod(
-        first_file=["test1_{w}", "test_2{w}"],
-        second_file=["test1_{w}", "test2_{w}"],
+        files=["test1_{w}", "test_2{w}"],
         root="/",
     )
     rule = Rule(method=reduce_method, workflow=workflow, rule_id="rule_id")
     assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["w"]}
-    assert rule._wildcard_fields == {"w": ["first_file", "second_file"]}
+    assert rule._wildcard_fields == {"w": ["files"]}
 
 
 def test_validate_wildcards(workflow, test_method):
@@ -93,7 +92,67 @@ def test_validate_wildcards(workflow, test_method):
     with pytest.raises(ValueError, match=re.escape(err_msg)):
         rule._validate_wildcards()
 
-    reduce_method = MockReduceMethod(first_file="test1", second_file="test2", root="")
+    reduce_method = MockReduceMethod(files="test1", root="")
     err_msg = f"wildcard(s) missing on inputs {reduce_method.dict['input']}"
     with pytest.raises(ValueError, match=re.escape(err_msg)):
         Rule(method=reduce_method, workflow=workflow)
+
+
+def test_method_wildcard_instance(rule, test_method, workflow):
+    method = rule.method_wildcard_instance(wildcards={})
+    assert isinstance(method, TestMethod)
+    assert method == test_method
+
+    reduce_method = MockReduceMethod(files="test{region}", root="")
+
+    rule = Rule(method=reduce_method, workflow=workflow)
+    method = rule.method_wildcard_instance(wildcards={"region": ["1", "2"]})
+    assert method.input.files == ["test1", "test2"]
+
+
+def test_wildcard_product(workflow):
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+
+    rule = Rule(method=test_method, workflow=workflow)
+    wc_product = rule.wildcard_product()
+
+    assert isinstance(wc_product, list)
+    assert wc_product[0]["region"] == workflow.wildcards.wildcards["region"][0]
+    assert wc_product[1]["region"] == workflow.wildcards.wildcards["region"][1]
+
+    reduce_method = MockReduceMethod(files="test{region}", root="")
+    rule = Rule(method=reduce_method, workflow=workflow)
+    wc_product = rule.wildcard_product()
+    assert wc_product[0]["region"] == ["region1", "region2"]
+
+
+def test_run(workflow, capsys, mocker):
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+    rule = Rule(method=test_method, workflow=workflow)
+    with mocker.patch.object(Rule, "_run_method_instance"):
+        rule.run(dryrun=True)
+        captured = capsys.readouterr()
+        assert "Run 1/2: {'region': 'region1'}" in captured.out
+        assert "Run 2/2: {'region': 'region2'}" in captured.out
+
+    mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
+    rule.run(max_workers=2)
+    mock_thread_map.assert_called_with(
+        rule._run_method_instance, rule.wildcard_product(), max_workers=2
+    )
+
+
+def test_run_method_instance(workflow, mocker):
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+    rule = Rule(method=test_method, workflow=workflow)
+
+    with mocker.patch.object(TestMethod, "dryrun"):
+        rule._run_method_instance(
+            wildcards={"region": ["region1", "region1"]},
+            dryrun=True,
+            missing_file_error=True,
+        )
+        test_method.dryrun.assert_called_with(missing_file_error=True)
+    with mocker.patch.object(TestMethod, "run_with_checks"):
+        rule._run_method_instance(wildcards={"region": ["region1", "region1"]})
+        test_method.run_with_checks.assert_called()
