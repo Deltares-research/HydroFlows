@@ -5,6 +5,7 @@ import pytest
 from conftest import ExpandMethodOutput, MockExpandMethod, MockReduceMethod, TestMethod
 
 from hydroflows.workflow import Rule
+from hydroflows.workflow.rule import Rules
 
 
 @pytest.fixture()
@@ -156,3 +157,27 @@ def test_run_method_instance(workflow, mocker):
     with mocker.patch.object(TestMethod, "run_with_checks"):
         rule._run_method_instance(wildcards={"region": ["region1", "region1"]})
         test_method.run_with_checks.assert_called()
+
+
+def test_rules(workflow, rule):
+    reduce_method = MockReduceMethod(files="test{region}", root="")
+    reduce_rule = Rule(method=reduce_method, workflow=workflow, rule_id="reduce_rule")
+    rules = Rules(rules=[rule, reduce_rule])
+    assert rules.names == ["test_rule", "reduce_rule"]
+    assert (
+        rules.__repr__()
+        == "[Rule(id=test_rule, method=test_method, runs=1)\nRule(id=reduce_rule, method=mock_reduce_method, runs=1, reduce=['region'])]"
+    )
+    assert rule == rules.get_rule(rule_id="test_rule")
+
+    with pytest.raises(ValueError, match="Rule fake_rule not found."):
+        rules.get_rule(rule_id="fake_rule")
+
+    class mock_rule:
+        rule_id = "mock_rule"
+
+    with pytest.raises(ValueError, match="Rule should be an instance of Rule."):
+        rules.set_rule(mock_rule())
+
+    with pytest.raises(ValueError, match="Rule test_rule already exists"):
+        rules.set_rule(rule)
