@@ -14,6 +14,7 @@ config = WorkflowConfig(
 
 wf = Workflow(config=config)
 
+# %%
 get_gtsm_data = GetGTSMData(
     start_time="2000-01-01",
     end_time="2018-12-31",

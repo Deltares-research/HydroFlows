@@ -10,10 +10,10 @@ import xarray as xr
 from shapely.geometry import Point
 
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
-from hydroflows.methods.coastal.coastal_events_from_rp_data import (
-    CoastalEventFromRPData,
+from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
+    CoastalDesignEventFromRPData,
 )
-from hydroflows.methods.coastal.create_tide_surge_timeseries import TideSurgeTimeseries
+from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
 
@@ -96,7 +96,7 @@ def test_create_tide_surge_timeseries(
     waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
     waterlevel_timeseries.close()
 
-    rule = TideSurgeTimeseries(
+    rule = CoastalTidalAnalysis(
         waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc",
         data_root=data_dir,
     )
@@ -158,7 +158,7 @@ def test_coastal_event_from_rp_data(
     rps = waterlevel_rps
     rps.to_netcdf(data_dir / "waterlevel_rps.nc")
 
-    rule = CoastalEventFromRPData(
+    rule = CoastalDesignEventFromRPData(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
         bnd_locations=data_dir / "bnd_locations.gpkg",

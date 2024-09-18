@@ -10,18 +10,18 @@ from dateutil.relativedelta import relativedelta
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["TideSurgeTimeseries"]
+__all__ = ["CoastalTidalAnalysis"]
 
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`TideSurgeTimeseries` method."""
+    """Input parameters for the :py:class:`CoastalTidalAnalysis` method."""
 
     waterlevel_timeseries: Path
     """Path to waterlevel timeseries to derive tide and surge from."""
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`TideSurgeTimeseries` method."""
+    """Output parameters for the :py:class:`CoastalTidalAnalysis` method."""
 
     surge_timeseries: Path
     """Path to output surge timeseries."""
@@ -31,7 +31,7 @@ class Output(Parameters):
 
 
 class Params(Parameters):
-    """Params for the :py:class:`TideSurgeTimeseries` method."""
+    """Params for the :py:class:`CoastalTidalAnalysis` method."""
 
     data_root: Path = Path("data/input")
 
@@ -40,7 +40,7 @@ class Params(Parameters):
     Note: the timeseries difference plot is -1*surge timeseries"""
 
 
-class TideSurgeTimeseries(Method):
+class CoastalTidalAnalysis(Method):
     """Method for deriving tide and surge timeseries from waterlevel timeseries.
 
     Implements hatyan package to do tidal analysis. Uses 94 tidal constituents to estimate tidal signal.
@@ -51,7 +51,7 @@ class TideSurgeTimeseries(Method):
     :py:function:`hydroflows.methods.coastal.create_tide_surge_timeseries.plot_timeseries`
     """
 
-    name: str = "create_tide_surge_timeseries"
+    name: str = "coastal_tidal_analysis"
 
     _test_kwargs = {
         "waterlevel_timeseries": Path("waterlevel.nc"),
@@ -63,7 +63,7 @@ class TideSurgeTimeseries(Method):
         data_root: Path = Path("data/input"),
         **params,
     ) -> None:
-        """Create and validate TideSurgeTimeseries instance.
+        """Create and validate CoastalTidalAnalysis instance.
 
         Parameters
         ----------
@@ -88,7 +88,7 @@ class TideSurgeTimeseries(Method):
         )
 
     def run(self) -> None:
-        """Run TideSurgeTimeseries method."""
+        """Run CoastalTidalAnalysis method."""
         # Open waterlevel data
         h = xr.open_dataarray(self.input.waterlevel_timeseries)
         h = h.squeeze()

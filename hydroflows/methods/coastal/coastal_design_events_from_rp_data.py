@@ -87,19 +87,19 @@ class Params(Parameters):
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
-class CoastalEventFromRPData(ExpandMethod):
+class CoastalDesignEventFromRPData(ExpandMethod):
     """Method for deriving extreme event waterlevels from tide and surge timeseries using a return period dataset.
 
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.coastal_events_from_rp_data.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.coastal_events_from_rp_data.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.coastal_events_from_rp_data.Params>` for method inputs, outputs and params.
+    Utilizes :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`,
+    :py:class:`Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`, and
+    :py:class:`Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>` for method inputs, outputs and params.
 
     See Also
     --------
-    :py:function:`hydroflows.methods.coastal.coastal_events_from_rp_data.plot_hydrographs`
+    :py:function:`hydroflows.methods.coastal.coastal_design_events_from_rp_data.plot_hydrographs`
     """
 
-    name: str = "coastal_events_rp_data"
+    name: str = "coastal_design_events_from_rp_data"
 
     _test_kwargs = {
         "surge_timeseries": "surge.nc",
@@ -142,9 +142,9 @@ class CoastalEventFromRPData(ExpandMethod):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.coastal_events_from_rp_data.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_events_from_rp_data.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_events_from_rp_data.Params>`
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`
+        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>`
         """
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,
@@ -153,7 +153,7 @@ class CoastalEventFromRPData(ExpandMethod):
             rp_dataset=rp_dataset,
         )
 
-        if rps is None:
+        if rps is None and self.input.rp_dataset.exists():
             rp_data = xr.open_dataset(self.input.rp_dataset)
             rps = rp_data["rps"].values
 

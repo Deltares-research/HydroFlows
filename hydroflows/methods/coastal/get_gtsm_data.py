@@ -5,7 +5,6 @@ from pathlib import Path
 
 import geopandas as gpd
 from hydromt.data_catalog import DataCatalog
-from shapely import Point
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -114,23 +113,21 @@ class GetGTSMData(Method):
         """Run GetGTSMData method."""
         region = gpd.read_file(self.input.region).to_crs(4326)
         dc = DataCatalog(data_libs=self.input.gtsm_catalog)
-        gtsm = dc.get_geodataset(self.params.catalog_key, geom=region)
+        gtsm = dc.get_geodataset(
+            self.params.catalog_key,
+            geom=region,
+            time_tuple=(self.params.start_time, self.params.end_time),
+        )
 
         s = gtsm["surge"]
         h = gtsm["waterlevel"]
-        t = h - s
+        t = (h - s).rename("tide")
+        t.attrs.update({"short_name": "tide"})
+        if "unit" in h.attrs:
+            t.attrs.update({"unit": h.attrs["unit"]})
 
         s.to_netcdf(self.output.surge_nc)
         t.to_netcdf(self.output.tide_nc)
         h.to_netcdf(self.output.waterlevel_nc)
 
-        station_points = []
-        station_names = []
-        for station in gtsm.stations:
-            station_points.append(Point(station.lon.values, station.lat.values))
-            station_names.append(station.index.values)
-
-        stations_gdf = gpd.GeoDataFrame(
-            data={"stations": station_names}, geometry=station_points, crs=4326
-        )
-        stations_gdf.to_file(self.output.bnd_locations, driver="GPKG")
+        gtsm.vector.to_gdf().to_file(self.output.bnd_locations, driver="GPKG")
