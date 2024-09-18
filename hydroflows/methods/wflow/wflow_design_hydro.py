@@ -1,4 +1,4 @@
-"""Fluvial design events method."""
+"""Wflow design hydrograph method."""
 
 import os
 from pathlib import Path
@@ -9,23 +9,23 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
-from pydantic import PositiveInt, model_validator
+from pydantic import model_validator
 
 from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["FluvialDesignEvents"]
+__all__ = ["WflowDesignHydro"]
 
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`FluvialDesignEvents` method."""
+    """Input parameters for the :py:class:`WflowDesignHydro` method."""
 
     discharge_nc: Path
-    """The file path to the discharge time series in NetCDF format which is used
+    """The file path to the discharge time series in NetCDF format which are used
     to apply EVA and derive design events. This file contains an index dimension and a time
-    dimension for several Sfincs boundary points.
+    dimension for several Sfincs boundary points, .
 
     - The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
       series at specific locations.
@@ -37,7 +37,7 @@ class Input(Parameters):
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`FluvialDesignEvents` method."""
+    """Output parameters for the :py:class:`WflowDesignHydro` method."""
 
     event_yaml: Path
     """The path to the event description file,
@@ -54,7 +54,7 @@ class Output(Parameters):
 
 
 class Params(Parameters):
-    """Parameters for the :py:class:`FluvialDesignEvents` method.
+    """Parameters for the :py:class:`WflowDesignHydro` method.
 
     See Also
     --------
@@ -99,10 +99,9 @@ class Params(Parameters):
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
 
-    warm_up_years: PositiveInt = None
-    """The number of initial years (positive integer) to exclude from the discharge time series
-    as a warm-up period, typically used when the data is generated through
-    hydrological modeling and requires an initial warm-up phase."""
+    warm_up_years: int = 2
+    """Number of (initial) years to exclude from the discharge timeseries
+    as a warm-up period."""
 
     n_peaks: int = None
     """Number of largest peaks to get hydrograph.
@@ -128,10 +127,10 @@ class Params(Parameters):
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
-class FluvialDesignEvents(ExpandMethod):
+class WflowDesignHydro(ExpandMethod):
     """Rule for generating fluvial design events."""
 
-    name: str = "fluvial_design_events"
+    name: str = "wflow_design_hydro"
 
     _test_kwargs = {
         "discharge_nc": Path("discharge.nc"),
@@ -146,7 +145,7 @@ class FluvialDesignEvents(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a FluvialDesignEvents instance.
+        """Create and validate a WflowDesignHydro instance.
 
         Parameters
         ----------
@@ -161,14 +160,14 @@ class FluvialDesignEvents(ExpandMethod):
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
         **params
-            Additional parameters to pass to the FluvialDesignEvents Params instance.
-            See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
+            Additional parameters to pass to the WflowDesignHydro Params instance.
+            See :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`.
 
         See Also
         --------
-        :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
-        :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
-        :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
+        :py:class:`wflow_design_hydro Input <hydroflows.methods.wflow.wflow_design_hydro.Input>`
+        :py:class:`wflow_design_hydro Output <hydroflows.methods.wflow.wflow_design_hydro.Output>`
+        :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`
         :py:class:`hydromt.stats.extremes`
             For more details on the event selection, EVA and peak hydrographs
             using HydroMT.
@@ -193,10 +192,10 @@ class FluvialDesignEvents(ExpandMethod):
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
-        """Run the FluvialDesignEvents method."""
+        """Run the WflowDesignHydro method."""
         root = self.output.event_set_yaml.parent
 
-        # read the provided time series
+        # read the provided wflow time series
         da = xr.open_dataarray(self.input.discharge_nc)
         time_dim = self.params.time_dim
         index_dim = self.params.index_dim
@@ -204,15 +203,12 @@ class FluvialDesignEvents(ExpandMethod):
         for dim in [time_dim, index_dim]:
             if dim not in da.dims:
                 raise ValueError(f"{dim} not a dimension in, {self.input.discharge_nc}")
-
-        # Check if warm_up_years is not None
-        if self.params.warm_up_years is not None:
-            # warm up period from the start of the time series up to warm_up_years to exclude
-            warm_up_period = da[time_dim].values[0] + pd.Timedelta(
-                self.params.warm_up_years, "A"
-            )
-            # Keep timeseries only after the warm-up period
-            da = da.sel({time_dim: slice(warm_up_period, None)})
+        # warm up period from the start of the time series up to warm_up_years to exclude
+        warm_up_period = da[time_dim].values[0] + pd.Timedelta(
+            self.params.warm_up_years, "A"
+        )
+        # keep timeseries only after the warm up period
+        da = da.sel({time_dim: slice(warm_up_period, None)})
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
