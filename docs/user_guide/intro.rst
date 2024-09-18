@@ -8,9 +8,9 @@ environmental datasets, to workflows that translate these datasets into intercon
 risk calculations and outputs and so on. A "workflow" is an interconnected set of operations, also called "rules"
 that individually take one step in the translation from one or several input datasets into a certain output dataset.
 
-This can be done using a command-line interface (CLI), or a application programming interface (API). We strongly
+This can be done using a command-line interface (CLI), or an application programming interface (API). We strongly
 recommend to use the API, and write your workflows in scripts. The CLI is more easy to use and does not require
-extensive programming experience, but does not offer flexibility.
+extensive programming experience, but does not offer the same flexibility.
 
 In some places in this user guide you can navigate between API and CLI instructions by selecting one of two tabs. In
 this way, as a user, you are not bothered by details that you are not interested in. Try it out below!

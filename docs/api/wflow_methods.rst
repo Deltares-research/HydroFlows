@@ -5,7 +5,7 @@
 Wflow related methods
 =====================
 
-Several methods are available to build, run and postprocessing Wflow hydrological models.
+Several methods are available to build, run and postprocess Wflow hydrological models.
 
 Wflow build model
 -----------------

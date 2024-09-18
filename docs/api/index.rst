@@ -5,7 +5,7 @@ API reference
 =============
 
 HydroFlows' API consists of several classes, that can be programmatically called, and used to implement workflows
-with python language. As a programmer, you may also decide to extend the methods, for instance if you require an
+with Python language. As a programmer, you may also decide to extend the methods, for instance if you require an
 additional preprocessing method, want to run other hydrological, hydraulic or impact models, or require a new
 postprocessing method.
 
@@ -18,7 +18,7 @@ In this API section we describe the following classes in turn:
   multiple events.
 * ``EventSet``: describes multiple events that belong together. This can for instance be a set with historical events,
   or a set that together estimates a probability density function of events.
-* Several methods, that are subclassed from the base ``Method` class: an implementation of a ``Method`` defines inputs,
+* Several methods, that are subclassed from the base ``Method`` class: an implementation of a ``Method`` defines inputs,
   outputs and parameters for a certain activity to run. This activity can be anything that creates output files from
   certain input files.
 
