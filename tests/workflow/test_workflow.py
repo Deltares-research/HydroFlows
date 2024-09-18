@@ -36,14 +36,12 @@ def workflow_yaml_dict():
             {
                 "method": "mock_reduce_method",
                 "kwargs": {
-                    "first_file": "$rules.mock_expand_method.output.output_file",
-                    "second_file": "$rules.mock_expand_method.output.output_file2",
+                    "files": "$rules.mock_expand_method.output.output_file",
                     "root": "$config.root",
                 },
             },
         ],
     }
-
 
 
 def create_workflow_with_mock_methods(
@@ -75,8 +73,7 @@ def create_workflow_with_mock_methods(
     w.add_rule(mock_method, rule_id="mock_rule")
 
     mock_reduce_method = MockReduceMethod(
-        first_file=w.get_ref("$rules.mock_rule.output.output_file1"),
-        second_file=w.get_ref("$rules.mock_rule.output.output_file2"),
+        files=w.get_ref("$rules.mock_rule.output.output_file1"),
         root=root / "out_{region}",
     )
 
@@ -225,8 +222,7 @@ def test_workflow_run(mocker, workflow: Workflow, tmp_path):
 
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     mock_reduce_method = MockReduceMethod(
-        first_file=w.get_ref("$rules.mock_expand_rule.output.output_file"),
-        second_file=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+        files=w.get_ref("$rules.mock_expand_rule.output.output_file"),
         root=root,
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")

@@ -89,8 +89,7 @@ class MockExpandMethod(ExpandMethod):
 
 
 class ReduceInput(Parameters):
-    first_file: Union[Path, List[Path]]
-    second_file: Union[Path, List[Path]]
+    files: Union[Path, List]
 
 
 class ReduceParams(Parameters):
@@ -104,10 +103,8 @@ class ReduceOutput(Parameters):
 class MockReduceMethod(ReduceMethod):
     name: str = "mock_reduce_method"
 
-    def __init__(self, first_file: Path, second_file: Path, root: Path) -> None:
-        self.input: ReduceInput = ReduceInput(
-            first_file=first_file, second_file=second_file
-        )
+    def __init__(self, files: Union[Path, List[Path]], root: Path) -> None:
+        self.input: ReduceInput = ReduceInput(files=files)
         self.params: ReduceParams = ReduceParams(root=root)
         self.output: ReduceOutput = ReduceOutput(
             output_file=self.params.root / "output_file.yml"
@@ -115,8 +112,7 @@ class MockReduceMethod(ReduceMethod):
 
     def run(self):
         data = {
-            "input1": self.input.first_file,
-            "input2": self.input.second_file,
+            "inputs": self.input.files,
         }
         with open(self.output.output_file, "w") as f:
             yaml.dump(data, f)
@@ -142,11 +138,13 @@ def create_test_method(
                 f.write("")
     return TestMethod(input_file1=input_file1, input_file2=input_file2, param=param)
 
+
 @pytest.fixture()
 def workflow() -> Workflow:
     config = {"rps": [2, 50, 100]}
     wildcards = {"region": ["region1", "region2"]}
     return Workflow(name="wf_instance", config=config, wildcards=wildcards)
+
 
 @pytest.fixture()
 def mock_expand_method():
