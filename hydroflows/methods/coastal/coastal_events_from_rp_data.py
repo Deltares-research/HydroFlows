@@ -104,6 +104,7 @@ class CoastalEventFromRPData(ExpandMethod):
     _test_kwargs = {
         "surge_timeseries": "surge.nc",
         "tide_timeseries": "tide.nc",
+        "bnd_locations": "bnd_locations.gpkg",
         "rp_dataset": "rp_dataset.nc",
         "rps": [10, 50, 100],
     }
@@ -207,7 +208,7 @@ class CoastalEventFromRPData(ExpandMethod):
         da_mhws_peaks = get_peaks(
             da=da_tide,
             ev_type="BM",
-            min_dist=min_dist,  # FIXME use da_tide time resolution
+            min_dist=min_dist,
             period="29.5D",
         )
         tide_hydrographs = (

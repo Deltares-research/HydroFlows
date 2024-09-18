@@ -1,12 +1,9 @@
 """Get GTSM data method."""
 
-import glob
 from datetime import datetime
 from pathlib import Path
 
 import geopandas as gpd
-import pandas as pd
-import xarray as xr
 from hydromt.data_catalog import DataCatalog
 from shapely import Point
 
@@ -14,11 +11,6 @@ from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetGTSMData"]
-
-# PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
-# GTSM_ROOT = Path(
-#     PDRIVE, "archivedprojects", "11205028-c3s_435", "01_data", "01_Timeseries"
-# )
 
 
 class Input(Parameters):
@@ -64,16 +56,6 @@ class Params(Parameters):
     catalog_key: str = "gtsm_codec_reanalysis_10min_v1"
     """Data catalog key for GTSM data."""
 
-    # timestep: str = "10min"
-    # """Time step of the output timeseries"""
-
-    # # TODO: Do something about hard coded ref to p-drive
-    # gtsm_loc: Path = GTSM_ROOT
-    # """
-    # Location of GTSM data.
-    # Points to internal Deltares storage by default.
-    # """
-
 
 class GetGTSMData(Method):
     """Method for getting GTSM waterlevel and surge timeseries at centroid of a region.
@@ -86,7 +68,10 @@ class GetGTSMData(Method):
 
     name: str = "get_gtsm_data"
 
-    _test_kwargs = {"region": "region.geojson"}
+    _test_kwargs = {
+        "region": "region.geojson",
+        "gtsm_catalog": "data_catalog.yml",
+    }
 
     def __init__(
         self,
@@ -149,138 +134,3 @@ class GetGTSMData(Method):
             data={"stations": station_names}, geometry=station_points, crs=4326
         )
         stations_gdf.to_file(self.output.bnd_locations, driver="GPKG")
-
-        # gdf = gpd.read_file(self.input.region).to_crs(4326)
-        # stations = get_gtsm_station(gdf, self.params.gtsm_loc / "gtsm_locs.gpkg")
-
-        # variables = {
-        #     "s": {
-        #         "var": "surge",
-        #         "stations": stations["stations"].values,
-        #         "outpath": self.output.surge_nc,
-        #     },
-        #     "h": {
-        #         "var": "waterlevel",
-        #         "stations": stations["stations"].values,
-        #         "outpath": self.output.waterlevel_nc,
-        #     },
-        # }
-
-        # for var, kwargs in variables.items():
-        #     print(f"Downloading {var} data")
-        #     fn_out = export_gtsm_data(
-        #         outdir=self.output.waterlevel_nc.parent,
-        #         tstart=datetime.strftime(self.params.start_time, "%Y-%m-%d"),
-        #         tend=datetime.strftime(self.params.end_time, "%Y-%m-%d"),
-        #         data_path=self.params.gtsm_loc
-        #         / r"*2/{var}/reanalysis_{var}_{dt}_{year}_*_v1.nc",
-        #         dt=self.params.timestep,
-        #         **kwargs,
-        #     )
-
-        # rmtree(fn_out.parent / "gtsm_tmp")
-        # s = xr.open_dataarray(self.output.surge_nc)
-        # h = xr.open_dataarray(self.output.waterlevel_nc)
-        # t = h - s
-        # t.to_netcdf(self.output.tide_nc)
-
-        # stations.to_file(self.output.bnd_locations, driver="GPKG")
-
-
-def get_gtsm_station(
-    region: gpd.GeoDataFrame,
-    stations_fn: Path,
-) -> gpd.GeoDataFrame:
-    """Return GTSM station closest to query location.
-
-    Parameters
-    ----------
-    x : float
-        Query location x coordinate
-    y : float
-        Query location y coordinate
-    stations_fn : Path
-        Path to file containing GTSM station coordinates
-
-    Returns
-    -------
-    gpd.GeoDataFrame
-        GTSM station ID and coordinates
-    """
-    gdf = gpd.read_file(stations_fn).drop_duplicates(subset="geometry")
-    return gdf.clip(region)
-
-
-def export_gtsm_data(
-    outdir: Path,
-    stations: list,
-    data_path: Path,
-    tstart: str,
-    tend: str,
-    dt: str,
-    var: str,
-    outpath: str,
-    chunks: dict = None,
-) -> Path:
-    """Return GTSM data variable timeseries in a single file.
-
-    Parameters
-    ----------
-    outdir : Path
-        Destination folder of timeseries file
-    stations : list
-        GTSM station to fetch data at
-    data_path : Path
-        GTSM data location
-    tstart : str
-        Start time of output timeseries
-    tend : str
-        End time of output timeseries
-    dt : str
-        Time step of output timeseries. One of [10min, hourly, dailymax]
-    var : str
-        GTSM data variable
-    fn_out : str
-        Output file name
-    chunks : _type_, optional
-        xarray open_mfdataset chunking option when reading GTSM data files, by default {"stations": 1}
-
-    Returns
-    -------
-    Path
-        Path to output timeseries .nc file
-    """
-    if chunks is None:
-        chunks = {"stations": 1}
-
-    units = {
-        "surge": "m",
-        "waterlevel": "m+MSL",
-    }
-
-    def _filter(ds, stations=stations):
-        return ds.sel(stations=stations)
-
-    tmpdir = outdir / "gtsm_tmp"
-    if not tmpdir.exists():
-        tmpdir.mkdir(parents=True)
-
-    ts = pd.date_range(tstart, tend, freq="YS")
-    encoding = {var: {"dtype": "float32", "zlib": True}}
-    for t in ts:
-        fns = glob.glob(data_path.as_posix().format(var=var, dt=dt, year=t.year))
-        fn_out = tmpdir / f"{var}_{t.year}.nc"
-        if fn_out.exists() or len(fns) == 0:
-            continue
-
-        da = xr.open_mfdataset(fns, chunks=chunks, preprocess=_filter)[var].load()
-        da.attrs.update({"long_name": var, "units": units.get(var, "-")})
-        da.to_netcdf(fn_out, encoding=encoding)
-
-    fns = glob.glob(str(tmpdir / f"{var}_*.nc"))
-    fn_out = outpath
-    ds = xr.open_mfdataset(fns).load()
-    ds.to_netcdf(fn_out, encoding=encoding)
-    ds.close()
-
-    return fn_out

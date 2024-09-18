@@ -104,6 +104,7 @@ class CoastalDesignEvents(ExpandMethod):
     _test_kwargs = {
         "surge_timeseries": "surge.nc",
         "tide_timeseries": "tide.nc",
+        "bnd_locations": "bnd_locations.gpkg",
     }
 
     def __init__(

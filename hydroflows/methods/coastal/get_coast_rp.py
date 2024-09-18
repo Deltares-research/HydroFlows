@@ -12,11 +12,6 @@ from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetCoastRP"]
 
-# PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
-# COASTRP_PATH = Path(
-#     PDRIVE, "11209169-003-up2030", "data", "WATER_LEVEL", "COAST-RP", "COAST-RP.nc"
-# )
-
 
 class Input(Parameters):
     """Input parameters for the :py:class:`GetCoastRP` method."""
@@ -52,6 +47,7 @@ class GetCoastRP(Method):
 
     _test_kwargs = {
         "region": "region.geojson",
+        "coastrp_catalog": "data_catalog.yml",
     }
 
     def __init__(
@@ -59,6 +55,7 @@ class GetCoastRP(Method):
         region: Path,
         coastrp_catalog: Path,
         data_root: Path = Path("data/input/forcing_data/waterlevel"),
+        **params,
     ) -> None:
         """Create and validate a GetCoastRP instance.
 
@@ -79,7 +76,7 @@ class GetCoastRP(Method):
         :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
         """
         self.input: Input = Input(region=region, coastrp_catalog=coastrp_catalog)
-        self.params: Params = Params(data_root=data_root)
+        self.params: Params = Params(data_root=data_root, **params)
 
         rps_fn = self.params.data_root / "waterlevel_rps.nc"
         self.output: Output = Output(rps_nc=rps_fn)
@@ -87,18 +84,10 @@ class GetCoastRP(Method):
     def run(self) -> None:
         """Run GetCoastRP Method."""
         region = gpd.read_file(self.input.region)
-        # TODO: Remove after implementation #173
         dc = DataCatalog(data_libs=self.input.coastrp_catalog)
         coast_rp = dc.get_geodataset(self.params.catalog_key, geom=region)
-        # coast_rp = xr.open_dataset(self.input.coastrp_fn).rename(
-        #     {
-        #         "station_x_coordinate": "lon",
-        #         "station_y_coordinate": "lat",
-        #     }
-        # )
         coast_rp = xr.concat(
             [coast_rp[var] for var in coast_rp.data_vars if var != "station_id"],
             dim=pd.Index([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], name="rps"),
         ).to_dataset(name="return_values")
-        # coast_rp = clip_coastrp(coast_rp, region)
         coast_rp.to_netcdf(self.output.rps_nc)
