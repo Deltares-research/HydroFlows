@@ -5,7 +5,7 @@ API reference
 =============
 
 HydroFlows' API consists of several classes, that can be programmatically called, and used to implement workflows
-with python language. As a programmer, you may also decide to extend the methods, for instance if you require an
+with Python language. As a programmer, you may also decide to extend the methods, for instance if you require an
 additional preprocessing method, want to run other hydrological, hydraulic or impact models, or require a new
 postprocessing method.
 
