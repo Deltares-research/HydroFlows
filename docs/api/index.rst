@@ -41,7 +41,7 @@ Rule
 
 Methods
 =======
-Rules inherit a certain method, which in turn contains the intelligence to produce certain output(s) from certain
+Rules contain a certain method, which in turn contains the intelligence to produce certain output(s) from certain
 input(s) and parameters. A method can for instance produce a set of forcing data for events, build or run a model, or
 postprocess a result in a graph.
 
