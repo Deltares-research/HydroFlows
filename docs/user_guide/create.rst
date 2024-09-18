@@ -192,7 +192,7 @@ the input-output logic is correct.
 
             $ hydroflows run sfincs_pluvial.yaml
 
-This will execute all steps in your workflow on your local environment. Naturally make sure that the right python
+This will execute all steps in your workflow on your local environment. Naturally make sure that the right Python
 environment is activated and that any executables or environment variables you may need are available and specified.
 For the building of models, there is a strong reliance on the HydroMT_ model builder. This means that you will have to
 have a HydroMT_ data catalogue available with any static or dynamic datasets that you may need.
