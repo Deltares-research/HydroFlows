@@ -194,7 +194,7 @@ the input-output logic is correct.
 
 This will execute all steps in your workflow on your local environment. Naturally make sure that the right Python
 environment is activated and that any executables or environment variables you may need are available and specified.
-For the building of models, there is a strong reliance on the HydroMT_ model builder. This means that you will have to
-have a HydroMT_ data catalogue available with any static or dynamic datasets that you may need.
+For the building of models, there is a strong reliance on the HydroMT_ model builder. This means that you will need a
+HydroMT_ data catalogue that contains the static or dynamic datasets that you want to use in your workflow.
 
 .. _HydroMT: https://deltares.github.io/hydromt
