@@ -3,6 +3,7 @@
 import warnings
 from pathlib import Path
 
+import pandas as pd
 import xarray as xr
 
 from hydroflows._typing import EventDatesDict
@@ -157,6 +158,23 @@ class PluvialHistoricalEvents(ExpandMethod):
                     "returns no data.",
                     stacklevel=2,
                 )
+            else:
+                first_date = pd.to_datetime(event_da[time_dim][0].values)
+                last_date = pd.to_datetime(event_da[time_dim][-1].values)
+
+                if first_date > start_time_event:
+                    warnings.warn(
+                        f"Event '{event_name}' starts on {first_date}, which is later than the specified start time "
+                        f"of {start_time_event}. Start time adjusted to {first_date}.",
+                        stacklevel=2,
+                    )
+
+                if last_date < end_time_event:
+                    warnings.warn(
+                        f"Event '{event_name}' ends on {last_date}, which is earlier than the specified end time "
+                        f"of {end_time_event}. End time adjusted to {last_date}.",
+                        stacklevel=2,
+                    )
 
             event_da.to_pandas().round(2).to_csv(forcing_file)
 
