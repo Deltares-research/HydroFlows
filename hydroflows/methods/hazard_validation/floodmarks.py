@@ -5,10 +5,10 @@ from typing import Literal
 
 import geopandas as gpd
 import hydromt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from shapely.geometry import Point
-from sklearn.metrics import mean_squared_error, r2_score
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -19,7 +19,7 @@ class Input(Parameters):
 
     floodmarks_geom: Path
     """
-    The file path to a geometry file (shapefile, GeoJSON or GeoPackage) containing the locations of
+    The file path to a geometry file (e.g. shapefile, GeoJSON, GeoPackage etc.) containing the locations of
     floodmarks as points. This file should include an attribute/property representing the
     corresponding water levels at each location.
     """
@@ -136,15 +136,6 @@ class FloodmarksValidation(Method):
 
     def run(self):
         """Run the FloodmarksValidation method."""
-        # File extension to driver mapping
-        driver_map = {".shp": "ESRI Shapefile", ".geojson": "GeoJSON", ".gpkg": "GPKG"}
-
-        driver = driver_map.get(self.input.floodmarks_geom.suffix, None)
-        if driver is None:
-            raise ValueError(
-                f"Unsupported file extension: {self.input.floodmarks_geom.suffix}"
-            )
-
         # Read the floodmarks and the region files
         gdf = gpd.read_file(self.input.floodmarks_geom)
         region = gpd.read_file(self.input.region)
@@ -189,12 +180,12 @@ class FloodmarksValidation(Method):
         )
 
         # Calculate RMSE and R²
-        rmse = mean_squared_error(
+        rmse = RMSE(
             gdf_in_region[self.params.waterlevel_col],
             gdf_in_region["modeled_value"],
-            squared=False,
         )
-        r2 = r2_score(
+
+        r2 = R2(
             gdf_in_region[self.params.waterlevel_col], gdf_in_region["modeled_value"]
         )
 
@@ -204,7 +195,7 @@ class FloodmarksValidation(Method):
         df_metrics.to_csv(self.output.validation_scores_csv, index=False)
 
         # Export the validated gdf
-        gdf_in_region.to_file(self.output.validation_scores_geom, driver=driver)
+        gdf_in_region.to_file(self.output.validation_scores_geom, driver="GPKG")
 
 
 def multipoint_to_point(geometry):
@@ -233,3 +224,46 @@ def multipoint_to_point(geometry):
             # Return the first point (handle 3D if z-coordinate is present)
             return Point(points[0].x, points[0].y, getattr(points[0], "z", 0))
     return geometry  # Return the original geometry if it's not a MultiPoint
+
+
+def RMSE(actual, predicted):
+    """
+    Calculate Root Mean Squared Error (RMSE) between actual and predicted values.
+
+    Parameters
+    ----------
+    actual (array-like): Array of actual values.
+    predicted (array-like): Array of predicted values.
+
+    Returns
+    -------
+    float: RMSE value.
+    """
+    actual = np.asarray(actual)
+    predicted = np.asarray(predicted)
+
+    mse = np.mean((actual - predicted) ** 2)
+    rmse = np.sqrt(mse)
+    return rmse
+
+
+def R2(actual, predicted):
+    """
+    Calculate R-squared (R²) between actual and predicted values.
+
+    Parameters
+    ----------
+    actual (array-like): Array of actual values.
+    predicted (array-like): Array of predicted values.
+
+    Returns
+    -------
+    float: R² value.
+    """
+    actual = np.asarray(actual)
+    predicted = np.asarray(predicted)
+
+    ss_total = np.sum((actual - np.mean(actual)) ** 2)
+    ss_residual = np.sum((actual - predicted) ** 2)
+    r2 = 1 - (ss_residual / ss_total)
+    return r2
