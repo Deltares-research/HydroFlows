@@ -1,22 +1,21 @@
 """Get return periods from COAST-RP data."""
 
-import platform
 from pathlib import Path
 
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
+from hydromt.data_catalog import DataCatalog
 
-from hydroflows.methods.coastal.coastal_utils import clip_coastrp
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetCoastRP"]
 
-PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
-COASTRP_PATH = Path(
-    PDRIVE, "11209169-003-up2030", "data", "WATER_LEVEL", "COAST-RP", "COAST-RP.nc"
-)
+# PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
+# COASTRP_PATH = Path(
+#     PDRIVE, "11209169-003-up2030", "data", "WATER_LEVEL", "COAST-RP", "COAST-RP.nc"
+# )
 
 
 class Input(Parameters):
@@ -25,7 +24,7 @@ class Input(Parameters):
     region: Path
     """Path to region geometry file."""
 
-    coastrp_fn: Path = COASTRP_PATH
+    coastrp_catalog: Path
     """Path to full COAST-RP dataset."""
 
 
@@ -42,6 +41,9 @@ class Params(Parameters):
     data_root: Path = Path("data/input/forcing_data/waterlevel")
     """The folder root where output is stored."""
 
+    catalog_key: str = "coast-rp"
+    """Data catalog key for COAST-RP data."""
+
 
 class GetCoastRP(Method):
     """Method for fetching and processing COAST-RP dataset."""
@@ -55,6 +57,7 @@ class GetCoastRP(Method):
     def __init__(
         self,
         region: Path,
+        coastrp_catalog: Path,
         data_root: Path = Path("data/input/forcing_data/waterlevel"),
     ) -> None:
         """Create and validate a GetCoastRP instance.
@@ -75,7 +78,7 @@ class GetCoastRP(Method):
         :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Output>`
         :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
         """
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, coastrp_catalog=coastrp_catalog)
         self.params: Params = Params(data_root=data_root)
 
         rps_fn = self.params.data_root / "waterlevel_rps.nc"
@@ -85,15 +88,17 @@ class GetCoastRP(Method):
         """Run GetCoastRP Method."""
         region = gpd.read_file(self.input.region)
         # TODO: Remove after implementation #173
-        coast_rp = xr.open_dataset(self.input.coastrp_fn).rename(
-            {
-                "station_x_coordinate": "lon",
-                "station_y_coordinate": "lat",
-            }
-        )
+        dc = DataCatalog(data_libs=self.input.coastrp_catalog)
+        coast_rp = dc.get_geodataset(self.params.catalog_key, geom=region)
+        # coast_rp = xr.open_dataset(self.input.coastrp_fn).rename(
+        #     {
+        #         "station_x_coordinate": "lon",
+        #         "station_y_coordinate": "lat",
+        #     }
+        # )
         coast_rp = xr.concat(
             [coast_rp[var] for var in coast_rp.data_vars if var != "station_id"],
             dim=pd.Index([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], name="rps"),
         ).to_dataset(name="return_values")
-        coast_rp = clip_coastrp(coast_rp, region)
+        # coast_rp = clip_coastrp(coast_rp, region)
         coast_rp.to_netcdf(self.output.rps_nc)

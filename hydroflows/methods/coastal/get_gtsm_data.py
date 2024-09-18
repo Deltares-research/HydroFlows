@@ -1,24 +1,24 @@
 """Get GTSM data method."""
 
 import glob
-import platform
 from datetime import datetime
 from pathlib import Path
-from shutil import rmtree
 
 import geopandas as gpd
 import pandas as pd
 import xarray as xr
+from hydromt.data_catalog import DataCatalog
+from shapely import Point
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["GetGTSMData"]
 
-PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
-GTSM_ROOT = Path(
-    PDRIVE, "archivedprojects", "11205028-c3s_435", "01_data", "01_Timeseries"
-)
+# PDRIVE = "p:/" if platform.system() == "Windows" else "/p/"
+# GTSM_ROOT = Path(
+#     PDRIVE, "archivedprojects", "11205028-c3s_435", "01_data", "01_Timeseries"
+# )
 
 
 class Input(Parameters):
@@ -29,6 +29,9 @@ class Input(Parameters):
     Path to file containing area of interest geometry.
     Centroid is used to look for nearest GTSM station.
     """
+
+    gtsm_catalog: Path
+    """Path to HydroMT data catalog describing GTSM data."""
 
 
 class Output(Parameters):
@@ -58,15 +61,18 @@ class Params(Parameters):
     end_time: datetime = datetime(2018, 12, 31)
     """End date for the fetched timeseries"""
 
-    timestep: str = "10min"
-    """Time step of the output timeseries"""
+    catalog_key: str = "gtsm_codec_reanalysis_10min_v1"
+    """Data catalog key for GTSM data."""
 
-    # TODO: Do something about hard coded ref to p-drive
-    gtsm_loc: Path = GTSM_ROOT
-    """
-    Location of GTSM data.
-    Points to internal Deltares storage by default.
-    """
+    # timestep: str = "10min"
+    # """Time step of the output timeseries"""
+
+    # # TODO: Do something about hard coded ref to p-drive
+    # gtsm_loc: Path = GTSM_ROOT
+    # """
+    # Location of GTSM data.
+    # Points to internal Deltares storage by default.
+    # """
 
 
 class GetGTSMData(Method):
@@ -85,6 +91,7 @@ class GetGTSMData(Method):
     def __init__(
         self,
         region: Path,
+        gtsm_catalog: Path,
         data_root: Path = Path("data/input"),
         **params,
     ) -> None:
@@ -104,7 +111,7 @@ class GetGTSMData(Method):
         :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Output>`
         :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Params>`
         """
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, gtsm_catalog=gtsm_catalog)
         self.params: Params = Params(data_root=data_root, **params)
 
         waterlevel_path = self.params.data_root / "gtsm_waterlevel.nc"
@@ -120,41 +127,64 @@ class GetGTSMData(Method):
 
     def run(self):
         """Run GetGTSMData method."""
-        gdf = gpd.read_file(self.input.region).to_crs(4326)
-        stations = get_gtsm_station(gdf, self.params.gtsm_loc / "gtsm_locs.gpkg")
+        region = gpd.read_file(self.input.region).to_crs(4326)
+        dc = DataCatalog(data_libs=self.input.gtsm_catalog)
+        gtsm = dc.get_geodataset(self.params.catalog_key, geom=region)
 
-        variables = {
-            "s": {
-                "var": "surge",
-                "stations": stations["stations"].values,
-                "outpath": self.output.surge_nc,
-            },
-            "h": {
-                "var": "waterlevel",
-                "stations": stations["stations"].values,
-                "outpath": self.output.waterlevel_nc,
-            },
-        }
-
-        for var, kwargs in variables.items():
-            print(f"Downloading {var} data")
-            fn_out = export_gtsm_data(
-                outdir=self.output.waterlevel_nc.parent,
-                tstart=datetime.strftime(self.params.start_time, "%Y-%m-%d"),
-                tend=datetime.strftime(self.params.end_time, "%Y-%m-%d"),
-                data_path=self.params.gtsm_loc
-                / r"*2/{var}/reanalysis_{var}_{dt}_{year}_*_v1.nc",
-                dt=self.params.timestep,
-                **kwargs,
-            )
-
-        rmtree(fn_out.parent / "gtsm_tmp")
-        s = xr.open_dataarray(self.output.surge_nc)
-        h = xr.open_dataarray(self.output.waterlevel_nc)
+        s = gtsm["surge"]
+        h = gtsm["waterlevel"]
         t = h - s
-        t.to_netcdf(self.output.tide_nc)
 
-        stations.to_file(self.output.bnd_locations, driver="GPKG")
+        s.to_netcdf(self.output.surge_nc)
+        t.to_netcdf(self.output.tide_nc)
+        h.to_netcdf(self.output.waterlevel_nc)
+
+        station_points = []
+        station_names = []
+        for station in gtsm.stations:
+            station_points.append(Point(station.lon.values, station.lat.values))
+            station_names.append(station.index.values)
+
+        stations_gdf = gpd.GeoDataFrame(
+            data={"stations": station_names}, geometry=station_points, crs=4326
+        )
+        stations_gdf.to_file(self.output.bnd_locations, driver="GPKG")
+
+        # gdf = gpd.read_file(self.input.region).to_crs(4326)
+        # stations = get_gtsm_station(gdf, self.params.gtsm_loc / "gtsm_locs.gpkg")
+
+        # variables = {
+        #     "s": {
+        #         "var": "surge",
+        #         "stations": stations["stations"].values,
+        #         "outpath": self.output.surge_nc,
+        #     },
+        #     "h": {
+        #         "var": "waterlevel",
+        #         "stations": stations["stations"].values,
+        #         "outpath": self.output.waterlevel_nc,
+        #     },
+        # }
+
+        # for var, kwargs in variables.items():
+        #     print(f"Downloading {var} data")
+        #     fn_out = export_gtsm_data(
+        #         outdir=self.output.waterlevel_nc.parent,
+        #         tstart=datetime.strftime(self.params.start_time, "%Y-%m-%d"),
+        #         tend=datetime.strftime(self.params.end_time, "%Y-%m-%d"),
+        #         data_path=self.params.gtsm_loc
+        #         / r"*2/{var}/reanalysis_{var}_{dt}_{year}_*_v1.nc",
+        #         dt=self.params.timestep,
+        #         **kwargs,
+        #     )
+
+        # rmtree(fn_out.parent / "gtsm_tmp")
+        # s = xr.open_dataarray(self.output.surge_nc)
+        # h = xr.open_dataarray(self.output.waterlevel_nc)
+        # t = h - s
+        # t.to_netcdf(self.output.tide_nc)
+
+        # stations.to_file(self.output.bnd_locations, driver="GPKG")
 
 
 def get_gtsm_station(

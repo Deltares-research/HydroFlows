@@ -14,8 +14,10 @@ from hydroflows.methods.coastal.coastal_events_from_rp_data import (
     CoastalEventFromRPData,
 )
 from hydroflows.methods.coastal.create_tide_surge_timeseries import TideSurgeTimeseries
-from hydroflows.methods.coastal.get_coast_rp import COASTRP_PATH, GetCoastRP
-from hydroflows.methods.coastal.get_gtsm_data import GTSM_ROOT, GetGTSMData
+from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
+from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
+
+catalog_path = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\data_catalog.yml")
 
 
 @pytest.fixture()
@@ -67,8 +69,10 @@ def bnd_locations() -> gpd.GeoDataFrame:
     return bnds
 
 
-@pytest.mark.skipif(not GTSM_ROOT.exists(), reason="No access to GTSM data")
-def test_get_gtsm_data(rio_region: Path, tmp_path: Path):
+@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
+def test_get_gtsm_data(
+    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
+):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
 
@@ -77,7 +81,9 @@ def test_get_gtsm_data(rio_region: Path, tmp_path: Path):
     region = rio_region.as_posix()
     data_dir = Path(tmp_path, "gtsm_data")
 
-    rule = GetGTSMData(region=region, data_root=data_dir, **params)
+    rule = GetGTSMData(
+        region=region, gtsm_catalog=catalog_path, data_root=data_dir, **params
+    )
 
     rule.run_with_checks()
 
@@ -98,11 +104,15 @@ def test_create_tide_surge_timeseries(
     rule.run_with_checks()
 
 
-@pytest.mark.skipif(not COASTRP_PATH.exists(), reason="No access to COASTRP data")
-def test_get_coast_rp(rio_region: Path, tmp_path: Path):
+@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
+def test_get_coast_rp(
+    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
+):
     data_dir = Path(tmp_path, "coast_rp")
 
-    rule = GetCoastRP(region=rio_region, data_root=data_dir)
+    rule = GetCoastRP(
+        region=rio_region, coastrp_catalog=catalog_path, data_root=data_dir
+    )
 
     rule.run_with_checks()
 
