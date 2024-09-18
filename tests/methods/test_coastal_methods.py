@@ -69,6 +69,7 @@ def bnd_locations() -> gpd.GeoDataFrame:
     return bnds
 
 
+@pytest.mark.requires_data()
 @pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
 def test_get_gtsm_data(
     rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
@@ -104,6 +105,7 @@ def test_create_tide_surge_timeseries(
     rule.run_with_checks()
 
 
+@pytest.mark.requires_data()
 @pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
 def test_get_coast_rp(
     rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
