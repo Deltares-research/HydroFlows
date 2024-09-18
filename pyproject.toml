@@ -137,6 +137,16 @@ exclude = ["docs"]
 [tool.ruff.pydocstyle]
 convention = "numpy"
 
+[tool.make_env]
+channels = ["conda-forge", "bioconda"]
+deps_not_in_conda = [
+  "hydromt_fiat",
+  "sphinx_autosummary_accessors",
+  "sphinx_design",
+  "hatyan",
+  "autodoc_pydantic"
+]
+
 [tool.pixi.project]
 channels = ["conda-forge", "bioconda"]
 platforms = ["win-64", "linux-64"]

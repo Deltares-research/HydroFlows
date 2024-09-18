@@ -23,8 +23,31 @@ These are combined into `snakemake <https://snakemake.readthedocs.io>`_ workflow
 How to install
 ==============
 
-To install HydroFlows, you can use either pip or conda.
+To install HydroFlows, you can use either pixi (recommended for developers), pip or conda/mamba.
 The package is not yet available on PyPi or conda-forge, so you need to install it from the GitHub repository.
+
+Using pixi
+----------
+
+Pixi offers a project-centric approach for python environments and run commands.
+Using the pixi.lock file the environment is reproducible and can be shared with others.
+
+First, install pixi from https://pixi.sh/latest/
+Then, clone the repository and install HydroFlows using pixi (this will also create an editable installation of HydroFlows):
+
+.. code-block:: bash
+
+   git clone git@github.com:Deltares-research/HydroFlows.git
+   cd HydroFlows
+   pixi install -e full --frozen # full installation from the lock file
+   pixi run install-pre-commit # install pre-commit hooks
+
+
+To update the lock file and your environment after changes to the dependencies, run:
+
+.. code-block:: bash
+
+   pixi update
 
 Using conda
 -----------
