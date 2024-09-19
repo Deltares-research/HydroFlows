@@ -5,6 +5,7 @@ from hydroflows.methods.discharge import FluvialHistoricalEvents
 
 def test_fluvial_historical_events(tmp_disch_time_series_nc: Path, tmp_path: Path):
     events_dates = {
+        # The first event is outside the available time series to test warning coverage.
         "q_event01": {"startdate": "1995-03-04", "enddate": "1995-03-05 14:00"},
         "q_event02": {"startdate": "2025-03-04", "enddate": "2025-03-07 17:00"},
     }

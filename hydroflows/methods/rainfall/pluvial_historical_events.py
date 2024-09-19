@@ -70,7 +70,7 @@ class Params(Parameters):
 
 
 class PluvialHistoricalEvents(ExpandMethod):
-    """Rule for generating pluvial historical events."""
+    """Rule for deriving pluvial historical events from a longer series."""
 
     name: str = "pluvial_historical_events"
 
@@ -142,9 +142,9 @@ class PluvialHistoricalEvents(ExpandMethod):
             raise ValueError()
 
         events_list = []
-        for event_name in self.params.events_dates.keys():
-            start_time_event = self.params.events_dates[event_name]["startdate"]
-            end_time_event = self.params.events_dates[event_name]["enddate"]
+        for event_name, dates in self.params.events_dates.items():
+            start_time_event = dates["startdate"]
+            end_time_event = dates["enddate"]
 
             fmt_dict = {self.params.wildcard: event_name}
             forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
@@ -164,15 +164,17 @@ class PluvialHistoricalEvents(ExpandMethod):
 
                 if first_date > start_time_event:
                     warnings.warn(
-                        f"Event '{event_name}' starts on {first_date}, which is later than the specified start time "
-                        f"of {start_time_event}. Start time adjusted to {first_date}.",
+                        f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified start time "
+                        f"of {start_time_event} is not included in the provided time series. "
+                        f"The event will start from {first_date}, which is the earliest available date in the time series.",
                         stacklevel=2,
                     )
 
                 if last_date < end_time_event:
                     warnings.warn(
-                        f"Event '{event_name}' ends on {last_date}, which is earlier than the specified end time "
-                        f"of {end_time_event}. End time adjusted to {last_date}.",
+                        f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified end time "
+                        f"of {end_time_event} is not included in the provided time series. "
+                        f"The event will end at {last_date}, which is the latest available date in the time series.",
                         stacklevel=2,
                     )
 

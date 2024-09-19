@@ -30,7 +30,7 @@ class Input(Parameters):
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`FluvialDesignEvents` method."""
+    """Output parameters for the :py:class:`FluvialHistoricalEvents` method."""
 
     event_yaml: Path
     """The path to the event description file,
@@ -52,7 +52,7 @@ class Params(Parameters):
     events_dates: EventDatesDict
     """
     A dictionary containing event identifiers as keys and their corresponding date information as values.
-    Each key is a string representing the event name (e.g., "p_event01"), and each value is another dictionary
+    Each key is a string representing the event name (e.g., "q_event01"), and each value is another dictionary
     that holds two keys: "startdate" and "enddate". These keys map to string values that represent the
     start and end dates/times of the event, for example:
     events_dates = {
@@ -75,7 +75,7 @@ class Params(Parameters):
 
 
 class FluvialHistoricalEvents(ExpandMethod):
-    """Rule for generating fluvial historical events."""
+    """Rule for deriving fluvial historical events from a longer series."""
 
     name: str = "fluvial_historical_events"
 
@@ -140,7 +140,7 @@ class FluvialHistoricalEvents(ExpandMethod):
         self.set_expand_wildcard(wildcard, list(self.params.events_dates.keys()))
 
     def run(self):
-        """Run the FluvialDesignEvents method."""
+        """Run the FluvialHistoricalEvents method."""
         # read the provided time series
         da = xr.open_dataarray(self.input.discharge_nc)
         time_dim = self.params.time_dim
@@ -151,9 +151,9 @@ class FluvialHistoricalEvents(ExpandMethod):
                 raise ValueError(f"{dim} not a dimension in, {self.input.discharge_nc}")
 
         events_list = []
-        for event_name in self.params.events_dates.keys():
-            start_time_event = self.params.events_dates[event_name]["startdate"]
-            end_time_event = self.params.events_dates[event_name]["enddate"]
+        for event_name, dates in self.params.events_dates.items():
+            start_time_event = dates["startdate"]
+            end_time_event = dates["enddate"]
 
             fmt_dict = {self.params.wildcard: event_name}
             forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
@@ -173,15 +173,17 @@ class FluvialHistoricalEvents(ExpandMethod):
 
                 if first_date > start_time_event:
                     warnings.warn(
-                        f"Event '{event_name}' starts on {first_date}, which is later than the specified start time "
-                        f"of {start_time_event}. Start time adjusted to {first_date}.",
+                        f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified start time "
+                        f"of {start_time_event} is not included in the provided time series. "
+                        f"The event will start from {first_date}, which is the earliest available date in the time series.",
                         stacklevel=2,
                     )
 
                 if last_date < end_time_event:
                     warnings.warn(
-                        f"Event '{event_name}' ends on {last_date}, which is earlier than the specified end time "
-                        f"of {end_time_event}. End time adjusted to {last_date}.",
+                        f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified end time "
+                        f"of {end_time_event} is not included in the provided time series. "
+                        f"The event will end at {last_date}, which is the latest available date in the time series.",
                         stacklevel=2,
                     )
 
