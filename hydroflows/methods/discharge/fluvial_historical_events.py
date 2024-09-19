@@ -18,7 +18,7 @@ class Input(Parameters):
 
     discharge_nc: Path
     """The file path to the discharge time series in NetCDF format which is used
-    to apply EVA and derive design events. This file contains an index dimension and a time
+    to derive historical events. This file contains an index dimension and a time
     dimension for several Sfincs boundary points.
     - The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
       series at specific locations.
@@ -101,7 +101,7 @@ class FluvialHistoricalEvents(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a FluvialDesignEvents instance.
+        """Create and validate a FluvialHistoricalEvents instance.
 
         Parameters.
         ----------
@@ -110,18 +110,18 @@ class FluvialHistoricalEvents(ExpandMethod):
         event_dates : Dict
             The dictionary mapping event names to their start and end date/time information.
         event_root : Path, optional
-            The root folder to save the derived design events, by default "data/events/discharge".
+            The root folder to save the derived historical events, by default "data/events/discharge".
         wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
+            The wildcard key for expansion over the historical events, by default "event".
         **params
-            Additional parameters to pass to the FluvialDesignEvents Params instance.
-            See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
+            Additional parameters to pass to the FluvialHistoricalEvents Params instance.
+            See :py:class:`fluvial_historical_events Params <hydroflows.methods.discharge.fluvial_historical_events.Params>`.
 
         See Also
         --------
-        :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
-        :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
-        :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
+        :py:class:`FluvialHistoricalEvents Input <hydroflows.methods.discharge.fluvial_historical_events.Input>`
+        :py:class:`FluvialHistoricalEvents Output <hydroflows.methods.discharge.fluvial_historical_events.Output>`
+        :py:class:`FluvialHistoricalEvents Params <hydroflows.methods.discharge.fluvial_historical_events.Params>`
         """
         self.params: Params = Params(
             event_root=event_root,

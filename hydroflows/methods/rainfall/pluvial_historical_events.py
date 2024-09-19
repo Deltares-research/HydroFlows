@@ -105,7 +105,7 @@ class PluvialHistoricalEvents(ExpandMethod):
         events_dates : Dict
             The dictionary mapping event names to their start and end date/time information.
         event_root : Path, optional
-            The root folder to save the derived design events, by default "data/events/rainfall".
+            The root folder to save the derived historical events, by default "data/events/rainfall".
         wildcard : str, optional
             The wildcard key for expansion over the historical events, by default "event".
         **params
