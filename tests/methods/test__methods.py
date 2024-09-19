@@ -1,18 +1,18 @@
-import inspect
-
 import pytest
 
 # load subclasses to discover all methods
-from hydroflows.methods import fiat, rainfall, sfincs, wflow  # noqa: F401
+from hydroflows.methods import METHODS
 from hydroflows.workflow import Method
 
-ALL_METHODS = [m for m in Method._get_subclasses() if not inspect.isabstract(m)]
+ALL_METHODS = list(METHODS.entry_points.keys())
 
 
-@pytest.mark.parametrize("method_class", ALL_METHODS)
-def test_method_unique_keys(method_class: Method):
+@pytest.mark.parametrize("method", ALL_METHODS)
+def test_methods(method: str):
     """Generic method tests."""
     # instantiate method with made-up kwargs
+    method_class = METHODS.load(method)
+    assert method_class.name.lower() == method.lower()
     kwargs = getattr(method_class, "_test_kwargs", {})
     if not kwargs:
         pytest.skip(f"Skipping {method_class} because it has no _test_kwargs")

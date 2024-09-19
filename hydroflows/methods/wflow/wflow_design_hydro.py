@@ -305,12 +305,12 @@ class WflowDesignHydro(ExpandMethod):
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "discharge", "path": forcing_file.name}],
-                probability=1 / rp,
+                forcings=[{"type": "discharge", "path": forcing_file}],
+                return_period=rp,
             )
             event.set_time_range_from_forcings()
             event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file.name})
+            events_list.append({"name": name, "path": event_file})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)

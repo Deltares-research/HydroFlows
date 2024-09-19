@@ -20,7 +20,7 @@ class Input(Parameters):
 
     event_set_yaml: Path
     """The path to the event description file, used to filter hazard maps,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.events.EventSet`."""
 
     # single path should also be allowed for validation !
     hazard_maps: Union[WildcardPath, ListOfPath]
@@ -186,7 +186,7 @@ class FIATUpdateHazard(ReduceMethod):
                     break
 
         # get return periods
-        rps = [1 / event_set.get_event(name).probability for name in hazard_names]
+        rps = [event_set.get_event(name).return_period for name in hazard_names]
 
         # Setup the hazard map
         # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
@@ -210,4 +210,4 @@ class FIATUpdateHazard(ReduceMethod):
         model.set_config("hazard.file", hazard_out)
 
         # Write the config
-        model.write_config(config_root=out_root)
+        model.write_config()
