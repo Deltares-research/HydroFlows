@@ -32,14 +32,19 @@ if __name__ == "__main__":
     pass
     # %%
     ## General setup of workflow
+    # Define variables
     scenario = "global"  # for now
+    model_dir = "models"
+    data_dir = "data"
+    simu_dir = "design_events"
+    wflow_exe = "bin/wflow/bin/wflow_cli.exe"
+    sfincs_exe = "bin/sfincs/sfincs.exe"
+    fiat_exe = "bin/fiat/fiat.exe"
 
+    # Setup the config file
     conf = WorkflowConfig(
         region="data/build/region.geojson",
         data_libs="data/build/data_catalog.yml",
-        model_dir="models",
-        data_dir="data",
-        simu_dir="design_events",
         hydromt_sfincs_config=f"hydromt_config/sfincs_{scenario}_config.yml",
         hydromt_wflow_config=f"hydromt_config/wflow_{scenario}_config.yml",
         hydromt_fiat_config=f"hydromt_config/fiat_{scenario}_config.yml",
@@ -53,9 +58,6 @@ if __name__ == "__main__":
         end_date="2021-12-31",
         plot_fig=True,
         depth_min=0.05,
-        wflow_exe="bin/wflow/bin/wflow_cli.exe",
-        sfincs_exe="bin/sfincs/sfincs.exe",
-        fiat_exe="bin/fiat/fiat.exe",
         # local_precip_path="preprocessed_data/output_scalar_resampled_precip_station11.nc",
     )
 
@@ -67,7 +69,7 @@ if __name__ == "__main__":
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
         sfincs_root=os.path.join(
-            conf.model_dir,
+            model_dir,
             "sfincs",
         ),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
@@ -82,7 +84,7 @@ if __name__ == "__main__":
     wflow_build = WflowBuild(
         region=sfincs_build.output.sfincs_region,
         wflow_root=os.path.join(
-            conf.model_dir,
+            model_dir,
             "wflow",
         ),
         default_config=w.get_ref("$config.hydromt_wflow_config"),
@@ -97,7 +99,7 @@ if __name__ == "__main__":
     fiat_build = FIATBuild(
         region=sfincs_build.output.sfincs_region,
         fiat_root=os.path.join(
-            conf.model_dir,
+            model_dir,
             "fiat",
         ),
         data_libs=w.get_ref("$config.data_libs"),
@@ -120,7 +122,7 @@ if __name__ == "__main__":
     # Run wflow
     wflow_run = WflowRun(
         wflow_toml=wflow_update.output.wflow_out_toml,
-        wflow_bin=w.get_ref("$config.wflow_exe"),
+        wflow_bin=wflow_exe,
     )
     w.add_rule(wflow_run, rule_id="wflow_run")
 
@@ -128,7 +130,7 @@ if __name__ == "__main__":
     fluvial_events = WflowDesignHydro(
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
-        wildcard="fluvial_event",
+        wildcard="fluvial_events",
         event_root="data/events",
         index_dim="Q_gauges_bounds",
     )
@@ -140,8 +142,8 @@ if __name__ == "__main__":
         get_precip = GetERA5Rainfall(
             region=sfincs_build.output.sfincs_region,
             data_root=os.path.join(
-                conf.data_dir,
-                conf.simu_dir,
+                data_dir,
+                simu_dir,
                 "input",
             ),
             start_date=w.get_ref("$config.start_date"),
@@ -156,20 +158,20 @@ if __name__ == "__main__":
     pluvial_events = PluvialDesignEvents(
         precip_nc=precip_nc,
         rps=w.get_ref("$config.rps"),
-        wildcard="pluvial_event",
+        wildcard="pluvial_events",
         event_root="data/events",
     )
     w.add_rule(pluvial_events, rule_id="pluvial_events")
 
     ## In between logic to combine fluvial and pluvial events into one set
-    all_events = w.wildcards.get("pluvial_event") + w.wildcards.get("fluvial_event")
+    all_events = w.wildcards.get("pluvial_events") + w.wildcards.get("fluvial_events")
     w.wildcards.set("all_events", all_events)
 
     ## Updating, running and postprocessing SFINCS model
     # Sfincs update with precip
     sfincs_update = SfincsUpdateForcing(
         sfincs_inp=sfincs_build.output.sfincs_inp,
-        sim_subfolder=w.get_ref("$config.simu_dir"),
+        sim_subfolder=simu_dir,
         event_yaml="data/events/{all_events}.yml",
     )
     w.add_rule(sfincs_update, rule_id="sfincs_update")
@@ -177,7 +179,7 @@ if __name__ == "__main__":
     # Run SFINCS model
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=w.get_ref("$config.sfincs_exe"),
+        sfincs_exe=sfincs_exe,
     )
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
@@ -187,8 +189,8 @@ if __name__ == "__main__":
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),
         hazard_root=os.path.join(
-            conf.data_dir,
-            conf.simu_dir,
+            data_dir,
+            simu_dir,
             "output",
             "hazard",
         ),
@@ -205,7 +207,7 @@ if __name__ == "__main__":
         fiat_cfg=fiat_build.output.fiat_cfg,
         event_set_yaml="data/events/{event_set}.yml",
         event_set_name="{event_set}",
-        sim_subfolder=w.get_ref("$config.simu_dir"),
+        sim_subfolder=simu_dir,
         hazard_maps=sfincs_post.output.hazard_tif,
         risk=w.get_ref("$config.risk"),
     )
@@ -214,7 +216,7 @@ if __name__ == "__main__":
     # Run FIAT
     fiat_run = FIATRun(
         fiat_cfg=fiat_update.output.fiat_out_cfg,
-        fiat_bin=w.get_ref("$config.fiat_exe"),
+        fiat_bin=fiat_exe,
     )
     w.add_rule(fiat_run, rule_id="fiat_run")
 

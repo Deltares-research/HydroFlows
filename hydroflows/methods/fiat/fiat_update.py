@@ -202,7 +202,7 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
-        hazard_out = fn = self.output.fiat_hazard.relative_to(
+        hazard_out = self.output.fiat_hazard.relative_to(
             self.output.fiat_out_cfg.parent
         ).as_posix()
         model.write_grid(hazard_out)

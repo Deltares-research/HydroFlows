@@ -252,12 +252,14 @@ class WflowDesignHydro(ExpandMethod):
         # derive the peak
         da_peaks = get_peaks(
             da, ev_type=self.params.ev_type, time_dim=time_dim, **kwargs
-        ).squeeze()
+        )
 
         # TODO reduce da_peaks to n year samples in case of POT
 
         # specify and fit an EV distribution
         da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type).load()
+        if index_dim not in da_params.dims:
+            da_params = da_params.expand_dims(index_dim)
 
         # calculate return values for specified rps/params
         da_rps = extremes.get_return_value(
@@ -266,17 +268,16 @@ class WflowDesignHydro(ExpandMethod):
         da_rps = da_rps.assign_coords(rps=self.params.rps)
 
         # hydrographs based on the n highest peaks
-        dims = list(da_peaks.dims) + [
-            "peak",
-        ]
-        if da_peaks[index_dim].size > 1:
-            dims += [dims.pop(dims.index(index_dim))]
+        dims = [time_dim, "peak", index_dim]
         da_q_hydrograph = design_events.get_peak_hydrographs(
-            da.squeeze(),
+            da,
             da_peaks,
             wdw_size=wdw_size,
             n_peaks=self.params.n_peaks,
-        ).transpose(*dims)
+        )
+        if index_dim not in da_q_hydrograph.dims:
+            da_q_hydrograph = da_q_hydrograph.expand_dims(index_dim)
+        da_q_hydrograph = da_q_hydrograph.transpose(*dims)
 
         # calculate the mean design hydrograph per rp
         q_hydrograph: xr.DataArray = da_q_hydrograph.mean("peak") * da_rps
@@ -323,24 +324,19 @@ class WflowDesignHydro(ExpandMethod):
 
             # loop through all the stations and save figs
             for station in da[index_dim].values:
-                da_peaks_st = da_peaks
-                da_params_st = da_params
-                q_hydrograph_st = q_hydrograph
-                if da_params[index_dim].size != 1:
-                    da_peaks_st = da_peaks.sel({index_dim: station})
-                    da_params_st = da_params.sel({index_dim: station})
-                    q_hydrograph_st = q_hydrograph.sel({index_dim: station})
                 # Plot EVA
                 plot_eva(
-                    da_peaks_st,
-                    da_params_st,
+                    da_peaks.sel({index_dim: station}),
+                    da_params.sel({index_dim: station}),
                     self.params.rps,
                     station,
                     plot_dir,
                 )
 
                 # Plot hydrographs
-                plot_hydrograph(q_hydrograph_st, station, unit, plot_dir)
+                plot_hydrograph(
+                    q_hydrograph.sel({index_dim: station}), station, unit, plot_dir
+                )
 
 
 def plot_eva(da_peaks, da_params, rps, station, plot_dir):
