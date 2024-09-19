@@ -18,14 +18,18 @@ class Input(Parameters):
 
     discharge_nc: Path
     """The file path to the discharge time series in NetCDF format which is used
-    to derive historical events. This file contains an index dimension and a time
-    dimension for several Sfincs boundary points.
-    - The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
-      series at specific locations.
-    - This time series can be produced either by the Wflow toolchain (via the
+    to derive historical events. This file should contain an index dimension and a time
+    dimension for several (gauge) locations.
+
+    - The discharge time series can be produced either by the Wflow toolchain (via the
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
     :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
+
+    - In case of forcing the historical events in Sfincs using the
+    :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
+    the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
+    time series at specific locations.
     """
 
 
