@@ -152,6 +152,8 @@ def tmp_disch_time_series_nc(tmp_path: Path) -> Path:
         attrs=dict(_FillValue=-9999),
     )
 
+    da.name = "Q"
+
     fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
     da.to_netcdf(fn_time_series_nc)
 

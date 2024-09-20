@@ -68,6 +68,7 @@ def test_wflow_design_hydro(tmp_disch_time_series_nc: Path, tmp_path: Path):
         discharge_nc=discharge_nc,
         event_root=event_root,
         wildcard="q_event",
+        var_name="Q",
     )
     assert "{q_event}" in str(m.output.event_csv)
     m.run_with_checks()
