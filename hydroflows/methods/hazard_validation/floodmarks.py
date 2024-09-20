@@ -3,11 +3,15 @@
 from pathlib import Path
 from typing import Literal
 
+import contextily as ctx
 import geopandas as gpd
 import hydromt
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from pydantic import PositiveInt
 from shapely.geometry import Point
 
 from hydroflows.workflow.method import Method
@@ -64,6 +68,16 @@ class Params(Parameters):
 
     filename: str = "validation_scores_floodmarks.csv"
     """The filename for the produced validation scores csv file."""
+
+    plot_fig: bool = True
+    """Determines whether to plot a figure, with the derived
+    validation scores and the difference between observed and simulated
+    values with color bins geographically."""
+
+    num_bins: PositiveInt = 5
+    """The number of bins to divide the difference between observed and
+    simulated values into color-coding in the plot, if the `plot_fig`
+    parameter is set to True."""
 
 
 class FloodmarksValidation(Method):
@@ -130,7 +144,7 @@ class FloodmarksValidation(Method):
         )
         self.output: Output = Output(
             validation_scores_geom=self.params.out_root
-            / f"{self.input.floodmarks_geom.stem}_validation{self.input.floodmarks_geom.suffix}",
+            / f"{self.input.floodmarks_geom.stem}_validation.gpkg",
             validation_scores_csv=self.params.out_root / self.params.filename,
         )
 
@@ -150,6 +164,10 @@ class FloodmarksValidation(Method):
         # Number of points inside (outside) the modeled region
         num_floodmarks_inside = len(gdf_in_region)
         num_floodmarks_outside = len(gdf) - num_floodmarks_inside
+
+        if num_floodmarks_inside == 0:
+            ValueError("No floodmarks found within the modeled region.")
+
         print(
             f"Floodmarks inside the simulated region: {num_floodmarks_inside}, Floodmarks outside: {num_floodmarks_outside}"
         )
@@ -166,6 +184,7 @@ class FloodmarksValidation(Method):
         gdf_in_region.loc[:, "modeled_value"] = samples.fillna(0).values
 
         # If the observed water level is in cm convert it to m
+        # TODO improve this part to allow different units
         if self.params.waterlevel_unit == "cm":
             gdf_in_region.loc[:, self.params.waterlevel_col] = (
                 gdf_in_region.loc[:, self.params.waterlevel_col] / 100
@@ -179,6 +198,11 @@ class FloodmarksValidation(Method):
             gdf_in_region[self.params.waterlevel_col] - gdf_in_region["modeled_value"]
         )
 
+        # Calculate the abs. difference between observed and modeled values
+        gdf_in_region.loc[:, "abs_difference"] = gdf_in_region.loc[
+            :, "difference"
+        ].abs()
+
         # Calculate RMSE and R²
         rmse = RMSE(
             gdf_in_region[self.params.waterlevel_col],
@@ -186,7 +210,8 @@ class FloodmarksValidation(Method):
         )
 
         r2 = R2(
-            gdf_in_region[self.params.waterlevel_col], gdf_in_region["modeled_value"]
+            gdf_in_region[self.params.waterlevel_col].values,
+            gdf_in_region["modeled_value"].values,
         )
 
         # Create a df with the scores and convert it to a csv
@@ -196,6 +221,23 @@ class FloodmarksValidation(Method):
 
         # Export the validated gdf
         gdf_in_region.to_file(self.output.validation_scores_geom, driver="GPKG")
+
+        fig_root = self.output.validation_scores_geom.parent
+
+        # save plot
+        if self.params.plot_fig:
+            # create a folder to save the figs
+            plot_dir = Path(fig_root, "figs")
+            plot_dir.mkdir(exist_ok=True)
+
+            _plot_scores(
+                scores_gdf=gdf_in_region,
+                region=region,
+                num_bins=self.params.num_bins,
+                rmse=rmse,
+                r2=r2,
+                path=Path(plot_dir, "validation_scores.png"),
+            )
 
 
 def multipoint_to_point(geometry):
@@ -218,10 +260,9 @@ def multipoint_to_point(geometry):
           in the collection (preserving the z-coordinate if present).
         - If the input geometry is not a `MultiPoint`, the original geometry is returned unchanged.
     """
-    if geometry.geom_type == "MultiPoint":  # Check if geometry is of type MultiPoint
-        points = geometry.geoms  # Access the individual points in the MultiPoint
+    if geometry.geom_type == "MultiPoint":
+        points = geometry.geoms
         if len(points) > 0:  # Check if there are points in the MultiPoint
-            # Return the first point (handle 3D if z-coordinate is present)
             return Point(points[0].x, points[0].y, getattr(points[0], "z", 0))
     return geometry  # Return the original geometry if it's not a MultiPoint
 
@@ -267,3 +308,72 @@ def R2(actual, predicted):
     ss_residual = np.sum((actual - predicted) ** 2)
     r2 = 1 - (ss_residual / ss_total)
     return r2
+
+
+def _plot_scores(scores_gdf, region, num_bins, rmse, r2, path: Path) -> None:
+    """Plot scores."""
+    # Get the min and max values and round them
+    min_value = np.floor(scores_gdf["difference"].min())
+    max_value = np.ceil(scores_gdf["difference"].max())
+
+    # Define bins
+    bins = np.linspace(min_value, max_value, num_bins + 1)
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    ax.set_title("Validation against flood marks", size=14)
+
+    # Plot region
+    region.plot(ax=ax, color="grey", linewidth=2, alpha=0.3, label="Region")
+
+    cmap = plt.get_cmap("RdYlGn_r")
+    norm = mcolors.BoundaryNorm(bins, cmap.N)
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
+    sm.set_array([])
+
+    # Bin the 'difference' values and plot
+    scores_gdf["binned"] = pd.cut(scores_gdf["difference"], bins=bins, labels=False)
+
+    for bin_val in range(len(bins) - 1):
+        subset = scores_gdf[scores_gdf["binned"] == bin_val]
+        # Skip plotting if the subset is empty
+        if subset.empty:
+            continue
+        color = cmap(norm(bins[bin_val]))
+        subset.plot(ax=ax, color=color, linewidth=1, edgecolor="black", markersize=100)
+
+    # Add the color bar for the bins
+    cbar = plt.colorbar(sm, ax=ax, shrink=0.75, orientation="vertical")
+    cbar.set_label("Difference (Observed - Modeled) [m]")
+
+    # Add basemap imagery using contextily
+    ctx.add_basemap(
+        ax,
+        crs=scores_gdf.crs.to_string(),
+        source=ctx.providers.CartoDB.PositronNoLabels,
+    )
+
+    textstr = "\n".join(
+        (
+            f"Min Abs. Difference: {scores_gdf['abs_difference'].min():.2f} m",
+            f"Max Abs. Difference: {scores_gdf['abs_difference'].max():.2f} m",
+            f"RMSE: {rmse:.2f} m",
+            f"R$^2$: {r2:.2f}",
+        )
+    )
+
+    # matplotlib.patch.Patch properties
+    props = dict(boxstyle="round", facecolor="white", alpha=0.8)
+
+    ax.text(
+        0.02,
+        0.98,
+        textstr,
+        transform=ax.transAxes,
+        fontsize=12,
+        verticalalignment="top",
+        bbox=props,
+    )
+
+    fig.savefig(path, dpi=150, bbox_inches="tight")
