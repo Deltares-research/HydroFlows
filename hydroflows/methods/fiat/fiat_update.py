@@ -3,7 +3,6 @@
 from pathlib import Path
 from typing import List, Optional, Union
 
-import geopandas as gpd
 from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfPath, WildcardPath
@@ -136,7 +135,7 @@ class FIATUpdateHazard(ReduceMethod):
             / self.params.event_set_name
         )
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard.nc",
+            fiat_hazard=fiat_root / "hazard" / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
         )
 
@@ -157,12 +156,7 @@ class FIATUpdateHazard(ReduceMethod):
             root=root,
             mode="w+",
         )
-        # TODO: hydromt_fiat does not automatically read the region, and region is needed!
         model.read()
-        region_fn = Path(root / "exposure", "region.geojson")
-        region_gdf = gpd.read_file(region_fn).to_crs(4326)
-
-        model.setup_region({"geom": region_gdf})
 
         # Make all paths relative in the config
         config = {
@@ -208,11 +202,12 @@ class FIATUpdateHazard(ReduceMethod):
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")
-        # pass relative file path
-        fn = self.output.fiat_hazard.relative_to(out_root)
-        model.write_grid(fn=str(fn))
+        hazard_out = self.output.fiat_hazard.relative_to(
+            self.output.fiat_out_cfg.parent
+        ).as_posix()
+        model.write_grid(hazard_out)
         model.set_config("hazard.settings.var_as_band", True)
-        model.set_config("hazard.file", self.output.fiat_hazard.name)
+        model.set_config("hazard.file", hazard_out)
 
         # Write the config
         model.write_config()
