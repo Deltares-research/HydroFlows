@@ -60,6 +60,8 @@ General method
 
 .. include:: rainfall_methods.rst
 
+.. include:: discharge_methods.rst
+
 .. include:: wflow_methods.rst
 
 .. include:: sfincs_methods.rst
