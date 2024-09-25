@@ -16,10 +16,10 @@ dependencies = [
   "click",                    # CLI
   "geopandas",                # Reading vector data
   "hatyan",                   # harmonic tidal analysis and prediction
-  "hydromt>=0.9.4",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@hotfixes", # hydromt plugin for FIAT models
-  "hydromt_sfincs",           # hydromt plugin for sfincs models
-  "hydromt_wflow",            # hydromt plugin for wflow models
+  "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
   "pydantic",                 # data validation
@@ -42,12 +42,10 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  # "flit",        # needed to publish to pypi
   "pip>=23.1.2", # needed for recursive dependencies
   "pre-commit",  # linting
   "ruff",        # linting
   "tomli",       # parsing toml files
-  # "twine",       # needed to publish to pypi
 ]
 doc = [
   "sphinx",
@@ -61,10 +59,10 @@ examples = [
   "matplotlib",
 ]
 extra = [
-  "graphviz",
   "snakemake",      # Workflow manager, 8.x.x is bad
 ]
 io = [
+  "graphviz",
 ]
 test = [
   "pooch",          # test data fetching
@@ -73,9 +71,7 @@ test = [
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  "pulp==2.7.0",    # pin needed for snakemake
-  "snakemake",      # needed for testing snake file
-
+  "hydroflows[extra]",      # needed for testing snake file
 ]
 
 full = ["hydroflows[io,extra,dev,test,doc,examples]"]
@@ -84,26 +80,12 @@ slim = ["hydroflows[io,extra,examples]"]
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
 
-[tool.make_env]
-channels = ["conda-forge", "bioconda"]
-deps_not_in_conda = [
-  "hydromt_fiat",
-  "sphinx_autosummary_accessors",
-  "sphinx_design",
-  "hatyan",
-  "autodoc_pydantic"
-]
-
 [project.scripts]
 hydroflows = "hydroflows.cli.main:cli"
 
 [tool.pytest.ini_options]
-testpaths = [
-    "test",
-]
-markers = [
-    "requires_data: marks tests as slow (deselect with '-m \"not slow\"')",
-]
+testpaths = ["test"]
+markers = ["requires_data", "slow"]
 
 [tool.coverage.run]
 branch = true
@@ -135,12 +117,12 @@ directory = ".cov"
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 
 # enable pydocstyle (E), pyflake (F) and isort (I), pytest-style (PT), bugbear (B)
 select = ["E", "F", "I", "PT", "D", "B"]
 ignore-init-module-imports = true
-ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904"]
+ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904", "B905"]
 exclude = ["docs"]
 
 [tool.ruff.per-file-ignores]
@@ -152,3 +134,60 @@ exclude = ["docs"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
+
+[tool.make_env]
+channels = ["conda-forge", "bioconda"]
+deps_not_in_conda = [
+  "hydromt_fiat",
+  "sphinx_autosummary_accessors",
+  "sphinx_design",
+  "hatyan",
+  "autodoc_pydantic"
+]
+
+[tool.pixi.project]
+channels = ["conda-forge", "bioconda"]
+platforms = ["win-64", "linux-64"]
+
+[tool.pixi.pypi-dependencies]
+hydroflows = { path = ".", editable = true }
+
+# conda dependencies
+[tool.pixi.dependencies]
+hydromt = ">=0.9.4,<1.0"
+hydromt_sfincs = ">=1.1.0,<1.2"
+hydromt_wflow = ">=0.6,<0.7"
+snakemake = "*"
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.environments]
+default = { solve-group = "default" }
+dev = { features = ["dev", "py311"], solve-group = "default" }
+dev-py310 = { features = ["dev", "py310"], solve-group = "py310" }
+doc = { features = ["doc", "examples", "extra"], solve-group = "default" }
+examples = { features = ["examples"], solve-group = "default" }
+extra = { features = ["extra"], solve-group = "default" }
+full = { features = ["full", "io", "extra", "dev", "test", "doc", "examples"], solve-group = "default" }
+io = { features = ["io"], solve-group = "default" }
+slim = { features = ["slim", "io", "extra", "examples"], solve-group = "default" }
+test = { features = ["test"], solve-group = "default" }
+test-py311 = { features = ["test"], solve-group = "default" }
+test-py310 = { features = ["test"], solve-group = "py310" }
+
+[tool.pixi.tasks]
+install-pre-commit = "pre-commit install"
+
+lint = { cmd = ["pre-commit", "run", "--all"] }
+
+test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
+test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
+
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"] }
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"] }
+serve-docs = { cmd = ["python", "-m", "http.server", "-d", "docs/_build/html"] }
+
+get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
