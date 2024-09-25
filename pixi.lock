@@ -14306,7 +14306,7 @@ packages:
   name: hydroflows
   version: 0.1.0.dev0
   path: .
-  sha256: c61ee99090cb3cf2823dba827faa41c19cc5753a2eee45dceb5692197b62c7ff
+  sha256: fb8fb372f1c6c3469d31d728cceaa1c3ccb84597978148083e61facbb958ea84
   requires_dist:
   - cartopy
   - click
