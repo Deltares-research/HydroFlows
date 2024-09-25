@@ -26,3 +26,15 @@ Pluvial design events
    pluvial_design_events.Input
    pluvial_design_events.Params
    pluvial_design_events.Output
+
+
+Pluvial historical events
+-------------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   pluvial_historical_events.PluvialHistoricalEvents
+   pluvial_historical_events.Input
+   pluvial_historical_events.Params
+   pluvial_historical_events.Output
