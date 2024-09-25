@@ -5,7 +5,7 @@
 Wflow related methods
 =====================
 
-Several methods are available to build, run and postprocess Wflow hydrological models.
+Several methods are available to build, update and run Wflow hydrological models.
 
 Wflow build model
 -----------------
@@ -39,14 +39,3 @@ Wflow run
    wflow_run.Input
    wflow_run.Params
    wflow_run.Output
-
-Wflow design hydrographs
-------------------------
-
-.. autosummary::
-   :toctree: ../_generated
-
-   wflow_design_hydro.WflowDesignHydro
-   wflow_design_hydro.Input
-   wflow_design_hydro.Params
-   wflow_design_hydro.Output
