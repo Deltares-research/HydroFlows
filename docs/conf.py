@@ -43,7 +43,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "IPython.sphinxext.ipython_directive",
     "IPython.sphinxext.ipython_console_highlighting",
-    "sphinxcontrib.autodoc_pydantic"
+    "sphinxcontrib.autodoc_pydantic",
+    "sphinxcontrib.programoutput"
 ]
 
 autosummary_generate = True
