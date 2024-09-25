@@ -39,7 +39,7 @@ Then, clone the repository and install HydroFlows using pixi (this will also cre
 
    git clone git@github.com:Deltares-research/HydroFlows.git
    cd HydroFlows
-   pixi install -e full --frozen # full installation from the lock file
+   pixi install -e full --locked # full installation from the lock file
    pixi run install-pre-commit # install pre-commit hooks
 
 

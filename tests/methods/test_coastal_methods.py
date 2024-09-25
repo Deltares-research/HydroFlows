@@ -89,6 +89,7 @@ def test_get_gtsm_data(
     rule.run_with_checks()
 
 
+@pytest.mark.slow()
 def test_create_tide_surge_timeseries(
     waterlevel_timeseries: xr.DataArray, tmp_path: Path
 ):
