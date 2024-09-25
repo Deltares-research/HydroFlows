@@ -61,8 +61,11 @@ def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
 
 def test_pluvial_historical_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
     events_dates = {
+        # The first event is outside the available time series to test warning coverage.
         "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
         "p_event02": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
+        # The last event is partially overlapping the available time series to test warning coverage.
+        "p_event03": {"startdate": "1999-12-20 09:00", "enddate": "2001-01-07 17:00"},
     }
 
     p_events = PluvialHistoricalEvents(

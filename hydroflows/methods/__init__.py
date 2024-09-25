@@ -23,6 +23,7 @@ __eps__ = {
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
+    "fluvial_historical_events": "hydroflows.methods.discharge.fluvial_historical_events:FluvialHistoricalEvents",
     "coastal_design_events": "hydroflows.methods.coastal.coastal_design_events:CoastalDesignEvents",
     "coastal_design_events_from_rp_data": "hydroflows.methods.coastal.coastal_design_events_from_rp_data:CoastalDesignEventFromRPData",
     "coastal_tidal_analysis": "hydroflows.methods.coastal.coastal_tidal_analysis:CoastalTidalAnalysis",
