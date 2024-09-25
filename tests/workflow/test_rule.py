@@ -2,10 +2,15 @@ import re
 from weakref import ReferenceType
 
 import pytest
-from conftest import ExpandMethodOutput, MockExpandMethod, MockReduceMethod, TestMethod
 
 from hydroflows.workflow import Rule
 from hydroflows.workflow.rule import Rules
+from tests.workflow.conftest import (
+    ExpandMethodOutput,
+    MockExpandMethod,
+    MockReduceMethod,
+    TestMethod,
+)
 
 
 @pytest.fixture()

@@ -220,7 +220,7 @@ class Ref(object):
         rules = [rule for rule in self.workflow.rules if rule.method == method]
         if len(rules) == 0:
             raise ValueError(
-                f"Invalid method reference {ref}. " "Method not added to the workflow"
+                f"Invalid method reference {ref}. Method not added to the workflow"
             )
         rule_id = rules[0].rule_id
         component, field = ref_keys[-2], ref_keys[-1]
