@@ -1,10 +1,14 @@
+.. _api_sfincs:
+
 .. currentmodule:: hydroflows.methods.sfincs
 
 SFINCS related methods
 ======================
 
-SfincsBuild
------------
+Several methods are available to build, run and postprocessing SFINCS inundation models.
+
+Build Sfincs model
+------------------
 
 .. autosummary::
    :toctree: ../_generated
@@ -14,8 +18,8 @@ SfincsBuild
    sfincs_build.Params
    sfincs_build.Output
 
-SfincsUpdateForcing
--------------------
+Sfincs update forcing
+---------------------
 
 .. autosummary::
    :toctree: ../_generated
@@ -25,8 +29,8 @@ SfincsUpdateForcing
    sfincs_update_forcing.Params
    sfincs_update_forcing.Output
 
-SfincsRun
----------
+Sfincs run
+----------
 
 .. autosummary::
    :toctree: ../_generated
@@ -36,8 +40,8 @@ SfincsRun
    sfincs_run.Params
    sfincs_run.Output
 
-SfincsPostprocess
------------------
+Sfincs Postprocess
+------------------
 
 .. autosummary::
    :toctree: ../_generated

@@ -1,0 +1,50 @@
+setup_grid_from_region:
+  res: <res>  # placeholder for model resolution [m]
+  crs: utm  # model CRS (must be UTM zone)
+  rotated: False  # allow a rotated grid
+  region:
+    geom: <region>  # placeholder for region vector file
+
+setup_dep:
+  datasets_dep:
+    - elevtn: fabdem
+      mask: osm_landareas
+
+setup_mask_active:
+  mask: <region>  # placeholder for region vector file
+  exclude_mask: osm_coastlines
+  drop_area: 10  # drop small areas [km2]
+
+setup_mask_bounds:
+  btype: waterlevel
+  include_mask: osm_coastlines  # add buffer on the fly
+  include_mask_buffer: 300 # buffer distance [m]
+
+# setup_mask_bounds2:
+  # btype: waterlevel
+  # include_mask: lagoon  # add buffer on the fly
+  # include_mask_buffer: 300 # buffer distance [m]
+
+setup_subgrid:
+  datasets_dep:
+    - elevtn: fabdem
+      mask: osm_landareas
+    - elevtn: gebco  # add bathymetry; used to avoid extrapolation
+  datasets_rgh:
+    - lulc: esa_worldcover
+  # TODO prepare river bathymetry dasaset based on grit
+  # datasets_riv:
+  #   - centerlines: grit
+  #     manning': 0.035
+  write_dep_tif: True
+  nr_subgrid_pixels: 10 # 5m resolution
+  nbins: 8
+
+setup_river_inflow:
+  hydrography: merit_hydro
+  river_upa: <river_upa>  # placeholder for river upstream area threshold [km2]
+  river_len: 1000
+  keep_rivers_geom: True
+
+setup_config:
+  alpha: 0.1

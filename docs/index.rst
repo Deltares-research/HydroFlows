@@ -1,3 +1,12 @@
+.. _index_page:
+
+====================================
+Welcome to HydroFlows' documentation
+====================================
+
+HydroFlows allows a user to prepare entire workflows from static and dynamic datasets.
+
+
 .. include:: ../README.rst
 
 .. toctree::

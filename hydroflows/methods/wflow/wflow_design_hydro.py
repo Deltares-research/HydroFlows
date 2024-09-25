@@ -90,6 +90,9 @@ class Params(Parameters):
     min_sample_perc: int = 80
     """Minimum sample percentage in a valid block. Peaks of invalid bins are set to NaN"""
 
+    var_name: str = "Q"
+    """Name of the discharge time series variable provided in :py:class:`Input` class"""
+
     index_dim: str = "Q_gauges"
     """Index dimension of the input time series provided in :py:class:`Input` class."""
 
@@ -196,7 +199,7 @@ class WflowDesignHydro(ExpandMethod):
         root = self.output.event_set_yaml.parent
 
         # read the provided wflow time series
-        da = xr.open_dataarray(self.input.discharge_nc)
+        da = xr.open_dataset(self.input.discharge_nc)[self.params.var_name]
         time_dim = self.params.time_dim
         index_dim = self.params.index_dim
         # check if dims in da
@@ -255,6 +258,8 @@ class WflowDesignHydro(ExpandMethod):
 
         # specify and fit an EV distribution
         da_params = extremes.fit_extremes(da_peaks, ev_type=self.params.ev_type).load()
+        if index_dim not in da_params.dims:
+            da_params = da_params.expand_dims(index_dim)
 
         # calculate return values for specified rps/params
         da_rps = extremes.get_return_value(
@@ -263,12 +268,16 @@ class WflowDesignHydro(ExpandMethod):
         da_rps = da_rps.assign_coords(rps=self.params.rps)
 
         # hydrographs based on the n highest peaks
+        dims = [time_dim, "peak", index_dim]
         da_q_hydrograph = design_events.get_peak_hydrographs(
             da,
             da_peaks,
             wdw_size=wdw_size,
             n_peaks=self.params.n_peaks,
-        ).transpose(time_dim, "peak", index_dim)
+        )
+        if index_dim not in da_q_hydrograph.dims:
+            da_q_hydrograph = da_q_hydrograph.expand_dims(index_dim)
+        da_q_hydrograph = da_q_hydrograph.transpose(*dims)
 
         # calculate the mean design hydrograph per rp
         q_hydrograph: xr.DataArray = da_q_hydrograph.mean("peak") * da_rps
@@ -287,7 +296,12 @@ class WflowDesignHydro(ExpandMethod):
             fmt_dict = {self.params.wildcard: name}
             # save q_rp as csv file
             forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
-            q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            # q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            q_df = q_hydrograph.sel(rps=rp).to_pandas().reset_index()
+            q_df = q_df.rename(
+                dict(zip(q_df.columns, ("time", *da[index_dim].values))), axis=1
+            )
+            q_df.to_csv(forcing_file, index=False)
             # save event yaml file
             event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
@@ -312,23 +326,29 @@ class WflowDesignHydro(ExpandMethod):
             for station in da[index_dim].values:
                 # Plot EVA
                 plot_eva(
-                    da_peaks, da_params, self.params.rps, index_dim, station, plot_dir
+                    da_peaks.sel({index_dim: station}),
+                    da_params.sel({index_dim: station}),
+                    self.params.rps,
+                    station,
+                    plot_dir,
                 )
 
                 # Plot hydrographs
-                plot_hydrograph(q_hydrograph, station, index_dim, unit, plot_dir)
+                plot_hydrograph(
+                    q_hydrograph.sel({index_dim: station}), station, unit, plot_dir
+                )
 
 
-def plot_eva(da_peaks, da_params, rps, index_dim, station, plot_dir):
+def plot_eva(da_peaks, da_params, rps, station, plot_dir):
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
 
-    extremes_rate = da_peaks.sel({index_dim: station}).extremes_rate.item()
-    dist = da_params.sel({index_dim: station}).distribution.item()
+    extremes_rate = da_peaks.extremes_rate.item()
+    dist = da_params.distribution.item()
 
     # Plot return values fits
     extremes.plot_return_values(
-        da_peaks.sel({index_dim: station}),
-        da_params.sel({index_dim: station}),
+        da_peaks.where(~np.isnan(da_peaks), drop=True),
+        da_params,
         dist,
         color="k",
         nsample=1000,
@@ -349,11 +369,9 @@ def plot_eva(da_peaks, da_params, rps, index_dim, station, plot_dir):
     )
 
 
-def plot_hydrograph(q_hydrograph, station, index_dim, unit, plot_dir):
+def plot_hydrograph(q_hydrograph, station, unit, plot_dir):
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
-    q_hydrograph.sel({index_dim: station}).rename(
-        {"rps": "return period\n[years]"}
-    ).to_pandas().plot(ax=ax)  # noqa: E501
+    q_hydrograph.rename({"rps": "return period\n[years]"}).to_pandas().plot(ax=ax)  # noqa: E501
     ax.set_xlabel(f"Time [{unit}]")
     ax.set_title(f"Station {station}")
     ax.set_ylabel(R"Discharge [m$^{3}$ s$^{-1}$]")
