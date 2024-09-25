@@ -1,32 +1,10 @@
 import os
 import re
-from pathlib import Path
 
 import pytest
+from conftest import MockExpandMethod, TestMethod, create_test_method
 
 from hydroflows.workflow import Method, Parameters
-from tests.conftest import MockExpandMethod, TestMethod
-
-
-@pytest.fixture()
-def test_method():
-    return TestMethod(input_file1="test_file1", input_file2="test_file2", param="param")
-
-
-def create_test_method(
-    root: Path,
-    input_file1="test_file1",
-    input_file2="test_file2",
-    param="param",
-    write_inputs=True,
-) -> TestMethod:
-    input_file1 = root / input_file1
-    input_file2 = root / input_file2
-    if write_inputs:
-        for input_file in [input_file1, input_file2]:
-            with open(input_file, "w") as f:
-                f.write("")
-    return TestMethod(input_file1=input_file1, input_file2=input_file2, param=param)
 
 
 def test_method_param_props(test_method: TestMethod):
