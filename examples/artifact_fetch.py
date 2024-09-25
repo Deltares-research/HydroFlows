@@ -10,7 +10,7 @@ def fetch():
     path = Path(__file__).parent
     # Setup Pooch
     retriever = pooch.create(
-        path=Path(path, "artifact-data"),
+        path=Path(path, "data/global-data"),
         base_url="https://github.com/Deltares-research/hydroflows-data/releases/download/artifact-data",
         registry={
             "artifact-data.tar.gz": "c614cbc78b08a3ca873d982cb573535b04a9d1d3012c4452c0074cbd795eeab8",
