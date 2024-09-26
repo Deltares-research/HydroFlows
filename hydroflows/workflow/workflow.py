@@ -142,6 +142,10 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
+        # Small check for the parent directory
+        if not snakefile.parent.exists():
+            snakefile.parent.mkdir(parents=True)
+        # After that write
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(snakefile.parent / configfile, "w") as f:
