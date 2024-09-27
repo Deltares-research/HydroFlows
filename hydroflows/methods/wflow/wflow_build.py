@@ -120,7 +120,7 @@ class WflowBuild(Method):
         self.params: Params = Params(wflow_root=wflow_root, **params)
         self.input: Input = Input(region=region)
         self.output: Output = Output(
-            wflow_toml=self.params.wflow_root / "wflow_sbm.toml"
+            wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )
 
     def run(self):

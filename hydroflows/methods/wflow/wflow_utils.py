@@ -1,4 +1,5 @@
 """Utility functions for the wflow model."""
+import datetime
 from pathlib import Path
 
 import cartopy.crs as ccrs
@@ -7,6 +8,7 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from dateutil.relativedelta import relativedelta
 from matplotlib import colors
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
@@ -28,6 +30,25 @@ _ATTRS = {
     },
     "temp": {"standard_name": "temperature", "unit": "degree C", "color": "orange"},
 }
+
+
+def shift_time(
+    time: str,
+    delta: int | float,
+    format: str = "%Y-%m-%dT%H:%M:%S",
+    units: str = "hours",
+):
+    """_summary_."""
+    time_obj = datetime.datetime.strptime(time, format)
+    if units in ["months", "years"]:
+        dt = relativedelta(**{units: delta})
+    else:
+        dt = datetime.timedelta(**{units: delta})
+    # Add the time
+    time_obj = time_obj + dt
+
+    # return back to a string
+    return time_obj.strftime(format=format)
 
 
 def plot_forcing(mod, dvars=None):

@@ -1,22 +1,27 @@
 from datetime import datetime
 from pathlib import Path
+from typing import Tuple
 
+import geopandas as gpd
 import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
+from shapely.geometry import Point
 
-from hydroflows.methods import (
-    CoastalDesignEvents,
-    GetCoastRP,
-    GetGTSMData,
-    GetWaterlevelRPS,
-    TideSurgeTimeseries,
+from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
+from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
+    CoastalDesignEventFromRPData,
 )
+from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
+from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
+from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
+
+catalog_path = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\data_catalog.yml")
 
 
 @pytest.fixture()
-def waterlevel_timeseries():
+def waterlevel_timeseries() -> xr.DataArray:
     dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
 
     np.random.seed(1234)
@@ -28,13 +33,13 @@ def waterlevel_timeseries():
         coords={"time": dates},
         name="h",
     )
-
+    da = da.expand_dims(dim={"stations": 1})
     return da
 
 
 @pytest.fixture()
-def tide_surge_timeseries():
-    dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
+def tide_surge_timeseries() -> Tuple[xr.DataArray, xr.DataArray]:
+    dates = pd.date_range(start="2000-01-01", end="2005-12-31", freq="10min")
 
     np.random.seed(1234)
     data1 = np.random.rand(len(dates))
@@ -43,21 +48,32 @@ def tide_surge_timeseries():
 
     t = xr.DataArray(data=data1, dims=("time"), coords={"time": dates}, name="t")
     s = xr.DataArray(data=data2, dims=("time"), coords={"time": dates}, name="s")
-
+    t = t.expand_dims(dim={"stations": 1})
+    s = s.expand_dims(dim={"stations": 1})
     return t, s
 
 
 @pytest.fixture()
-def rps_nc():
+def waterlevel_rps() -> xr.Dataset:
     rps = xr.Dataset(
         coords=dict(rps=("rps", [1, 10, 100])),
         data_vars=dict(return_values=(["rps"], np.array([0.5, 1, 1.5]))),
     )
-
+    rps = rps.expand_dims(dim={"stations": 1})
     return rps
 
 
-def test_get_gtsm_data(rio_region, tmp_path):
+@pytest.fixture()
+def bnd_locations() -> gpd.GeoDataFrame:
+    bnds = gpd.GeoDataFrame(data={"stations": [1]}, geometry=[Point(1, 1)], crs=4326)
+    return bnds
+
+
+@pytest.mark.requires_data()
+@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
+def test_get_gtsm_data(
+    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
+):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
 
@@ -66,18 +82,23 @@ def test_get_gtsm_data(rio_region, tmp_path):
     region = rio_region.as_posix()
     data_dir = Path(tmp_path, "gtsm_data")
 
-    rule = GetGTSMData(region=region, data_root=data_dir, **params)
+    rule = GetGTSMData(
+        region=region, gtsm_catalog=catalog_path, data_root=data_dir, **params
+    )
 
     rule.run_with_checks()
 
 
-def test_create_tide_surge_timeseries(waterlevel_timeseries, tmp_path):
+@pytest.mark.slow()
+def test_create_tide_surge_timeseries(
+    waterlevel_timeseries: xr.DataArray, tmp_path: Path
+):
     data_dir = Path(tmp_path, "waterlevel")
     data_dir.mkdir()
     waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
     waterlevel_timeseries.close()
 
-    rule = TideSurgeTimeseries(
+    rule = CoastalTidalAnalysis(
         waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc",
         data_root=data_dir,
     )
@@ -85,38 +106,67 @@ def test_create_tide_surge_timeseries(waterlevel_timeseries, tmp_path):
     rule.run_with_checks()
 
 
-def test_get_coast_rp(rio_region, tmp_path):
+@pytest.mark.requires_data()
+@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
+def test_get_coast_rp(
+    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
+):
     data_dir = Path(tmp_path, "coast_rp")
-    # TODO: Fix hard coded path, include coast-rp in test data?
-    coast_rp_fn = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\COAST-RP\COAST-RP.nc")
 
-    rule = GetCoastRP(region=rio_region, data_root=data_dir, coastrp_fn=coast_rp_fn)
-
-    rule.run_with_checks()
-
-
-def test_get_waterlevel_rps(waterlevel_timeseries, tmp_path):
-    data_dir = Path(tmp_path, "waterlevel")
-    data_dir.mkdir()
-    waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
-    waterlevel_timeseries.close()
-
-    rule = GetWaterlevelRPS(
-        waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc", data_root=data_dir
+    rule = GetCoastRP(
+        region=rio_region, coastrp_catalog=catalog_path, data_root=data_dir
     )
 
     rule.run_with_checks()
 
 
-def test_coastal_design_events(tide_surge_timeseries, rps_nc, tmp_path):
+def test_coastal_design_events(
+    tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    bnd_locations: gpd.GeoDataFrame,
+    tmp_path: Path,
+):
     data_dir = Path(tmp_path, "coastal_rps")
     data_dir.mkdir()
     t, s = tide_surge_timeseries
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
+    bnds = bnd_locations
+    bnds.to_file(data_dir / "bnd_locations.gpkg", driver="GPKG")
 
-    rps_nc.to_netcdf(data_dir / "waterlevel_rps.nc")
+    rule = CoastalDesignEvents(
+        surge_timeseries=data_dir / "surge_timeseries.nc",
+        tide_timeseries=data_dir / "tide_timeseries.nc",
+        bnd_locations=data_dir / "bnd_locations.gpkg",
+        event_root=str(data_dir),
+    )
 
-    rule = CoastalDesignEvents(data_root=data_dir, event_folder=data_dir / "events")
+    rule.run_with_checks()
+
+
+def test_coastal_event_from_rp_data(
+    tide_surge_timeseries: Tuple[xr.DataArray, xr.DataArray],
+    bnd_locations: gpd.GeoDataFrame,
+    waterlevel_rps: xr.Dataset,
+    tmp_path: Path,
+):
+    data_dir = Path(tmp_path, "coastal_events")
+    data_dir.mkdir()
+    t, s = tide_surge_timeseries
+    t.to_netcdf(data_dir / "tide_timeseries.nc")
+    s.to_netcdf(data_dir / "surge_timeseries.nc")
+
+    bnds = bnd_locations
+    bnds.to_file(data_dir / "bnd_locations.gpkg", driver="GPKG")
+
+    rps = waterlevel_rps
+    rps.to_netcdf(data_dir / "waterlevel_rps.nc")
+
+    rule = CoastalDesignEventFromRPData(
+        surge_timeseries=data_dir / "surge_timeseries.nc",
+        tide_timeseries=data_dir / "tide_timeseries.nc",
+        bnd_locations=data_dir / "bnd_locations.gpkg",
+        rp_dataset=data_dir / "waterlevel_rps.nc",
+        event_root=str(data_dir),
+    )
 
     rule.run_with_checks()
