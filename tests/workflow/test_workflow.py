@@ -1,5 +1,7 @@
 import io
 import os
+import glob
+import platform
 import subprocess
 from pathlib import Path
 
@@ -193,6 +195,40 @@ def test_workflow_to_snakemake(w: Workflow, tmp_path):
         ]
     ).check_returncode()
 
+def validate_cwl_files(cwl_folder: Path):
+    for file in glob.glob((cwl_folder/"*.cwl").as_posix()):
+        subprocess.run(
+            [
+                "cwltool",
+                "--validate",
+                file,
+            ],
+            shell=True
+        ).check_returncode()
+
+def validate_cwl_workflow(workflow_file: Path):
+    config = workflow_file.with_suffix(".config.yml")
+    subprocess.run(
+        [
+            "cwltool",
+            "--validate",
+            workflow_file.as_posix(),
+            config.as_posix()
+        ]
+    ).check_returncode()
+
+@pytest.mark.skipif(platform.system() == "Windows", reason="Not supported on Windows")
+def test_workflow_to_cwl(w: Workflow, tmp_path):
+    test_file = tmp_path / "test.yml"
+    with open(test_file, "w") as f:
+        yaml.dump({"data": "test"}, f)
+    w = create_workflow_with_mock_methods(w, root=tmp_path, input_file=test_file)
+    cwl_file = tmp_path / "workflow.cwl"
+    w.to_cwl(cwlfile=cwl_file)
+    assert "workflow.cwl" in os.listdir(tmp_path)
+    assert "workflow.config.yml" in os.listdir(tmp_path)
+    validate_cwl_files(tmp_path/"cwl")
+    validate_cwl_workflow(cwl_file)
 
 def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     test_file = tmp_path / "test.yml"
