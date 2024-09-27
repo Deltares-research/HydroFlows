@@ -1,9 +1,8 @@
 """Defines the Event class which is a breakpoint between workflows."""
 
-import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional
 
 import geopandas as gpd
 import pandas as pd
@@ -20,7 +19,7 @@ from typing_extensions import TypedDict
 
 from hydroflows.utils.path_utils import abs_to_rel_path, rel_to_abs_path
 
-__all__ = ["EventCatalog"]
+__all__ = ["EventSet"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 
@@ -260,12 +259,11 @@ class EventSet(BaseModel):
     --------
     The event set can be created from a YAML file as follows::
 
-        EventCatalog.from_yaml("path/to/events.yaml")
+        EventSet.from_yaml("path/to/eventset.yaml")
 
     The event set can be created from a dictionary as follows::
 
-        EventCatalog(
-            root="path/to/root",
+        EventSet(
             events=[
                 {
                     "name": "event1",
@@ -275,18 +273,13 @@ class EventSet(BaseModel):
         )
     """
 
-    version: str = "v0.1"
-    """The version of the event catalog."""
+    root: Optional[Path] = None
+    """The root directory for the event files."""
 
-    roots: Optional[Roots] = Roots()
-    """The root directories for forcings, hazards and impacts for the event catalog."""
+    events: List[EventDict]
+    """The list of events. Each event is a dictionary with an event name and reference to an event file. """
 
-    # root: Optional[DirectoryPath] = None
-    events: List[Event]
-    """The list of events. Each event is a dictionary with the structure
-    as defined in :py:class:`Event`."""
-
-    @field_validator("events", mode="before")
+    @model_validator(mode="before")
     @classmethod
     def _set_abs_paths(cls, data: Dict) -> Dict:
         """Set the paths to relative to root if not absolute."""
@@ -313,8 +306,8 @@ class EventSet(BaseModel):
         return data
 
     @classmethod
-    def from_yaml(cls, path: FilePath) -> "EventCatalog":
-        """Create an EventCatalog from a YAML file."""
+    def from_yaml(cls, path: Path) -> "EventSet":
+        """Create an EventSet from a YAML file."""
         with open(path, "r") as file:
             yaml_dict = yaml.safe_load(file)
         if "root" not in yaml_dict:
@@ -381,6 +374,5 @@ class EventSet(BaseModel):
             Path to yaml file with event description
             See :class:`Event` for the structure of the data in this path.
         """
-        if isinstance(event, dict):
-            event = Event(**event)
+        event = {"name": name, "path": path}
         self.events.append(event)
