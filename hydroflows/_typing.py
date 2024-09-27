@@ -51,3 +51,13 @@ EventDatesDict = Annotated[
         lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
     ),
 ]
+
+class folderpath(Path):
+    """Subtype Path to indicate when parent folder is needed for workflow execution."""
+    _flavour = type(Path())._flavour
+
+def folderpath_validator(x: Path) -> folderpath:
+    """Promote Path to folderpath type."""
+    return folderpath(x)
+
+FolderPath = Annotated[Path, AfterValidator(folderpath_validator)]

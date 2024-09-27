@@ -5,6 +5,7 @@ from itertools import product
 
 from hydroflows.utils.parsers import get_wildcards
 from hydroflows.utils.cwl_utils import map_cwl_types
+from hydroflows._typing import folderpath
 
 if TYPE_CHECKING:
     from hydroflows.workflow.method import Method
@@ -87,12 +88,17 @@ class JinjaCWLRule:
         # wc_explode = self.rule.wildcards["explode"]
         for key,val in results.items():
             outputs[key] = {"value": [val.as_posix()]}
+            if isinstance(val, folderpath):
+                outputs[key]["type"] = "Directory"
+                outputs[key]["value"] = [val.parent.as_posix()]
+            else:
+                outputs[key]["type"] = "File"
             if wc_expand and any(get_wildcards(val, wc_expand)):
                 # wc_dict = self.rule._workflow_ref().wildcards.to_dict()
                 wc_dict = self.rule.method.expand_wildcards
                 wc_values = list(product(*wc_dict.values()))
                 outputs[key]['value'] = [str(val).format(**dict(zip(wc_dict.keys(), wc))) for wc in wc_values]
-                outputs[key]['type'] = "File[]"
+                outputs[key]['type'] += "[]"
                 # This is where we want to end up, but the corresponding outputEval needs thinking
                 # outputs[key]['value'] = re.sub(r"\{.*?\}", "*", str(val))
             # elif wc_explode and any(get_wildcards(val, wc_explode)):
@@ -100,8 +106,6 @@ class JinjaCWLRule:
                 wc = self.input_wildcards
                 outputs[key]['value'] = [item.replace(("{"+f"{wc}"+"}"), f"$(input.{wc})") for item in outputs[key]['value']]
                 # outputs[key]['value'] = outputs[key]['value'].replace(("{"+f"{wc_explode}"+"}"), f"$({wc_explode})")
-                outputs[key]['type'] = "File"
-            else:
                 outputs[key]['type'] = "File"
         return outputs
     

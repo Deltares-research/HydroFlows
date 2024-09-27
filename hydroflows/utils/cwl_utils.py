@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Dict
 from datetime import datetime
+from hydroflows._typing import folderpath
 
 def map_cwl_types(input: Any) -> Dict[str,str]:
     """Maps variable to cwl type and value
@@ -27,7 +28,11 @@ def map_cwl_types(input: Any) -> Dict[str,str]:
         case bool():
             # Bool on out CLI is passed as a string
             out['type'] = 'string'
-            out['value'] = f"\"{str(input)}\""
+            out['value'] = f"{str(input)}"
+        case folderpath():
+            # When indicated, set CWL type to Directory with parent folder as value
+            out['type'] = "Directory"
+            out['value'] = {"class": "Directory", "path": input.parent}
         case Path():
             if "{" in input.as_posix():
             # If path contains wildcard, input is array
@@ -36,23 +41,23 @@ def map_cwl_types(input: Any) -> Dict[str,str]:
             if not input.suffix:
             # Non existing directory roots as string
                 out['type'] = "string"
-                out['value'] = f"\"{input.as_posix()}\""
+                out['value'] = f"{input.as_posix()}"
             else:
                 out['type'] = "File"
                 # out['value'] = f"Class: File\nPath: \"{input.as_posix()}\""
                 out['value'] = {"class": "File", "path": input.as_posix()}
-        case  str():
+        case str():
             if "/" in input:
             # In case a file path is passed as string
                 out['type'] = "File"
                 out['value']={"class": "File", "path": input}
             else:
                 out['type'] = 'string'
-                out['value'] = f"\"{input}\""
+                out['value'] = f"{input}"
         case list():
             if all(isinstance(item, str) for item in input):
                 out["type"] = "string[]"
-                out["value"] = [f"\"{item}\"" for item in input]
+                out["value"] = [f"{item}" for item in input]
             elif all(isinstance(item, float) for item in input):
                 out["type"] = "float[]"
                 out["value"] = input
@@ -73,11 +78,11 @@ def map_cwl_types(input: Any) -> Dict[str,str]:
             out['value'] = input
         case datetime():
             out['type'] = 'string'
-            out['value'] = f"\"{str(input)}\""
+            out['value'] = f"{str(input)}"
         case _:
             try:
                 out['type'] = 'string'
-                out['value'] = f"\"{str(input)}\""
+                out['value'] = f"{str(input)}"
             except:
                 raise TypeError(f"type {type(input)} could not be parsed.")
     return out
