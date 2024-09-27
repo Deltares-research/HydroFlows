@@ -1,0 +1,42 @@
+{% macro add_step(rule, dryrun) %}
+    {{rule.rule_id}}:
+        {% if rule.rule.wildcards.reduce%}
+        requirements:
+            MultipleInputFeatureRequirement: {}
+        {% elif rule.input_scatter %}
+        scatter:
+            {% for item in rule.input_scatter%}
+            - {{item}}
+            {% endfor %}
+        scatterMethod: dotproduct
+        {% endif %}
+        in:
+            {% for id, info in rule.input.items()%}
+            {% if info.source%}
+            {{id}}: {{info.source}}
+            {% endif %}
+            {% endfor %}
+            {% if rule.input_wildcards%}
+            {{rule.input_wildcards}}: {{rule.input_wildcards}}
+            {% endif %}
+            {% if dryrun%}
+            dryrun: dryrun
+            {% endif %}
+        out:
+            {% for id, info in rule.output.items()%}
+            - {{id}}
+            {% endfor %}
+        run: ./cwl/{{rule.method_name}}.cwl
+{% endmacro %}
+
+{% macro workflow_outputs(rule)%}
+{% for id, info in rule.output.items()%}
+    {{id}}:
+        {% if rule.input_scatter%}
+        type: {{info.type}}[]
+        {% else %}
+        type: {{info.type}}
+        {%endif%}
+        outputSource: {{rule.rule_id}}/{{id}}
+{% endfor %}
+{% endmacro%}

@@ -6,7 +6,9 @@ requirements:
     InitialWorkDirRequirement:
         listing:
         {% for key, value in rule.input.items()%}
+        {% if "File" is in value.type %}
         - $(inputs.{{key}})
+        {% endif %}
         {% endfor %}
 
 baseCommand: ["hydroflows", "method", "{{rule.method_name}}"]
@@ -18,39 +20,24 @@ inputs:
         inputBinding:
             prefix: {{key}}=
             separate: false
+            {% if value.separator %}
+            itemSeparator: {{value.separator}}
+            {% endif %}
     {% endfor %}
     {% if rule.input_wildcards %}
     {{rule.input_wildcards}}:
         type: string
     {% endif %}
-    {% for key,value in rule.params.items() %}
-    {{key}}:
-        type: {{value.type}}?
-        inputBinding:
-            prefix: {{key}}=
-            separate: false
-        {% if value.separator %}
-            itemSeparator: {{value.separator}}
-        default:
-        {% for item in value.value%}
-            - {{item}}
-        {% endfor %}
-        {% elif value.value%}
-        default: {{value.value}}
-        {% endif %}
-    {% endfor %}
     dryrun:
         type: boolean
         inputBinding:
             prefix: --dryrun
             position: 1
-        default: true
+        default: false
 
 outputs:
     {% for key,value in rule.output.items()%}
     {{key}}:
-    {# For expand methods only the type needs to be File[]
-    Double check how the outputEval construction works for array outputs#}
         type: {{value.type}}
         outputBinding:
             glob:

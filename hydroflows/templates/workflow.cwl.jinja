@@ -1,48 +1,25 @@
+{% from "macros.cwl.jinja" import add_step, workflow_outputs%}
 cwlVersion: v1.2
 class: Workflow
 
 requirements:
     ScatterFeatureRequirement: {}
 
-{# This maps to workflow config #}
 inputs:
     {% for key,value in inputs.items()%}
     {{key}}: {{value.type}}
     {% endfor %}
 
-{# This covers all outputs of all steps #}
 outputs:
-    {% for key, value in outputs.items()%}
-    {{key}}:
-        type: {{value.type}}
-        outputSource: {{value.source}}/{{key}}
-    {% endfor %}
+{% for rule in rules %}
+{% with rule=rule %}
+{{ workflow_outputs(rule) -}}
+{% endwith %}
+{% endfor %}
 
-{# 
-For explode methods (n to n) we need scatter requirement
-For reduce methods (n to 1) we need MultipleInputFeatureRequirements and array type inputs in CWL method file
-For expand methods (1 to n) we dont need anything here (outputs defined as arrays in CWL method file)
-#}
 steps:
-    {% for step_id, step in steps.items() %}
-    {{ step_id }}:
-    {% if step.reduce %}
-        requirements:
-            MultipleInputFeatureRequirement: {}
-    {% elif step.scatter %}
-        scatter:
-        {% for item in step.scatter%}
-          - {{item}}
-        {% endfor %}
-        scatterMethod: dotproduct
-    {% endif %}
-        in:
-            {% for key,value in step.ins.items() %}
-            {{key}}: {{value}}
-            {% endfor %}
-        out:
-        {% for output in step.outs %}
-          - {{output}}
-        {% endfor %}        
-        run: {{step.cwlfile}}
-    {% endfor %}
+{% for rule in rules%}
+{% with rule=rule %}
+{{ add_step(rule, dryrun) -}}
+{% endwith %}
+{% endfor %}

@@ -15,11 +15,12 @@ from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
+from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
-
+from hydroflows.utils.cwl_utils import map_cwl_types
 
 class Workflow:
     """Workflow class."""
@@ -146,6 +147,63 @@ class Workflow:
             f.write(_str)
         with open(snakefile.parent / configfile, "w") as f:
             yaml.dump(self.config.to_dict(mode="json"), f)
+
+    def to_cwl(
+        self,
+        cwlfile: Path,
+        dryrun: bool = False,
+    ) -> None:
+        
+        cwlfile = Path(cwlfile).resolve()
+        configfile = cwlfile.with_suffix(".config.yml")
+        # Make sure all necessary folders exist
+        if not (cwlfile.parent/"cwl").exists():
+            (cwlfile.parent/"cwl").mkdir(parents=True)
+
+        template_env = Environment(
+            loader=PackageLoader("hydroflows"),
+            trim_blocks=True,
+            lstrip_blocks=True
+        )
+        template_workflow = template_env.get_template("workflow.cwl.jinja")
+        template_rule = template_env.get_template("rule.cwl.jinja")
+
+        # Write CWL files for the methods
+        for rule in self.rules:
+            _str = template_rule.render(
+                rule=JinjaCWLRule(rule)
+            )
+            with open(f"{cwlfile.parent}/cwl/{rule.method.name}.cwl", "w") as f:
+                f.write(_str)
+        
+        # Write CWL file for the workflow
+        input_dict = {}
+        for key,value in self.config:
+            input_dict[key] = map_cwl_types(value)
+        for wc in self.wildcards.names:
+            input_dict[wc] = {"type": "string[]", "value": self.wildcards.get(wc)}
+        if dryrun:
+            input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
+        
+        _str = template_workflow.render(
+            inputs=input_dict,
+            rules=[JinjaCWLRule(r) for r in self.rules],
+            dryrun=dryrun
+        )
+        with open(cwlfile,"w") as f:
+            f.write(_str)
+
+        # Write CWL config file
+        config = {}
+        for key,value in input_dict.items():
+            if value["type"] == "File":
+                # config[key] = {"class": value['type'], "path": value['value'].strip('"')}
+                config[key] = value['value']
+            else:
+                config[key] = value['value']
+        with open(configfile,"w") as f:
+           yaml.dump(config,f)
+
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
