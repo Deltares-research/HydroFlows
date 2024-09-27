@@ -4,7 +4,7 @@
 from pathlib import Path
 from typing import Optional
 
-from hydroflows._typing import JsonDict
+from hydroflows._typing import JsonDict, FolderPath
 from hydroflows.events import Event
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 from hydroflows.workflow.method import Method
@@ -16,7 +16,7 @@ __all__ = ["SfincsUpdateForcing"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SfincsUpdateForcing` method."""
 
-    sfincs_inp: Path
+    sfincs_inp: FolderPath
     """The file path to the SFINCS basemodel configuration file (inp)."""
 
     event_yaml: Path
@@ -27,7 +27,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`SfincsUpdateForcing` method."""
 
-    sfincs_out_inp: Path
+    sfincs_out_inp: FolderPath
     """The path to the updated SFINCS configuration (inp) file per event."""
 
 

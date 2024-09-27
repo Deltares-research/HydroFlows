@@ -37,17 +37,22 @@ class JinjaCWLRule:
 
         for key, val in refs.items():
             inputs[key] = {}
+            inputs[key]['type'] = "File"
+            if isinstance(val, folderpath):
+                inputs[key]['type'] = "Directory"
             # Set the source of the input (from prev rule, config)
             if "$config" in val:
                 inputs[key]["source"] = val.split(".")[-1]
+                if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
+                    inputs[key]['type'] = "Directory"
             if "$rules" in val:
                 tmp = val.split(".")
                 inputs[key]["source"] = f"{tmp[-3]}/{tmp[-1]}"
+                if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
+                    inputs[key]['type'] = "Directory"
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
-                inputs[key]["type"] = "File[]"
-            else:
-                inputs[key]["type"] = "File"
+                inputs[key]["type"] += "[]"
         # Add params to inputs
         params = self.rule.method.params.to_dict(return_refs=True)
         for key, val in params.items():
@@ -85,7 +90,6 @@ class JinjaCWLRule:
         )
         outputs= {}
         wc_expand = self.rule.wildcards["expand"]
-        # wc_explode = self.rule.wildcards["explode"]
         for key,val in results.items():
             outputs[key] = {"value": [val.as_posix()]}
             if isinstance(val, folderpath):
@@ -94,19 +98,14 @@ class JinjaCWLRule:
             else:
                 outputs[key]["type"] = "File"
             if wc_expand and any(get_wildcards(val, wc_expand)):
-                # wc_dict = self.rule._workflow_ref().wildcards.to_dict()
                 wc_dict = self.rule.method.expand_wildcards
                 wc_values = list(product(*wc_dict.values()))
-                outputs[key]['value'] = [str(val).format(**dict(zip(wc_dict.keys(), wc))) for wc in wc_values]
+                outputs[key]['value'] = [str(val).format(**dict(zip(wc_expand, wc))) for wc in wc_values]
                 outputs[key]['type'] += "[]"
-                # This is where we want to end up, but the corresponding outputEval needs thinking
-                # outputs[key]['value'] = re.sub(r"\{.*?\}", "*", str(val))
-            # elif wc_explode and any(get_wildcards(val, wc_explode)):
             elif self.input_wildcards:
                 wc = self.input_wildcards
                 outputs[key]['value'] = [item.replace(("{"+f"{wc}"+"}"), f"$(input.{wc})") for item in outputs[key]['value']]
-                # outputs[key]['value'] = outputs[key]['value'].replace(("{"+f"{wc_explode}"+"}"), f"$({wc_explode})")
-                outputs[key]['type'] = "File"
+
         return outputs
     
     @property
@@ -118,43 +117,3 @@ class JinjaCWLRule:
                 results[key] = map_cwl_types(value)
         return results
     
-
-# def _map_param_to_cwl(input):
-#     out = {}
-#     match input:
-#         case bool():
-#             out['type']='string'
-#             # out['value']=f"\"{str(input)}\""
-#         case Path():
-#             if not input.suffix:
-#                 out['type']="string"
-#                 # out['value']=f"\"{input.as_posix()}\""
-#             else:
-#                 indent = 3*"    "
-#                 out['type']='File'
-#                 # out['value']=f"\n{indent}Class: File\n{indent}Path: \"{input.as_posix()}\""
-#         case str():
-#             out['type']='string'
-#             # out['value']=f"\"{input}\""
-#         case list():
-#             if all(isinstance(item, str) for item in input):
-#                 out["type"] = "string[]"
-#                 # out["value"] = [f"\"{item}\"" for item in input]
-#             elif all(isinstance(item, float) for item in input):
-#                 out["type"] = "float[]"
-#                 # out["value"] = input
-#             elif all(isinstance(item, int) for item in input):
-#                 out["type"] = "float[]"
-#                 # out["value"] = input
-#             else:
-#                 raise TypeError("No lists with mixed typed elements allowed!")
-#             out["separator"] = "\", \""
-#         case float():
-#             out['type']='float'
-#             # out['value']=input
-#         case int():
-#             out['type']='float'
-#             # out['value']=input
-#         case _:
-#             out['type']='string'
-#     return out   

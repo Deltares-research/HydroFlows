@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfStr, FolderPath
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -28,7 +28,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`SfincsBuild` method."""
 
-    sfincs_inp: Path
+    sfincs_inp: FolderPath
     """The path to the SFINCS configuration (inp) file."""
 
     sfincs_region: Path

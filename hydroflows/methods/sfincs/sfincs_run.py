@@ -7,6 +7,7 @@ from typing import Literal, Optional
 
 from pydantic import model_validator
 
+from hydroflows._typing import FolderPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -20,7 +21,7 @@ class Input(Parameters):
     required for the :py:class:`SfincsRun` method.
     """
 
-    sfincs_inp: Path
+    sfincs_inp: FolderPath
     """The path to the SFINCS model configuration (inp) file."""
 
 

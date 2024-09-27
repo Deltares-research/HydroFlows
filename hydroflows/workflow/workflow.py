@@ -171,6 +171,7 @@ class Workflow:
         # Write CWL files for the methods
         for rule in self.rules:
             _str = template_rule.render(
+                version=__version__,
                 rule=JinjaCWLRule(rule)
             )
             with open(f"{cwlfile.parent}/cwl/{rule.method.name}.cwl", "w") as f:
@@ -186,6 +187,7 @@ class Workflow:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
         
         _str = template_workflow.render(
+            version=__version__,
             inputs=input_dict,
             rules=[JinjaCWLRule(r) for r in self.rules],
             dryrun=dryrun
@@ -197,7 +199,6 @@ class Workflow:
         config = {}
         for key,value in input_dict.items():
             if value["type"] == "File":
-                # config[key] = {"class": value['type'], "path": value['value'].strip('"')}
                 config[key] = value['value']
             else:
                 config[key] = value['value']
