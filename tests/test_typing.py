@@ -66,6 +66,8 @@ def test_tuple_of_int():
     with pytest.raises(ValidationError):
         ta.validate_python((12, 6.2))
     with pytest.raises(ValidationError):
+        ta.validate_python("(12, 6.2)")
+    with pytest.raises(ValidationError):
         ta.validate_python((12, 6, 7))
     with pytest.raises(TypeError):
         ta.validate_python((12, 6), (11, 5))

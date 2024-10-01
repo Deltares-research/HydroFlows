@@ -67,3 +67,5 @@ General method
 .. include:: sfincs_methods.rst
 
 .. include:: fiat_methods.rst
+
+.. include:: hazard_validation_methods.rst
