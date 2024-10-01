@@ -41,8 +41,10 @@ setup_subgrid:
   nbins: 8
 
 setup_river_inflow:
-  hydrography: merit_hydro
-  river_upa: <river_upa>  # placeholder for river upstream area threshold [km2]
+  # Switch to the rivers vector file to work well with hydromt_sfincs at this point
+  # hydrography: merit_hydro
+  # river_upa: <river_upa>  # placeholder for river upstream area threshold [km2]
+  rivers: rivers_lin2019_v1
   river_len: 1000
   keep_rivers_geom: True
 
