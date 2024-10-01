@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated, TypedDict
@@ -29,8 +29,14 @@ ListOfFloatOrInt = Annotated[
 ]
 
 TupleOfInt = Annotated[
-    tuple[int, int],
-    BeforeValidator(lambda x: str_to_tuple(x) if isinstance(x, str) else x),
+    Tuple[int, int],
+    BeforeValidator(
+        lambda x: tuple(
+            int(float(i)) if float(i).is_integer() else int(i) for i in str_to_tuple(x)
+        )
+        if isinstance(x, str)
+        else x
+    ),
 ]
 
 ListOfPath = Annotated[
