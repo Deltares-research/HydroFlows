@@ -2,7 +2,7 @@
 
 import warnings
 from pathlib import Path
-from typing import Literal, Tuple, Union
+from typing import Literal, Union
 
 import geopandas as gpd
 import hydromt
@@ -14,7 +14,7 @@ import xarray as xr
 from pydantic import PositiveInt
 from shapely.geometry import Point, box
 
-from hydroflows._typing import ListOfFloatOrInt
+from hydroflows._typing import ListOfFloatOrInt, TupleOfInt
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -93,16 +93,13 @@ class Params(Parameters):
     zoomlevel: str = "auto"
     """Zoomlevel, by default 'auto'. """
 
-    figsize: Tuple[int, int] = (12, 7)
+    figsize: TupleOfInt = (12, 7)
     """Figure size, by default (12,7)."""
 
     bmap: str = None
     """Background map souce name, by default None
     Default image tiles "sat", and "osm" are fetched from cartopy image tiles.
     If contextily is installed, xyzproviders tiles can be used as well."""
-
-    bmap_kwargs: dict = {}
-    """Background map kwargs."""
 
     region: Path = None
     """File path to the geometry file representing the area used for hazard simulation.
@@ -289,7 +286,6 @@ class FloodmarksValidation(Method):
                 figsize=self.params.figsize,
                 zoomlevel=self.params.zoomlevel,
                 bmap=self.params.bmap,
-                bmap_kwargs=self.params.bmap_kwargs,
             )
 
 
@@ -400,7 +396,6 @@ def _plot_scores(
     cmap,
     figsize,
     zoomlevel,
-    bmap_kwargs,
     bmap,
 ) -> None:
     """Plot scores."""
@@ -467,6 +462,7 @@ def _plot_scores(
             zoomlevel = min(16, max(9, zoomlevel))
         #  short names for cartopy image tiles
         bmap = {"sat": "QuadtreeTiles", "osm": "OSM"}.get(bmap, bmap)
+        bmap_kwargs = {}
         if has_cx and bmap in list(ctx.providers.flatten()):
             bmap_kwargs = dict(zoom=zoomlevel, **bmap_kwargs)
             ctx.add_basemap(ax, crs=crs, source=bmap, **bmap_kwargs)

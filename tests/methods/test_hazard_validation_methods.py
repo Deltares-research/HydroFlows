@@ -51,6 +51,7 @@ def test_floodmarks_validation(
         waterlevel_unit="m",
         out_root=out_root,
         bins=[-2, -1.5, 0, 5],
+        figsize=(13, 8),
         bmap="OSM",
     )
 
