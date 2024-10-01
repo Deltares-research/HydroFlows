@@ -20,7 +20,7 @@ def str_to_list(v: str) -> list[str]:
     return [v.strip("'\" ") for v in vlist]
 
 
-def str_to_tuple(v: str) -> tuple:
+def str_to_tuple(v: str) -> tuple[str, str]:
     """Convert a comma and space-separated string to a tuple."""
     # remove whitespace and () at the beginning and end
     v = v.strip("() ")
