@@ -23,7 +23,7 @@ def str_to_list(v: str) -> list[str]:
 def str_to_tuple(v: str) -> tuple[str, str]:
     """Convert a comma and space-separated string to a tuple."""
     # remove whitespace and () at the beginning and end
-    v = v.strip("() ")
+    v = v.strip("()[] ")
     # split by comma but not inside quotes
     regex = r"[^,\s\"']+|\"([^\"]*)\"|'([^']*)'"
     if not any(re.findall(regex, v)):  # no commas: split by space

@@ -62,6 +62,7 @@ def test_tuple_of_int():
     ta = TypeAdapter(TupleOfInt)
     assert ta.validate_python("(12, 6)") == (12, 6)
     assert ta.validate_python("(12, 6.0)") == (12, 6)
+    assert ta.validate_python("[12, 6.0]") == (12, 6)
     with pytest.raises(ValidationError):
         ta.validate_python((12, 6.2))
     with pytest.raises(ValidationError):
