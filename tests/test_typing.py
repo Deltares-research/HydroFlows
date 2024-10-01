@@ -3,7 +3,13 @@ import json
 import pytest
 from pydantic import TypeAdapter, ValidationError
 
-from hydroflows._typing import EventDatesDict, ListOfFloat, ListOfInt, ListOfStr
+from hydroflows._typing import (
+    EventDatesDict,
+    ListOfFloat,
+    ListOfFloatOrInt,
+    ListOfInt,
+    ListOfStr,
+)
 
 
 def test_list_of_str():
@@ -25,6 +31,10 @@ def test_list_of_int():
         ta.validate_python("a, b, c")
     with pytest.raises(ValidationError):
         ta.validate_python(["a", "b", "c"])
+    with pytest.raises(ValidationError):
+        ta.validate_python(["1", "2.2", "3"])
+    with pytest.raises(ValidationError):
+        ta.validate_python([1, 2.2, 3])
 
 
 def test_list_of_float():
@@ -36,6 +46,15 @@ def test_list_of_float():
         ta.validate_python("a, b, c")
     with pytest.raises(ValidationError):
         ta.validate_python([1, 2, 3, "a"])
+
+
+def test_list_of_float_or_int():
+    ta = TypeAdapter(ListOfFloatOrInt)
+    assert ta.validate_python("1, 2.2, 3") == [1.0, 2.2, 3.0]
+    assert ta.validate_python("[1.0 2.2 3.0]") == [1, 2.2, 3]
+    assert ta.validate_python([1, 2.2, 3]) == [1, 2.2, 3.0]
+    with pytest.raises(ValidationError):
+        ta.validate_python([1, 2.2, 3, "a"])
 
 
 def test_event_dates_dict():

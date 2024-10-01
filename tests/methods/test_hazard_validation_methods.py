@@ -48,11 +48,15 @@ def test_floodmarks_validation(
         flood_hazard_map=hazard_map,
         region=rio_region,
         waterlevel_col="water_level_obs",
+        waterlevel_unit="m",
         out_root=out_root,
+        bins=[-2, -1.5, 0, 5],
+        bmap="OSM",
     )
 
     assert (
         rule.output.validation_scores_csv
         == out_root / "validation_scores_floodmarks.csv"
     )
+
     rule.run_with_checks()

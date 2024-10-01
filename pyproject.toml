@@ -14,7 +14,6 @@ authors = [
 dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
-  "contextily",               # web tiles for visualization
   "geopandas",                # Reading vector data
   "hatyan",                   # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models

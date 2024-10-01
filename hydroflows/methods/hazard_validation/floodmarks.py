@@ -1,9 +1,9 @@
 """Validate simulated hazard maps using floodmarks method."""
 
+import warnings
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Tuple, Union
 
-import contextily as ctx
 import geopandas as gpd
 import hydromt
 import matplotlib.colors as mcolors
@@ -12,8 +12,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pydantic import PositiveInt
-from shapely.geometry import Point
+from shapely.geometry import Point, box
 
+from hydroflows._typing import ListOfFloatOrInt
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -31,13 +32,6 @@ class Input(Parameters):
     flood_hazard_map: Path
     """
     The file path to the flood hazard map to be used for validation, provided in TIFF format.
-    """
-
-    region: Path
-    """
-    The file path to the geometry file representing the area used for hazard simulation.
-    This is used to define flood marks outside the model domain.
-    An example of this file could be a GeoJSON of the SFINCS region.
     """
 
 
@@ -61,10 +55,10 @@ class Params(Parameters):
     """The column/attribute name representing the observed water level in the input floodmarks geometry file,
     as provided in the :py:class:`Input` class."""
 
-    waterlevel_unit: Literal["m", "cm"] = "m"
+    waterlevel_unit: Literal["m", "cm", "mm", "ft", "in"]
     """The unit (length) of the observed floodmarks in the input geometry file,
     as provided in the :py:class:`Input` class. Valid options are 'm' for meters
-    maxima or 'cm' for centimeters."""
+    , 'cm' for centimeters, "mm" for milimeters, "ft" for feet and "in" for inches."""
 
     filename: str = "validation_scores_floodmarks.csv"
     """The filename for the produced validation scores csv file."""
@@ -74,10 +68,46 @@ class Params(Parameters):
     validation scores and the difference between observed and simulated
     values with color bins geographically."""
 
-    num_bins: PositiveInt = 5
-    """The number of bins to divide the difference between observed and
-    simulated values into color-coding in the plot, if the `plot_fig`
-    parameter is set to True."""
+    # Plotting settings params
+    bins: ListOfFloatOrInt = None
+    """Custom bin edges for categorizing the the difference between
+    observed and simulated values. If None (default), calculated based on `nbins`,
+    `vmin` and `vmax`."""
+
+    nbins: PositiveInt = 5
+    """Number of bins for grouping the difference between observed and
+    simulated values (for color mapping)."""
+
+    vmin: Union[float, int] = None
+    """Minimum value for the color scale. If None (default),
+    the (rounded) minimum value of difference (observed - simulated) is used."""
+
+    vmax: Union[float, int] = None
+    """Maximum value for the color scale. If None (default),
+    the maximum value of difference (observed - simulated) is used."""
+
+    cmap: str = "bwr"
+    """Colormap used for visualizing the difference (observed - simulated) values.
+    Default is 'bwr' (blue-white-red)."""
+
+    zoomlevel: str = "auto"
+    """Zoomlevel, by default 'auto'. """
+
+    figsize: Tuple[int, int] = (12, 7)
+    """Figure size, by default (12,7)."""
+
+    bmap: str = None
+    """Background map souce name, by default None
+    Default image tiles "sat", and "osm" are fetched from cartopy image tiles.
+    If contextily is installed, xyzproviders tiles can be used as well."""
+
+    bmap_kwargs: dict = {}
+    """Background map kwargs."""
+
+    region: Path = None
+    """File path to the geometry file representing the area used for hazard simulation.
+    This is only used for visualization pursposes. An example of this file could be a GeoJSON of the SFINCS region.
+    """
 
 
 class FloodmarksValidation(Method):
@@ -88,17 +118,16 @@ class FloodmarksValidation(Method):
     _test_kwargs = {
         "floodmarks_geom": Path("floodmarks.geojson"),
         "flood_hazard_map": Path("hazard_map_output.tif"),
-        "region": Path("region.geojson"),
         "waterlevel_col": "water_level_obs",
+        "waterlevel_unit": "m",
     }
 
     def __init__(
         self,
         floodmarks_geom: Path,
         flood_hazard_map: Path,
-        region: Path,
         waterlevel_col: str,
-        waterlevel_unit: Literal["m", "cm"] = "m",
+        waterlevel_unit: Literal["m", "cm", "mm", "ft", "in"],
         out_root: Path = Path("data/validation"),
         **params,
     ):
@@ -119,9 +148,9 @@ class FloodmarksValidation(Method):
             The root folder to save the derived validation scores, by default "data/validation".
         waterlevel_col : Str
             The property name for the observed water levels in the floodmarks geometry file
-        waterlevel_unit : Literal["m", "cm"]
-            Obsevred floodmarks unit. Valid options are 'm' (default)
-            for meters or 'cm' centimeters.
+        waterlevel_unit : Literal["m", "cm", "mm", "ft", "in"]
+            Obsevred floodmarks unit. Valid options are 'm' for meters,
+            'cm' for centimeters, 'ft' for feet and 'in' for inches .
         **params
             Additional parameters to pass to the FloodmarksValidation instance.
 
@@ -140,7 +169,6 @@ class FloodmarksValidation(Method):
         self.input: Input = Input(
             floodmarks_geom=floodmarks_geom,
             flood_hazard_map=flood_hazard_map,
-            region=region,
         )
         self.output: Output = Output(
             validation_scores_geom=self.params.out_root
@@ -152,21 +180,42 @@ class FloodmarksValidation(Method):
         """Run the FloodmarksValidation method."""
         # Read the floodmarks and the region files
         gdf = gpd.read_file(self.input.floodmarks_geom)
-        region = gpd.read_file(self.input.region)
 
-        # Check CRS and reproject if necessary
-        if gdf.crs != region.crs:
-            gdf = gdf.to_crs(region.crs)
+        # Read the floodmap using HydroMT
+        floodmap = hydromt.io.open_raster(self.input.flood_hazard_map)
 
-        # Ensure floodmarks fall within the region
-        gdf_in_region = gdf[gdf.geometry.within(region.unary_union)]
+        proj_crs = floodmap.raster.crs
+        if not proj_crs.is_projected and proj_crs.to_epsg() is None:
+            raise ValueError("Input hazard map needs to be georeferenced.")
+
+        if gdf.crs != proj_crs:
+            gdf = gdf.to_crs(proj_crs)
+
+        # Find the flood hazard map extents/bounds
+        flood_bounds = floodmap.raster.box.buffer(
+            abs(floodmap.raster.res[0] * 1)
+        ).total_bounds
+        # Create a polygon from the bounds
+        flood_bounds_polygon = box(
+            flood_bounds[0], flood_bounds[1], flood_bounds[2], flood_bounds[3]
+        )
+
+        # Convert the flood bounds polygon to a GeoDataFrame
+        flood_bounds_gdf = gpd.GeoDataFrame(
+            geometry=[flood_bounds_polygon], crs=proj_crs
+        )
+
+        # Include flood marks that fall within the flood_bounds_gdf
+        gdf_in_region = gdf[gdf.geometry.within(flood_bounds_gdf.unary_union)]
 
         # Number of points inside (outside) the modeled region
         num_floodmarks_inside = len(gdf_in_region)
         num_floodmarks_outside = len(gdf) - num_floodmarks_inside
 
         if num_floodmarks_inside == 0:
-            ValueError("No floodmarks found within the modeled region.")
+            ValueError(
+                "No floodmarks found within the modeled flood hazard map extents."
+            )
 
         print(
             f"Floodmarks inside the simulated region: {num_floodmarks_inside}, Floodmarks outside: {num_floodmarks_outside}"
@@ -174,21 +223,16 @@ class FloodmarksValidation(Method):
 
         gdf_in_region["geometry"] = gdf_in_region["geometry"].apply(multipoint_to_point)
 
-        # Read the floodmap
-        floodmap = hydromt.io.open_raster(self.input.flood_hazard_map)
-
         # Sample the floodmap at the floodmark locs
         samples: xr.DataArray = floodmap.raster.sample(gdf_in_region)
 
         # Assign the modeled values to the gdf
         gdf_in_region.loc[:, "modeled_value"] = samples.fillna(0).values
 
-        # If the observed water level is in cm convert it to m
-        # TODO improve this part to allow different units
-        if self.params.waterlevel_unit == "cm":
-            gdf_in_region.loc[:, self.params.waterlevel_col] = (
-                gdf_in_region.loc[:, self.params.waterlevel_col] / 100
-            )
+        # Make sure the units are in meters
+        gdf_in_region.loc[:, self.params.waterlevel_col] = gdf_in_region.loc[
+            :, self.params.waterlevel_col
+        ].apply(lambda x: convert_to_meters(x, self.params.waterlevel_unit))
 
         # Set 'is_flooded' to True if 'modeled_value' is greater than 0
         gdf_in_region.loc[:, "is_flooded"] = gdf_in_region["modeled_value"] > 0
@@ -232,11 +276,20 @@ class FloodmarksValidation(Method):
 
             _plot_scores(
                 scores_gdf=gdf_in_region,
-                region=region,
-                num_bins=self.params.num_bins,
+                floodmap_ds=floodmap,
+                region=self.params.region,
+                nbins=self.params.nbins,
                 rmse=rmse,
                 r2=r2,
                 path=Path(plot_dir, "validation_scores.png"),
+                bins=self.params.bins,
+                vmin=self.params.vmin,
+                vmax=self.params.vmax,
+                cmap=self.params.cmap,
+                figsize=self.params.figsize,
+                zoomlevel=self.params.zoomlevel,
+                bmap=self.params.bmap,
+                bmap_kwargs=self.params.bmap_kwargs,
             )
 
 
@@ -310,23 +363,136 @@ def R2(actual, predicted):
     return r2
 
 
-def _plot_scores(scores_gdf, region, num_bins, rmse, r2, path: Path) -> None:
+def convert_to_meters(value: float, waterlevel_unit) -> float:
+    """
+    Convert a value to meters.
+
+    Parameters
+    ----------
+    value (float): Value to convert.
+    unit (str): The unit of the value ("m", "cm", "mm", "ft", or "in").
+
+    Returns
+    -------
+    float: value converted to meters.
+    """
+    CONVERSION_FACTORS = {
+        "m": 1,
+        "cm": 0.01,
+        "mm": 0.001,
+        "ft": 0.3048,  # 1 foot = 0.3048 meters
+        "in": 0.0254,  # 1 inch = 0.0254 meters
+    }
+    return value * CONVERSION_FACTORS[waterlevel_unit]
+
+
+def _plot_scores(
+    scores_gdf,
+    floodmap_ds: xr.Dataset,
+    region: Path,
+    nbins,
+    rmse,
+    r2,
+    path: Path,
+    bins,
+    vmin,
+    vmax,
+    cmap,
+    figsize,
+    zoomlevel,
+    bmap_kwargs,
+    bmap,
+) -> None:
     """Plot scores."""
-    # Get the min and max values and round them
-    min_value = np.floor(scores_gdf["difference"].min())
-    max_value = np.ceil(scores_gdf["difference"].max())
+    import cartopy.crs as ccrs
+    import cartopy.io.img_tiles as cimgt
 
-    # Define bins
-    bins = np.linspace(min_value, max_value, num_bins + 1)
+    try:
+        import contextily as ctx
 
-    fig, ax = plt.subplots(figsize=(12, 7))
+        has_cx = True
+    except ImportError:
+        has_cx = False
 
+    # Set default values for vmin, vmax, cmap, and bins if not provided
+    if vmin is None:
+        vmin = np.floor(scores_gdf["difference"].min())
+    if vmax is None:
+        vmax = scores_gdf["difference"].max()
+    if bins is None:
+        bins = np.linspace(vmin, vmax, nbins + 1)
+
+    bounds = floodmap_ds.raster.box.buffer(
+        abs(floodmap_ds.raster.res[0] * 1)
+    ).total_bounds
+    extent = np.array(bounds)[[0, 2, 1, 3]]
+
+    proj_crs = floodmap_ds.raster.crs
+    proj_str = proj_crs.name
+    if proj_crs.is_projected and proj_crs.to_epsg() is not None:
+        crs = ccrs.epsg(floodmap_ds.raster.crs.to_epsg())
+        unit = proj_crs.axis_info[0].unit_name
+        unit = "m" if unit == "metre" else unit
+        xlab, ylab = f"x [{unit}] - {proj_str}", f"y [{unit}]"
+    elif proj_crs.is_geographic:
+        crs = ccrs.PlateCarree()
+        xlab, ylab = f"lon [deg] - {proj_str}", "lat [deg]"
+
+    if zoomlevel == "auto":  # auto zoomlevel
+        c = 2 * np.pi * 6378137  # Earth circumference
+        lat = np.array(floodmap_ds.raster.transform_bounds(4326))[[1, 3]].mean()
+        # max 4 x 4 tiles per image
+        tile_size = max(bounds[2] - bounds[0], bounds[3] - bounds[1]) / 4
+        if proj_crs.is_geographic:
+            tile_size = tile_size * 111111
+        zoomlevel = int(np.log2(c * abs(np.cos(lat)) / tile_size))
+        # sensible range is 9 (large metropolitan area) - 16 (street)
+        zoomlevel = min(16, max(9, zoomlevel))
+
+    fig = plt.figure(figsize=figsize)
+    ax = plt.subplot(projection=crs)
+    ax.set_extent(extent, crs=crs)
     ax.set_title("Validation against flood marks", size=14)
 
-    # Plot region
-    region.plot(ax=ax, color="grey", linewidth=2, alpha=0.3, label="Region")
+    if bmap is not None:
+        if zoomlevel == "auto":  # auto zoomlevel
+            c = 2 * np.pi * 6378137  # Earth circumference
+            lat = np.array(floodmap_ds.raster.transform_bounds(4326))[[1, 3]].mean()
+            # max 4 x 4 tiles per image
+            tile_size = max(bounds[2] - bounds[0], bounds[3] - bounds[1]) / 4
+            if proj_crs.is_geographic:
+                tile_size = tile_size * 111111
+            zoomlevel = int(np.log2(c * abs(np.cos(lat)) / tile_size))
+            # sensible range is 9 (large metropolitan area) - 16 (street)
+            zoomlevel = min(16, max(9, zoomlevel))
+        #  short names for cartopy image tiles
+        bmap = {"sat": "QuadtreeTiles", "osm": "OSM"}.get(bmap, bmap)
+        if has_cx and bmap in list(ctx.providers.flatten()):
+            bmap_kwargs = dict(zoom=zoomlevel, **bmap_kwargs)
+            ctx.add_basemap(ax, crs=crs, source=bmap, **bmap_kwargs)
+        elif hasattr(cimgt, bmap):
+            bmap_img = getattr(cimgt, bmap)(**bmap_kwargs)
+            ax.add_image(bmap_img, zoomlevel)
+        else:
+            err = f"Unknown background map: {bmap}"
+            if not has_cx:
+                err += " (note that contextily is not installed)"
+            raise ValueError(err)
 
-    cmap = plt.get_cmap("RdYlGn_r")
+    # Add a region plot in case there is one
+    if region is not None:
+        region_gdf = gpd.read_file(region)
+        region_gdf = region_gdf.to_crs(proj_crs)
+        region_gdf.plot(
+            ax=ax,
+            color="grey",
+            edgecolor="black",
+            linewidth=2,
+            alpha=0.3,
+            label="Region",
+        )
+
+    cmap = plt.get_cmap(cmap)
     norm = mcolors.BoundaryNorm(bins, cmap.N)
 
     sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
@@ -334,6 +500,15 @@ def _plot_scores(scores_gdf, region, num_bins, rmse, r2, path: Path) -> None:
 
     # Bin the 'difference' values and plot
     scores_gdf["binned"] = pd.cut(scores_gdf["difference"], bins=bins, labels=False)
+
+    if len(scores_gdf[scores_gdf["binned"].isna() == True]) > 0:
+        warnings.simplefilter("always")
+        warnings.warn(
+            "There are flood mark difference (observed - modeled) values that fall outside "
+            "the determined bin range and thus were excluded from the plot. "
+            "Consider adjusting the plotting settings.",
+            stacklevel=2,
+        )
 
     for bin_val in range(len(bins) - 1):
         subset = scores_gdf[scores_gdf["binned"] == bin_val]
@@ -346,13 +521,6 @@ def _plot_scores(scores_gdf, region, num_bins, rmse, r2, path: Path) -> None:
     # Add the color bar for the bins
     cbar = plt.colorbar(sm, ax=ax, shrink=0.75, orientation="vertical")
     cbar.set_label("Difference (Observed - Modeled) [m]")
-
-    # Add basemap imagery using contextily
-    ctx.add_basemap(
-        ax,
-        crs=scores_gdf.crs.to_string(),
-        source=ctx.providers.CartoDB.PositronNoLabels,
-    )
 
     textstr = "\n".join(
         (
@@ -375,5 +543,10 @@ def _plot_scores(scores_gdf, region, num_bins, rmse, r2, path: Path) -> None:
         verticalalignment="top",
         bbox=props,
     )
+
+    ax.xaxis.set_visible(True)
+    ax.yaxis.set_visible(True)
+    ax.set_ylabel(ylab)
+    ax.set_xlabel(xlab)
 
     fig.savefig(path, dpi=150, bbox_inches="tight")
