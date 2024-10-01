@@ -36,7 +36,7 @@ jobs:
       - name: Generate dummy docs
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          pixi run --locked -e docs docs-dummy
+          pixi run --locked -e doc docs-dummy
 
       # build docs and save to html
       - name: Build docs
