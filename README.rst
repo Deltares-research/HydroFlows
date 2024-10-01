@@ -39,8 +39,10 @@ Then, clone the repository and install HydroFlows using pixi (this will also cre
 
    git clone git@github.com:Deltares-research/HydroFlows.git
    cd HydroFlows
-   pixi install -e full --locked # full installation from the lock file
+   pixi install --locked       # dev py3.11 installation from the lock file
+   pixi shell --locked         # start a shell with the locked environment
    pixi run install-pre-commit # install pre-commit hooks
+   code .
 
 
 To update the lock file and your environment after changes to the dependencies, run:
