@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-from hydroflows.workflow import Ref
+from hydroflows.workflow import Ref, WorkflowConfig
 from tests.workflow.conftest import MockExpandMethod
 
 
@@ -100,8 +100,8 @@ def test_set_resolve_ref(workflow, mocker):
     )
     ref._set_resolve_ref("$wildcards")
     mock_set_resolve_wildcard_ref.assert_called_once_with("$wildcards")
-    mock_get_obj_from_caller_globals = mocker.patch(
-        "hydroflows.workflow.reference._get_obj_from_caller_globals"
+    mock_get_obj_from_caller_globals = mocker.patch.object(
+        Ref, "_get_obj_from_caller_globals"
     )
     mock_get_obj_from_caller_globals.return_value = None
     with pytest.raises(ValueError, match=re.escape("Invalid reference: $workflow")):
@@ -151,8 +151,10 @@ def test_set_resolve_rule_ref(workflow):
 
 
 def test_set_resolve_config_ref(workflow):
+    workflow.config = WorkflowConfig(rps=[1, 2, 3], test=[4, 5, 6])
     ref = Ref("$config.rps", workflow=workflow)
-    assert ref.value == [2, 50, 100]
+    ref._set_resolve_config_ref(ref="$config.test")
+    assert ref.value == [4, 5, 6]
 
 
 def test_set_resolve_wildcard_ref(workflow):
@@ -200,13 +202,42 @@ def test_set_resolve_method_obj_ref(workflow, mocker, test_method):
     )
 
 
-def test_resolve_config_obj_ref():
-    pass
+def test_resolve_config_obj_ref(workflow, mocker):
+    ref = Ref("$config.rps", workflow=workflow)
+    config = WorkflowConfig(test=1)
+    with pytest.raises(
+        ValueError,
+        match=re.escape(
+            "Invalid config reference $config.test. Config not added to the workflow"
+        ),
+    ):
+        ref._resolve_config_obj_ref(ref="$config.test", config=config)
+    mock_set_resolve_config_ref = mocker.patch.object(Ref, "_set_resolve_config_ref")
+    ref._resolve_config_obj_ref(ref="$config.rps", config=workflow.config)
+    mock_set_resolve_config_ref.assert_called_with("$config.rps")
 
 
-def test_get_nested_value_from_dict():
-    pass
+def test_get_nested_value_from_dict(workflow):
+    full_reference = "$config.rps.rp"
+    d = {"rps": {"rp": [1, 2, 3]}}
+    keys = ["rps", "rp"]
+
+    value = Ref._get_nested_value_from_dict(
+        d=d, keys=keys, full_reference=full_reference
+    )
+    assert value == d["rps"]["rp"]
+
+    with pytest.raises(KeyError, match=re.escape("Key not found: rps.pr")):
+        Ref._get_nested_value_from_dict(d=d, keys=["rps", "pr"], full_reference=None)
 
 
-def test_get_obj_from_caller_globals():
-    pass
+TEST_VAR = "test_var"
+
+
+def test_get_obj_from_caller_globals(workflow, test_method):
+    foo = "bar"
+    obj = Ref._get_obj_from_caller_globals(var_name="foo", ref="foo")
+    assert obj == foo
+
+    obj = Ref._get_obj_from_caller_globals(var_name="TEST_VAR", ref="TEST_VAR")
+    assert obj == TEST_VAR
