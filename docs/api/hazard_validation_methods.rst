@@ -1,5 +1,3 @@
-.. _api_hazard_validation:
-
 .. currentmodule:: hydroflows.methods.hazard_validation
 
 Hazard validation related methods
