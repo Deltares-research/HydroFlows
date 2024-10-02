@@ -19,7 +19,7 @@ from typing_extensions import TypedDict
 
 from hydroflows.utils.path_utils import abs_to_rel_path, rel_to_abs_path
 
-__all__ = ["EventSet"]
+__all__ = ["EventSet", "Event"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 

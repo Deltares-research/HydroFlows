@@ -120,7 +120,6 @@ class SfincsBuild(Method):
         :py:class:`sfincs_build Output <~hydroflows.methods.sfincs.sfincs_build.Output>`
         :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
         :py:class:`hydromt_sfincs.SfincsModel`
-            For more details on the SfincsModel used in hydromt_sfincs.
         """
         self.params: Params = Params(sfincs_root=sfincs_root, res=res, **params)
         self.input: Input = Input(region=region)
