@@ -188,6 +188,7 @@ class Workflow:
             curdir = Path.cwd()
             if tmpdir is None:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
+            Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
             print(f"Running dryrun in {tmpdir}")
 

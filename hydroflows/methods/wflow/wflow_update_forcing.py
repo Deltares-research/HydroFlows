@@ -125,7 +125,6 @@ class WflowUpdateForcing(Method):
         :py:class:`wflow_update_forcing Output <hydroflows.methods.wflow.wflow_update_forcing.Output>`
         :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`
         :py:class:`hydromt_wflow.WflowModel`
-            For more details on the WflowModel used in hydromt_wflow.
         """
         self.params: Params = Params(
             start_time=start_time,

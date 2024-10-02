@@ -39,8 +39,7 @@ see that this specific workflow contains the following rules:
 
 Each rule consists of a method that codifies how output(s) are generated from input(s) and parameters.
 
-You can
-also see that arguments in certain rules can be inherited from other rules, e.g.
+You can also see that arguments in certain rules can be inherited from other rules, e.g.
 
 .. code-block:: python
 
@@ -140,13 +139,9 @@ event-set (e.g. 1000s of synthetic events).
             $ hydroflows create sfincs_pluvial.yml
 
 Running the python code example yields a file ``sfincs_pluvial.smk`` which contains a Snakemake (default) workflow
-which you can then implement in a compute environment of choice. Below you can see the outputs of running the python
-workflow script and the ``.smk`` file content that results from it.
+which you can then implement in a compute environment of choice. Below you can see the ``.smk`` file content that results from it.
 
-.. program-output:: python ../examples/pluvial_hazard.py
-
-.. literalinclude:: ../pluvial_hazard.smk
-    :language: yaml
+.. literalinclude:: ../../examples/pluvial_hazard.smk
 
 The earlier mentioned wildcards and their expansion and reduction are parsed automatically. The connections between
 the rules is organized via their inputs and outputs.
