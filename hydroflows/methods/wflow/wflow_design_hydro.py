@@ -27,9 +27,10 @@ class Input(Parameters):
     to apply EVA and derive design events. This file contains an index dimension and a time
     dimension for several Sfincs boundary points, .
 
-    - The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
-      series at specific locations.
-    - This time series can be produced either by the Wflow toolchain (via the
+    The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
+    series at specific locations.
+
+    This time series can be produced either by the Wflow toolchain (via the
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
     :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
@@ -172,8 +173,6 @@ class WflowDesignHydro(ExpandMethod):
         :py:class:`wflow_design_hydro Output <hydroflows.methods.wflow.wflow_design_hydro.Output>`
         :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`
         :py:class:`hydromt.stats.extremes`
-            For more details on the event selection, EVA and peak hydrographs
-            using HydroMT.
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
