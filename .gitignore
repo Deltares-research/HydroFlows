@@ -79,6 +79,7 @@ coverage.xml
 docs/_build/
 docs/_generated/
 docs/_examples
+docs/_tmp
 
 # PyBuilder
 target/

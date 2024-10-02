@@ -115,7 +115,6 @@ class WflowBuild(Method):
         :py:class:`wflow_build Output <hydroflows.methods.wflow.wflow_build.Output>`
         :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
         :py:class:`hydromt_wflow.WflowModel`
-            For more details on the WflowModel used in hydromt_wflow.
         """
         self.params: Params = Params(wflow_root=wflow_root, **params)
         self.input: Input = Input(region=region)

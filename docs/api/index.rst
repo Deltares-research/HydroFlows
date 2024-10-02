@@ -58,13 +58,23 @@ General method
    method.Method
 
 
+.. _api_rainfall:
+
 .. include:: rainfall_methods.rst
+
+.. _api_discharge:
 
 .. include:: discharge_methods.rst
 
+.. _api_wflow:
+
 .. include:: wflow_methods.rst
 
+.. _api_sfincs:
+
 .. include:: sfincs_methods.rst
+
+.. _api_fiat:
 
 .. include:: fiat_methods.rst
 
