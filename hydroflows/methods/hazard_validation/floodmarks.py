@@ -14,7 +14,7 @@ import xarray as xr
 from pydantic import PositiveInt
 from shapely.geometry import Point, box
 
-from hydroflows._typing import ListOfFloatOrInt, TupleOfInt
+from hydroflows._typing import ListOfFloat, TupleOfInt
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -69,7 +69,7 @@ class Params(Parameters):
     values with color bins geographically."""
 
     # Plotting settings params
-    bins: ListOfFloatOrInt = None
+    bins: ListOfFloat = None
     """Custom bin edges for categorizing the the difference between
     observed and simulated values. If None (default), calculated based on `nbins`,
     `vmin` and `vmax`."""

@@ -23,11 +23,6 @@ ListOfFloat = Annotated[
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
 ]
 
-ListOfFloatOrInt = Annotated[
-    list[Union[float, int]],
-    BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
-]
-
 TupleOfInt = Annotated[
     Tuple[int, int],
     BeforeValidator(
