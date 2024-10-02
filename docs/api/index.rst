@@ -77,3 +77,5 @@ General method
 .. _api_fiat:
 
 .. include:: fiat_methods.rst
+
+.. include:: hazard_validation_methods.rst
