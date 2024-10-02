@@ -1,5 +1,3 @@
-.. _api_discharge:
-
 .. currentmodule:: hydroflows.methods.discharge
 
 Creating discharge forcing datasets

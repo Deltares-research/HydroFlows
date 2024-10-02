@@ -43,17 +43,19 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  "pip>=23.1.2", # needed for recursive dependencies
+  "pip>=23.1.2", # needed for editable installs
   "pre-commit",  # linting
   "ruff",        # linting
   "tomli",       # parsing toml files
   "hydroflows[test, doc, extra]"
 ]
 doc = [
+  "pip>=23.1.2", # needed for editable installs
   "sphinx",
   "sphinx_design",
   "pydata-sphinx-theme",
   "autodoc_pydantic",
+  "sphinxcontrib-programoutput",
 ]
 extra = [
   "jupyter",
@@ -134,7 +136,8 @@ deps_not_in_conda = [
   "sphinx_autosummary_accessors",
   "sphinx_design",
   "hatyan",
-  "autodoc_pydantic"
+  "autodoc_pydantic",
+  "sphinxcontrib-programoutput",
 ]
 
 [tool.pixi.project]
@@ -157,11 +160,11 @@ python = "3.10.*"
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "py311"], solve-group = "py311" }
+default = { features = ["dev", "doc", "test", "extra", "py311"], solve-group = "py311" }
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
-dev-py310 = { features = ["dev", "py310"], solve-group = "py310" }
+dev-py310 = { features = ["dev", "doc", "test", "extra", "py310"], solve-group = "py310" }
 test-py310 = { features = ["test"], solve-group = "py310" }
 test-py311 = { features = ["test"], solve-group = "py311" }
 
@@ -173,8 +176,13 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"] }
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"] }
-serve-docs = { cmd = ["python", "-m", "http.server", "-d", "docs/_build/html"] }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/pluvial_hazard.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-clean = { cmd = ["rm", "-rf", "examples/pluvial_hazard.smk", "examples/pluvial_hazard.config.yml"] }
+
+
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-pluvial"] }
+docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
+docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
