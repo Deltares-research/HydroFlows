@@ -1,5 +1,3 @@
-.. _api_rainfall:
-
 .. currentmodule:: hydroflows.methods.rainfall
 
 Creating rainfall forcing datasets

@@ -79,6 +79,7 @@ coverage.xml
 docs/_build/
 docs/_generated/
 docs/_examples
+docs/_tmp
 
 # PyBuilder
 target/
@@ -119,3 +120,6 @@ tests/_bin
 
 # only force add
 examples/
+# pixi environments
+.pixi
+*.egg-info
