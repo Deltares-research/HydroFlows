@@ -193,17 +193,25 @@ class Rule:
         if self.wildcards["expand"] and not isinstance(self.method, ExpandMethod):
             wcs = self.wildcards["expand"]
             inputs = self.method.dict["input"]
-            raise ValueError(f"wildcard(s) {wcs} missing on inputs {inputs}")
+            raise ValueError(
+                f"wildcard(s) {wcs} missing on inputs {inputs} for {self.method.name}"
+            )
         elif isinstance(self.method, ExpandMethod) and not self.wildcards["expand"]:
             outputs = self.method.dict["output"]
-            raise ValueError(f"wildcard(s) missing on outputs {outputs}")
+            raise ValueError(
+                f"wildcard(s) missing on outputs {outputs} for {self.method.name}"
+            )
         if self.wildcards["reduce"] and not isinstance(self.method, ReduceMethod):
             wcs = self.wildcards["reduce"]
             outputs = self.method.dict["output"]
-            raise ValueError(f"wildcard(s) {wcs} missing on outputs {outputs}")
+            raise ValueError(
+                f"wildcard(s) {wcs} missing on outputs {outputs} for {self.method.name}"
+            )
         elif isinstance(self.method, ReduceMethod) and not self.wildcards["reduce"]:
             inputs = self.method.dict["input"]
-            raise ValueError(f"wildcard(s) missing on inputs {inputs}")
+            raise ValueError(
+                f"wildcard(s) missing on inputs {inputs} for {self.method.name}"
+            )
 
     def method_wildcard_instance(self, wildcards: Dict) -> Method:
         """Return a new method instance with wildcards replaced by values."""
