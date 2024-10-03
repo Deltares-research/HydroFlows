@@ -1,5 +1,3 @@
-.. _api_sfincs:
-
 .. currentmodule:: hydroflows.methods.sfincs
 
 SFINCS related methods

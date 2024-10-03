@@ -176,8 +176,6 @@ class FluvialDesignEvents(ExpandMethod):
         :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
         :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
         :py:class:`hydromt.stats.extremes`
-            For more details on the event selection, EVA and peak hydrographs
-            using HydroMT.
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]

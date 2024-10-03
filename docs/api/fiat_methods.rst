@@ -1,5 +1,3 @@
-.. _api_fiat:
-
 .. currentmodule:: hydroflows.methods.fiat
 
 FIAT related methods

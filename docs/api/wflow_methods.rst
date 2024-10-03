@@ -1,5 +1,3 @@
-.. _api_wflow:
-
 .. currentmodule:: hydroflows.methods.wflow
 
 Wflow related methods

@@ -29,6 +29,7 @@ __eps__ = {
     "coastal_tidal_analysis": "hydroflows.methods.coastal.coastal_tidal_analysis:CoastalTidalAnalysis",
     "get_coast_rp": "hydroflows.methods.coastal.get_coast_rp:GetCoastRP",
     "get_gtsm_data": "hydroflows.methods.coastal.get_gtsm_data:GetGTSMData",
+    "floodmarks_validation": "hydroflows.methods.hazard_validation.floodmarks:FloodmarksValidation",
     "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
 }
 

@@ -273,6 +273,26 @@ def sfincs_src_points():
     )
 
 
+@pytest.fixture()
+def tmp_floodmark_points(tmp_path: Path) -> Path:
+    """Create a temporary GeoJSON file."""
+    geojson_file = tmp_path / "floodmarks.geojson"
+
+    data = {
+        "water_level_obs": [1.5, 2.7, 1.1],
+        "geometry": [
+            Point(-43.34287654946553, -22.832107208119936),
+            Point(-43.2989472972867, -22.85036460253447),
+            Point(-43.34590242111892, -22.856179585143337),
+        ],
+    }
+
+    gdf = gpd.GeoDataFrame(data, crs="EPSG:4326")
+    gdf.to_file(geojson_file, driver="GeoJSON")
+
+    return geojson_file
+
+
 @pytest.fixture(scope="function")  # noqa: PT003
 def sfincs_tmp_model_root(test_data_dir, tmpdir):
     """Return a temporary directory with a copy of the sfincs model."""

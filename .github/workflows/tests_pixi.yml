@@ -46,10 +46,10 @@ jobs:
         with:
           pixi-version: "v0.30.0"
           environments: test-py${{ matrix.python-version }}
-          frozen: true
+          locked: true
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       # run test
       - name: Test
-        run: pixi run -e test-py${{ matrix.python-version }} --frozen test-not-data
+        run: pixi run -e test-py${{ matrix.python-version }} --locked test-not-data
