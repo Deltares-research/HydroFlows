@@ -32,7 +32,7 @@ class Input(Parameters):
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
     :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
 
-    - In case of forcing the design events in Sfincs using the
+    - When the design events are used in Sfincs using the
     :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
     the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
     time series at specific locations.
@@ -217,6 +217,11 @@ class FluvialDesignEvents(ExpandMethod):
             )
             # Keep timeseries only after the warm-up period
             da = da.sel({time_dim: slice(warm_up_period, None)})
+
+            if da[time_dim].size == 0:
+                raise ValueError(
+                    f"Selection resulted in an empty time series after warm-up period of {self.params.warm_up_years} years."
+                )
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])
