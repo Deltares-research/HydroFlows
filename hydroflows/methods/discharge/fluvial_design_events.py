@@ -28,14 +28,14 @@ class Input(Parameters):
     dimension for several (gauge) locations.
 
     - The discharge time series can be produced either by the Wflow toolchain (via the
-    :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
-    :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
-    :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
+      :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
+      :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
+      :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
 
     - When the design events are used in Sfincs using the
-    :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
-    the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
-    time series at specific locations.
+      :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
+      the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
+      time series at specific locations.
     """
 
 
