@@ -1,10 +1,13 @@
+import csv
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import xarray as xr
 
 from hydroflows.events import EventSet
 from hydroflows.methods.rainfall import (
+    FutureClimateRainfall,
     GetERA5Rainfall,
     PluvialDesignEvents,
     PluvialHistoricalEvents,
@@ -75,3 +78,48 @@ def test_pluvial_historical_events(tmp_precip_time_series_nc: Path, tmp_path: Pa
     )
 
     p_events.run_with_checks()
+
+
+@pytest.fixture()
+def future_conditions_csv(tmp_path: Path) -> Path:
+    data = [
+        ["period", "low", "mod", "high"],
+        [2030, 1.1, 1.3, 1.7],
+        [2050, 1.5, 2.0, 2.5],
+        [2085, 2.0, 3.0, 4.0],
+    ]
+
+    fn = "climate_projections.csv"
+    root = Path(tmp_path, fn)
+
+    # Writing to a CSV file
+    with open(root, mode="w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+    return root
+
+
+def test_future_climate_rainfall(
+    test_data_dir: Path, tmp_path: Path, future_conditions_csv: Path
+):
+    event_set_yaml = test_data_dir / "events.yml"
+
+    out_root = Path(tmp_path / "CC_scaling")
+
+    rule = FutureClimateRainfall(
+        event_set_yaml=event_set_yaml,
+        future_conditions_csv=future_conditions_csv,
+        event_root=out_root,
+        time_col="date",
+    )
+
+    rule.run_with_checks()
+
+    fn_scaled_event_set = rule.output.scaled_event_set_yaml
+    scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)
+    assert isinstance(scaled_event_set.events, list)
+
+    # are all paths absolute
+    assert all([Path(event["path"]).is_absolute() for event in scaled_event_set.events])
+    assert all([Path(event["path"]).exists() for event in scaled_event_set.events])

@@ -16,10 +16,14 @@ from hydroflows.workflow.method_parameters import Parameters
 class csv_format(BaseModel):
     """Class to specify the required cols format."""
 
-    period: Literal["2030", "2055", "2085"]
-    SSP1: Optional[float] = None
-    SSP2: Optional[float] = None
-    SSP3: Optional[float] = None
+    # time periods with represenative years
+    # for near term, meduim term and long term
+    # as defined by IPCC
+    period: str = Literal["2030", "2050", "2085"]
+    # emission scenarios
+    low: Optional[float] = None
+    mod: Optional[float] = None
+    high: Optional[float] = None
 
     class Config:
         """Forbid extra fields."""
@@ -35,8 +39,35 @@ class Input(Parameters):
     for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
 
     future_conditions_csv: Path
-    """Table containing the change of temperature per scenario and time horizon.
-    Temperature anomaly in 2030, 2055 and 2085 (relative to historical baseline)"""
+    """CSV file containing temperature change projections for different scenarios
+    and time periods, relative to a historical baseline.
+
+    **Required format:**
+
+    The CSV must have the following columns:
+
+    - `period` (str): The time period of interest. Acceptable values are `"2030"`,
+      `"2050"`, and `"2085"`, representing near-term, medium-term, and long-term projections
+      as defined by the IPCC.
+    - `low` (float, optional): Projected temperature anomaly for a low emission scenario, e.g. SSP1 2.6, per `period`.
+    - `mod` (float, optional): Projected temperature anomaly for a moderate emission, e.g. SSP2 4.5 or RCP 4.5, `period`.
+    - `high` (float, optional): Projected temperature anomaly for a high emission, e.g. SSP5 8.5 or RCP 8.5, `period`.
+
+    Example:
+
+    ```
+    period,low,mod,high
+    2030,1.1,1.3,1.7
+    2050,1.5,2.0,2.5
+    2085,2.0,3.0,4.0
+    ```
+
+    Any extra fields will raise validation errors.
+
+    Temperature changes for these periods and different emission scenarios
+    for CMIP5 and CMIP6 models can be taken via:
+    `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_
+    """
 
     @model_validator(mode="before")
     def _future_conditions_csv_validator(cls, values):
@@ -73,9 +104,9 @@ class Params(Parameters):
     """Parameters for :py:class:`FutureClimateRainfall` method."""
 
     ref_year: int = 2010
-    """Reference historical year for whihc the change of temperature is relative for.
+    """Reference historical year for which the change of temperature is relative for.
     Used to interpolate to find dT for events after 2010 and before the future
-    time horizons, i.e. "2030", "2055", "2085"."""
+    time horizons, i.e. "2030", "2055" and/or "2085"."""
 
     alpha: float = 7
     """The rate of change of precipitation with respect to temperature (in % per degree)
@@ -86,6 +117,9 @@ class Params(Parameters):
 
     wildcard: str = "event"
     """The wildcard key for expansion over the scaled events."""
+
+    time_col: str = "time"
+    """Time column name per event csv file."""
 
     # event_names: Optional[ListOfStr] = None
     # """List of event names associated with return periods."""
@@ -145,7 +179,14 @@ class FutureClimateRainfall(ExpandMethod):
             The file path to the event set YAML file, which includes the events to be scaled
             for future climate projections.
         future_conditions_csv : Path
-            Table containing the change of temperature per scenario and time horizon.
+            CSV file containing future temperature change values for different emission scenarios
+            and time periods, relative to a historical baseline. This file must contain
+            the following columns:
+
+            - `period` (str): The time period for which the data applies. Must be one of
+            "2030", "2050", or "2085".
+            - `low`, `mod`, `high` (float, optional): Temperature change values for
+            the respective emission scenarios and periods.
         **params
             Additional parameters to pass to the FutureClimateRainfall Params instance.
 
@@ -195,11 +236,12 @@ class FutureClimateRainfall(ExpandMethod):
         for event_set_event in event_set.events:
             # Load the event
             event = Event.from_yaml(event_set_event["path"])
+            event_path = event.forcings[0].path
 
             # Read the event DataFrame and ensure time is parsed as a datetime
             event_df = pd.read_csv(
-                Path(event.root, f"{event.name}.csv"),
-                index_col="time",
+                event_path,
+                index_col=self.params.time_col,
                 parse_dates=True,
             )
 
@@ -207,10 +249,10 @@ class FutureClimateRainfall(ExpandMethod):
                 period = row["period"]
 
                 # Loop through each SSP column
-                for ssp in scenario_df.columns[scenario_df.columns != "period"]:
+                for scenario in scenario_df.columns[scenario_df.columns != "period"]:
                     # Extract the temperature change (dT) for the specific SSP scenario
                     # relative to the ref period
-                    dT = row[ssp]
+                    dT = row[scenario]
 
                     # Get the year of the event
                     event_year = event_df.index.year[0]
@@ -234,7 +276,7 @@ class FutureClimateRainfall(ExpandMethod):
                     scaled_event_df = pd.DataFrame(scaled_ts)
                     scaled_event_df.insert(0, "time", event_df.index)
 
-                    filename = f"{event.name}_{int(period)}_{ssp}"
+                    filename = f"{event.name}_{int(period)}_{scenario}"
                     fmt_dict = {self.params.wildcard: filename}
                     forcing_file = Path(
                         str(self.output.scaled_event_csv).format(**fmt_dict)
@@ -258,5 +300,3 @@ class FutureClimateRainfall(ExpandMethod):
         # make and save event set yaml file
         scaled_event_set = EventSet(events=scaled_events_list)
         scaled_event_set.to_yaml(self.output.scaled_event_set_yaml)
-
-    # P2 = P1 * (1 + 0.01 * alpha) ** dT
