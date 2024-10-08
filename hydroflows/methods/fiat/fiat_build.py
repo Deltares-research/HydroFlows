@@ -111,7 +111,6 @@ class FIATBuild(Method):
         :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`,
         :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
-            For more details on the FIATModel used in hydromt_fiat
         """
         self.params: Params = Params(fiat_root=fiat_root, **params)
         self.input: Input = Input(region=region)
@@ -122,7 +121,7 @@ class FIATBuild(Method):
         # Read template config
         opt = configread(self.params.config)
         # Add additional information
-        region_gdf = gpd.read_file(self.input.region.as_posix()).to_crs(4326)
+        region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM

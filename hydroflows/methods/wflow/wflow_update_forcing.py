@@ -8,6 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
 from hydroflows._typing import ListOfStr
+from hydroflows.methods.wflow.wflow_utils import shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -124,7 +125,6 @@ class WflowUpdateForcing(Method):
         :py:class:`wflow_update_forcing Output <hydroflows.methods.wflow.wflow_update_forcing.Output>`
         :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`
         :py:class:`hydromt_wflow.WflowModel`
-            For more details on the WflowModel used in hydromt_wflow.
         """
         self.params: Params = Params(
             start_time=start_time,
@@ -174,6 +174,7 @@ class WflowUpdateForcing(Method):
             dem_forcing_fn=self.params.dem_forcing_src,
             pet_method=self.params.pet_calc_method,
             skip_pet=False,
+            chunksize=100,
         )
 
         if self.output.wflow_out_toml.is_relative_to(root):
@@ -191,4 +192,15 @@ class WflowUpdateForcing(Method):
             mode="w+",
         )
         w.write_config(config_name=self.output.wflow_out_toml.name)
-        w.write_forcing(freq_out="1Y")
+        w.write_forcing(freq_out="3M")
+
+        # Shift the starttime back by one timestep and re-write config
+        w.set_config(
+            "starttime",
+            shift_time(
+                w.get_config("starttime"),
+                delta=-w.get_config("timestepsecs"),
+                units="seconds",
+            ),
+        )
+        w.write_config(config_name=self.output.wflow_out_toml.name)

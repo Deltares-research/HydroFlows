@@ -6,18 +6,20 @@ from typing import Any, Dict, List, Literal, Optional
 
 import geopandas as gpd
 import pandas as pd
-import xarray as xr
 import yaml
 from pydantic import (
     BaseModel,
-    Field,
+    ConfigDict,
     FilePath,
-    field_validator,
+    SerializerFunctionWrapHandler,
+    model_serializer,
     model_validator,
 )
 from typing_extensions import TypedDict
 
-__all__ = ["EventSet"]
+from hydroflows.utils.path_utils import abs_to_rel_path, rel_to_abs_path
+
+__all__ = ["EventSet", "Event"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 
@@ -25,156 +27,120 @@ SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True
 class Forcing(BaseModel):
     """A forcing for the event."""
 
+    model_config = ConfigDict(extra="forbid")
+
     type: Literal["water_level", "discharge", "rainfall"]
     """The type of the forcing."""
 
-    path: Path
+    path: FilePath  # file must exist
     """The path to the forcing data."""
 
+    tstart: Optional[datetime] = None
+    """The start date of the forcing data"""
+
+    tstop: Optional[datetime] = None
+    """The end date of the forcing data"""
+
+    scale_mult: Optional[float] = None
+    """A multiplicative scale factor for the forcing."""
+
+    scale_add: Optional[float] = None
+    """An additive scale factor for the forcing."""
+
+    locs_path: Optional[FilePath] = None  # file must exist
+    """The path to the locations file for the forcing data."""
+
+    locs_id_col: Optional[str] = None
+    """The column in the locations file with the location ID."""
+
     # Excl from serialization
-    data: Optional[Any] = Field(None, exclude=True)
-    """The data for the forcing. This is excluded from serialization."""
+    _data_df: Optional[pd.DataFrame] = None
+    """The forcing data. This is excluded from serialization."""
 
-    time_range: Optional[List[datetime]] = Field(None, exclude=True)
-    """The time range of the forcing data. This is excluded from serialization."""
+    _locs_gdf: Optional[gpd.GeoDataFrame] = None
+    """Optional field with geolocation of data. This field is excluded from serialization."""
 
-    def read_data(self, root: Optional[Path] = None, **kwargs) -> Any:
+    _root: Optional[Path] = None
+    """The root directory for the forcing and location data."""
+
+    @model_validator(mode="before")
+    @classmethod
+    def _set_abs_paths(cls, data: Dict) -> Dict:
+        """Set the paths to relative to root if not absolute."""
+        if isinstance(data, dict) and "_root" in data:
+            root = Path(data.pop("_root"))
+            data = rel_to_abs_path(data, root, ["path", "locs_path"])
+        return data
+
+    @model_serializer(mode="wrap", when_used="json")
+    def _set_rel_paths(self, nxt: SerializerFunctionWrapHandler):
+        """Serialize paths as relative to root."""
+        data = nxt(self)
+        if self._root:
+            data = abs_to_rel_path(
+                data, Path(self._root), keys=["path", "locs_path"], serialize=True
+            )
+        return data
+
+    def read_data(self) -> Any:
         """Read the data."""
-        # update and check path
-        if root:
-            self._set_path_absolute(root)
-        self._check_path_exists()
-        # read data
+        # read forcing data
         if self.path.suffix == ".csv":
-            return self.read_csv(**kwargs)
+            self._read_csv()
         else:
             # placeholder for other file types
             raise NotImplementedError(f"File type {self.path.suffix} not supported.")
 
-    def read_csv(self, index_col=0, parse_dates=True, **kwargs) -> pd.DataFrame:
+        # read locations
+        if self.locs_path is None:
+            return
+        if not self.locs_path.exists():
+            raise IOError(f"Locations file {self.locs_path} does not exist.")
+        # should be readable by geopandas
+        self._read_locs_geopandas()
+
+    def _read_locs_geopandas(self) -> None:
+        """Read the locations file using geopandas."""
+        gdf = gpd.read_file(self.locs_path)
+        if self.locs_id_col is not None:
+            gdf = gdf.set_index(self.locs_id_col)
+        self._locs_gdf = gdf
+
+    def _read_csv(self) -> None:
         """Read the CSV file."""
         # read csv; check for datetime index
-        # TODO: we could use pandera for more robust data validation
-        df: pd.DataFrame = pd.read_csv(
-            self.path, index_col=index_col, parse_dates=parse_dates, **kwargs
-        )
+        df: pd.DataFrame = pd.read_csv(self.path, index_col=0, parse_dates=True)
         if not df.index.dtype == "datetime64[ns]":
             raise ValueError(f"Index of {self.path} is not datetime.")
-        self.data = df.sort_index()  # make sure it is sorted
-        self.time_range = [df.index[0], df.index[-1]]
-        return self.data
+        df = df.sort_index()  # make sure it is sorted
+        # apply scale factor
+        if self.scale_mult is not None:
+            df = df * self.scale_mult
+        if self.scale_add is not None:
+            df = df + self.scale_add
+        # clip data to tstart, tstop
+        if self.tstart is None:
+            self.tstart = df.index[0]
+        if self.tstop is None:
+            self.tstop = df.index[-1]
+        if self.tstart > df.index[-1] or self.tstop < df.index[0]:
+            df = df.loc[slice(self.tstart, self.tstop)]
+        # set data
+        self._data_df = df
 
-    def _set_path_absolute(self, root: Path) -> None:
-        """Set the path to be relative to the root."""
-        if not self.path.is_absolute() and (root / self.path).exists():
-            self.path = root / self.path
-        else:
-            self.path = self.path.resolve()
+    @property
+    def data(self) -> pd.DataFrame:
+        """Return the forcing data."""
+        if self._data_df is None:
+            self.read_data()
+        return self._data_df
 
-    def _set_path_relative(self, root: Path) -> None:
-        """Set the path to be relative to the root."""
-        if self.path.is_absolute() and self.path.is_relative_to(root):
-            self.path = self.path.relative_to(root)
-
-    def _check_path_exists(self) -> None:
-        """Check if the path exists."""
-        if not self.path.exists():
-            raise IOError(f"Forcing {self.path} does not exist.")
-
-
-class Hazard(BaseModel):
-    """A hazard map related to an event."""
-
-    type: Literal["depth", "velocity", "rise_rate"]
-    """The type of the forcing."""
-
-    path: Path
-    """The path to the hazard data layer (GeoTIFF)."""
-
-    # Excl from serialization
-    data: Optional[Any] = Field(None, exclude=True)
-    """The data for the hazard. This is excluded from serialization."""
-
-    timestamp: Optional[datetime] = Field(None, exclude=True)
-    """Timestamp. This is excluded from serialization."""
-
-    def read_data(self, **kwargs) -> Any:
-        """Read the data."""
-        # check path
-        self._check_path_exists()
-        # read data
-        if not self.path.suffix == ".tif":
-            # placeholder for other file types
-            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
-        return xr.open_dataset(self.path, **kwargs)
-
-    def _check_path_exists(self) -> None:
-        """Check if the path exists."""
-        if not self.path.exists():
-            raise IOError(f"Hazard data {self.path} does not exist.")
-
-    def _set_path_absolute(self, root: Path) -> None:
-        """Set the path to be relative to the root."""
-        if not self.path.is_absolute() and (root / self.path).exists():
-            self.path = root / self.path
-        else:
-            self.path = self.path.resolve()
-
-    def _set_path_relative(self, root: Path) -> None:
-        """Set the path to be relative to the root."""
-        if self.path.is_absolute() and self.path.is_relative_to(root):
-            self.path = self.path.relative_to(root)
-
-    def _check_path_exists(self) -> None:
-        """Check if the path exists."""
-        if not self.path.exists():
-            raise IOError(f"Forcing {self.path} does not exist.")
-
-
-class Impact(BaseModel):
-    """An impact map related to an event.
-
-    Impact maps are stored in GeoTIFF raster files or vector files and can be
-    embodied by several variables, e.g. damage, affected with several
-    arbitrary subcategories such as "content", "building", "infrastructure",
-    "population".
-    """
-
-    type: Literal["damage", "affected"]  # can be extended
-    """The type of the impact."""
-
-    category: Optional[str] = None
-    """category of the impact (e.g. "building", "content",
-    "population", "infrastructure". To be defined by user."""
-
-    path: Path
-    """The path to the hazard data layer (GeoTIFF)."""
-
-    # Excl from serialization
-    data: Optional[Any] = Field(None, exclude=True)
-    """The data for the hazard. This is excluded from serialization."""
-
-    timestamp: Optional[datetime] = Field(None, exclude=True)
-    """Timestamp. This is excluded from serialization."""
-
-    def read_data(self, **kwargs) -> Any:
-        """Read the data."""
-        # check path
-        self._check_path_exists()
-        # read data
-        if self.path.suffix == ".tif":
-            # placeholder for other file types
-            return xr.open_dataset(self.path, **kwargs)
-        elif self.path.suffix in [".gpkg", "geojson"]:
-            # attempt to load as GeoDataSet
-            return gpd.read_file(self.path, **kwargs)
-        else:
-            raise NotImplementedError(f"File type {self.path.suffix} not supported.")
-
-    def _check_path_exists(self) -> None:
-        """Check if the path exists."""
-        if not self.path.exists():
-            raise IOError(f"Impact data {self.path} does not exist.")
+    @property
+    def locs(self) -> Optional[gpd.GeoDataFrame]:
+        """Return the locations data."""
+        if self._locs_gdf is None and self.locs_path is not None:
+            self.read_data()
+        return self._locs_gdf
 
 
 class Event(BaseModel):
@@ -183,8 +149,6 @@ class Event(BaseModel):
     Examples
     --------
     The event can be created as follows::
-
-        from hydroflows.events import Event
 
         event = Event(
             name="event",
@@ -196,68 +160,60 @@ class Event(BaseModel):
     name: str
     """The name of the event."""
 
+    root: Optional[Path] = None
+    """The root directory for the event forcing."""
+
     forcings: List[Forcing]
     """The list of forcings for the event. Each forcing is a dictionary with
     the structure as defined in :py:class:`Forcing`."""
 
-    hazards: Optional[List[Hazard]] = None
-    """The list of hazard outputs for the event. Each hazard is a dictionary with
-    the structure as defined in :py:class:`Hazard`."""
+    return_period: Optional[float] = None
+    """The return period of the event [years]."""
 
-    impacts: Optional[List[Impact]] = None
-    """The list of impact outputs for the event. Each impact is a dictionary with
-    the structure as defined in :py:class:`Impact`."""
+    tstart: Optional[datetime] = None
+    """The start date of the event."""
 
-    probability: Optional[float] = None
-    """The probability of the event."""
+    tstop: Optional[datetime] = None
+    """The end date of the event."""
 
-    time_range: Optional[List[datetime]] = None
-    """The time range of the event."""
-
-    @field_validator("forcings", mode="before")
+    @model_validator(mode="before")
     @classmethod
-    def _set_forcings(cls, value: Any) -> List[Forcing]:
-        # if list of dictionaries, convert to list of Forcing
-        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
-            return [Forcing(**forcing) for forcing in value]
-        return value
+    def _forward_root(cls, data: Dict) -> Dict:
+        """Forward root to forcings."""
+        if "root" in data:
+            for forcing in data["forcings"]:
+                forcing["_root"] = data["root"]
+        return data
 
-    @field_validator("hazards", mode="before")
-    @classmethod
-    def _set_hazards(cls, value: Any) -> List[Hazard]:
-        # if list of dictionaries, convert to list of Forcing
-        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
-            return [Hazard(**hazard) for hazard in value]
-        return value
-
-    @field_validator("impacts", mode="before")
-    @classmethod
-    def _set_impacts(cls, value: Any) -> List[Impact]:
-        # if list of dictionaries, convert to list of Forcing
-        if isinstance(value, list) and all(isinstance(f, dict) for f in value):
-            return [Impact(**impact) for impact in value]
-        return value
-
-    def to_dict(self, **kwargs) -> dict:
+    def to_dict(self, root: Optional[Path] = None, **kwargs) -> dict:
         """Return the Event as a dictionary."""
+        # set forings root to path.parent
+        root = root or self.root
+        if root is not None:
+            for forcing in self.forcings:
+                forcing._root = Path(root)
+        # serialize
         kwargs = {**SERIALIZATION_KWARGS, **kwargs}
-        return self.model_dump(**kwargs)
-
-    def set_time_range_from_forcings(self) -> None:
-        """Set the time range from the data."""
+        data = self.model_dump(**kwargs)
+        # reset forcings root
         for forcing in self.forcings:
-            if forcing.time_range is None:
-                continue
-            if self.time_range is None:
-                self.time_range = forcing.time_range
-            else:
-                self.time_range[0] = min(self.time_range[0], forcing.time_range[0])
-                self.time_range[1] = max(self.time_range[1], forcing.time_range[1])
+            forcing._root = None
+        return data
 
     def to_yaml(self, path: Path) -> None:
         """Write the Event to a YAML file."""
+        path = Path(path)
+        root = self.root
+        # check if all forcing.path relative to path.parent, if so use path.parent as root
+        if root is None and all(
+            forcing.path.is_relative_to(path.parent) for forcing in self.forcings
+        ):
+            root = path.parent
         # serialize
-        yaml_dict = self.to_dict()
+        yaml_dict = self.to_dict(root=root)
+        # remove root if it is the same as path.parent
+        if "root" in yaml_dict and Path(yaml_dict["root"]) == path.parent:
+            yaml_dict.pop("root")
         # write to file
         with open(path, "w") as file:
             yaml.safe_dump(yaml_dict, file, sort_keys=False)
@@ -267,22 +223,33 @@ class Event(BaseModel):
         """Create an Event from a YAML file."""
         with open(path, "r") as file:
             yml_dict = yaml.safe_load(file)
-        event = cls(**yml_dict)
-        # FIXME: this is a bit hacky, but we need to set the path to the parent
-        if event.forcings:
-            for forcing in event.forcings:
-                forcing._set_path_absolute(Path(path).resolve().parent)
-        return event
+        # set root
+        if "root" not in yml_dict:
+            yml_dict["root"] = Path(path).parent
+        return cls(**yml_dict)
+
+    def set_time_range_from_forcings(self) -> None:
+        """Set the time range from the data."""
+        for forcing in self.forcings:
+            if forcing.tstart is None or forcing.tstop is None:
+                continue
+            if self.tstart is None or self.tstop is None:
+                self.tstart = forcing.tstart
+                self.tstop = forcing.tstop
+            else:
+                self.tstart = min(self.tstart, forcing.tstart)
+                self.tstop = max(self.tstop, forcing.tstop)
 
     def read_forcing_data(self) -> None:
         """Read all forcings."""
         for forcing in self.forcings:
             if forcing.data is None:
                 forcing.read_data()
-        self.set_time_range_from_forcings()
+        if self.tstart is None or self.tstop is None:
+            self.set_time_range_from_forcings()
 
 
-EventDict = TypedDict("EventDict", {"name": str, "path": Path})
+EventDict = TypedDict("EventDict", {"name": str, "path": FilePath})
 
 
 class EventSet(BaseModel):
@@ -292,19 +259,15 @@ class EventSet(BaseModel):
     --------
     The event set can be created from a YAML file as follows::
 
-        from hydroflows.events import EventSet
-
         EventSet.from_yaml("path/to/eventset.yaml")
 
     The event set can be created from a dictionary as follows::
-
-        from hydroflows.events import EventSet
 
         EventSet(
             events=[
                 {
                     "name": "event1",
-                    "path": "path/to/data.csv"
+                    "path": "path/to/event1.yml"
                 }
             ],
         )
@@ -318,14 +281,28 @@ class EventSet(BaseModel):
 
     @model_validator(mode="before")
     @classmethod
-    def _set_paths(cls, data: Dict) -> Dict:
+    def _set_abs_paths(cls, data: Dict) -> Dict:
         """Set the paths to relative to root if not absolute."""
         if "root" in data:
             root = Path(data["root"])
+            events = []
             for event in data["events"]:
-                path = event["path"]
-                if not Path(path).is_absolute():
-                    event["path"] = root / path
+                events.append(rel_to_abs_path(event, root, ["path"]))
+            data["events"] = events
+        return data
+
+    @model_serializer(mode="wrap", when_used="json")
+    def _set_rel_paths(self, nxt: SerializerFunctionWrapHandler):
+        """Serialize paths as relative to root."""
+        data = nxt(self)
+        if self.root:
+            events = []
+            for event in data["events"]:
+                events.append(
+                    abs_to_rel_path(event, self.root, keys=["path"], serialize=True)
+                )
+            data["events"] = events
+            data["root"] = self.root.as_posix()
         return data
 
     @classmethod
@@ -337,22 +314,33 @@ class EventSet(BaseModel):
             yaml_dict["root"] = Path(path).parent
         return cls(**yaml_dict)
 
-    def to_dict(self, **kwargs) -> dict:
+    def to_dict(self, root: Optional[Path] = None, **kwargs) -> dict:
         """Return the EventSet as a dictionary."""
+        # new root
+        if root:
+            root = Path(root)
+            old_root = self.root
+            self.root = root
         kwargs = {**SERIALIZATION_KWARGS, **kwargs}
-        return self.model_dump(**kwargs)
+        data = self.model_dump(**kwargs)
+        # reset root
+        if root:
+            self.root = old_root
+        return data
 
-    def to_yaml(self, path: FilePath) -> None:
+    def to_yaml(self, path: Path) -> None:
         """Write the EventSet to a YAML file."""
+        root = self.root
+        # check if all events relative to path.parent, if so reset root
+        if all(event["path"].is_relative_to(path.parent) for event in self.events):
+            root = path.parent
+
         # serialize
-        yaml_dict = self.to_dict()
-        # make relative paths
-        root = path.parent
-        for event in yaml_dict["events"]:
-            event_path = Path(event["path"])
-            """Set the path to be relative to the root."""
-            if event_path.is_absolute() and event_path.is_relative_to(root):
-                event["path"] = str(event_path.relative_to(root))
+        yaml_dict = self.to_dict(root=root)
+
+        # remove root if it is the same as path.parent
+        if "root" in yaml_dict and Path(yaml_dict["root"]) == path.parent:
+            yaml_dict.pop("root")
 
         # write to file
         with open(path, "w") as file:
@@ -371,70 +359,18 @@ class EventSet(BaseModel):
         """
         for event in self.events:
             if event["name"] == name:
-                event_file = Path(event["path"])
-                return Event.from_yaml(path=event_file)
+                return Event.from_yaml(path=event["path"])
 
         if raise_error:
             raise ValueError(f"Event {name} not found.")
         return None
 
-    def get_event_dict(self, name: str, raise_error=False) -> dict:
-        """Get an event by name as a dictionary.
-
-        Parameters
-        ----------
-        name : str
-            The name of the event.
-        raise_error : bool, optional
-            Raise an error if the event is not found, by default False
-            and returns an empty dictionary.
-        """
-        event = self.get_event(name, raise_error=raise_error)
-        if event is not None:
-            return event.to_dict()
-        return {}
-
-    def get_event_data(self, name: str) -> Event:
-        """Get an event by name and load its associated data.
-
-        Parameters
-        ----------
-        name : str
-            The name of the event.
-
-        Returns
-        -------
-        Event
-            The event with loaded data.
-
-        Examples
-        --------
-        The event data can be loaded as follows::
-
-            from hydroflows.events import EventSet
-
-            event_set = EventSet.from_yaml("path/to/events.yaml")
-            event = event_set.get_event_data("event1")
-            # event data is now loaded
-            df = event.forcings[0].data
-        """
-        # get event
-        event = self.get_event(name, raise_error=True)
-        # load data
-        for forcing in event.forcings:
-            if forcing.data is None:
-                forcing.read_data(self.roots.root_forcings)
-        # set time range
-        if event.time_range is None:
-            event.set_time_range_from_forcings()
-        return event
-
-    def add_event(self, name: str, path: FilePath) -> None:
+    def add_event(self, name: str, path: Path) -> None:
         """Add an event.
 
         name : str
             name of the event
-        path : FilePath
+        path : Path
             Path to yaml file with event description
             See :class:`Event` for the structure of the data in this path.
         """

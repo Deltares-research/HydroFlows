@@ -1,7 +1,7 @@
 setup_grid_from_region:
   res: <res>  # placeholder for model resolution [m]
   crs: utm  # model CRS (must be UTM zone)
-  rotated: True  # allow a rotated grid
+  rotated: False  # allow a rotated grid
   region:
     geom: <region>  # placeholder for region vector file
 

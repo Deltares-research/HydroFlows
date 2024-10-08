@@ -1,0 +1,55 @@
+name: Tests
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'tests/**'
+      - 'hydroflows/**'
+      - '.github/workflows/tests_pixi.yml'
+      - pyproject.toml
+      - pixi.lock
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'tests/**'
+      - 'hydroflows/**'
+      - '.github/workflows/tests_pixi.yml'
+      - pyproject.toml
+      - pixi.lock
+
+jobs:
+  build:
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ['310','311']
+    runs-on: ${{ matrix.os }}
+    name: py ${{ matrix.python-version }} on ${{ matrix.os }}
+    timeout-minutes: 30
+    concurrency:
+      group: ${{ github.workflow }}-${{ matrix.os }}-${{ matrix.python-version }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: "v0.30.0"
+          environments: test-py${{ matrix.python-version }}
+          locked: true
+          cache: true
+          cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
+
+      # run test
+      - name: Test
+        run: pixi run -e test-py${{ matrix.python-version }} --locked test-not-data

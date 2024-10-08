@@ -5,10 +5,12 @@ from typing import List, Union
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import pooch
 import pytest
 import rasterio
 import rasterio.transform
+import xarray as xr
 import yaml
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
@@ -97,8 +99,65 @@ def rio_region(test_data_dir) -> Path:
 def tmp_csv(tmp_path: Path) -> Path:
     """Create a temporary csv file."""
     csv_file = tmp_path / "file.csv"
-    csv_file.write_text("")
+    # create dummy timeseries data
+    times = pd.date_range(start="2021-01-01", periods=10, freq="D")
+    data = np.ones(len(times))
+    df = pd.DataFrame(data, index=times, columns=["data"])
+    # write to csv
+    df.to_csv(csv_file)
     return csv_file
+
+
+@pytest.fixture()
+def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
+    # Generating datetime index
+    dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
+
+    # set a seed for reproducibility
+    np.random.seed(0)
+    # Generating random rainfall data
+    data = np.random.rand(len(dates))
+
+    da = xr.DataArray(
+        data,
+        dims=("time"),
+        coords={"time": dates},
+        name="tp",
+        attrs={"long_name": "Total precipitation", "units": "mm"},
+    )
+
+    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    da.to_netcdf(fn_time_series_nc)
+
+    return fn_time_series_nc
+
+
+@pytest.fixture()
+def tmp_disch_time_series_nc(tmp_path: Path) -> Path:
+    rng = np.random.default_rng(12345)
+    normal = pd.DataFrame(
+        rng.random(size=(365 * 100, 2)) * 100,
+        index=pd.date_range(start="2020-01-01", periods=365 * 100, freq="1D"),
+    )
+    ext = rng.gumbel(loc=100, scale=25, size=(200, 2))  # Create extremes
+    for i in range(2):
+        normal.loc[normal.nlargest(200, i).index, i] = ext[:, i].reshape(-1)
+    da = xr.DataArray(
+        data=normal.values,
+        dims=("time", "Q_gauges"),
+        coords={
+            "time": pd.date_range(start="2000-01-01", periods=365 * 100, freq="D"),
+            "Q_gauges": ["1", "2"],
+        },
+        attrs=dict(_FillValue=-9999),
+    )
+
+    da.name = "Q"
+
+    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    da.to_netcdf(fn_time_series_nc)
+
+    return fn_time_series_nc
 
 
 @pytest.fixture()
@@ -214,6 +273,26 @@ def sfincs_src_points():
     )
 
 
+@pytest.fixture()
+def tmp_floodmark_points(tmp_path: Path) -> Path:
+    """Create a temporary GeoJSON file."""
+    geojson_file = tmp_path / "floodmarks.geojson"
+
+    data = {
+        "water_level_obs": [1.5, 2.7, 1.1],
+        "geometry": [
+            Point(-43.34287654946553, -22.832107208119936),
+            Point(-43.2989472972867, -22.85036460253447),
+            Point(-43.34590242111892, -22.856179585143337),
+        ],
+    }
+
+    gdf = gpd.GeoDataFrame(data, crs="EPSG:4326")
+    gdf.to_file(geojson_file, driver="GeoJSON")
+
+    return geojson_file
+
+
 @pytest.fixture(scope="function")  # noqa: PT003
 def sfincs_tmp_model_root(test_data_dir, tmpdir):
     """Return a temporary directory with a copy of the sfincs model."""
@@ -235,13 +314,22 @@ class TestMethodOutput(Parameters):
     output_file2: Path
 
 
+class TestMethodParams(Parameters):
+    param: str
+    default_param: str = "default_param"
+
+
 class TestMethod(Method):
     name: str = "test_method"
 
-    def __init__(self, input_file1: Path, input_file2: Path) -> None:
+    def __init__(
+        self, input_file1: Path, input_file2: Path, param: None | str = None
+    ) -> None:
         self.input: TestMethodInput = TestMethodInput(
             input_file1=input_file1, input_file2=input_file2
         )
+        if param:
+            self.params: TestMethodParams = TestMethodParams(param=param)
         # NOTE: possible wildcards in the input file directory
         # are forwarded using the parent of the input file
         self.output: TestMethodOutput = TestMethodOutput(

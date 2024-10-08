@@ -1,10 +1,12 @@
+import json
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from pydantic import AfterValidator, BeforeValidator, Json
-from typing_extensions import Annotated
+from typing_extensions import Annotated, TypedDict
 
-from hydroflows.utils.parsers import get_wildcards, str_to_list
+from hydroflows.utils.parsers import get_wildcards, str_to_list, str_to_tuple
 
 ListOfStr = Annotated[
     list[str],
@@ -19,6 +21,17 @@ ListOfInt = Annotated[
 ListOfFloat = Annotated[
     list[float],
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
+]
+
+TupleOfInt = Annotated[
+    Tuple[int, int],
+    BeforeValidator(
+        lambda x: tuple(
+            int(float(i)) if float(i).is_integer() else int(i) for i in str_to_tuple(x)
+        )
+        if isinstance(x, str)
+        else x
+    ),
 ]
 
 ListOfPath = Annotated[
@@ -39,4 +52,13 @@ def _check_path_has_wildcard(path: Union[Path, List[Path]]) -> Path:
 WildcardPath = Annotated[
     Path,
     AfterValidator(_check_path_has_wildcard),
+]
+
+EventDatesDict = Annotated[
+    Dict[
+        str, TypedDict("EventDatesDict", {"startdate": datetime, "enddate": datetime})
+    ],
+    BeforeValidator(
+        lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
+    ),
 ]

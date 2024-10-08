@@ -41,9 +41,10 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
-    "IPython.sphinxext.ipython_directive",
-    "IPython.sphinxext.ipython_console_highlighting",
-    "sphinxcontrib.autodoc_pydantic"
+    # "IPython.sphinxext.ipython_directive",
+    # "IPython.sphinxext.ipython_console_highlighting",
+    "sphinxcontrib.autodoc_pydantic",
+    "sphinxcontrib.programoutput"
 ]
 
 autosummary_generate = True
@@ -82,10 +83,21 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "_static/hydromt-icon.svg"
-html_favicon = "_static/hydromt-icon.svg"
+html_logo = "static/hydromt-icon.svg"
+html_favicon = "static/hydromt-icon.svg"
 autodoc_member_order = "bysource"  # overwrite default alphabetical sort
 autoclass_content = "both"
+
+# -- Options for autodoc_pydantic ------------------------------------------
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_show_validator_members = False
+
+autodoc_pydantic_model_show_validator_summary = False
+autodoc_pydantic_model_show_config_summary = False
+autodoc_pydantic_model_members = True
+autodoc_pydantic_field_list_validators = False
+autodoc_pydantic_field_show_constraints = False
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -94,7 +106,7 @@ autoclass_content = "both"
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["_static"]
+html_static_path = ["static"]
 html_css_files = ["theme-deltares.css"]
 html_theme_options = {
     "show_nav_level": 2,
@@ -110,7 +122,7 @@ html_theme_options = {
         {
             "name": "Deltares",
             "url": "https://www.deltares.nl/en/",
-            "icon": "_static/deltares-blue.svg",
+            "icon": "static/deltares-blue.svg",
             "type": "local",
         },
     ],

@@ -15,19 +15,21 @@ dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
   "geopandas",                # Reading vector data
-  "hydromt>=0.9.4",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@hotfixes", # hydromt plugin for FIAT models
-  "hydromt_sfincs",           # hydromt plugin for sfincs models
-  "hydromt_wflow",            # hydromt plugin for wflow models
+  "hatyan",                   # harmonic tidal analysis and prediction
+  "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
   "pydantic",                 # data validation
+  "requests",                 # data fetching
   "tqdm",                     # progress bar
   "xarray",                   # data handling
   "jinja2",                   # templating
 ]
 
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.rst"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -41,67 +43,43 @@ dynamic = ['version', 'description']
 
 [project.optional-dependencies]
 dev = [
-  # "flit",        # needed to publish to pypi
-  "pip>=23.1.2", # needed for recursive dependencies
+  "pip>=23.1.2", # needed for editable installs
   "pre-commit",  # linting
   "ruff",        # linting
   "tomli",       # parsing toml files
-  # "twine",       # needed to publish to pypi
+  "hydroflows[test, doc, extra]"
 ]
 doc = [
+  "pip>=23.1.2", # needed for editable installs
   "sphinx",
   "sphinx_design",
   "pydata-sphinx-theme",
   "autodoc_pydantic",
-  "hydroflows[examples,extra]",       # examples are included in the docs
-]
-examples = [
-  "jupyter",
-  "matplotlib",
+  "sphinxcontrib-programoutput",
 ]
 extra = [
+  "jupyter",
+  "snakemake",      # Workflow manager
   "graphviz",
-  "snakemake",      # Workflow manager, 8.x.x is bad
-]
-io = [
 ]
 test = [
   "pooch",          # test data fetching
-  "requests",       # test data fetching
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  "pulp==2.7.0",    # pin needed for snakemake
-  "snakemake",      # needed for testing snake file
-
+  "hydroflows[extra]",      # needed for testing snake file
 ]
-
-full = ["hydroflows[io,extra,dev,test,doc,examples]"]
-slim = ["hydroflows[io,extra,examples]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
-
-[tool.make_env]
-channels = ["conda-forge", "bioconda"]
-deps_not_in_conda = [
-  "hydromt_fiat",
-  "sphinx_autosummary_accessors",
-  "sphinx_design",
-  "autodoc_pydantic"
-]
 
 [project.scripts]
 hydroflows = "hydroflows.cli.main:cli"
 
 [tool.pytest.ini_options]
-testpaths = [
-    "test",
-]
-markers = [
-    "requires_data: marks tests as slow (deselect with '-m \"not slow\"')",
-]
+testpaths = ["test"]
+markers = ["requires_data", "slow"]
 
 [tool.coverage.run]
 branch = true
@@ -133,16 +111,16 @@ directory = ".cov"
 
 [tool.ruff]
 line-length = 88
-target-version = "py39"
+target-version = "py310"
 
 # enable pydocstyle (E), pyflake (F) and isort (I), pytest-style (PT), bugbear (B)
 select = ["E", "F", "I", "PT", "D", "B"]
 ignore-init-module-imports = true
-ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904"]
+ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904", "B905"]
 exclude = ["docs"]
 
 [tool.ruff.per-file-ignores]
-"tests/**" = ["D100", "D101", "D102", "D103", "D104"]
+"tests/**" = ["D100", "D101", "D102", "D103", "D104", "PT001"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
 "hydroflows/**/__init__.py" = ["F401", "F403"]
@@ -150,3 +128,61 @@ exclude = ["docs"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"
+
+[tool.make_env]
+channels = ["conda-forge", "bioconda"]
+deps_not_in_conda = [
+  "hydromt_fiat",
+  "sphinx_autosummary_accessors",
+  "sphinx_design",
+  "hatyan",
+  "autodoc_pydantic",
+  "sphinxcontrib-programoutput",
+]
+
+[tool.pixi.project]
+channels = ["conda-forge", "bioconda"]
+platforms = ["win-64", "linux-64"]
+
+[tool.pixi.pypi-dependencies]
+hydroflows = { path = ".", editable = true }
+
+# conda dependencies
+[tool.pixi.dependencies]
+hydromt = ">=0.9.4,<1.0"
+hydromt_sfincs = ">=1.1.0,<1.2"
+hydromt_wflow = ">=0.6,<0.7"
+snakemake = "*"
+
+[tool.pixi.feature.py310.dependencies]
+python = "3.10.*"
+[tool.pixi.feature.py311.dependencies]
+python = "3.11.*"
+
+[tool.pixi.environments]
+default = { features = ["dev", "doc", "test", "extra", "py311"], solve-group = "py311" }
+doc = { features = ["doc"], solve-group = "py311" }
+slim = { solve-group = "py311" }
+extra = { features = ["extra"], solve-group = "py311" }
+dev-py310 = { features = ["dev", "doc", "test", "extra", "py310"], solve-group = "py310" }
+test-py310 = { features = ["test"], solve-group = "py310" }
+test-py311 = { features = ["test"], solve-group = "py311" }
+
+[tool.pixi.tasks]
+install-pre-commit = "pre-commit install"
+
+lint = { cmd = ["pre-commit", "run", "--all"] }
+
+test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
+test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
+
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/pluvial_hazard.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-clean = { cmd = ["rm", "-rf", "examples/pluvial_hazard.smk", "examples/pluvial_hazard.config.yml"] }
+
+
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-pluvial"] }
+docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
+docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
+
+get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
