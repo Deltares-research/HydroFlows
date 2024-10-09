@@ -19,7 +19,8 @@ class TestMethodOutput(Parameters):
 
 
 class TestMethodParams(Parameters):
-    param: str
+    param: str | None = None
+    out_root: Path
     default_param: str = "default_param"
 
 
@@ -27,18 +28,27 @@ class TestMethod(Method):
     name: str = "test_method"
 
     def __init__(
-        self, input_file1: Path, input_file2: Path, param: None | str = None
+        self,
+        input_file1: Path,
+        input_file2: Path,
+        param: None | str = None,
+        out_root: Path | None = None,
     ) -> None:
         self.input: TestMethodInput = TestMethodInput(
-            input_file1=input_file1, input_file2=input_file2
+            input_file1=input_file1,
+            input_file2=input_file2,
         )
-        if param:
-            self.params: TestMethodParams = TestMethodParams(param=param)
         # NOTE: possible wildcards in the input file directory
-        # are forwarded using the parent of the input file
+        # are forwarded using the parent of the input file by default
+        if out_root is None:
+            out_root = self.input.input_file1.parent
+        self.params: TestMethodParams = TestMethodParams(
+            param=param,
+            out_root=out_root,
+        )
         self.output: TestMethodOutput = TestMethodOutput(
-            output_file1=self.input.input_file1.parent / "output1",
-            output_file2=self.input.input_file2.parent / "output2",
+            output_file1=self.params.out_root / "output1",
+            output_file2=self.params.out_root / "output2",
         )
 
     def run(self):

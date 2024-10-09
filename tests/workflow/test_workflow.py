@@ -57,8 +57,8 @@ def create_workflow_with_mock_methods(
         root = Path("./")
 
     mock_expand_method = MockExpandMethod(
-        input_file=root / "{region}" / input_file,
-        root=root / "{region}",
+        input_file=Path("{region}") / input_file,
+        root="{region}",
         events=["1", "2"],
         wildcard="event",
     )
@@ -74,7 +74,7 @@ def create_workflow_with_mock_methods(
 
     mock_reduce_method = MockReduceMethod(
         files=w.get_ref("$rules.mock_rule.output.output_file1"),
-        root=root / "out_{region}",
+        root="out_{region}",
     )
 
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
@@ -121,7 +121,7 @@ def test_workflow_get_ref(workflow: Workflow, tmp_path):
     assert ref.value == w.config.rps
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
-    assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}/file.yml"
+    assert ref.value.as_posix() == "{region}/{event}/file.yml"
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
@@ -163,7 +163,9 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     test_file = tmp_path / "test.yml"
     with open(test_file, "w") as f:
         yaml.dump({"data": "test"}, f)
-    w = create_workflow_with_mock_methods(workflow, root=tmp_path, input_file=test_file)
+    w = create_workflow_with_mock_methods(
+        workflow, root=tmp_path, input_file=test_file.name
+    )
     snake_file = tmp_path / "snake_file.smk"
     w.to_snakemake(snakefile=snake_file)
     assert "snake_file.config.yml" in os.listdir(tmp_path)
@@ -176,7 +178,8 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
             "--dry-run",
             "--configfile",
             (tmp_path / "snake_file.config.yml").as_posix(),
-        ]
+        ],
+        cwd=tmp_path,
     ).check_returncode()
 
 

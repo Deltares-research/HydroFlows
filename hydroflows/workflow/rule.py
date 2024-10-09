@@ -176,12 +176,12 @@ class Rule:
                     )
 
         # organize wildcards in expand, reduce and explode
-        wc_in_params = set(wildcards["input"] + wildcards["params"])
+        wc_in = set(wildcards["input"])
         wc_out = set(wildcards["output"])
         wildcards_dict = {
-            "explode": list(wc_in_params & wc_out),
-            "expand": list(wc_out - wc_in_params),
-            "reduce": list(wc_in_params - wc_out),
+            "explode": list(wc_in & wc_out),
+            "expand": list(wc_out - wc_in),
+            "reduce": list(wc_in - wc_out),
         }
 
         # set the wildcard properties
@@ -190,28 +190,19 @@ class Rule:
 
     def _validate_wildcards(self) -> None:
         """Validate wildcards based on method type."""
-        if self.wildcards["expand"] and not isinstance(self.method, ExpandMethod):
-            wcs = self.wildcards["expand"]
-            inputs = self.method.dict["input"]
-            raise ValueError(
-                f"wildcard(s) {wcs} missing on inputs {inputs} for {self.method.name}"
-            )
-        elif isinstance(self.method, ExpandMethod) and not self.wildcards["expand"]:
-            outputs = self.method.dict["output"]
-            raise ValueError(
-                f"wildcard(s) missing on outputs {outputs} for {self.method.name}"
-            )
-        if self.wildcards["reduce"] and not isinstance(self.method, ReduceMethod):
-            wcs = self.wildcards["reduce"]
-            outputs = self.method.dict["output"]
-            raise ValueError(
-                f"wildcard(s) {wcs} missing on outputs {outputs} for {self.method.name}"
-            )
+        msg = ""
+        if isinstance(self.method, ExpandMethod) and not self.wildcards["expand"]:
+            msg = f"ExpandMethod {self.method.name} requires a new expand wildcard on output (Rule {self.rule_id})."
         elif isinstance(self.method, ReduceMethod) and not self.wildcards["reduce"]:
-            inputs = self.method.dict["input"]
-            raise ValueError(
-                f"wildcard(s) missing on inputs {inputs} for {self.method.name}"
-            )
+            msg = f"ReduceMethod {self.method.name} requires a reduce wildcard on input only (Rule {self.rule_id})."
+        elif self.wildcards["expand"] and not isinstance(self.method, ExpandMethod):
+            wcs = self.wildcards["expand"]
+            msg = f"Wildcard(s) {wcs} missing on input or method {self.method.name} should be an ExpandMethod (Rule {self.rule_id})."
+        elif self.wildcards["reduce"] and not isinstance(self.method, ReduceMethod):
+            wcs = self.wildcards["reduce"]
+            msg = f"Wildcard(s) {wcs} missing on output or method {self.method.name} should be a ReduceMethod (Rule {self.rule_id})."
+        if msg:
+            raise ValueError(msg)
 
     def method_wildcard_instance(self, wildcards: Dict) -> Method:
         """Return a new method instance with wildcards replaced by values."""
