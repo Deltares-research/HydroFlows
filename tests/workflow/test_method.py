@@ -32,18 +32,16 @@ def test_method_repr(test_method: TestMethod):
 
 def test_method_to_kwargs(test_method: TestMethod):
     kwargs = test_method.to_kwargs()
-    assert kwargs == {
+    expected_kwargs = {
         "input_file1": "test_file1",
         "input_file2": "test_file2",
+        "out_root": ".",
         "param": "param",
     }
+    assert kwargs == expected_kwargs
     kwargs = test_method.to_kwargs(exclude_defaults=False)
-    assert kwargs == {
-        "input_file1": "test_file1",
-        "input_file2": "test_file2",
-        "param": "param",
-        "default_param": "default_param",
-    }
+    expected_kwargs["default_param"] = "default_param"
+    assert kwargs == expected_kwargs
 
 
 def test_method_to_dict(test_method: TestMethod):
@@ -51,7 +49,7 @@ def test_method_to_dict(test_method: TestMethod):
     assert out_dict == {
         "input": {"input_file1": "test_file1", "input_file2": "test_file2"},
         "output": {"output_file1": "output1", "output_file2": "output2"},
-        "params": {"param": "param"},
+        "params": {"out_root": ".", "param": "param"},
     }
 
 
