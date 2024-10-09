@@ -1,4 +1,5 @@
 import re
+from pathlib import PosixPath
 from weakref import ReferenceType
 
 import pytest
@@ -63,6 +64,19 @@ def test_detect_wildcards(workflow):
     assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["w"]}
     assert rule._wildcard_fields == {"w": ["files"]}
 
+    test_method = TestMethod(
+        input_file1="{region}/test_file1", input_file2="{region}/test_file2"
+    )
+    rule = Rule(method=test_method, workflow=workflow, rule_id="test_method")
+    assert rule._wildcards == {"explode": ["region"], "expand": [], "reduce": []}
+    assert rule._wildcard_fields == {
+        "region": ["input_file1", "input_file2", "output_file1", "output_file2"]
+    }
+
+    test_method = TestMethod(input_file1="testfile1", input_file2="testfile2")
+    rule = Rule(method=test_method, workflow=workflow)
+    assert rule._wildcards == {"explode": [], "expand": [], "reduce": []}
+
 
 def test_validate_wildcards(workflow, test_method):
     expand_method = MockExpandMethod(
@@ -73,10 +87,11 @@ def test_validate_wildcards(workflow, test_method):
     )
     rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
     rule.method = test_method
+    err_msg = f"wildcard(s) {rule.wildcards['expand']} missing on inputs {test_method.dict['input']} for {test_method.name}"
     with pytest.raises(
         ValueError,
         match=re.escape(
-            f"wildcard(s) {rule.wildcards['expand']} missing on inputs {test_method.dict['input']}"
+            err_msg,
         ),
     ):
         rule._validate_wildcards()
@@ -84,29 +99,27 @@ def test_validate_wildcards(workflow, test_method):
         input_file="test_file", root="", events=["1", "2", "3"], wildcard="w"
     )
     expand_method.output = ExpandMethodOutput(output_file="test", output_file2="test2")
+    err_msg = f"wildcard(s) missing on outputs {expand_method.dict['output']} for {expand_method.name}"
     with pytest.raises(
         ValueError,
-        match=re.escape(
-            f"wildcard(s) missing on outputs {expand_method.dict['output']}"
-        ),
+        match=re.escape(err_msg),
     ):
         rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
 
     rule = Rule(method=test_method, workflow=workflow)
     rule.wildcards["reduce"] = "mock"
-    err_msg = f"wildcard(s) mock missing on outputs {test_method.dict['output']}"
+    err_msg = f"wildcard(s) mock missing on outputs {test_method.dict['output']} for {test_method.name}"
     with pytest.raises(ValueError, match=re.escape(err_msg)):
         rule._validate_wildcards()
 
     reduce_method = MockReduceMethod(files="test1", root="")
-    err_msg = f"wildcard(s) missing on inputs {reduce_method.dict['input']}"
+    err_msg = f"wildcard(s) missing on inputs {reduce_method.dict['input']} for {reduce_method.name}"
     with pytest.raises(ValueError, match=re.escape(err_msg)):
         Rule(method=reduce_method, workflow=workflow)
 
 
 def test_method_wildcard_instance(rule, test_method, workflow):
     method = rule.method_wildcard_instance(wildcards={})
-    assert isinstance(method, TestMethod)
     assert method == test_method
 
     reduce_method = MockReduceMethod(files="test{region}", root="")
@@ -114,6 +127,16 @@ def test_method_wildcard_instance(rule, test_method, workflow):
     rule = Rule(method=reduce_method, workflow=workflow)
     method = rule.method_wildcard_instance(wildcards={"region": ["1", "2"]})
     assert method.input.files == ["test1", "test2"]
+
+    expand_method = MockExpandMethod(
+        input_file="test_file",
+        root="",
+        events=["1", "2", "3"],
+        wildcard="w",
+    )
+    rule = Rule(method=expand_method, workflow=workflow)
+    method = rule.method_wildcard_instance(wildcards={"w": [1, 2, 3]})
+    assert method.output.output_file == PosixPath("{w}/file.yml")
 
 
 def test_wildcard_product(workflow):
@@ -136,6 +159,10 @@ def test_run(workflow, capsys, mocker):
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
     mocker.patch.object(Rule, "_run_method_instance")
+    rule.run(dryrun=True)
+    captured = capsys.readouterr()
+    assert "Run 1/2: {'region': 'region1'}" in captured.out
+    assert "Run 2/2: {'region': 'region2'}" in captured.out
 
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
