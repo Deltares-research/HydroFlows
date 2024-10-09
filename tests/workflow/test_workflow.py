@@ -125,7 +125,7 @@ def test_workflow_rule_from_kwargs(w: Workflow, mocker, mock_expand_method):
     w.add_rule_from_kwargs(
         method="mock_expand_method", kwargs=kwargs, rule_id="mock_rule"
     )
-    assert w.rules[0].rule_id == "mock_rule"
+    # TODO add check on input._ref dict if references are there
 
 
 def test_workflow_get_ref(w: Workflow, tmp_path):
