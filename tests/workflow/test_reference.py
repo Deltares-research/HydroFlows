@@ -3,6 +3,7 @@ import re
 import pytest
 
 from hydroflows.workflow import Ref, WorkflowConfig
+from hydroflows.workflow.workflow import Workflow
 from tests.workflow.conftest import MockExpandMethod
 
 
@@ -55,7 +56,8 @@ def test_ref_value_setter(workflow):
         Ref(ref="$config.rps", workflow=workflow)
 
 
-def test_ref_is_expand_method(workflow):
+def test_ref_is_expand_field():
+    workflow = Workflow(config={"rps": [2, 50, 100]})
     ref = Ref("$config.rps", workflow=workflow)
     assert not ref.is_expand_field
 
@@ -73,7 +75,8 @@ def test_ref_is_expand_method(workflow):
     assert ref.is_expand_field
 
 
-def test_get_str_value(workflow):
+def test_get_str_value():
+    workflow = Workflow(config={"rps": [2, 50, 100]})
     ref = Ref("$config.rps", workflow=workflow)
     assert ref.get_str_value() == "[2, 50, 100]"
     expand_method = MockExpandMethod(
@@ -87,19 +90,26 @@ def test_get_str_value(workflow):
     assert ref.get_str_value(quote_str=False) == "{w}/file.yml"
 
 
-def test_set_resolve_ref(workflow, mocker):
+def test_set_resolve_ref(mocker):
+    # check if correct sub-method is called based on reference
+    # initialize ref with random existing reference
+    workflow = Workflow(config={"rps": [2, 50, 100]})
     ref = Ref("$config.rps", workflow=workflow)
+    # rules
     mock_set_resolve_rule_ref = mocker.patch.object(Ref, "_set_resolve_rule_ref")
     ref._set_resolve_ref("$rules")
     mock_set_resolve_rule_ref.assert_called_once_with("$rules")
+    # config
     mock_set_resolve_config_ref = mocker.patch.object(Ref, "_set_resolve_config_ref")
     ref._set_resolve_ref("$config")
     mock_set_resolve_config_ref.assert_called_once_with("$config")
+    # wildcards
     mock_set_resolve_wildcard_ref = mocker.patch.object(
         Ref, "_set_resolve_wildcard_ref"
     )
     ref._set_resolve_ref("$wildcards")
     mock_set_resolve_wildcard_ref.assert_called_once_with("$wildcards")
+    # globals
     mock_get_obj_from_caller_globals = mocker.patch.object(
         Ref, "_get_obj_from_caller_globals"
     )
@@ -107,6 +117,7 @@ def test_set_resolve_ref(workflow, mocker):
     with pytest.raises(ValueError, match=re.escape("Invalid reference: $workflow")):
         ref._set_resolve_ref("$workflow")
 
+    # test in context of workflow
     expand_method = MockExpandMethod(
         input_file="test_file",
         root="",
@@ -114,16 +125,18 @@ def test_set_resolve_ref(workflow, mocker):
         wildcard="w",
     )
     workflow.add_rule(method=expand_method, rule_id="test_rule")
+    # config
     mock_get_obj_from_caller_globals.return_value = workflow
     ref._set_resolve_ref("$workflow.config.rps")
     mock_set_resolve_config_ref.assert_called_with("$config.rps")
-
+    # rules based on local object
     mock_get_obj_from_caller_globals.return_value = expand_method
     mock_resolve_method_obj_ref = mocker.patch.object(Ref, "_resolve_method_obj_ref")
     ref._set_resolve_ref("expand_method.output.output_file")
     mock_resolve_method_obj_ref.assert_called_once_with(
         "expand_method.output.output_file", expand_method
     )
+    # config
     mock_get_obj_from_caller_globals.return_value = workflow.config
     mock_resolve_config_obj_ref = mocker.patch.object(Ref, "_resolve_config_obj_ref")
     ref._set_resolve_ref("config.rps")
