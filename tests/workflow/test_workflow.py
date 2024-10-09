@@ -138,6 +138,16 @@ def test_workflow_get_ref(w: Workflow, tmp_path):
     assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}/file.yml"
 
 
+def test_workflow_create_references(w: Workflow):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    w.add_rule(method=method2, rule_id="method2")
+    w.create_references()
+    assert isinstance(w.rules[1].input.input_file1, Ref)
+    assert w.rules[1].input.input_file2.value.as_posix() == "output2"
+
+
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     test_yml = tmp_path / "test.yml"
     with open(test_yml, "w") as f:

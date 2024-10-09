@@ -85,6 +85,15 @@ class Workflow:
         m = Method.from_kwargs(name=str(method), **kwargs)
         self.add_rule(m, rule_id)
 
+    def create_references(self):
+        """Set references to the input of rules that use the output of other rules in the workflow."""
+        for rule in self.rules:
+            for i in rule.input:
+                if i[1].as_posix() in self.output_path_refs:
+                    rule.input.__setattr__(
+                        i[0], self.get_ref(self.output_path_refs.get(i[1].as_posix()))
+                    )
+
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
         return Ref(ref, self)
@@ -199,6 +208,25 @@ class Workflow:
 
         if dryrun:
             os.chdir(curdir)
+
+    @property
+    def output_path_refs(self) -> Union[dict, None]:
+        """Retrieve output path references of all rules in the workflow.
+
+        Returns
+        -------
+        Union[dict, None]
+            Dictionary containing the output path as the key and the reference as the value
+        """
+        output_paths = {}
+        for rule in self.rules:
+            if not rule:
+                continue
+            for output in rule.output:
+                output_paths[
+                    output[1].as_posix()
+                ] = f"$rules.{rule.rule_id}.output.{output[0]}"
+        return output_paths
 
 
 class Wildcards(BaseModel):
