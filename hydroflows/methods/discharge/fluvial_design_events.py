@@ -1,4 +1,4 @@
-"""Wflow design hydrograph method."""
+"""Fluvial design events method."""
 
 import os
 from pathlib import Path
@@ -9,36 +9,38 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
-from pydantic import model_validator
+from pydantic import PositiveInt, model_validator
 
 from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["WflowDesignHydro"]
+__all__ = ["FluvialDesignEvents"]
 
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`WflowDesignHydro` method."""
+    """Input parameters for the :py:class:`FluvialDesignEvents` method."""
 
     discharge_nc: Path
-    """The file path to the discharge time series in NetCDF format which are used
-    to apply EVA and derive design events. This file contains an index dimension and a time
-    dimension for several Sfincs boundary points, .
+    """The file path to the discharge time series in NetCDF format which is used
+    to apply EVA and derive design events. This file should contain an index dimension and a time
+    dimension for several (gauge) locations.
 
-    The index dimension corresponds to the index of the Sfincs source points, providing the corresponding time
-    series at specific locations.
+    - The discharge time series can be produced either by the Wflow toolchain (via the
+      :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
+      :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
+      :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
 
-    This time series can be produced either by the Wflow toolchain (via the
-    :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
-    :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
-    :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
+    - When the design events are used in Sfincs using the
+      :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
+      the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
+      time series at specific locations.
     """
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`WflowDesignHydro` method."""
+    """Output parameters for the :py:class:`FluvialDesignEvents` method."""
 
     event_yaml: Path
     """The path to the event description file,
@@ -55,7 +57,7 @@ class Output(Parameters):
 
 
 class Params(Parameters):
-    """Parameters for the :py:class:`WflowDesignHydro` method.
+    """Parameters for the :py:class:`FluvialDesignEvents` method.
 
     See Also
     --------
@@ -103,9 +105,10 @@ class Params(Parameters):
     t0: str = "2020-01-01"
     """Random initial date for the design events."""
 
-    warm_up_years: int = 2
-    """Number of (initial) years to exclude from the discharge timeseries
-    as a warm-up period."""
+    warm_up_years: PositiveInt = None
+    """The number of initial years (positive integer) to exclude from the discharge time series
+    as a warm-up period, typically used when the data is generated through
+    hydrological modeling and requires an initial warm-up phase."""
 
     n_peaks: int = None
     """Number of largest peaks to get hydrograph.
@@ -131,10 +134,10 @@ class Params(Parameters):
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
 
 
-class WflowDesignHydro(ExpandMethod):
+class FluvialDesignEvents(ExpandMethod):
     """Rule for generating fluvial design events."""
 
-    name: str = "wflow_design_hydro"
+    name: str = "fluvial_design_events"
 
     _test_kwargs = {
         "discharge_nc": Path("discharge.nc"),
@@ -149,7 +152,7 @@ class WflowDesignHydro(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a WflowDesignHydro instance.
+        """Create and validate a FluvialDesignEvents instance.
 
         Parameters
         ----------
@@ -164,14 +167,14 @@ class WflowDesignHydro(ExpandMethod):
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
         **params
-            Additional parameters to pass to the WflowDesignHydro Params instance.
-            See :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`.
+            Additional parameters to pass to the FluvialDesignEvents Params instance.
+            See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
 
         See Also
         --------
-        :py:class:`wflow_design_hydro Input <hydroflows.methods.wflow.wflow_design_hydro.Input>`
-        :py:class:`wflow_design_hydro Output <hydroflows.methods.wflow.wflow_design_hydro.Output>`
-        :py:class:`wflow_design_hydro Params <hydroflows.methods.wflow.wflow_design_hydro.Params>`
+        :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
+        :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
+        :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
         :py:class:`hydromt.stats.extremes`
         """
         if rps is None:
@@ -194,10 +197,10 @@ class WflowDesignHydro(ExpandMethod):
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
     def run(self):
-        """Run the WflowDesignHydro method."""
+        """Run the FluvialDesignEvents method."""
         root = self.output.event_set_yaml.parent
 
-        # read the provided wflow time series
+        # read the provided time series
         da = xr.open_dataset(self.input.discharge_nc)[self.params.var_name]
         time_dim = self.params.time_dim
         index_dim = self.params.index_dim
@@ -205,12 +208,20 @@ class WflowDesignHydro(ExpandMethod):
         for dim in [time_dim, index_dim]:
             if dim not in da.dims:
                 raise ValueError(f"{dim} not a dimension in, {self.input.discharge_nc}")
-        # warm up period from the start of the time series up to warm_up_years to exclude
-        warm_up_period = da[time_dim].values[0] + pd.Timedelta(
-            self.params.warm_up_years, "A"
-        )
-        # keep timeseries only after the warm up period
-        da = da.sel({time_dim: slice(warm_up_period, None)})
+
+        # Check if warm_up_years is not None
+        if self.params.warm_up_years is not None:
+            # warm up period from the start of the time series up to warm_up_years to exclude
+            warm_up_period = da[time_dim].values[0] + pd.Timedelta(
+                self.params.warm_up_years, "A"
+            )
+            # Keep timeseries only after the warm-up period
+            da = da.sel({time_dim: slice(warm_up_period, None)})
+
+            if da[time_dim].size == 0:
+                raise ValueError(
+                    f"Selection resulted in an empty time series after warm-up period of {self.params.warm_up_years} years."
+                )
 
         # find the timestep of the input time series
         dt = pd.Timedelta(da[time_dim].values[1] - da[time_dim].values[0])

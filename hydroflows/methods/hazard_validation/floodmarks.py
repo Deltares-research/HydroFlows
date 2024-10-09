@@ -46,7 +46,7 @@ class Output(Parameters):
 
 
 class Params(Parameters):
-    """Parameters for :py:class:`PluvialDesignEvents` method."""
+    """Parameters for :py:class:`FloodmarksValidation` method."""
 
     out_root: Path
     """Root folder to save the derived validation scores."""

@@ -2,6 +2,7 @@
 
 # %% Import packages
 from hydroflows import Workflow
+from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsPostprocess,
@@ -10,7 +11,6 @@ from hydroflows.methods.sfincs import (
 )
 from hydroflows.methods.wflow import (
     WflowBuild,
-    WflowDesignHydro,
     WflowRun,
     WflowUpdateForcing,
 )
@@ -52,7 +52,7 @@ wflow_run = WflowRun(
 w.add_rule(wflow_run, rule_id="wflow_run")
 
 # %% derive fluvial design events
-fluvial_events = WflowDesignHydro(
+fluvial_events = FluvialDesignEvents(
     discharge_nc=wflow_run.output.wflow_output_timeseries,
     rps=w.get_ref("$config.rps"),
     wildcard="event",
@@ -88,3 +88,5 @@ w.run(dryrun=True, tmpdir="./")
 
 # %% Write the workflow to a Snakefile
 w.to_snakemake(f"{w.name}.smk")
+
+# %%
