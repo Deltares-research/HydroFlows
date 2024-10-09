@@ -204,12 +204,35 @@ class Rule:
         if msg:
             raise ValueError(msg)
 
-    def method_wildcard_instance(self, wildcards: Dict) -> Method:
-        """Return a new method instance with wildcards replaced by values."""
+    def _method_wildcard_instance(self, wildcards: Dict) -> Method:
+        """Return a new method instance with wildcards replaced by values.
+
+        Parameters
+        ----------
+        wildcards : Dict
+            The reduce and explode wildcards to replace in the method.
+            Expand wildcards are only on the output and are set in the method.
+        """
         if not wildcards:
             return self.method
+        # explode kwargs should always be a single value;
+        for wc in self.wildcards["explode"]:
+            assert not isinstance(
+                wildcards[wc], list
+            ), f"Explode wildcard '{wc}' should be a single value."
+        # reduce should be lists;
+        for wc in self.wildcards["reduce"]:
+            assert isinstance(
+                wildcards[wc], list
+            ), f"Reduce wildcard '{wc}' should be a list."
+        # expand wildcards should not be in instance wildcards -> only inputs
+        for wc in self.wildcards["expand"]:
+            assert (
+                wc not in wildcards
+            ), f"Expand wildcard '{wc}' should not be in wildcards."
 
         kwargs = self.method.to_kwargs()
+        # get input fields over which the method should reduce
         reduce_fields = []
         for wc in self.wildcards["reduce"]:
             reduce_fields.extend(self.wildcard_fields[wc])
@@ -289,7 +312,7 @@ class Rule:
         self, wildcards: Dict, dryrun: bool = False, missing_file_error: bool = False
     ) -> None:
         """Run a method instance with the given kwargs."""
-        m = self.method_wildcard_instance(wildcards)
+        m = self._method_wildcard_instance(wildcards)
         if dryrun:
             m.dryrun(missing_file_error=missing_file_error)
         else:
