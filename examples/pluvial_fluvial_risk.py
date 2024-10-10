@@ -2,6 +2,7 @@
 
 # %% Import packages
 import os
+from pathlib import Path
 
 from fetch_data import fetch
 
@@ -36,23 +37,24 @@ if __name__ == "__main__":
 
     # %% General setup of workflow
     # Define variables
-    name = "pluvial_fluvial"  # for now
+    pwd = Path(__file__).parent
+    name = "pluvial_fluvial_risk"  # for now
     model_dir = "models"
     data_dir = "data"
     input_dir = "input"
     output_dir = "output"
-    simu_dir = "events"
-    wflow_exe = "bin/wflow/bin/wflow_cli.exe"
-    sfincs_exe = "bin/sfincs/sfincs.exe"
-    fiat_exe = "bin/fiat/fiat.exe"
+    simu_dir = "simulations"
+    wflow_exe = Path(pwd, "bin/wflow/bin/wflow_cli.exe").as_posix()
+    sfincs_exe = Path(pwd, "bin/sfincs/sfincs.exe").as_posix()
+    fiat_exe = Path(pwd, "bin/fiat/fiat.exe").as_posix()
 
     # Setup the config file
     conf = WorkflowConfig(
-        region="data/build/region.geojson",
-        data_libs="data/global-data/data_catalog.yml",
-        hydromt_sfincs_config="hydromt_config/sfincs_config.yml",
-        hydromt_wflow_config="hydromt_config/wflow_config.yml",
-        hydromt_fiat_config="hydromt_config/fiat_config.yml",
+        region=Path(pwd, "data/build/region.geojson").as_posix(),
+        data_libs=Path(pwd, "data/global-data/data_catalog.yml").as_posix(),
+        hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml").as_posix(),
+        hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml").as_posix(),
+        hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml").as_posix(),
         sfincs_res=50,
         wflow_res=0.0041667,
         rps=[5, 10, 25],
@@ -225,6 +227,6 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(f"workflows/{name}.smk")
+    w.to_snakemake(f"{name}/workflow.smk")
 
     # %%

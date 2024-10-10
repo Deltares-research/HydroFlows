@@ -1,6 +1,6 @@
 """Run pluvial design events with existing SFINCS model."""
 
-# %%
+# %% Import packages
 from pathlib import Path
 
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
