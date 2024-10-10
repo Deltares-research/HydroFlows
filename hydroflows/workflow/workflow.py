@@ -143,8 +143,7 @@ class Workflow:
             dryrun=dryrun,
         )
         # Small check for the parent directory
-        if not snakefile.parent.exists():
-            snakefile.parent.mkdir(parents=True)
+        snakefile.parent.mkdir(parents=True, exist_ok=True)
         # After that write
         with open(snakefile, "w") as f:
             f.write(_str)
