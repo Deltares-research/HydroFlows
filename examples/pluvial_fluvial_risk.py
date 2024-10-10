@@ -7,6 +7,7 @@ from pathlib import Path
 from fetch_data import fetch
 
 from hydroflows import Workflow
+from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.fiat import (
     FIATBuild,
     FIATRun,
@@ -24,7 +25,6 @@ from hydroflows.methods.sfincs import (
 )
 from hydroflows.methods.wflow import (
     WflowBuild,
-    WflowDesignHydro,
     WflowRun,
     WflowUpdateForcing,
 )
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     w.add_rule(wflow_run, rule_id="wflow_run")
 
     # Generate fluvial events
-    fluvial_events = WflowDesignHydro(
+fluvial_events = FluvialDesignEvents(
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
         wildcard="fluvial_events",
