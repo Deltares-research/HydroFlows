@@ -9,6 +9,7 @@ from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -135,7 +136,19 @@ class FIATBuild(Method):
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
         # Build the model
-        model.build(opt=opt)
+        model.build(opt=opt, write=False)
+
+        # Set the column headers for newer FIAT verions
+        # TODO remove once HydroMT-FIAT supports this
+        model.exposure.exposure_db.rename(
+            new_column_headers(model.exposure.exposure_db.columns),
+            axis=1,
+            inplace=True,
+        )
+        for geom in model.exposure.exposure_geoms:
+            geom.rename(new_column_headers(geom.columns), axis=1, inplace=True)
+        # Write to drive
+        model.write()
 
         # Write opt as yaml
         configwrite(root / "fiat_build.yaml", opt)

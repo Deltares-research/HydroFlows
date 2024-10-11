@@ -15,18 +15,18 @@ def new_column_headers(
     columns : list | tuple
         The columns headers of the exposure data.
     simple : bool, optional
-        Whether to return a simple conversion, i.e. everything lower case and 
+        Whether to return a simple conversion, i.e. everything lower case and
         whitespaces replaced by underscores. By default False.
     """
     new = dict(
         zip(
             columns,
-            [item.lower().replace(" ","_") for item in columns],
+            [item.lower().replace(" ", "_") for item in columns],
         )
     )
     if simple == True:
         return new
-    
+
     # Update these headers which do not translate simply
     new.update(
         {
