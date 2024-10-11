@@ -31,18 +31,19 @@ from hydroflows.methods.wflow import (
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 if __name__ == "__main__":
-    pass
+    # Where the current file is located
+    pwd = Path(__file__).parent
+
     # %% Fetch the global build data
-    fetch()
+    fetch(data="artifact-data", output_dir=Path(pwd, "data/global-data"))
 
     # %% General setup of workflow
     # Define variables
-    pwd = Path(__file__).parent
     name = "pluvial_fluvial_risk"  # for now
     model_dir = "models"
     data_dir = "data"
-    input_dir = "input"
-    output_dir = "output"
+    input_dir = "data/input"
+    output_dir = "data/output"
     simu_dir = "simulations"
     wflow_exe = Path(pwd, "bin/wflow/bin/wflow_cli.exe").as_posix()
     sfincs_exe = Path(pwd, "bin/sfincs/sfincs.exe").as_posix()
@@ -90,10 +91,7 @@ if __name__ == "__main__":
     # Wflow build
     wflow_build = WflowBuild(
         region=sfincs_build.output.sfincs_region,
-        wflow_root=os.path.join(
-            model_dir,
-            "wflow",
-        ),
+        wflow_root=Path(model_dir, "wflow").as_posix(),
         default_config=w.get_ref("$config.hydromt_wflow_config"),
         data_libs=w.get_ref("$config.data_libs"),
         gauges=os.path.join(sfincs_build.params.sfincs_root, "gis", "src.geojson"),
@@ -105,10 +103,7 @@ if __name__ == "__main__":
     # Fiat build
     fiat_build = FIATBuild(
         region=sfincs_build.output.sfincs_region,
-        fiat_root=os.path.join(
-            model_dir,
-            "fiat",
-        ),
+        fiat_root=Path(model_dir, "fiat").as_posix(),
         data_libs=w.get_ref("$config.data_libs"),
         config=w.get_ref("$config.hydromt_fiat_config"),
         continent=w.get_ref("$config.continent"),
@@ -138,7 +133,7 @@ if __name__ == "__main__":
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
         wildcard="fluvial_events",
-        event_root="data/events",
+        event_root=Path(data_dir, "events").as_posix(),
         index_dim="Q_gauges_bounds",
     )
     w.add_rule(fluvial_events, rule_id="fluvial_events")
@@ -148,10 +143,7 @@ if __name__ == "__main__":
 
     pluvial_data = GetERA5Rainfall(
         region=sfincs_build.output.sfincs_region,
-        data_root=os.path.join(
-            data_dir,
-            input_dir,
-        ),
+        data_root=input_dir,
         start_date=w.get_ref("$config.start_date"),
         end_date=w.get_ref("$config.end_date"),
     )
@@ -163,7 +155,7 @@ if __name__ == "__main__":
         precip_nc=precip_nc,
         rps=w.get_ref("$config.rps"),
         wildcard="pluvial_events",
-        event_root="data/events",
+        event_root=Path(data_dir, "events").as_posix(),
     )
     w.add_rule(pluvial_events, rule_id="pluvial_events")
 
@@ -176,7 +168,7 @@ if __name__ == "__main__":
     sfincs_update = SfincsUpdateForcing(
         sfincs_inp=sfincs_build.output.sfincs_inp,
         sim_subfolder=simu_dir,
-        event_yaml="data/events/{all_events}.yml",
+        event_yaml=Path(data_dir, "events/{all_events}.yml").as_posix(),
     )
     w.add_rule(sfincs_update, rule_id="sfincs_update")
 
@@ -192,11 +184,7 @@ if __name__ == "__main__":
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),
-        hazard_root=os.path.join(
-            data_dir,
-            output_dir,
-            "hazard",
-        ),
+        hazard_root=Path(output_dir, "hazard").as_posix(),
         event_name="{all_events}",
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")
@@ -208,7 +196,7 @@ if __name__ == "__main__":
     # Update hazard
     fiat_update = FIATUpdateHazard(
         fiat_cfg=fiat_build.output.fiat_cfg,
-        event_set_yaml="data/events/{event_set}.yml",
+        event_set_yaml=Path(data_dir, "events/{event_set}.yml").as_posix(),
         event_set_name="{event_set}",
         sim_subfolder=simu_dir,
         hazard_maps=sfincs_post.output.hazard_tif,
@@ -227,6 +215,4 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(f"{name}/workflow.smk")
-
-    # %%
+    w.to_snakemake(f"cases/{name}/workflow.smk")

@@ -10,10 +10,10 @@ from hydroflows.methods.coastal import (
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
-    pass
+    # Where the current file is located
+    pwd = Path(__file__).parent
 
     # %% Setup variables
-    pwd = Path(__file__).parent
     name = "coastal_events"
     data_dir = "data"
     input_dir = "input"
@@ -57,4 +57,4 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write to a snakemake workflow file
-    w.to_snakemake(f"{name}/workflow.smk")
+    w.to_snakemake(f"cases/{name}/workflow.smk")

@@ -1,6 +1,6 @@
 """Run pluvial design events with existing SFINCS model."""
 
-# %%
+# %% Import modules
 from pathlib import Path
 
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
@@ -12,73 +12,77 @@ from hydroflows.methods.sfincs import (
 )
 from hydroflows.workflow import Workflow, WorkflowConfig
 
-# %% settings workflow
-config = WorkflowConfig(sfincs_exe=Path("./bin/sfincs/sfincs.exe"), rps=[5, 10])
-# %% initialize workflow
-w = Workflow(
-    name="pluvial_hazard_multiple_regions",
-    config=config,
-    wildcards={"region": ["region1", "region2"]},
-)
+if __name__ == "__main__":
+    pass
+    # %% Set the variables
+    pwd = Path(__file__).parent
+    name = "pluvial_multiple_regions"
+    data_libs = Path(pwd, "data/global-data/data_catalog.yml").as_posix()
 
-# %% build sfincs models for each region
+    # Setup the configuration
+    conf = WorkflowConfig(
+        start_date="",
+        end_date="",
+        rps=[5, 10],
+    )
 
-sfincs_build = SfincsBuild(
-    region="data/{region}.geojson",
-    sfincs_root="models/sfincs/{region}",
-)
-w.add_rule(sfincs_build, "sfincs_build")
+    # %% Setup the workflow
+    w = Workflow(
+        config=conf,
+        wildcards={"region": ["region1", "region2"]},
+    )
 
-# %% add rainfall methods
+    # %% build sfincs models for each region
 
-get_rainfall = GetERA5Rainfall(
-    region=sfincs_build.output.sfincs_region,
-    data_root="data/{region}/rainfall/input",
-    start_date="2000-01-01",
-    end_date="2020-12-31",
-)
-w.add_rule(get_rainfall, rule_id="get_rainfall")
+    sfincs_build = SfincsBuild(
+        region="data/{region}.geojson",
+        sfincs_root="models/sfincs/{region}",
+    )
+    w.add_rule(sfincs_build, "sfincs_build")
 
+    # %% add rainfall methods
 
-pluvial_events = PluvialDesignEvents(
-    precip_nc=get_rainfall.output.precip_nc,
-    event_root="data/{region}/rainfall/events",
-    rps=w.get_ref("$config.rps"),
-    wildcard="event",
-)
+    get_rainfall = GetERA5Rainfall(
+        region=sfincs_build.output.sfincs_region,
+        data_root="data/{region}/rainfall/input",
+        start_date="2000-01-01",
+        end_date="2020-12-31",
+    )
+    w.add_rule(get_rainfall, rule_id="get_rainfall")
 
-w.add_rule(pluvial_events, rule_id="pluvial_events")
+    pluvial_events = PluvialDesignEvents(
+        precip_nc=get_rainfall.output.precip_nc,
+        event_root="data/{region}/rainfall/events",
+        rps=w.get_ref("$config.rps"),
+        wildcard="event",
+    )
 
-# %% add sfincs methods
+    w.add_rule(pluvial_events, rule_id="pluvial_events")
 
-sfincs_pre = SfincsUpdateForcing(
-    sfincs_inp=sfincs_build.output.sfincs_inp,
-    event_yaml=pluvial_events.output.event_yaml,
-    event_name="{event}",
-)
-w.add_rule(sfincs_pre, rule_id="sfincs_pre")
+    # %% add sfincs methods
 
-sfincs_run = SfincsRun(
-    sfincs_inp=sfincs_pre.output.sfincs_out_inp,
-    sfincs_exe=w.get_ref("$config.sfincs_exe"),
-)
-w.add_rule(sfincs_run, rule_id="sfincs_run")
+    sfincs_pre = SfincsUpdateForcing(
+        sfincs_inp=sfincs_build.output.sfincs_inp,
+        event_yaml=pluvial_events.output.event_yaml,
+        event_name="{event}",
+    )
+    w.add_rule(sfincs_pre, rule_id="sfincs_pre")
 
+    sfincs_run = SfincsRun(
+        sfincs_inp=sfincs_pre.output.sfincs_out_inp,
+        sfincs_exe=w.get_ref("$config.sfincs_exe"),
+    )
+    w.add_rule(sfincs_run, rule_id="sfincs_run")
 
-sfincs_post = SfincsPostprocess(
-    sfincs_map=sfincs_run.output.sfincs_map,
-    sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
-    hazard_root="data/{region}/output",
-)
-w.add_rule(sfincs_post, "sfincs_post")
+    sfincs_post = SfincsPostprocess(
+        sfincs_map=sfincs_run.output.sfincs_map,
+        sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
+        hazard_root="data/{region}/output",
+    )
+    w.add_rule(sfincs_post, "sfincs_post")
 
-# %% print workflow
+    # %% run workflow
+    w.run(dryrun=True)
 
-print(w)
-
-# %% run workflow
-w.run(dryrun=True, tmpdir="./")
-
-# %% to snakemake
-
-w.to_snakemake(f"{w.name}.smk")
+    # %% to snakemake
+    w.to_snakemake(f"{name}/workflow.smk")

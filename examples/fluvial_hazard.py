@@ -3,6 +3,8 @@
 # %% Import packages
 from pathlib import Path
 
+from fetch_data import fetch
+
 from hydroflows import Workflow
 from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.sfincs import (
@@ -19,9 +21,13 @@ from hydroflows.methods.wflow import (
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 if __name__ == "__main__":
-    pass
-    # %% Define variables
+    # Get current file location
     pwd = Path(__file__).parent
+
+    # %% Fetch the global build data
+    fetch(data="artifact-data", output_dir=Path(pwd, "data/global-data"))
+
+    # %% Define variables
     name = "fluvial_hazard"
     model_dir = "models"
     data_dir = "data"
@@ -42,6 +48,7 @@ if __name__ == "__main__":
         rps=[2, 5, 10],
         sfincs_res=50,
         river_upa=10,
+        depth_min=0.05,
         plot_fig=True,
     )
     w = Workflow(name="fluvial_hazard", config=conf)
@@ -72,15 +79,16 @@ if __name__ == "__main__":
     # %% Update forcing & run wflow model
     wflow_update = WflowUpdateForcing(
         wflow_toml=wflow_build.output.wflow_toml,
-        start_time="1990-01-01",
-        end_time="2023-12-31",
-        sim_subfolder="reanalysis",
+        data_libs=w.get_ref("$config.data_libs"),
+        start_time=w.get_ref("$config.start_date"),
+        end_time=w.get_ref("$config.end_date"),
     )
     w.add_rule(wflow_update, rule_id="wflow_update")
 
+    # %% Run the wflow model
     wflow_run = WflowRun(
         wflow_toml=wflow_update.output.wflow_out_toml,
-        wflow_bin=w.get_ref("$config.wflow_bin"),
+        wflow_bin=wflow_exe,
     )
     w.add_rule(wflow_run, rule_id="wflow_run")
 
@@ -88,37 +96,39 @@ if __name__ == "__main__":
     fluvial_events = FluvialDesignEvents(
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
-        wildcard="event",
-        event_root="data/events",
+        wildcard="fluvial_events",
+        event_root=Path(data_dir, "events").as_posix(),
+        index_dim="Q_gauges_bounds",
     )
     w.add_rule(fluvial_events, rule_id="fluvial_events")
 
     # %% prepare sfincs models per event, run & postprocess
     sfincs_update = SfincsUpdateForcing(
         sfincs_inp=sfincs_build.output.sfincs_inp,
+        sim_subfolder=simu_dir,
         event_yaml=fluvial_events.output.event_yaml,
     )
     w.add_rule(sfincs_update, rule_id="sfincs_update")
 
+    # %% Run the Sfincs model(s)
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=w.get_ref("$config.sfincs_exe"),
+        sfincs_exe=sfincs_exe,
     )
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
+    # %% Postprocess the sfincs output
     sfincs_post = SfincsPostprocess(
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
+        depth_min=w.get_ref("$config.depth_min"),
+        hazard_root=Path(output_dir, "hazard").as_posix(),
+        event_name="{fluvial_events}",
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")
 
-    # %% print workflow
-    print(w)
-
     # %% Test the workflow
-    w.run(dryrun=True, tmpdir="./")
+    w.run(dryrun=True)
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(f"{w.name}.smk")
-
-# %%
+    w.to_snakemake(f"cases/{name}/workflow.smk")
