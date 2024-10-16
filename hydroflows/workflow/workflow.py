@@ -89,9 +89,8 @@ class Workflow:
         """Set references to the input of rules that use the output of other rules in the workflow."""
         for rule in self.rules:
             for i in rule.input:
-                # TODO add path check
                 if i[1].as_posix() in self.output_path_refs:
-                    rule.input._ref.update(
+                    rule.input._refs.update(
                         {i[0]: self.output_path_refs.get(i[1].as_posix())}
                     )
 
@@ -224,8 +223,9 @@ class Workflow:
             if not rule:
                 continue
             for output in rule.output:
-                # TODO add check for path
-                # TODO add check for output path uniqueness and raise error
+                if output[1].as_posix() in output_paths:
+                    err_msg = f"Output file paths must be unique, found duplicate output path: {output[1].as_posix()}"
+                    raise ValueError(err_msg)
                 output_paths[
                     output[1].as_posix()
                 ] = f"$rules.{rule.rule_id}.output.{output[0]}"

@@ -13,7 +13,12 @@ from hydroflows.workflow import (
     WorkflowConfig,
 )
 from hydroflows.workflow.workflow import Wildcards
-from tests.conftest import MockExpandMethod, MockReduceMethod, TestMethod
+from tests.conftest import (
+    MockExpandMethod,
+    MockReduceMethod,
+    TestMethod,
+    TestMethodOutput,
+)
 
 
 @pytest.fixture()
@@ -142,10 +147,13 @@ def test_workflow_create_references(w: Workflow):
     method1 = TestMethod(input_file1="test1", input_file2="test2")
     w.add_rule(method=method1, rule_id="method1")
     method2 = TestMethod(input_file1="output1", input_file2="output2")
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
     w.add_rule(method=method2, rule_id="method2")
     w.create_references()
-    assert isinstance(w.rules[1].input.input_file1, Ref)
-    assert w.rules[1].input.input_file2.value.as_posix() == "output2"
+    assert w.rules[1].input._refs == {
+        "input_file1": "$rules.method1.output.output_file1",
+        "input_file2": "$rules.method1.output.output_file2",
+    }
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
@@ -252,3 +260,22 @@ def test_workflow_run(mocker, w, tmp_path):
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     w.run(dryrun=True, missing_file_error=True)
+
+
+def test_output_path_refs(w: Workflow):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    # method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+    w.add_rule(method=method2, rule_id="method2")
+
+    with pytest.raises(
+        ValueError,
+        match="Output file paths must be unique, found duplicate output path: output1",
+    ):
+        w.output_path_refs  # noqa: B018
+
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+
+    output_path_refs = w.output_path_refs
+    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 5)]
