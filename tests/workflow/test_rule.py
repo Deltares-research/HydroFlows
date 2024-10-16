@@ -254,6 +254,10 @@ def test_run(capsys, mocker):
     mock_thread_map.assert_called_with(
         rule._run_method_instance, rule.wildcard_product(), max_workers=2
     )
+    rule.run(dryrun=True)
+    captured = capsys.readouterr()
+    assert "Run 1/2: {'region': 'region1'}" in captured.out
+    assert "Run 2/2: {'region': 'region2'}" in captured.out
 
 
 def test_run_method_instance(mocker):
