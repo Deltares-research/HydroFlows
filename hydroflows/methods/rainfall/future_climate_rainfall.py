@@ -2,7 +2,7 @@
 
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import pandas as pd
 from pydantic import PositiveInt, model_validator
@@ -111,6 +111,7 @@ class FutureClimateRainfall(ExpandMethod):
         event_set_yaml: Path,
         event_root: Optional[Path] = None,
         wildcard: str = "future_event",
+        event_input_names: Optional[List[str]] = None,
         **params,
     ) -> None:
         """Create and validate a FutureClimateRainfall instance.
@@ -145,6 +146,7 @@ class FutureClimateRainfall(ExpandMethod):
             ref_year=ref_year,
             event_root=event_root,
             wildcard=wildcard,
+            event_input_names=event_input_names,
             **params,
         )
 
@@ -153,17 +155,17 @@ class FutureClimateRainfall(ExpandMethod):
         wc = "{" + self.params.wildcard + "}"
 
         self.output: Output = Output(
-            future_event_yaml=self.params.event_root / f"{wc}.yml",
-            future_event_csv=self.params.event_root / f"{wc}.csv",
-            future_event_set_yaml=self.params.event_root
+            future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
+            future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
+            future_event_set_yaml=Path(self.params.event_root)
             / f"future_pluvial_events_{self.params.scenario_name}_{self.params.future_period}.yml",
         )
 
         future_event_names_list = []
         if self.params.event_input_names is None:
             # check if file exist (the self.input.event_set_yaml won't exist in a workflow
-            # if it is expected to be produced by a method e.g. pluvia_design_event)
-            # making the workflow fail
+            # if it is expected to be produced by a method e.g. pluvia_design_event
+            # making the workflow fail)
             # TODO think of a better appoach
             if os.path.exists(self.input.event_set_yaml):
                 event_set = EventSet.from_yaml(self.input.event_set_yaml)
