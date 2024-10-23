@@ -9,7 +9,7 @@ Get GTSM data
 .. autosummary::
     :toctree: ../_generated
 
-    get_gtsm_data.GetGTMSData
+    get_gtsm_data.GetGTSMData
     get_gtsm_data.Input
     get_gtsm_data.Output
     get_gtsm_data.Params
