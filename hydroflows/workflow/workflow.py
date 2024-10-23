@@ -3,6 +3,7 @@
 Which is the main class for defining workflows in hydroflows.
 """
 
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -19,6 +20,8 @@ from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
+
+logger = logging.getLogger()
 
 
 class Workflow:
@@ -88,10 +91,14 @@ class Workflow:
     def create_references(self):
         """Set references to the input of rules that use the output of other rules in the workflow."""
         for rule in self.rules:
-            for i in rule.input:
-                if i[1].as_posix() in self.output_path_refs:
+            for key, value in rule.input:
+                if value.as_posix() in self.output_path_refs:
                     rule.input._refs.update(
-                        {i[0]: self.output_path_refs.get(i[1].as_posix())}
+                        {key: self.output_path_refs.get(value.as_posix())}
+                    )
+                else:
+                    logging.debug(
+                        f"Method input {key} is not an output of another rule"
                     )
 
     def get_ref(self, ref: str) -> Ref:
@@ -222,13 +229,11 @@ class Workflow:
         for rule in self.rules:
             if not rule:
                 continue
-            for output in rule.output:
-                if output[1].as_posix() in output_paths:
-                    err_msg = f"Output file paths must be unique, found duplicate output path: {output[1].as_posix()}"
+            for key, value in rule.output:
+                if value.as_posix() in output_paths:
+                    err_msg = f"Output file paths must be unique, found duplicate output path: {value.as_posix()}"
                     raise ValueError(err_msg)
-                output_paths[
-                    output[1].as_posix()
-                ] = f"$rules.{rule.rule_id}.output.{output[0]}"
+                output_paths[value.as_posix()] = f"$rules.{rule.rule_id}.output.{key}"
         return output_paths
 
 

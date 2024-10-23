@@ -262,7 +262,6 @@ def test_output_path_refs(w: Workflow):
     method1 = TestMethod(input_file1="test1", input_file2="test2")
     w.add_rule(method=method1, rule_id="method1")
     method2 = TestMethod(input_file1="output1", input_file2="output2")
-    # method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
     w.add_rule(method=method2, rule_id="method2")
 
     with pytest.raises(
@@ -271,6 +270,7 @@ def test_output_path_refs(w: Workflow):
     ):
         w.output_path_refs  # noqa: B018
 
+    # Change the output of method2, otherwise output files are not unique among two of the same methods
     method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
 
     output_path_refs = w.output_path_refs
