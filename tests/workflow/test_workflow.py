@@ -22,6 +22,13 @@ from tests.workflow.conftest import (
 
 
 @pytest.fixture()
+def w() -> Workflow:
+    config = {"rps": [2, 50, 100]}
+    wildcards = {"region": ["region1", "region2"]}
+    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
+
+
+@pytest.fixture()
 def workflow_yaml_dict():
     return {
         "config": {
