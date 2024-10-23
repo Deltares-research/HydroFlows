@@ -93,10 +93,6 @@ class CoastalDesignEventFromRPData(ExpandMethod):
     Utilizes :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`,
     :py:class:`Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`, and
     :py:class:`Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>` for method inputs, outputs and params.
-
-    See Also
-    --------
-    :py:function:`hydroflows.methods.coastal.coastal_design_events_from_rp_data.plot_hydrographs`
     """
 
     name: str = "coastal_design_events_from_rp_data"
