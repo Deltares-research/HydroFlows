@@ -172,7 +172,7 @@ class Ref(object):
         elif ref_type == "$wildcards":
             self._set_resolve_wildcard_ref(ref)
         else:  # try to resolve as a global variable
-            obj = _get_obj_from_caller_globals(ref_type, ref)
+            obj = self._get_obj_from_caller_globals(ref_type, ref)
             if obj == self.workflow:
                 ref = "$" + ".".join(ref.split(".")[1:])
                 self._set_resolve_ref(ref)
@@ -201,7 +201,9 @@ class Ref(object):
         """Resolve $config reference."""
         self.ref = ref
         config = self.workflow.config.to_dict()
-        self.value = _get_nested_value_from_dict(config, self.ref.split(".")[1:], ref)
+        self.value = self._get_nested_value_from_dict(
+            config, self.ref.split(".")[1:], ref
+        )
 
     def _set_resolve_wildcard_ref(self, ref: str) -> Any:
         """Resolve $wildcards reference."""
@@ -220,7 +222,7 @@ class Ref(object):
         rules = [rule for rule in self.workflow.rules if rule.method == method]
         if len(rules) == 0:
             raise ValueError(
-                f"Invalid method reference {ref}. " "Method not added to the workflow"
+                f"Invalid method reference {ref}. Method not added to the workflow"
             )
         rule_id = rules[0].rule_id
         component, field = ref_keys[-2], ref_keys[-1]
@@ -232,33 +234,33 @@ class Ref(object):
         ref_keys = ref.split(".")
         if config != self.workflow.config:
             raise ValueError(
-                f"Invalid config reference {ref}. " "Config not added to the workflow"
+                f"Invalid config reference {ref}. Config not added to the workflow"
             )
         fields = ".".join(ref_keys[1:])
         ref = f"$config.{fields}"
         self._set_resolve_config_ref(ref)
 
+    @staticmethod
+    def _get_nested_value_from_dict(
+        d: dict, keys: list, full_reference: Optional[str] = None
+    ) -> Any:
+        """Get nested value from dictionary."""
+        if full_reference is None:
+            full_reference = ".".join(keys)
+        for key in keys:
+            if isinstance(d, dict) and key in d:
+                d = d[key]
+            else:
+                raise KeyError(f"Key not found: {full_reference}")
+        return d
 
-def _get_nested_value_from_dict(
-    d: dict, keys: list, full_reference: Optional[str] = None
-) -> Any:
-    """Get nested value from dictionary."""
-    if full_reference is None:
-        full_reference = ".".join(keys)
-    for key in keys:
-        if isinstance(d, dict) and key in d:
-            d = d[key]
-        else:
-            raise KeyError(f"Key not found: {full_reference}")
-    return d
-
-
-def _get_obj_from_caller_globals(var_name: str, ref: str) -> Any:
-    """Get global variable."""
-    cf = inspect.currentframe()
-    while True:
-        code_context = inspect.getframeinfo(cf).code_context
-        if code_context and ref in str(code_context):
-            break
-        cf = cf.f_back
-    return cf.f_globals.get(var_name, None)
+    @staticmethod
+    def _get_obj_from_caller_globals(var_name: str, ref: str) -> Any:
+        """Get global variable."""
+        cf = inspect.currentframe()
+        while True:
+            code_context = inspect.getframeinfo(cf).code_context
+            if code_context and ref in str(code_context):
+                break
+            cf = cf.f_back
+        return cf.f_locals.get(var_name, cf.f_globals.get(var_name, None))
