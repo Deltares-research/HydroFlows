@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from hydroflows.methods.wflow import WflowBuild, WflowDesignHydro, WflowUpdateForcing
+from hydroflows.methods.wflow import WflowBuild, WflowUpdateForcing
 
 
 @pytest.mark.requires_data()
@@ -57,18 +57,3 @@ def test_wflow_update_forcing(
     )
 
     rule.run_with_checks()
-
-
-def test_wflow_design_hydro(tmp_disch_time_series_nc: Path, tmp_path: Path):
-    # required inputs
-    discharge_nc = tmp_disch_time_series_nc
-    event_root = Path(tmp_path, "events")
-
-    m = WflowDesignHydro(
-        discharge_nc=discharge_nc,
-        event_root=event_root,
-        wildcard="q_event",
-        var_name="Q",
-    )
-    assert "{q_event}" in str(m.output.event_csv)
-    m.run_with_checks()

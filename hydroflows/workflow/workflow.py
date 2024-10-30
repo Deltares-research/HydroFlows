@@ -3,6 +3,7 @@
 Which is the main class for defining workflows in hydroflows.
 """
 
+import logging
 import os
 import tempfile
 from pathlib import Path
@@ -14,13 +15,16 @@ from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 
 from hydroflows import __version__
-from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule
+from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
+from hydroflows.utils.cwl_utils import map_cwl_types
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
-from hydroflows.utils.cwl_utils import map_cwl_types
+
+logger = logging.getLogger("hydroflows")
+
 
 class Workflow:
     """Workflow class."""
@@ -85,6 +89,27 @@ class Workflow:
         # instantiate the method and add the rule
         m = Method.from_kwargs(name=str(method), **kwargs)
         self.add_rule(m, rule_id)
+
+    def create_references(self, overwrite=False) -> None:
+        """Set references to the input of rules that use the output of other rules in the workflow."""
+        output_path_refs = self._output_path_refs
+        for rule in self.rules:
+            for key, value in rule.input:
+                if not overwrite and key in rule.input._refs:
+                    continue
+                if isinstance(value, Path):
+                    value = value.as_posix()
+                else:
+                    logger.debug(
+                        f"{rule.rule_id}.input.{key} is not a Path object (but {type(value)})"
+                    )
+                    continue
+                if value in output_path_refs:
+                    rule.input._refs.update({key: output_path_refs.get(value)})
+                else:
+                    logger.debug(
+                        f"{rule.rule_id}.input.{key} ({value}) is not an output of another rule"
+                    )
 
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
@@ -153,58 +178,60 @@ class Workflow:
         cwlfile: Path,
         dryrun: bool = False,
     ) -> None:
-        
+        """Save the workflow to a CWL workflow.
+
+        Parameters
+        ----------
+        cwlfile : Path
+            Path to the CWL workflow file. CWL files for individual methods will be created in the subfolder <cwlfile>/cwl.
+        dryrun : bool, optional
+            Run the workflow in dryrun mode, by default False
+        """
         cwlfile = Path(cwlfile).resolve()
         configfile = cwlfile.with_suffix(".config.yml")
         # Make sure all necessary folders exist
-        if not (cwlfile.parent/"cwl").exists():
-            (cwlfile.parent/"cwl").mkdir(parents=True)
+        if not (cwlfile.parent / "cwl").exists():
+            (cwlfile.parent / "cwl").mkdir(parents=True)
 
         template_env = Environment(
-            loader=PackageLoader("hydroflows"),
-            trim_blocks=True,
-            lstrip_blocks=True
+            loader=PackageLoader("hydroflows"), trim_blocks=True, lstrip_blocks=True
         )
         template_workflow = template_env.get_template("workflow.cwl.jinja")
         template_rule = template_env.get_template("rule.cwl.jinja")
 
         # Write CWL files for the methods
         for rule in self.rules:
-            _str = template_rule.render(
-                version=__version__,
-                rule=JinjaCWLRule(rule)
-            )
+            _str = template_rule.render(version=__version__, rule=JinjaCWLRule(rule))
             with open(f"{cwlfile.parent}/cwl/{rule.method.name}.cwl", "w") as f:
                 f.write(_str)
-        
+
         # Write CWL file for the workflow
         input_dict = {}
-        for key,value in self.config:
+        for key, value in self.config:
             input_dict[key] = map_cwl_types(value)
         for wc in self.wildcards.names:
             input_dict[wc] = {"type": "string[]", "value": self.wildcards.get(wc)}
         if dryrun:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
-        
+
         _str = template_workflow.render(
             version=__version__,
             inputs=input_dict,
             rules=[JinjaCWLRule(r) for r in self.rules],
-            dryrun=dryrun
+            dryrun=dryrun,
         )
-        with open(cwlfile,"w") as f:
+        with open(cwlfile, "w") as f:
             f.write(_str)
 
         # Write CWL config file
         config = {}
-        for key,value in input_dict.items():
+        for key, value in input_dict.items():
             if value["type"] == "File":
-                config[key] = value['value']
+                config[key] = value["value"]
             else:
-                config[key] = value['value']
-        with open(configfile,"w") as f:
-           yaml.dump(config,f)
-
+                config[key] = value["value"]
+        with open(configfile, "w") as f:
+            yaml.dump(config, f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
@@ -243,6 +270,7 @@ class Workflow:
             curdir = Path.cwd()
             if tmpdir is None:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
+            Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
             print(f"Running dryrun in {tmpdir}")
 
@@ -257,6 +285,35 @@ class Workflow:
 
         if dryrun:
             os.chdir(curdir)
+
+    @property
+    def _output_path_refs(self) -> Dict[str, str]:
+        """Retrieve output path references of all rules in the workflow.
+
+        Returns
+        -------
+        Dict[str, str]
+            Dictionary containing the output path as the key and the reference as the value
+        """
+        output_paths = {}
+        for rule in self.rules:
+            if not rule:
+                continue
+            for key, value in rule.output:
+                if isinstance(value, Path):
+                    value = value.as_posix()
+                else:
+                    logger.debug(
+                        f"{rule.rule_id}.output.{key} is not a Path object (but {type(value)})"
+                    )
+                    continue
+                if value in output_paths:
+                    duplicate_field = output_paths[value].replace("$rules.", "")
+                    raise ValueError(
+                        f"All output file paths must be unique, {rule.rule_id}.output.{key} ({value}) is already an output of {duplicate_field}"
+                    )
+                output_paths[value] = f"$rules.{rule.rule_id}.output.{key}"
+        return output_paths
 
 
 class Wildcards(BaseModel):

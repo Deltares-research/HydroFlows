@@ -1,12 +1,12 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated, TypedDict
 
-from hydroflows.utils.parsers import get_wildcards, str_to_list
+from hydroflows.utils.parsers import get_wildcards, str_to_list, str_to_tuple
 
 ListOfStr = Annotated[
     list[str],
@@ -21,6 +21,17 @@ ListOfInt = Annotated[
 ListOfFloat = Annotated[
     list[float],
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
+]
+
+TupleOfInt = Annotated[
+    Tuple[int, int],
+    BeforeValidator(
+        lambda x: tuple(
+            int(float(i)) if float(i).is_integer() else int(i) for i in str_to_tuple(x)
+        )
+        if isinstance(x, str)
+        else x
+    ),
 ]
 
 ListOfPath = Annotated[
@@ -52,12 +63,16 @@ EventDatesDict = Annotated[
     ),
 ]
 
+
 class folderpath(Path):
     """Subtype Path to indicate when parent folder is needed for workflow execution."""
+
     _flavour = type(Path())._flavour
+
 
 def folderpath_validator(x: Path) -> folderpath:
     """Promote Path to folderpath type."""
     return folderpath(x)
+
 
 FolderPath = Annotated[Path, AfterValidator(folderpath_validator)]

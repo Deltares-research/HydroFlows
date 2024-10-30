@@ -1,9 +1,10 @@
-"""Workflow file for the Lagos case."""
+"""Script to generate workflow files for the Livenza case."""
 # %%
 # Import packages  # noqa: D100
 import os
 
 from hydroflows import Workflow
+from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.fiat import (
     FIATBuild,
     FIATRun,
@@ -21,7 +22,6 @@ from hydroflows.methods.sfincs import (
 )
 from hydroflows.methods.wflow import (
     WflowBuild,
-    WflowDesignHydro,
     WflowRun,
     WflowUpdateForcing,
 )
@@ -58,7 +58,6 @@ if __name__ == "__main__":
         end_date="2021-12-31",
         plot_fig=True,
         depth_min=0.05,
-        # local_precip_path="preprocessed_data/output_scalar_resampled_precip_station11.nc",
     )
 
     # Create a workflow
@@ -127,7 +126,7 @@ if __name__ == "__main__":
     w.add_rule(wflow_run, rule_id="wflow_run")
 
     # Generate fluvial events
-    fluvial_events = WflowDesignHydro(
+    fluvial_events = FluvialDesignEvents(
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
         wildcard="fluvial_events",

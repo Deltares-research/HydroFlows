@@ -20,6 +20,23 @@ def str_to_list(v: str) -> list[str]:
     return [v.strip("'\" ") for v in vlist]
 
 
+def str_to_tuple(v: str) -> tuple[str, str]:
+    """Convert a comma and space-separated string to a tuple."""
+    # remove whitespace and () at the beginning and end
+    v = v.strip("()[] ")
+    # split by comma but not inside quotes
+    regex = r"[^,\s\"']+|\"([^\"]*)\"|'([^']*)'"
+    if not any(re.findall(regex, v)):  # no commas: split by space
+        # split by space but not inside quotes
+        regex = r"[^\s\"']+|\"([^\"]*)\"|'([^']*)'"
+    # create a list from the matches, keeping quoted groups intact
+    vlist = [m.group(1) or m.group(2) or m.group(0) for m in re.finditer(regex, v)]
+    # strip whitespace and quotes from values
+    clean_list = [val.strip("'\" ") for val in vlist]
+    # return the list as a tuple
+    return tuple(clean_list)
+
+
 def get_wildcards(s, known_wildcards: Optional[List[str]] = None) -> List[str]:
     """Return a list of wildcards in the form of `{*}` from a string.
 
