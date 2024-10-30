@@ -103,8 +103,7 @@ class Params(Parameters):
                 )
         elif self.event_names_input is not None:
             self.event_names_output = [
-                f"{name}_{self.scenario_name}"
-                for name in self.event_names_input
+                f"{name}_{self.scenario_name}" for name in self.event_names_input
             ]
 
 
@@ -142,7 +141,7 @@ class FutureClimateRainfall(ExpandMethod):
             Future scenario name for which CC scaling is applied.
         dT: float
             Temperature change corresponding to the future climate scenario `scenario_name`,
-            idnicating the temperature difference between the year of the event 
+            indicating the temperature difference between the year of the event
             to be scaled and the future climate period of interest.
         event_root: Path, optional
             Root folder to save the derived scaled events, by default "data/events/future_rainfall".
@@ -212,9 +211,7 @@ class FutureClimateRainfall(ExpandMethod):
             # Create a new df to include the time and scaled values
             future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
 
-            filename = (
-                f"{event.name}_{self.params.scenario_name}"
-            )
+            filename = f"{event.name}_{self.params.scenario_name}"
 
             fmt_dict = {self.params.wildcard: filename}
 
