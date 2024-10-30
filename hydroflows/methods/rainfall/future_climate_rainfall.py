@@ -47,12 +47,12 @@ class Params(Parameters):
 
     dT: float
     """Temperature change corresponding to the future climate scenario `scenario_name`
-    Note that this value indicates the temperature difference between the year of the event 
+    Note that this value indicates the temperature difference between the year of the event
     to be scaled and the future climate period of interest.
 
-    This parameter also represents the projected temperature increase, with an emphasis on hot 
-    days, rather than a simple average temperature change. To accurately capture extreme 
-    temperature shifts, it is recommended that users consider high quantiles 
+    This parameter also represents the projected temperature increase, with an emphasis on hot
+    days, rather than a simple average temperature change. To accurately capture extreme
+    temperature shifts, it is recommended that users consider high quantiles
     (e.g., the 95th percentile) in their analyses.
 
     Temperature changes for different periods and emission scenarios
