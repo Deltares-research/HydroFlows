@@ -16,13 +16,13 @@ __eps__ = {
     "get_ERA5_rainfall": "hydroflows.methods.rainfall.get_ERA5_rainfall:GetERA5Rainfall",
     "pluvial_design_events": "hydroflows.methods.rainfall.pluvial_design_events:PluvialDesignEvents",
     "pluvial_historical_events": "hydroflows.methods.rainfall.pluvial_historical_events:PluvialHistoricalEvents",
+    "future_climate_rainfall": "hydroflows.methods.rainfall.future_climate_rainfall:FutureClimateRainfall",
     "sfincs_build": "hydroflows.methods.sfincs.sfincs_build:SfincsBuild",
     "sfincs_run": "hydroflows.methods.sfincs.sfincs_run:SfincsRun",
     "sfincs_postprocess": "hydroflows.methods.sfincs.sfincs_postprocess:SfincsPostprocess",
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
-    "wflow_design_hydro": "hydroflows.methods.wflow.wflow_design_hydro:WflowDesignHydro",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
     "fluvial_historical_events": "hydroflows.methods.discharge.fluvial_historical_events:FluvialHistoricalEvents",
     "coastal_design_events": "hydroflows.methods.coastal.coastal_design_events:CoastalDesignEvents",
@@ -30,6 +30,8 @@ __eps__ = {
     "coastal_tidal_analysis": "hydroflows.methods.coastal.coastal_tidal_analysis:CoastalTidalAnalysis",
     "get_coast_rp": "hydroflows.methods.coastal.get_coast_rp:GetCoastRP",
     "get_gtsm_data": "hydroflows.methods.coastal.get_gtsm_data:GetGTSMData",
+    "floodmarks_validation": "hydroflows.methods.hazard_validation.floodmarks:FloodmarksValidation",
+    "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
 }
 
 
