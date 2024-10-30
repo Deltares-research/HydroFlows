@@ -20,8 +20,10 @@ if __name__ == "__main__":
 
     # Setup the configuration
     config = WorkflowConfig(
-        region=Path(pwd, "data/build/region.geojson").as_posix(),
-        data_libs="p:/11209169-003-up2030/data/WATER_LEVEL/data_catalog.yml",  # replace with pooch fetched data
+        region=Path(pwd, "data/build/region.geojson"),
+        gtsm_catalog=Path(
+            "p:/11209169-003-up2030/data/WATER_LEVEL/data_catalog.yml"
+        ),  # replace with pooch fetched data
         start_time="2014-01-01",
         end_time="2021-12-31",
         rps=[2, 5, 10],
@@ -31,7 +33,7 @@ if __name__ == "__main__":
 
     # %% Get the GTSM data
     get_gtsm_data = GetGTSMData(
-        gtsm_catalog=w.get_ref("$config.data_libs"),
+        gtsm_catalog=w.get_ref("$config.gtsm_catalog"),
         start_time=w.get_ref("$config.start_time"),
         end_time=w.get_ref("$config.end_time"),
         region=w.get_ref("$config.region"),

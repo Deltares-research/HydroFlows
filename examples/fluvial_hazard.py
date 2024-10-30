@@ -34,15 +34,15 @@ if __name__ == "__main__":
     input_dir = "input"
     output_dir = "output"
     simu_dir = "simulations"
-    wflow_exe = Path(pwd, "bin/wflow/bin/wflow_cli.exe").as_posix()
-    sfincs_exe = Path(pwd, "bin/sfincs/sfincs.exe").as_posix()
 
     # Setup the configuration
     conf = WorkflowConfig(
-        region=Path(pwd, "data/build/region.geojson").as_posix(),
-        data_libs=Path(pwd, "data/global-data/data_catalog.yml").as_posix(),
-        hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml").as_posix(),
-        hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml").as_posix(),
+        region=Path(pwd, "data/build/region.geojson"),
+        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
+        hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
+        hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml"),
+        wflow_exe=Path(pwd, "bin/wflow/bin/wflow_cli.exe"),
+        sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     # %% Build SFINCS model
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
-        sfincs_root=Path(model_dir, "sfincs").as_posix(),
+        sfincs_root=Path(model_dir, "sfincs"),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
         data_libs=w.get_ref("$config.data_libs"),
         res=w.get_ref("$config.sfincs_res"),
@@ -88,7 +88,7 @@ if __name__ == "__main__":
     # %% Run the wflow model
     wflow_run = WflowRun(
         wflow_toml=wflow_update.output.wflow_out_toml,
-        wflow_bin=wflow_exe,
+        wflow_bin=w.get_ref("$config.wflow_exe"),
     )
     w.add_rule(wflow_run, rule_id="wflow_run")
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
         discharge_nc=wflow_run.output.wflow_output_timeseries,
         rps=w.get_ref("$config.rps"),
         wildcard="fluvial_events",
-        event_root=Path(data_dir, "events").as_posix(),
+        event_root=Path(data_dir, "events"),
         index_dim="Q_gauges_bounds",
     )
     w.add_rule(fluvial_events, rule_id="fluvial_events")
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     # %% Run the Sfincs model(s)
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=sfincs_exe,
+        sfincs_exe=w.get_ref("$config.sfincs_exe"),
     )
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),
-        hazard_root=Path(output_dir, "hazard").as_posix(),
+        hazard_root=Path(output_dir, "hazard"),
         event_name="{fluvial_events}",
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")

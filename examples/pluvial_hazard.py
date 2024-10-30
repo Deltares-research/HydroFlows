@@ -20,14 +20,14 @@ if __name__ == "__main__":
     data_dir = "data"
     input_dir = "data/input"
     simu_dir = "simulations"
-    sfincs_exe = Path(pwd, "bin/sfincs/sfincs.exe").as_posix()
-    sfincs_root = Path(pwd, "cases", name, model_dir, "sfincs")
+    sfincs_root = Path(model_dir, "sfincs")
 
     # Fetch the sfincs model
-    fetch(data="sfincs-model", output_dir=sfincs_root)
+    fetch(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
 
     # Setup the config file
     conf = WorkflowConfig(
+        sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # %% Derive pluviual events from precipitation data
     pluvial_events = PluvialDesignEvents(
         precip_nc=pluvial_data.output.precip_nc,
-        event_root=Path(data_dir, "events").as_posix(),
+        event_root=Path(data_dir, "events"),
         rps=w.get_ref("$config.rps"),
         wildcard="pluvial_events",
     )
@@ -65,7 +65,7 @@ if __name__ == "__main__":
     # %% Run the sfincs model
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=sfincs_exe,
+        sfincs_exe=w.get_ref("$config.sfincs_exe"),
     )
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 

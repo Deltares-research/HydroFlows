@@ -13,14 +13,13 @@ from hydroflows.methods.sfincs import (
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
-    pass
     # %% Set the variables
     pwd = Path(__file__).parent
     name = "pluvial_multiple_regions"
-    data_libs = Path(pwd, "data/global-data/data_catalog.yml").as_posix()
 
     # Setup the configuration
     conf = WorkflowConfig(
+        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
         start_date="",
         end_date="",
         rps=[5, 10],
@@ -37,6 +36,7 @@ if __name__ == "__main__":
     sfincs_build = SfincsBuild(
         region="data/{region}.geojson",
         sfincs_root="models/sfincs/{region}",
+        data_libs=w.get_ref("$config.data_libs"),
     )
     w.add_rule(sfincs_build, "sfincs_build")
 
