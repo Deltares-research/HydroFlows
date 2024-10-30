@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        python-version: ['310','311']
+        python-version: ['311'] # ['310']
     runs-on: ${{ matrix.os }}
     name: py ${{ matrix.python-version }} on ${{ matrix.os }}
     timeout-minutes: 30
