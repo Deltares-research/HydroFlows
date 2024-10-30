@@ -36,3 +36,15 @@ Pluvial historical events
    pluvial_historical_events.Input
    pluvial_historical_events.Params
    pluvial_historical_events.Output
+
+
+Future climate rainfall
+-----------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   future_climate_rainfall.FutureClimateRainfall
+   future_climate_rainfall.Input
+   future_climate_rainfall.Params
+   future_climate_rainfall.Output
