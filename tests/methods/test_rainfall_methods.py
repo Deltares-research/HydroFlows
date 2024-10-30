@@ -88,10 +88,8 @@ def test_future_climate_rainfall(
 
     rule = FutureClimateRainfall(
         event_set_yaml=event_set_yaml,
-        future_period="2100",
         scenario_name="RCP85",
         dT=2.5,
-        ref_year=2010,
         event_root=out_root,
         time_col="date",
     )

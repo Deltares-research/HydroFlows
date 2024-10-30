@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
-from pydantic import Field, PositiveInt, model_validator
+from pydantic import Field, model_validator
 
 from hydroflows._typing import ListOfStr
 from hydroflows.events import Event, EventSet
@@ -31,7 +31,7 @@ class Output(Parameters):
     see also :py:class:`hydroflows.events.Event`."""
 
     future_event_csv: Path
-    """The path to the scaled event csv timeseries file"""
+    """The path to the scaled event csv timeseries file."""
 
     future_event_set_yaml: Path
     """The path to the scaled event set yml file,
@@ -42,33 +42,28 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`FutureClimateRainfall` method."""
 
-    future_period: PositiveInt
-    """The future time period of interest for which CC scaling is applied."""
-
     scenario_name: str
     """Future scenario name for which CC scaling is applied."""
 
     dT: float
-    """Temperature change corresponding to the `future_period` and `scenario_name`
-    relative to a reference period.
+    """Temperature change corresponding to the future climate scenario `scenario_name`
+    Note that this value indicates the temperature difference between the year of the event 
+    to be scaled and the future climate period of interest.
+
+    This parameter also represents the projected temperature increase, with an emphasis on hot 
+    days, rather than a simple average temperature change. To accurately capture extreme 
+    temperature shifts, it is recommended that users consider high quantiles 
+    (e.g., the 95th percentile) in their analyses.
 
     Temperature changes for different periods and emission scenarios
     for CMIP5 and CMIP6 models can be taken via:
     `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_"""
 
-    ref_year: PositiveInt
-    """Reference historical year for which the change of temperature `dT` is relative for."""
-
-    alpha: float = 7
-    """The rate of change of precipitation with respect to temperature (in % per degree)
+    alpha: float = 0.07
+    """The rate of change of precipitation with respect to temperature (per degree)
     used in Clausius-Clapeyron (CC) scaling"""
 
-    design_event_year: int = None
-    """Design event representing year in case of scaling a design event.
-    Used to estimate the temperature change on this year by linearly interpolating
-    between the reference year `ref_year` and the future projection period `future_period`."""
-
-    event_root: Optional[Path] = None
+    event_root: Path
     """Root folder to save the derived scaled events."""
 
     wildcard: str = "future_event"
@@ -88,14 +83,6 @@ class Params(Parameters):
 
     @model_validator(mode="after")
     def _validate_model(self):
-        if self.event_root is None:
-            self.event_root = Path(
-                f"data/events/future_rainfall/{self.scenario_name}_{self.future_period}"
-            )
-        if self.future_period <= self.ref_year:
-            raise ValueError(
-                "The provided future time period cannot be earlier than the reference year."
-            )
         # Check if the input event set yaml file exists and check / set event names
         if self.input.event_set_yaml.is_file():
             input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
@@ -116,7 +103,7 @@ class Params(Parameters):
                 )
         elif self.event_names_input is not None:
             self.event_names_output = [
-                f"{name}_{self.scenario_name}_{self.future_period}"
+                f"{name}_{self.scenario_name}"
                 for name in self.event_names_input
             ]
 
@@ -127,22 +114,18 @@ class FutureClimateRainfall(ExpandMethod):
     name: str = "future_climate_rainfall"
 
     _test_kwargs = {
-        "future_period": 2085,
         "scenario_name": "RCP85",
         "dT": 1.8,
-        "ref_year": 1990,
         "event_set_yaml": Path("event_set.yaml"),
         "event_names_input": ["p_event1", "p_event2"],
     }
 
     def __init__(
         self,
-        future_period: str,
         scenario_name: str,
         dT: int,
-        ref_year: int,
         event_set_yaml: Path,
-        event_root: Optional[Path] = None,
+        event_root: Path = Path("data/events/future_rainfall"),
         wildcard: str = "future_event",
         event_names_input: Optional[List[str]] = None,
         event_names_output: Optional[List[str]] = None,
@@ -155,17 +138,14 @@ class FutureClimateRainfall(ExpandMethod):
         event_set_yaml : Path
             The file path to the event set YAML file, which includes the events to be scaled
             for a future climate projection.
-        future_period: str
-            The future time period of interest for which CC scaling is applied.
         scenario_name: str
             Future scenario name for which CC scaling is applied.
         dT: float
-            Temperature change value for the respective emission scenario name `scenario_name` and period
-            `future_period` relative to a reference period `ref_year`.
-        ref_year: int
-            Reference historical year for which the change of temperature `dT` is relative for.
-        event_root: Optional[Path]
-            Root folder to save the derived scaled events.
+            Temperature change corresponding to the future climate scenario `scenario_name`,
+            idnicating the temperature difference between the year of the event 
+            to be scaled and the future climate period of interest.
+        event_root: Path, optional
+            Root folder to save the derived scaled events, by default "data/events/future_rainfall".
         wildcard: str
             The wildcard key for expansion over the scaled events, default is "future_event".
         event_names_input, event_names_output: Optional[List[str]]
@@ -183,10 +163,8 @@ class FutureClimateRainfall(ExpandMethod):
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         self.params: Params = Params(
-            future_period=future_period,
             scenario_name=scenario_name,
             dT=dT,
-            ref_year=ref_year,
             event_root=event_root,
             wildcard=wildcard,
             event_names_input=event_names_input,
@@ -201,7 +179,7 @@ class FutureClimateRainfall(ExpandMethod):
             future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
             future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
             future_event_set_yaml=Path(self.params.event_root)
-            / f"future_pluvial_events_{self.params.scenario_name}_{self.params.future_period}.yml",
+            / f"future_pluvial_events_{self.params.scenario_name}.yml",
         )
 
         self.set_expand_wildcard(wildcard, self.params.event_names_output)
@@ -228,33 +206,14 @@ class FutureClimateRainfall(ExpandMethod):
 
             event_df = rainfall.data.copy()
 
-            # For a historical event pick the year from the first value
-            if self.params.design_event_year is None:
-                event_year = event_df.index.year[0]
-            else:
-                # For a design event the representative year is a user defined parameter
-                event_year = self.params.design_event_year
-
-            if event_year > self.params.ref_year:
-                # Apply linear interpolation to find the temperature change (dT_event_year)
-                # for the event year relative to the reference period (e.g., 1981-2010).
-                # Interpolation is done between the reference year and the future projection period
-                dT_event_year = (
-                    self.params.dT / (self.params.future_period - self.params.ref_year)
-                ) * (event_year - self.params.ref_year)
-            else:
-                dT_event_year = 0
-
             # Apply CC scaling
-            scaled_ts = event_df.values * (1 + 0.01 * self.params.alpha) ** (
-                self.params.dT - dT_event_year
-            )
+            scaled_ts = event_df.values * (1 + self.params.alpha) ** (self.params.dT)
 
             # Create a new df to include the time and scaled values
             future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
 
             filename = (
-                f"{event.name}_{self.params.scenario_name}_{self.params.future_period}"
+                f"{event.name}_{self.params.scenario_name}"
             )
 
             fmt_dict = {self.params.wildcard: filename}
