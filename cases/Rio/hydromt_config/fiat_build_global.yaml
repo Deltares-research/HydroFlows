@@ -1,8 +1,6 @@
 setup_global_settings:
   keep_temp_files: True
 
-setup_region:
-
 setup_output:
   output_dir: output
   output_csv_name: output.csv
@@ -21,5 +19,5 @@ setup_exposure_buildings:
   ground_floor_height: 0
   unit: m
   extraction_method: centroid
-  damage_types: ["structure", "content"]
-  country: "Brazil"
+  damage_types: [structure, content]
+  country: Brazil
