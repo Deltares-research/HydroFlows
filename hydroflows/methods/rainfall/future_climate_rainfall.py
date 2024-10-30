@@ -1,16 +1,18 @@
 """Future climate rainfall method."""
 
-import os
+from logging import getLogger
 from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
-from pydantic import PositiveInt, model_validator
+from pydantic import Field, PositiveInt, model_validator
 
 from hydroflows._typing import ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = getLogger("hydroflows")
 
 
 class Input(Parameters):
@@ -72,21 +74,51 @@ class Params(Parameters):
     wildcard: str = "future_event"
     """The wildcard key for expansion over the scaled events."""
 
-    event_input_names: Optional[ListOfStr] = None
+    event_names_input: Optional[ListOfStr] = None
+    """List of event names to be scaled for future climate projections."""
+
+    event_names_output: Optional[ListOfStr] = None
+    """List of event names for the scaled future climate events."""
 
     time_col: str = "time"
     """Time column name per event csv file."""
 
+    input: Input = Field(exclude=True)
+    """Internal variable to link input."""
+
     @model_validator(mode="after")
     def _validate_model(self):
         if self.event_root is None:
-            self.event_root = (
+            self.event_root = Path(
                 f"data/events/future_rainfall/{self.scenario_name}_{self.future_period}"
             )
         if self.future_period <= self.ref_year:
             raise ValueError(
                 "The provided future time period cannot be earlier than the reference year."
             )
+        # Check if the input event set yaml file exists and check / set event names
+        if self.input.event_set_yaml.is_file():
+            input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
+            event_names = [event["name"] for event in input_event_set.events]
+            if self.event_names_input is not None:
+                if not set(self.event_names_input).issubset(event_names):
+                    not_found = list(set(self.event_names_input) - set(event_names))
+                    raise ValueError(
+                        f"Events {not_found} event_names_input are missing in the event_set_yaml {self.input.event_set_yaml}."
+                    )
+            else:
+                self.event_names_input = event_names
+        # Check if the event_names_output are provided and same lenght as event_input_name or set them
+        if self.event_names_output is not None:
+            if len(self.event_names_output) != len(self.event_names_input):
+                raise ValueError(
+                    "The number of event_names_output should match the number of event_names_input."
+                )
+        elif self.event_names_input is not None:
+            self.event_names_output = [
+                f"{name}_{self.scenario_name}_{self.future_period}"
+                for name in self.event_names_input
+            ]
 
 
 class FutureClimateRainfall(ExpandMethod):
@@ -100,6 +132,7 @@ class FutureClimateRainfall(ExpandMethod):
         "dT": 1.8,
         "ref_year": 1990,
         "event_set_yaml": Path("event_set.yaml"),
+        "event_names_input": ["p_event1", "p_event2"],
     }
 
     def __init__(
@@ -111,7 +144,8 @@ class FutureClimateRainfall(ExpandMethod):
         event_set_yaml: Path,
         event_root: Optional[Path] = None,
         wildcard: str = "future_event",
-        event_input_names: Optional[List[str]] = None,
+        event_names_input: Optional[List[str]] = None,
+        event_names_output: Optional[List[str]] = None,
         **params,
     ) -> None:
         """Create and validate a FutureClimateRainfall instance.
@@ -130,6 +164,13 @@ class FutureClimateRainfall(ExpandMethod):
             `future_period` relative to a reference period `ref_year`.
         ref_year: int
             Reference historical year for which the change of temperature `dT` is relative for.
+        event_root: Optional[Path]
+            Root folder to save the derived scaled events.
+        wildcard: str
+            The wildcard key for expansion over the scaled events, default is "future_event".
+        event_names_input, event_names_output: Optional[List[str]]
+            List of input event names in event_set_yaml and matching output event names for the scaled events.
+            If not provided, event_set_yaml must exist and all events will be scaled.
         **params
             Additional parameters to pass to the FutureClimateRainfall Params instance.
 
@@ -139,6 +180,8 @@ class FutureClimateRainfall(ExpandMethod):
         :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
         :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
         """
+        self.input: Input = Input(event_set_yaml=event_set_yaml)
+
         self.params: Params = Params(
             future_period=future_period,
             scenario_name=scenario_name,
@@ -146,11 +189,11 @@ class FutureClimateRainfall(ExpandMethod):
             ref_year=ref_year,
             event_root=event_root,
             wildcard=wildcard,
-            event_input_names=event_input_names,
+            event_names_input=event_names_input,
+            event_names_output=event_names_output,
+            input=self.input,  # for validation
             **params,
         )
-
-        self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         wc = "{" + self.params.wildcard + "}"
 
@@ -161,65 +204,29 @@ class FutureClimateRainfall(ExpandMethod):
             / f"future_pluvial_events_{self.params.scenario_name}_{self.params.future_period}.yml",
         )
 
-        future_event_names_list = []
-        if self.params.event_input_names is None:
-            # check if file exist (the self.input.event_set_yaml won't exist in a workflow
-            # if it is expected to be produced by a method e.g. pluvia_design_event
-            # making the workflow fail)
-            # TODO think of a better appoach
-            if os.path.exists(self.input.event_set_yaml):
-                event_set = EventSet.from_yaml(self.input.event_set_yaml)
-                for event in event_set.events:
-                    future_event_names_list.append(
-                        f"{event['name']}_{self.params.scenario_name}_{self.params.future_period}"
-                    )
-                self.set_expand_wildcard(wildcard, future_event_names_list)
-            else:
-                raise ValueError(
-                    f"{self.input.event_set_yaml} does not exist. Consider providing event_input_names"
-                )
-        else:
-            # Do this as we can directly use pluvial_events.params.event_names as self.params.event_input_names in a workflow
-            future_event_names_list.extend(
-                [
-                    f"{name}_{self.params.scenario_name}_{self.params.future_period}"
-                    for name in self.params.event_input_names
-                ]
-            )
-
-        self.set_expand_wildcard(wildcard, future_event_names_list)
+        self.set_expand_wildcard(wildcard, self.params.event_names_output)
 
     def run(self):
         """Run the FutureClimateRainfall method."""
         event_set = EventSet.from_yaml(self.input.event_set_yaml)
 
-        if self.params.event_input_names is not None:
-            if not [
-                event["name"] for event in event_set.events
-            ] == self.params.event_input_names:
-                raise ValueError(
-                    "The event names defined in event_input_names are not in the event_set_yaml."
-                )
-
-        # check only if all self.params.event_input_names are in event_set
-        # all_events_exist = all(event in event_names_in_set for event in self.params.event_input_names)
-        # if not all_events_exist:
-        #     raise ValueError("Some events defined in event_input_names are missing in the event_set_yaml.")
-
         # List to save the scaled events
         future_events_list = []
 
-        for event_set_event in event_set.events:
+        for name in self.params.event_names_input:
             # Load the event
-            event = Event.from_yaml(event_set_event["path"])
-            event_path = event.forcings[0].path
+            event: Event = event_set.get_event(name)
 
-            # Read the event DataFrame and ensure time is parsed as a datetime
-            event_df = pd.read_csv(
-                event_path,
-                index_col=self.params.time_col,
-                parse_dates=True,
-            )
+            # get precip event
+            if len(event.forcings) > 1:
+                logger.warning(
+                    f"Event {name} has more than one forcing. The first rainfall forcing is used."
+                )
+                rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
+            else:
+                rainfall = event.forcings[0]
+
+            event_df = rainfall.data.copy()
 
             # For a historical event pick the year from the first value
             if self.params.design_event_year is None:
@@ -244,20 +251,23 @@ class FutureClimateRainfall(ExpandMethod):
             )
 
             # Create a new df to include the time and scaled values
-            future_event_df = pd.DataFrame(scaled_ts)
-            future_event_df.insert(0, "time", event_df.index)
+            future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
 
             filename = (
                 f"{event.name}_{self.params.scenario_name}_{self.params.future_period}"
             )
 
             fmt_dict = {self.params.wildcard: filename}
-            forcing_file = Path(str(self.output.future_event_csv).format(**fmt_dict))
 
+            # write forcing timeseries to csv
+            forcing_file = Path(
+                self.output.future_event_csv.as_posix().format(**fmt_dict)
+            )
             future_event_df.to_csv(forcing_file, index=False)
 
+            # write event to yaml
             future_event_file = Path(
-                str(self.output.future_event_yaml).format(**fmt_dict)
+                self.output.future_event_yaml.as_posix().format(**fmt_dict)
             )
             future_event = Event(
                 name=filename,
@@ -265,6 +275,8 @@ class FutureClimateRainfall(ExpandMethod):
             )
             future_event.set_time_range_from_forcings()
             future_event.to_yaml(future_event_file)
+
+            # append event to list
             future_events_list.append({"name": filename, "path": future_event_file})
 
         # make and save event set yaml file
