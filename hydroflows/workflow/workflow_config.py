@@ -29,8 +29,7 @@ class WorkflowConfig(BaseModel):
         posix_path : bool, optional
             Convert Path objects to posix paths (str), by default False
         """
-        kwargs = {"exclude_none": True, "mode": mode, **kwargs}
-        conf = self.model_dump(**kwargs)
+        conf = self.model_dump(mode=mode, **kwargs)
         for k in conf.keys():
             org_val = getattr(self, k)
             if posix_path and isinstance(org_val, Path):
