@@ -13,7 +13,12 @@ from hydroflows.workflow import (
     WorkflowConfig,
 )
 from hydroflows.workflow.workflow import Wildcards
-from tests.conftest import MockExpandMethod, MockReduceMethod, TestMethod
+from tests.workflow.conftest import (
+    MockExpandMethod,
+    MockReduceMethod,
+    TestMethod,
+    TestMethodOutput,
+)
 
 
 @pytest.fixture()
@@ -43,18 +48,12 @@ def workflow_yaml_dict():
             {
                 "method": "mock_reduce_method",
                 "kwargs": {
-                    "first_file": "$rules.mock_expand_method.output.output_file",
-                    "second_file": "$rules.mock_expand_method.output.output_file2",
+                    "files": "$rules.mock_expand_method.output.output_file",
                     "root": "$config.root",
                 },
             },
         ],
     }
-
-
-@pytest.fixture()
-def mock_expand_method():
-    return MockExpandMethod(input_file="test.yml", root="", events=["1", "2"])
 
 
 def create_workflow_with_mock_methods(
@@ -70,8 +69,8 @@ def create_workflow_with_mock_methods(
         root = Path("./")
 
     mock_expand_method = MockExpandMethod(
-        input_file=root / "{region}" / input_file,
-        root=root / "{region}",
+        input_file=Path("{region}") / input_file,
+        root="{region}",
         events=["1", "2"],
         wildcard="event",
     )
@@ -86,31 +85,30 @@ def create_workflow_with_mock_methods(
     w.add_rule(mock_method, rule_id="mock_rule")
 
     mock_reduce_method = MockReduceMethod(
-        first_file=w.get_ref("$rules.mock_rule.output.output_file1"),
-        second_file=w.get_ref("$rules.mock_rule.output.output_file2"),
-        root=root / "out_{region}",
+        files=w.get_ref("$rules.mock_rule.output.output_file1"),
+        root="out_{region}",
     )
 
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     return w
 
 
-def test_workflow_init(w: Workflow):
-    assert isinstance(w.config, WorkflowConfig)
-    assert isinstance(w.wildcards, Wildcards)
-    assert w.name == "wf_instance"
+def test_workflow_init(workflow: Workflow):
+    assert isinstance(workflow.config, WorkflowConfig)
+    assert isinstance(workflow.wildcards, Wildcards)
+    assert workflow.name == "wf_instance"
 
 
-def test_workflow_repr(w: Workflow, mock_expand_method):
-    w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
-    repr_str = w.__repr__()
+def test_workflow_repr(workflow: Workflow, mock_expand_method):
+    workflow.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
+    repr_str = workflow.__repr__()
     assert "region1" in repr_str
     assert "region2" in repr_str
     assert "mock_expand_rule" in repr_str
 
 
-def test_workflow_add_rule(w: Workflow, tmp_path):
-    w = create_workflow_with_mock_methods(w)
+def test_workflow_add_rule(workflow: Workflow, tmp_path):
+    w = create_workflow_with_mock_methods(workflow)
     assert len(w.rules) == 3
     assert isinstance(w.rules[0], Rule)
     assert w.rules[0].rule_id == "mock_expand_rule"
@@ -118,24 +116,46 @@ def test_workflow_add_rule(w: Workflow, tmp_path):
     assert w.rules[2].rule_id == "mock_reduce_rule"
 
 
-def test_workflow_rule_from_kwargs(w: Workflow, mocker, mock_expand_method):
+def test_workflow_rule_from_kwargs(workflow: Workflow, mocker, mock_expand_method):
     mocked_Method = mocker.patch("hydroflows.workflow.Method.from_kwargs")
     mocked_Method.return_value = mock_expand_method
     kwargs = {"rps": "$config.rps"}
-    w.add_rule_from_kwargs(
+    workflow.add_rule_from_kwargs(
         method="mock_expand_method", kwargs=kwargs, rule_id="mock_rule"
     )
-    assert w.rules[0].rule_id == "mock_rule"
+    # TODO add check on input._ref dict if references are there
+    assert workflow.rules[0].rule_id == "mock_rule"
 
 
-def test_workflow_get_ref(w: Workflow, tmp_path):
-    w = create_workflow_with_mock_methods(w, root=tmp_path)
+def test_workflow_get_ref(workflow: Workflow, tmp_path):
+    w = create_workflow_with_mock_methods(workflow, root=tmp_path)
     ref = w.get_ref("$config.rps")
     assert isinstance(ref, Ref)
     assert ref.value == w.config.rps
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
-    assert ref.value.relative_to(tmp_path).as_posix() == "{region}/{event}/file.yml"
+    assert ref.value.as_posix() == "{region}/{event}/file.yml"
+
+
+def test_workflow_create_references(w: Workflow, caplog):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    # Change the output of method2, otherwise output files are not unique among two of the same methods
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+    w.add_rule(method=method2, rule_id="method2")
+    w.create_references()
+    assert w.rules[1].input._refs == {
+        "input_file1": "$rules.method1.output.output_file1",
+        "input_file2": "$rules.method1.output.output_file2",
+    }
+    # catch logger.debug messages
+    with caplog.at_level("DEBUG"):
+        w.create_references()
+    assert (
+        "method1.input.input_file1 (test1) is not an output of another rule"
+        in caplog.text
+    )
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
@@ -173,11 +193,13 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
         Workflow.from_yaml(test_file)
 
 
-def test_workflow_to_snakemake(w: Workflow, tmp_path):
+def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     test_file = tmp_path / "test.yml"
     with open(test_file, "w") as f:
         yaml.dump({"data": "test"}, f)
-    w = create_workflow_with_mock_methods(w, root=tmp_path, input_file=test_file)
+    w = create_workflow_with_mock_methods(
+        workflow, root=tmp_path, input_file=test_file.name
+    )
     snake_file = tmp_path / "snake_file.smk"
     w.to_snakemake(snakefile=snake_file)
     assert "snake_file.config.yml" in os.listdir(tmp_path)
@@ -190,7 +212,8 @@ def test_workflow_to_snakemake(w: Workflow, tmp_path):
             "--dry-run",
             "--configfile",
             (tmp_path / "snake_file.config.yml").as_posix(),
-        ]
+        ],
+        cwd=tmp_path,
     ).check_returncode()
 
 
@@ -212,8 +235,8 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(mocker, w, tmp_path):
-    w = create_workflow_with_mock_methods(w, root=tmp_path)
+def test_workflow_run(mocker, workflow: Workflow, tmp_path):
+    w = create_workflow_with_mock_methods(workflow, root=tmp_path)
     mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
     w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
     captured_stdout = mock_stdout.getvalue()
@@ -236,9 +259,24 @@ def test_workflow_run(mocker, w, tmp_path):
 
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     mock_reduce_method = MockReduceMethod(
-        first_file=w.get_ref("$rules.mock_expand_rule.output.output_file"),
-        second_file=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+        files=w.get_ref("$rules.mock_expand_rule.output.output_file"),
         root=root,
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     w.run(dryrun=True, missing_file_error=True)
+
+
+def test_output_path_refs(w: Workflow):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    w.add_rule(method=method2, rule_id="method2")
+
+    with pytest.raises(ValueError, match="All output file paths must be unique"):
+        w._output_path_refs  # noqa: B018
+
+    # Change the output of method2, otherwise output files are not unique among two of the same methods
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+
+    output_path_refs = w._output_path_refs
+    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 5)]
