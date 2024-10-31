@@ -26,6 +26,14 @@ FIAT_EXE = Path(
     "fiat.exe",
 )
 
+HAS_FIAT_PYTHON = False
+try:
+    import fiat  # noqa: F401
+
+    HAS_FIAT_PYTHON = True
+except ImportError:
+    pass
+
 
 @pytest.fixture()
 def fiat_simple_root(tmp_path: Path, sfincs_region_path):
@@ -124,11 +132,22 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
+@pytest.mark.skipif(True, reason="requires complete fiat model instance")
 @pytest.mark.skipif(not FIAT_EXE.exists(), reason="fiat executable not found")
 @pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_fiat_run(tmp_path: Path, fiat_simple_root: Path):
+def test_fiat_run_exe(fiat_simple_root: Path):
     # specify in- and output
     fiat_cfg = Path(fiat_simple_root) / "settings.toml"
     # Setup the method
     rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=FIAT_EXE)
+    rule.run_with_checks()
+
+
+@pytest.mark.skipif(True, reason="requires complete fiat model instance")
+@pytest.mark.skipif(not HAS_FIAT_PYTHON, reason="fiat python package not found")
+def test_fiat_run_py(fiat_simple_root: Path):
+    # specify in- and output
+    fiat_cfg = Path(fiat_simple_root) / "settings.toml"
+    # Setup the method
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_python=True)
     rule.run_with_checks()

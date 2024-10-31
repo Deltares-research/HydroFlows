@@ -1,9 +1,10 @@
 import shutil
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from hydroflows.methods.wflow import WflowBuild, WflowUpdateForcing
+from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
 
 @pytest.mark.requires_data()
@@ -56,4 +57,21 @@ def test_wflow_update_forcing(
         data_libs=data_libs,
     )
 
+    rule.run_with_checks()
+
+
+@pytest.mark.requires_data()
+@pytest.mark.skipif(True, reason="requires complete wflow model instance")
+def test_wflow_run_julia(rio_wflow_model: Path, tmp_path: Path):
+    # check if wflow julia is installed
+    s = subprocess.run(["julia", "-e", "using Wflow"])
+    if s.returncode != 0:
+        pytest.skip("Wflow Julia is not installed.")
+    # copy the wflow model to the tmp_path
+    root = tmp_path / "model"
+    shutil.copytree(rio_wflow_model.parent, root)
+    wflow_toml = Path(root, rio_wflow_model.name)
+
+    # run the model
+    rule = WflowRun(wflow_toml=wflow_toml, wflow_julia=True)
     rule.run_with_checks()
