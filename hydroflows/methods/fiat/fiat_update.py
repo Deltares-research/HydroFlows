@@ -1,9 +1,10 @@
 """FIAT updating submodule/ rules."""
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from hydromt_fiat.fiat import FiatModel
+from pydantic import model_validator
 
 from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.events import EventSet
@@ -22,9 +23,19 @@ class Input(Parameters):
     """The path to the event description file, used to filter hazard maps,
     see also :py:class:`hydroflows.events.EventSet`."""
 
-    # single path should also be allowed for validation !
-    hazard_maps: Union[WildcardPath, ListOfPath]
+    hazard_maps: Optional[Union[WildcardPath, ListOfPath]] = None
     """List of paths to hazard maps the event description file."""
+
+    single_hazard_map: Optional[Path] = None
+    """The path to a single hazard map, if provided, it will be used instead of hazard_maps."""
+
+    @model_validator(mode="after")
+    def check_hazard_maps(self):
+        """Check if hazard_maps or single_hazard_map is provided."""
+        if self.hazard_maps is None and self.single_hazard_map is None:
+            raise ValueError(
+                "Either hazard_maps or single_hazard_map should be provided"
+            )
 
 
 class Output(Parameters):
@@ -51,15 +62,12 @@ class Params(Parameters):
     sim_subfolder: str = "simulations"
     """The subfolder relative to the basemodel where the simulation folders are stored."""
 
-    map_type: str = "water_depth"
+    map_type: Literal["water_level", "water_depth"] = "water_level"
     """"The data type of each map specified in the data catalog. A single map type
     applies for all the elements."""
 
     risk: bool = True
     """"The parameter that defines if a risk analysis is required."""
-
-    var: str = "zsmax"
-    """"Variable name."""
 
 
 class FIATUpdateHazard(ReduceMethod):
@@ -83,12 +91,17 @@ class FIATUpdateHazard(ReduceMethod):
         self,
         fiat_cfg: Path,
         event_set_yaml: Path,
-        hazard_maps: Union[Path, List[Path]],
+        hazard_maps: Optional[Union[Path, List[Path]]] = None,
+        single_hazard_map: Optional[Path] = None,
+        map_type: Literal["water_level", "water_depth"] = "water_level",
         event_set_name: Optional[str] = None,
         sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
+
+        Either hazard_maps or single_hazard_map should be provided.
+        If single_hazard_map is provided, risk analysis is disabled.
 
         FIAT simulations are stored in {basemodel}/{sim_subfolder}/{event_set_name}.
 
@@ -98,8 +111,12 @@ class FIATUpdateHazard(ReduceMethod):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
-        hazard_maps : Path or List[Path]
+        hazard_maps : Path or List[Path], optional
             The path to the hazard maps. If a single path is provided, it should contain a wildcard.
+        single_hazard_map : Path, optional
+            The path to a single hazard map, if provided, it will be used instead of hazard_maps.
+        map_type : Literal["water_level", "water_depth"], optional
+            The hazard data type
         sim_subfolder : Path, optional
             The subfolder relative to the basemodel where the simulation folders are stored.
 
@@ -118,14 +135,21 @@ class FIATUpdateHazard(ReduceMethod):
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
+            single_hazard_map=single_hazard_map,
         )
         if event_set_name is None:
             # NOTE: FIAT runs with full event sets with RPs.
             # Name of event set is the stem of the event set file
             event_set_name = self.input.event_set_yaml.stem
 
+        if single_hazard_map is not None:
+            params["risk"] = False
+
         self.params: Params = Params(
-            event_set_name=event_set_name, sim_subfolder=sim_subfolder, **params
+            event_set_name=event_set_name,
+            sim_subfolder=sim_subfolder,
+            map_type=map_type,
+            **params,
         )
 
         # output root is the simulation folder
@@ -170,23 +194,26 @@ class FIATUpdateHazard(ReduceMethod):
             model.config["exposure"]["geom"], root, out_root
         )
 
-        ## WARNING! code below is necessary for now, as hydromt_fiat cant deliver
-        # READ the hazard catalog
-        event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
-
-        # extract all names
-        hazard_names = [event["name"] for event in event_set.events]
-
-        # filter out the right path names
-        hazard_fns = []
-        for name in hazard_names:
-            for fn in hazard_maps:
-                if name in fn.stem:
-                    hazard_fns.append(fn)
-                    break
-
-        # get return periods
-        rps = [event_set.get_event(name).return_period for name in hazard_names]
+        if self.params.risk:  # get matching hazard maps and return periods
+            # READ the hazard catalog
+            event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
+            # filter out the right path names / sort them in the right order
+            names = [event["name"] for event in event_set.events]
+            hazard_fns = []
+            for name in names:
+                for fn in hazard_maps:
+                    if name in fn.as_posix():
+                        hazard_fns.append(fn)
+                        break
+            if len(hazard_fns) != len(names):
+                raise ValueError(
+                    f"Could not find all hazard maps for the event set {self.params.event_set_name}"
+                )
+            # get return periods
+            rps = [event_set.get_event(name).return_period for name in names]
+        else:
+            hazard_fns = [self.input.single_hazard_map]
+            rps = None
 
         # Setup the hazard map
         # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
@@ -197,8 +224,7 @@ class FIATUpdateHazard(ReduceMethod):
             map_type=self.params.map_type,
             rp=rps,
             risk_output=self.params.risk,
-            var="flood_map",
-            nodata=-9999.0,
+            var=self.params.map_type,  # water_level or water_depth
         )
         # change root to simulation folder
         model.set_root(out_root, mode="w+")

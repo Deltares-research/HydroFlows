@@ -32,10 +32,10 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`SfincsDownscale` method."""
 
-    hazard_root: Path
+    output_root: Optional[Path] = None
     """The path to the root directory where the hazard output files are saved."""
 
-    event_name: str
+    file_name: str = "hmax"
     """The name of the event."""
 
     depth_min: float = 0.05
@@ -59,8 +59,8 @@ class SfincsDownscale(Method):
         self,
         sfincs_map: Path,
         sfincs_subgrid_dep: Path,
-        event_name: Optional[str] = None,
-        hazard_root: Path = "data/output/hazard",
+        output_root: Optional[Path] = None,
+        file_name: str = "hmax",
         **params,
     ) -> None:
         """Downscale SFINCS waterlevels to a flood depth map.
@@ -73,7 +73,9 @@ class SfincsDownscale(Method):
             The path to the highres dem file to use for downscaling the results.
         hazard_root : Path, optional
             The path to the root directory where the hazard output files are saved,
-            by default "data/output/hazard".
+            by default the same directory as the sfincs_map files.
+        file_name : str, optional
+            The name of the output file, by default "hmax".
         **params
             Additional parameters to pass to the SfincsDownscale instance.
             See :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`.
@@ -88,43 +90,40 @@ class SfincsDownscale(Method):
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
         )
 
-        if event_name is None:  # event name is the stem of the event file
-            event_name = self.input.sfincs_map.parent.stem
         self.params: Params = Params(
-            hazard_root=hazard_root, event_name=event_name, **params
+            output_root=output_root, file_name=file_name, **params
         )
 
+        output_root = self.params.output_root or self.input.sfincs_map.parent
         self.output: Output = Output(
-            hazard_tif=self.params.hazard_root / f"{event_name}.tif"
+            hazard_tif=Path(output_root, f"{self.params.file_name}.tif")
         )
 
     def run(self):
         """Run the downscaling from SFINCS waterlevels to a flood depth map."""
         # unpack input, output and params
         root = self.input.sfincs_map.parent
-        sfincs_subgrid_dep = self.input.sfincs_subgrid_dep
         hazard_file = self.output.hazard_tif
-        hmin = self.params.depth_min
 
         sf = SfincsModel(root, mode="r", write_gis=False)
-        dep = sf.data_catalog.get_rasterdataset(sfincs_subgrid_dep)
+        dep = sf.data_catalog.get_rasterdataset(self.input.sfincs_subgrid_dep)
 
         # Read the model results
         sf.read_results()
         if "zsmax" not in sf.results:
             raise KeyError(f"zsmax is missing in results of {self.input.sfincs_map}")
 
-        # Extract maximum water levels per time step from subgrid model
-        zsmax = sf.results["zsmax"]
+        # get zsmax
+        zsmax = sf.results["zsmax"].max(dim="timemax")
+        zsmax.attrs["units"] = "m"
 
-        # compute the maximum over all time steps
-        zsmax = zsmax.max(dim="timemax")
-
-        # Fourthly, downscale the floodmap
+        # save to file
         utils.downscale_floodmap(
             zsmax=zsmax,
             dep=dep,
-            hmin=hmin,
+            hmin=self.params.depth_min,
             floodmap_fn=hazard_file,
             **self.params.raster_kwargs,
         )
+
+        del sf

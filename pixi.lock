@@ -342,7 +342,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/06/89/b161908e2f51be56568184aeb4a880fd287178d176fd1c860d2217f41106/httpcore-1.0.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/7d/0c/4ef72754c050979fdcc06c744715ae70ea37e734816bb6514f79df77a42f/identify-2.6.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
@@ -744,7 +744,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/06/89/b161908e2f51be56568184aeb4a880fd287178d176fd1c860d2217f41106/httpcore-1.0.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/7d/0c/4ef72754c050979fdcc06c744715ae70ea37e734816bb6514f79df77a42f/identify-2.6.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
@@ -1158,7 +1158,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/6e/d2/2055b8b6d1f4e432e40cfa44ae3e315e36e4eddb989eed4db7a53bff51e3/jellyfish-1.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
@@ -1487,7 +1487,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/ff/62/85c4c919272577931d407be5ba5d71c20f0b616d31a0befe0ae45bb79abd/imagesize-1.4.1-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/cd/76/a077eee8a50c522121ba74b6a6dff6987f1a7333992219251987fe0db850/jellyfish-1.1.0-cp311-none-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
@@ -1859,7 +1859,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/06/89/b161908e2f51be56568184aeb4a880fd287178d176fd1c860d2217f41106/httpcore-1.0.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c5/a5/c15ed187f1b3fac445bb42a2dedd8dec1eee1718b35129242049a13a962f/ipython-8.29.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/2d/9c0b76f2f9cc0ebede1b9371b6f317243028ed60b90705863d493bae622e/ipywidgets-8.1.5-py3-none-any.whl
@@ -2234,7 +2234,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/06/89/b161908e2f51be56568184aeb4a880fd287178d176fd1c860d2217f41106/httpcore-1.0.6-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/56/95/9377bcb415797e44274b51d46e3249eba641711cf3348050f76ee7b15ffc/httpx-0.27.2-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c5/a5/c15ed187f1b3fac445bb42a2dedd8dec1eee1718b35129242049a13a962f/ipython-8.29.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/2d/9c0b76f2f9cc0ebede1b9371b6f317243028ed60b90705863d493bae622e/ipywidgets-8.1.5-py3-none-any.whl
@@ -2622,7 +2622,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/6e/d2/2055b8b6d1f4e432e40cfa44ae3e315e36e4eddb989eed4db7a53bff51e3/jellyfish-1.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -2930,7 +2930,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/cd/76/a077eee8a50c522121ba74b6a6dff6987f1a7333992219251987fe0db850/jellyfish-1.1.0-cp311-none-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -3269,7 +3269,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/6e/d2/2055b8b6d1f4e432e40cfa44ae3e315e36e4eddb989eed4db7a53bff51e3/jellyfish-1.1.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -3578,7 +3578,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/22/a7/b48a382f90292fed24ac84abf0afda8d60979c4b0ca0a3c33d80d1743899/hatyan-2.9.0-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
       - pypi: https://files.pythonhosted.org/packages/cd/76/a077eee8a50c522121ba74b6a6dff6987f1a7333992219251987fe0db850/jellyfish-1.1.0-cp311-none-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -6817,7 +6817,7 @@ packages:
 - kind: pypi
   name: hydromt-fiat
   version: 0.4.2.dev0
-  url: git+https://github.com/Deltares/hydromt_fiat.git@a2dcc5ef86d889b9cfef88b53b9bd70512c4e184
+  url: git+https://github.com/Deltares/hydromt_fiat.git@ccbe70f527dba1b4bc4808703ff5c6cc8e69fdc4
   requires_dist:
   - hydromt<1.0
   - geopandas
