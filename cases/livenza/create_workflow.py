@@ -16,7 +16,7 @@ from hydroflows.methods.rainfall import (
 )
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsPostprocess,
+    SfincsDownscale,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -183,7 +183,7 @@ if __name__ == "__main__":
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
     # Postprocesses SFINCS results
-    sfincs_post = SfincsPostprocess(
+    sfincs_post = SfincsDownscale(
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),

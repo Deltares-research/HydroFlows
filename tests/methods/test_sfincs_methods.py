@@ -10,7 +10,7 @@ from hydromt_sfincs import SfincsModel
 from hydroflows.events import Event
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsPostprocess,
+    SfincsDownscale,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -92,12 +92,12 @@ def test_sfincs_run(rio_sfincs_model: Path, tmp_path: Path):
 
 
 @pytest.mark.requires_data()
-def test_sfincs_postprocess(rio_sfincs_model: Path, tmp_path: Path):
+def test_sfincs_downscale(rio_sfincs_model: Path, tmp_path: Path):
     tmp_root = Path(tmp_path, "model")
     copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])
     tmp_hazard_root = Path(tmp_path, "hazard")
 
-    sf_post = SfincsPostprocess(
+    sf_post = SfincsDownscale(
         sfincs_map=str(tmp_root / "sfincs_map.nc"),
         sfincs_subgrid_dep=str(tmp_root / "subgrid" / "dep_subgrid.tif"),
         hazard_root=str(tmp_hazard_root),

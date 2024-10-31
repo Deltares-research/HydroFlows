@@ -19,7 +19,7 @@ __eps__ = {
     "future_climate_rainfall": "hydroflows.methods.rainfall.future_climate_rainfall:FutureClimateRainfall",
     "sfincs_build": "hydroflows.methods.sfincs.sfincs_build:SfincsBuild",
     "sfincs_run": "hydroflows.methods.sfincs.sfincs_run:SfincsRun",
-    "sfincs_postprocess": "hydroflows.methods.sfincs.sfincs_postprocess:SfincsPostprocess",
+    "sfincs_downscale": "hydroflows.methods.sfincs.sfincs_downscale:SfincsDownscale",
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",

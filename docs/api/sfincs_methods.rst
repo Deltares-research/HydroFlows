@@ -44,7 +44,7 @@ Sfincs Postprocess
 .. autosummary::
    :toctree: ../_generated
 
-   sfincs_postprocess.SfincsPostprocess
-   sfincs_postprocess.Input
-   sfincs_postprocess.Params
-   sfincs_postprocess.Output
+   sfincs_downscale.SfincsDownscale
+   sfincs_downscale.Input
+   sfincs_downscale.Params
+   sfincs_downscale.Output

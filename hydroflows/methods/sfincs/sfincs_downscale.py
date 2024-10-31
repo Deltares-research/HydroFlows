@@ -1,4 +1,4 @@
-"""SFINCS postprocess method."""
+"""SFINCS downscale method."""
 
 from pathlib import Path
 from typing import Optional
@@ -9,11 +9,11 @@ from hydroflows._typing import JsonDict
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsPostprocess"]
+__all__ = ["SfincsDownscale"]
 
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`SfincsPostprocess` method."""
+    """Input parameters for the :py:class:`SfincsDownscale` method."""
 
     sfincs_map: Path
     """The path to the SFINCS model output sfincs_map.nc file."""
@@ -23,14 +23,14 @@ class Input(Parameters):
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`SfincsPostprocess` method."""
+    """Output parameters for the :py:class:`SfincsDownscale` method."""
 
     hazard_tif: Path
     """The path to the output inundation raster geotiff."""
 
 
 class Params(Parameters):
-    """Parameters for the :py:class:`SfincsPostprocess` method."""
+    """Parameters for the :py:class:`SfincsDownscale` method."""
 
     hazard_root: Path
     """The path to the root directory where the hazard output files are saved."""
@@ -45,10 +45,10 @@ class Params(Parameters):
     """Kwargs to pass to writer of inundation raster."""
 
 
-class SfincsPostprocess(Method):
-    """Rule for postprocessing Sfincs output to an inundation map."""
+class SfincsDownscale(Method):
+    """Rule for downscaling Sfincs output to an inundation map."""
 
-    name: str = "sfincs_postprocess"
+    name: str = "sfincs_downscale"
 
     _test_kwargs = {
         "sfincs_map": Path("sfincs_map.nc"),
@@ -63,7 +63,7 @@ class SfincsPostprocess(Method):
         hazard_root: Path = "data/output/hazard",
         **params,
     ) -> None:
-        """Create and validate a SfincsPostprocess instance.
+        """Downscale SFINCS waterlevels to a flood depth map.
 
         Parameters
         ----------
@@ -75,14 +75,14 @@ class SfincsPostprocess(Method):
             The path to the root directory where the hazard output files are saved,
             by default "data/output/hazard".
         **params
-            Additional parameters to pass to the SfincsPostprocess instance.
-            See :py:class:`sfincs_postprocess Params <hydroflows.methods.sfincs.sfincs_postprocess.Params>`.
+            Additional parameters to pass to the SfincsDownscale instance.
+            See :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`.
 
         See Also
         --------
-        :py:class:`sfincs_postprocess Input <hydroflows.methods.sfincs.sfincs_postprocess.Input>`
-        :py:class:`sfincs_postprocess Output <hydroflows.methods.sfincs.sfincs_postprocess.Output>`
-        :py:class:`sfincs_postprocess Params <hydroflows.methods.sfincs.sfincs_postprocess.Params>`
+        :py:class:`sfincs_downscale Input <hydroflows.methods.sfincs.sfincs_downscale.Input>`
+        :py:class:`sfincs_downscale Output <hydroflows.methods.sfincs.sfincs_downscale.Output>`
+        :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`
         """
         self.input: Input = Input(
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
@@ -99,7 +99,7 @@ class SfincsPostprocess(Method):
         )
 
     def run(self):
-        """Run the postprocessing from SFINCS netcdf to inundation map."""
+        """Run the downscaling from SFINCS waterlevels to a flood depth map."""
         # unpack input, output and params
         root = self.input.sfincs_map.parent
         sfincs_subgrid_dep = self.input.sfincs_subgrid_dep
