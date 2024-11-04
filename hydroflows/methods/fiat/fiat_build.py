@@ -6,9 +6,9 @@ import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt_fiat.fiat import FiatModel
+from pydantic import FilePath
 
 from hydroflows._typing import ListOfStr
-from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -33,6 +33,14 @@ class Input(Parameters):
     The file path to the geometry file that defines the region of interest
     for constructing a FIAT model.
     """
+
+    config: FilePath
+    """The path to the configuration file (.yml) that defines the settings
+    to build a FIAT model. In this file the different model components
+    that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
+    Every component defines the setting for each hydromt_fiat setup methods.
+    For more information see hydromt_fiat method
+    `documentation <https://deltares.github.io/hydromt_fiat/latest/user_guide/user_guide_overview.html>`_."""
 
 
 class Output(Parameters):
@@ -65,14 +73,6 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
-    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
-    """The path to the configuration file (.yml) that defines the settings
-    to build a FIAT model. In this file the different model components
-    that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
-    Every component defines the setting for each hydromt_fiat setup methods.
-    For more information see hydromt_fiat method
-    `documentation <https://deltares.github.io/hydromt_fiat/latest/user_guide/user_guide_overview.html>`_."""
-
     continent: str = "South America"
     """Continent of the region of interest."""
 
@@ -89,6 +89,7 @@ class FIATBuild(Method):
     def __init__(
         self,
         region: Path,
+        config: Path,
         fiat_root: Path = "models/fiat",
         **params,
     ) -> None:
@@ -113,13 +114,13 @@ class FIATBuild(Method):
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
         self.params: Params = Params(fiat_root=fiat_root, **params)
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, config=config)
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
         """Run the FIATBuild method."""
         # Read template config
-        opt = configread(self.params.config)
+        opt = configread(self.input.config)
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
