@@ -16,6 +16,7 @@ __eps__ = {
     "get_ERA5_rainfall": "hydroflows.methods.rainfall.get_ERA5_rainfall:GetERA5Rainfall",
     "pluvial_design_events": "hydroflows.methods.rainfall.pluvial_design_events:PluvialDesignEvents",
     "pluvial_historical_events": "hydroflows.methods.rainfall.pluvial_historical_events:PluvialHistoricalEvents",
+    "future_climate_rainfall": "hydroflows.methods.rainfall.future_climate_rainfall:FutureClimateRainfall",
     "sfincs_build": "hydroflows.methods.sfincs.sfincs_build:SfincsBuild",
     "sfincs_run": "hydroflows.methods.sfincs.sfincs_run:SfincsRun",
     "sfincs_postprocess": "hydroflows.methods.sfincs.sfincs_postprocess:SfincsPostprocess",

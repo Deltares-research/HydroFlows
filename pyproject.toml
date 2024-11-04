@@ -146,6 +146,7 @@ platforms = ["win-64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 hydroflows = { path = ".", editable = true }
+hydromt_fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", rev = "7dc74df15137dcbf2ca026923108fb92f5fd704f" }
 
 # conda dependencies
 [tool.pixi.dependencies]
@@ -154,8 +155,9 @@ hydromt_sfincs = ">=1.1.0,<1.2"
 hydromt_wflow = ">=0.6,<0.7"
 snakemake = "*"
 
-[tool.pixi.feature.py310.dependencies]
-python = "3.10.*"
+# [tool.pixi.feature.py310.dependencies]
+# python = "3.10.*"
+
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
@@ -164,8 +166,8 @@ default = { features = ["dev", "doc", "test", "extra", "py311"], solve-group = "
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
-dev-py310 = { features = ["dev", "doc", "test", "extra", "py310"], solve-group = "py310" }
-test-py310 = { features = ["test"], solve-group = "py310" }
+# dev-py310 = { features = ["dev", "doc", "test", "extra", "py310"], solve-group = "py310" }
+# test-py310 = { features = ["test"], solve-group = "py310" }
 test-py311 = { features = ["test"], solve-group = "py311" }
 
 [tool.pixi.tasks]

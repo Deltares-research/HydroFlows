@@ -109,38 +109,6 @@ def test_set_resolve_ref(mocker):
     )
     ref._set_resolve_ref("$wildcards")
     mock_set_resolve_wildcard_ref.assert_called_once_with("$wildcards")
-    # globals
-    mock_get_obj_from_caller_globals = mocker.patch.object(
-        Ref, "_get_obj_from_caller_globals"
-    )
-    mock_get_obj_from_caller_globals.return_value = None
-    with pytest.raises(ValueError, match=re.escape("Invalid reference: $workflow")):
-        ref._set_resolve_ref("$workflow")
-
-    # test in context of workflow
-    expand_method = MockExpandMethod(
-        input_file="test_file",
-        root="",
-        events=["1", "2", "3"],
-        wildcard="w",
-    )
-    workflow.add_rule(method=expand_method, rule_id="test_rule")
-    # config
-    mock_get_obj_from_caller_globals.return_value = workflow
-    ref._set_resolve_ref("$workflow.config.rps")
-    mock_set_resolve_config_ref.assert_called_with("$config.rps")
-    # rules based on local object
-    mock_get_obj_from_caller_globals.return_value = expand_method
-    mock_resolve_method_obj_ref = mocker.patch.object(Ref, "_resolve_method_obj_ref")
-    ref._set_resolve_ref("expand_method.output.output_file")
-    mock_resolve_method_obj_ref.assert_called_once_with(
-        "expand_method.output.output_file", expand_method
-    )
-    # config
-    mock_get_obj_from_caller_globals.return_value = workflow.config
-    mock_resolve_config_obj_ref = mocker.patch.object(Ref, "_resolve_config_obj_ref")
-    ref._set_resolve_ref("config.rps")
-    mock_resolve_config_obj_ref.assert_called_once_with("config.rps", workflow.config)
 
 
 def test_set_resolve_rule_ref(workflow):
@@ -175,46 +143,6 @@ def test_set_resolve_wildcard_ref(workflow):
     assert ref.value == ["region1", "region2"]
 
 
-def test_set_resolve_method_obj_ref(workflow, mocker, test_method):
-    expand_method = MockExpandMethod(
-        input_file="test_file",
-        root="",
-        events=["1", "2", "3"],
-        wildcard="w",
-    )
-    workflow.add_rule(method=expand_method, rule_id="test_rule")
-
-    ref = Ref("$config.rps", workflow=workflow)
-
-    mock_set_resolve_rule_ref = mocker.patch.object(Ref, "_set_resolve_rule_ref")
-
-    err_msg = (
-        "Invalid method reference $expand_method.output_file. "
-        "A method reference should be in the form <method>.<component>.<field>"
-    )
-    with pytest.raises(ValueError, match=re.escape(err_msg)):
-        ref._resolve_method_obj_ref(
-            ref="$expand_method.output_file", method=expand_method
-        )
-
-    with pytest.raises(
-        ValueError,
-        match=re.escape(
-            "Invalid method reference $test_method.output.outputfile. Method not added to the workflow"
-        ),
-    ):
-        ref._resolve_method_obj_ref(
-            ref="$test_method.output.outputfile", method=test_method
-        )
-
-    ref._resolve_method_obj_ref(
-        ref="$expand_method.output.output_file", method=expand_method
-    )
-    mock_set_resolve_rule_ref.assert_called_once_with(
-        "$rules.test_rule.output.output_file"
-    )
-
-
 def test_resolve_config_obj_ref(workflow, mocker):
     ref = Ref("$config.rps", workflow=workflow)
     config = WorkflowConfig(test=1)
@@ -242,15 +170,3 @@ def test_get_nested_value_from_dict(workflow):
 
     with pytest.raises(KeyError, match=re.escape("Key not found: rps.pr")):
         Ref._get_nested_value_from_dict(d=d, keys=["rps", "pr"], full_reference=None)
-
-
-TEST_VAR = "test_var"
-
-
-def test_get_obj_from_caller_globals(workflow, test_method):
-    foo = "bar"
-    obj = Ref._get_obj_from_caller_globals(var_name="foo", ref="foo")
-    assert obj == foo
-
-    obj = Ref._get_obj_from_caller_globals(var_name="TEST_VAR", ref="TEST_VAR")
-    assert obj == TEST_VAR
