@@ -12,7 +12,7 @@ setup_vulnerability:
   vulnerability_fn: jrc_vulnerability_curves
   vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
   unit: m
-  continent: Africa
+  continent: Europe
 
 setup_exposure_buildings:
   asset_locations: OSM
@@ -22,4 +22,4 @@ setup_exposure_buildings:
   unit: m
   extraction_method: centroid
   damage_types: ["structure", "content"]
-  country: "Nigeria"
+  country: "Italy"

@@ -34,7 +34,7 @@ if __name__ == "__main__":
     pwd = Path(__file__).parent
 
     # %% Fetch the global build data
-    fetch(data="artifact-data", output_dir=Path(pwd, "data/global-data"))
+    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
 
     # %% General setup of workflow
     # Define variables
@@ -194,7 +194,6 @@ if __name__ == "__main__":
         fiat_cfg=fiat_build.output.fiat_cfg,
         event_set_yaml=Path(data_dir, "events/{event_set}.yml"),
         event_set_name="{event_set}",
-        sim_subfolder=simu_dir,
         hazard_maps=sfincs_post.output.hazard_tif,
         risk=w.get_ref("$config.risk"),
     )

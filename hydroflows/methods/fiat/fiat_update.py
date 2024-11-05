@@ -34,6 +34,7 @@ class Output(Parameters):
     """"The path to the generated combined hazard file (NetCDF) containing all rps."""
 
     fiat_out_cfg: Path
+    """The path to the newly created settings file."""
 
 
 class Params(Parameters):
@@ -47,9 +48,6 @@ class Params(Parameters):
 
     event_set_name: str
     """The name of the event set"""
-
-    sim_subfolder: str = "simulations"
-    """The subfolder relative to the basemodel where the simulation folders are stored."""
 
     map_type: str = "water_depth"
     """"The data type of each map specified in the data catalog. A single map type
@@ -85,7 +83,6 @@ class FIATUpdateHazard(ReduceMethod):
         event_set_yaml: Path,
         hazard_maps: Union[Path, List[Path]],
         event_set_name: Optional[str] = None,
-        sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
@@ -124,19 +121,13 @@ class FIATUpdateHazard(ReduceMethod):
             # Name of event set is the stem of the event set file
             event_set_name = self.input.event_set_yaml.stem
 
-        self.params: Params = Params(
-            event_set_name=event_set_name, sim_subfolder=sim_subfolder, **params
-        )
+        self.params: Params = Params(event_set_name=event_set_name, **params)
 
         # output root is the simulation folder
-        fiat_root = (
-            self.input.fiat_cfg.parent
-            / self.params.sim_subfolder
-            / self.params.event_set_name
-        )
+        fiat_root = self.input.fiat_cfg.parent
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard" / "hazard.nc",
-            fiat_out_cfg=fiat_root / "settings.toml",
+            fiat_hazard=fiat_root / "hazard" / f"hazard_{event_set_name}.nc",
+            fiat_out_cfg=fiat_root / f"settings_{event_set_name}.toml",
         )
 
     def run(self):
@@ -205,9 +196,13 @@ class FIATUpdateHazard(ReduceMethod):
         hazard_out = self.output.fiat_hazard.relative_to(
             self.output.fiat_out_cfg.parent
         ).as_posix()
-        model.write_grid(hazard_out)
-        model.set_config("hazard.settings.var_as_band", True)
+        if self.params.risk:
+            model.write_grid(hazard_out)
+            model.set_config("hazard.settings.var_as_band", True)
+        else:
+            model.write_maps(hazard_out)
         model.set_config("hazard.file", hazard_out)
+        model.set_config("output.path", f"output/{self.params.event_set_name}")
 
         # Write the config
-        model.write_config()
+        model.write_config(config_name=self.output.fiat_out_cfg.name)

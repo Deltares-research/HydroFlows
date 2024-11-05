@@ -8,7 +8,7 @@ PROCESSORS = {
     "zip": pooch.Unzip,
 }
 REGISTRY = {
-    "artifact-data.tar.gz": "c614cbc78b08a3ca873d982cb573535b04a9d1d3012c4452c0074cbd795eeab8",
+    "global-data.tar.gz": "dcd76132eda15ac45f77419c8c8c651b6fa1390b9b44a3c339df789bff6c8a07",
     "fiat-model.tar.gz": "42c8a1c7fe624f724e56b3c0604526fa79847de5c4f1b11da4133d470611aed1",
     "sfincs-model.tar.gz": "375d597969adb66ff62fb6511b40cddd560610074aacac9af71cab4d1d507631",
     "wflow-model.tar.gz": "0cdf0bdcd073285ac8e39643707eb3687d5d11b12e87697b999947e513b11023",

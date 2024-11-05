@@ -7,7 +7,7 @@ import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
@@ -62,7 +62,7 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
@@ -127,6 +127,7 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
+        opt["setup_region"] = {"region": {"geom": region_gdf}}
         # Setup the model
         root = self.params.fiat_root
         model = FiatModel(
@@ -135,7 +136,7 @@ class FIATBuild(Method):
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
         # Build the model
-        model.build(region={"geom": region_gdf}, opt=opt, write=False)
+        model.build(opt=opt, write=False)
 
         # Set the column headers for newer FIAT verions
         # TODO remove once HydroMT-FIAT supports this
