@@ -8,6 +8,7 @@ validators and a run method.
 """
 
 import inspect
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
@@ -17,6 +18,8 @@ from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
+
+logger = logging.getLogger(__name__)
 
 
 class Method(ABC):
@@ -286,7 +289,7 @@ class Method(ABC):
                 msg = f"Input file {self.name}.input.{key} not found: {value}"
                 if not value.is_file():
                     if not missing_file_error:  # create dummy file
-                        print(f"WARNING: {msg}")
+                        logger.warning(msg)
                         value.parent.mkdir(parents=True, exist_ok=True)
                         with open(value, "w") as f:
                             f.write("")
