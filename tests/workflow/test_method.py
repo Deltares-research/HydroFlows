@@ -3,9 +3,9 @@ import os
 import re
 
 import pytest
+from conftest import MockExpandMethod, TestMethod, create_test_method
 
 from hydroflows.workflow import Method, Parameters
-from tests.workflow.conftest import MockExpandMethod, TestMethod, create_test_method
 
 
 def test_method_param_props(test_method: TestMethod):
