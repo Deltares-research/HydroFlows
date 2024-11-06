@@ -126,8 +126,10 @@ class FIATUpdateHazard(ReduceMethod):
         # output root is the simulation folder
         fiat_root = self.input.fiat_cfg.parent
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard" / f"hazard_{event_set_name}.nc",
-            fiat_out_cfg=fiat_root / f"settings_{event_set_name}.toml",
+            fiat_hazard=fiat_root
+            / "hazard"
+            / f"hazard_{self.params.event_set_name}.nc",
+            fiat_out_cfg=fiat_root / f"settings_{self.params.event_set_name}.toml",
         )
 
     def run(self):

@@ -30,7 +30,7 @@ class Output(Parameters):
     """
 
     fiat_out: Path
-    """Placeholder for docstrings."""
+    """The resulting file from the fiat calculations."""
 
 
 class Params(Parameters):
@@ -85,7 +85,10 @@ class FIATRun(Method):
         self.params: Params = Params(fiat_bin=fiat_bin, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
-            fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg"
+            fiat_out=self.input.fiat_cfg.parent
+            / "output"
+            / self.input.fiat_cfg.stem.split("_", 1)[1]
+            / "spatial.gpkg"
         )
 
     def run(self):
