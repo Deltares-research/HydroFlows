@@ -1,5 +1,6 @@
-setup_global_settings:
-  keep_temp_files: True
+setup_region:
+  region:
+    geom: <region> # Placeholder for region vector file
 
 setup_output:
   output_dir: output

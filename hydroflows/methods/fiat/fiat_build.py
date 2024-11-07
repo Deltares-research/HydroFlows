@@ -66,7 +66,7 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
-    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
+    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a FIAT model. In this file the different model components
     that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
@@ -134,7 +134,9 @@ class FIATBuild(Method):
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
-        opt = {model._CLI_ARGS["region"]: {"region": {"geom": region_gdf}}, **opt}
+        if model._CLI_ARGS["region"] not in opt:
+            opt = {model._CLI_ARGS["region"]: {"region": {"geom": region_gdf}}, **opt}
+        opt[model._CLI_ARGS["region"]].update(region={"geom": region_gdf})
         # Build the model
         model.build(opt=opt, write=False)
 

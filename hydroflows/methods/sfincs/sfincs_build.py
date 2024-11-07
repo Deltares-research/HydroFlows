@@ -59,7 +59,7 @@ class Params(Parameters):
     yml format, which should contain the data sources specified in the config file.
     """
 
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yaml")
+    default_config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a SFINCS model. In this file the different model components
     that are required by the :py:class:`hydromt_sfincs.SfincsModel` are listed.

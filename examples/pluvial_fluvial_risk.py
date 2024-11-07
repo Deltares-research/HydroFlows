@@ -65,7 +65,6 @@ if __name__ == "__main__":
         end_date="2021-12-31",
         plot_fig=True,
         depth_min=0.05,
-        # local_precip_path="preprocessed_data/output_scalar_resampled_precip_station11.nc",
     )
 
     # Create a workflow

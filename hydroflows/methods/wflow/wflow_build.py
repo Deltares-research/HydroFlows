@@ -48,7 +48,7 @@ class Params(Parameters):
     wflow_root: Path
     """The path to the root directory where the wflow model will be created."""
 
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yaml")
+    default_config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a Wflow model. In this file the different model components
     that are required by the :py:class:`hydromt_wflow.WflowModel` are listed.
