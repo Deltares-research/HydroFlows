@@ -127,7 +127,6 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
-        opt["setup_region"] = {"region": {"geom": region_gdf}}
         # Setup the model
         root = self.params.fiat_root
         model = FiatModel(
@@ -135,6 +134,7 @@ class FIATBuild(Method):
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
+        opt = {model._CLI_ARGS["region"]: {"region": {"geom": region_gdf}}, **opt}
         # Build the model
         model.build(opt=opt, write=False)
 

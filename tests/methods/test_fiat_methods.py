@@ -124,6 +124,7 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
+# TODO add the hazard data.
 @pytest.mark.skipif(not FIAT_EXE.exists(), reason="fiat executable not found")
 @pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
 def test_fiat_run(tmp_path: Path, fiat_simple_root: Path):
