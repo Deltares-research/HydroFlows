@@ -32,6 +32,7 @@ __eps__ = {
     "get_gtsm_data": "hydroflows.methods.coastal.get_gtsm_data:GetGTSMData",
     "floodmarks_validation": "hydroflows.methods.hazard_validation.floodmarks:FloodmarksValidation",
     "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
+    "script_method": "hydroflows.methos.script.script_method:ScriptMethod",
 }
 
 
