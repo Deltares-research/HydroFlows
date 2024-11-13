@@ -3,8 +3,6 @@
 import subprocess
 from pathlib import Path
 
-from pydantic import Field, model_validator
-
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -33,17 +31,6 @@ class Output(Parameters):
 
     fiat_out: Path
     """The resulting file from the fiat calculations."""
-
-    input: Input = Field(exclude=True)
-
-    @model_validator(mode="after")
-    def _output(self):
-        # Split the input name
-        outlist = self.input.fiat_cfg.stem.split("_", 1)
-        if len(outlist) != 1:
-            self.fiat_out = (
-                self.input.fiat_cfg.parent / "output" / outlist[1] / "spatial.gpkg"
-            )
 
 
 class Params(Parameters):
@@ -98,8 +85,7 @@ class FIATRun(Method):
         self.params: Params = Params(fiat_bin=fiat_bin, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
-            fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg",
-            input=self.input,
+            fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg"
         )
 
     def run(self):

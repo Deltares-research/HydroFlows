@@ -193,6 +193,7 @@ if __name__ == "__main__":
         fiat_cfg=fiat_build.output.fiat_cfg,
         event_set_yaml=Path(data_dir, "events/{event_set}.yml"),
         event_set_name="{event_set}",
+        sim_subfolder=simu_dir,
         hazard_maps=sfincs_post.output.hazard_tif,
         risk=w.get_ref("$config.risk"),
     )
