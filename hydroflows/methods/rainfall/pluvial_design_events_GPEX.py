@@ -60,11 +60,11 @@ class Params(Parameters):
     rps: ListOfFloat
     """Return periods of interest."""
 
-    duration: Literal[3, 6, 12, 24, 48, 72, 120, 240] = 72
+    duration: int = 72
     """Duration of the produced design event."""
 
     eva_method: Literal["gev", "gumb", "mev", "pot"] = "gev"
-    """Extreme value distribution method to get the GPEX estimate. 
+    """Extreme value distribution method to get the GPEX estimate.
     Valid options within the GPEX dataset are "gev" for the Generalized Extreme Value ditribution,
     "mev" for the Metastatistical Extreme Value distribution, and "pot" for the
     Peak-Over-Threshold distribution."""
@@ -91,11 +91,17 @@ class Params(Parameters):
     def _validate_model(self):
         # validate rps
         gpex_available_rps = [2, 5, 10, 20, 39, 50, 100, 200, 500, 1000]
-        invalid_values = [v for v in self.rps if v not in gpex_available_rps]
-        if invalid_values:
+        invalid_values_rps = [v for v in self.rps if v not in gpex_available_rps]
+        if invalid_values_rps:
             raise ValueError(
-                f"The provided return periods {invalid_values} are not in the predefined list "
+                f"The provided return periods {invalid_values_rps} are not in the predefined list "
                 f"of the available GPEX return periods: {gpex_available_rps}."
+            )
+        gpex_available_durations = [3, 6, 12, 24, 48, 72, 120, 240]
+        if self.duration not in gpex_available_durations:
+            raise ValueError(
+                f"The provided duration {self.duration} is not in the predefined list "
+                f"of the available GPEX durations: {gpex_available_durations}."
             )
         # validate event_names
         if self.event_names is None:
@@ -123,7 +129,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         region: Path,
         event_root: Path = Path("data/events/rainfall"),
         rps: Optional[ListOfFloat] = None,
-        duration: Literal[3, 6, 12, 24, 48, 72, 120, 240] = 72,
+        duration: int = 72,
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",
         **params,
@@ -197,6 +203,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
             lat=centroid.y.values[0],
             lon=centroid.x.values[0],
             method="nearest",
+            tr=self.params.rps,
         )
 
         expanded_dur = ds["dur"].values[:, None]
