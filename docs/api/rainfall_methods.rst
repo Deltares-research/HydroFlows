@@ -26,7 +26,7 @@ Pluvial design events
    pluvial_design_events.Output
 
 Pluvial design events GPEX
----------------------
+--------------------------
 
 .. autosummary::
    :toctree: ../_generated
