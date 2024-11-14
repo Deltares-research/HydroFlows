@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
@@ -48,7 +48,7 @@ class Params(Parameters):
     wflow_root: Path
     """The path to the root directory where the wflow model will be created."""
 
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yaml")
+    default_config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a Wflow model. In this file the different model components
     that are required by the :py:class:`hydromt_wflow.WflowModel` are listed.
@@ -57,7 +57,7 @@ class Params(Parameters):
     `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
     """
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """

@@ -30,7 +30,7 @@ class Output(Parameters):
     """
 
     fiat_out: Path
-    """Placeholder for docstrings."""
+    """The resulting file from the fiat calculations."""
 
 
 class Params(Parameters):
