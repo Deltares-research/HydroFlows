@@ -8,7 +8,7 @@ from fetch_data import fetch
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsPostprocess,
+    SfincsDownscale,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -23,19 +23,18 @@ if __name__ == "__main__":
 
     # Variables
     name = "pluvial_multiple_regions"
-    model_dir = "models"
-    data_dir = "data"
-    input_dir = "data/input"
-    output_dir = "data/output"
-    simu_dir = "simulations"
+    case_root = Path(pwd, "cases", name)
 
     # Setup the configuration
     conf = WorkflowConfig(
-        config=Path(pwd, "hydromt_config/sfincs_config.yml"),
+        # general settings
         data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
-        sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
+        # sfincs settings
+        hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
+        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+        # design event settings
         rps=[2, 5, 10],
     )
 
@@ -47,9 +46,9 @@ if __name__ == "__main__":
 
     # %% Build the SFINCS models
     sfincs_build = SfincsBuild(
-        region=Path(pwd, data_dir, "build", "{region}.geojson"),
-        default_config=w.get_ref("$config.config"),
-        sfincs_root=Path(model_dir, "sfincs", "{region}"),
+        region="../../data/build/{region}.geojson",  # NOTE: case in sub-subfolder of pwd
+        sfincs_root="models/sfincs/{region}",
+        default_config=w.get_ref("$config.hydromt_sfincs_config"),
         data_libs=w.get_ref("$config.data_libs"),
     )
     w.add_rule(sfincs_build, "sfincs_build")
@@ -57,7 +56,7 @@ if __name__ == "__main__":
     # %% Get Rainfall timeseries
     get_rainfall = GetERA5Rainfall(
         region=sfincs_build.output.sfincs_region,
-        data_root=Path(input_dir, "{region}"),
+        data_root="data/era5/{region}",
         start_date=w.get_ref("$config.start_date"),
         end_date=w.get_ref("$config.end_date"),
     )
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     # %% Derive pluvial events from rainfall data
     pluvial_events = PluvialDesignEvents(
         precip_nc=get_rainfall.output.precip_nc,
-        event_root=Path(data_dir, "events", "{region}"),
+        event_root="data/events/{region}",
         rps=w.get_ref("$config.rps"),
         wildcard="pluvial_events",
     )
@@ -88,15 +87,15 @@ if __name__ == "__main__":
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
     # Post process the results from pluvial events
-    sfincs_post = SfincsPostprocess(
+    sfincs_post = SfincsDownscale(
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
-        hazard_root=Path(output_dir, "{region}"),
+        output_root="data/hazard/{region}",
     )
     w.add_rule(sfincs_post, "sfincs_post")
 
     # %% Do a dry run of the workflow
     w.run(dryrun=True)
 
-    # %% Save to a snakemake workflow file
-    w.to_snakemake(f"cases/{name}/workflow.smk")
+    # %% Write the workflow to a Snakefile
+    w.to_snakemake(Path(case_root, "Snakefile"))
