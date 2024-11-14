@@ -25,6 +25,17 @@ Pluvial design events
    pluvial_design_events.Params
    pluvial_design_events.Output
 
+Pluvial design events GPEX
+---------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   pluvial_design_events_GPEX.PluvialDesignEventsGPEX
+   pluvial_design_events_GPEX.Input
+   pluvial_design_events_GPEX.Params
+   pluvial_design_events_GPEX.Output
+
 
 Pluvial historical events
 -------------------------
