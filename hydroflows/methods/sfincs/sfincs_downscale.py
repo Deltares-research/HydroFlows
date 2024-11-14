@@ -35,8 +35,8 @@ class Params(Parameters):
     output_root: Optional[Path] = None
     """The path to the root directory where the hazard output files are saved."""
 
-    file_name: str = "hmax"
-    """The name of the event."""
+    event_name: str
+    """The name of the event, used to create the output filename."""
 
     depth_min: float = 0.05
     """Minimum depth to consider as "flooding."""
@@ -51,7 +51,7 @@ class SfincsDownscale(Method):
     name: str = "sfincs_downscale"
 
     _test_kwargs = {
-        "sfincs_map": Path("sfincs_map.nc"),
+        "sfincs_map": Path("test_event/sfincs_map.nc"),
         "sfincs_subgrid_dep": Path("subgrid/dep_subgrid.tif"),
     }
 
@@ -59,11 +59,13 @@ class SfincsDownscale(Method):
         self,
         sfincs_map: Path,
         sfincs_subgrid_dep: Path,
+        event_name: Optional[str] = None,
         output_root: Optional[Path] = None,
-        file_name: str = "hmax",
         **params,
     ) -> None:
         """Downscale SFINCS waterlevels to a flood depth map.
+
+        output tif file is saved to {output_root}/hmax_{event_name}.tif
 
         Parameters
         ----------
@@ -71,11 +73,11 @@ class SfincsDownscale(Method):
             The path to the SFINCS model output sfincs_map.nc file.
         sfincs_subgrid_dep : Path
             The path to the highres dem file to use for downscaling the results.
-        hazard_root : Path, optional
-            The path to the root directory where the hazard output files are saved,
-            by default the same directory as the sfincs_map files.
-        file_name : str, optional
-            The name of the output file, by default "hmax".
+        event_name : str
+            The name of the event, used to create the output filename.
+        output_root : Optional[Path], optional
+            The output directory where the hazard output files are saved.
+            By default the output is saved in the same directory as the input.
         **params
             Additional parameters to pass to the SfincsDownscale instance.
             See :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`.
@@ -90,13 +92,17 @@ class SfincsDownscale(Method):
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
         )
 
+        if output_root is None:
+            output_root = self.input.sfincs_map.parent
+        if event_name is None:  # parent folder equals event name
+            event_name = self.input.sfincs_map.parent.name
         self.params: Params = Params(
-            output_root=output_root, file_name=file_name, **params
+            output_root=output_root, event_name=event_name, **params
         )
 
-        output_root = self.params.output_root or self.input.sfincs_map.parent
+        # NOTE: unique output file name are required by HydroMT-FIAT hazard
         self.output: Output = Output(
-            hazard_tif=Path(output_root, f"{self.params.file_name}.tif")
+            hazard_tif=Path(output_root, f"hmax_{self.params.event_name}.tif")
         )
 
     def run(self):

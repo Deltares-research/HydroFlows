@@ -31,8 +31,8 @@ class Params(Parameters):
     output_root: Optional[Path] = None
     """The output directory where the hazard output files are saved."""
 
-    file_name: str = "zsmax"
-    """The name of the output file."""
+    event_name: str
+    """The name of the event, used to create the output filename."""
 
 
 class SfincsPostprocess(Method):
@@ -41,21 +41,25 @@ class SfincsPostprocess(Method):
     name: str = "sfincs_postprocess"
 
     _test_kwargs = {
-        "sfincs_map": Path("sfincs_map.nc"),
+        "sfincs_map": Path("tests_event/sfincs_map.nc"),
     }
 
     def __init__(
         self,
         sfincs_map: Path,
+        event_name: Optional[str] = None,
         output_root: Optional[Path] = None,
-        file_name: str = "zsmax",
     ) -> None:
         """Reduce sfincs_map.nc zsmax variable to the global zsmax and save on a regular grid.
+
+        output nc file is saved to {output_root}/zsmax_{event_name}.nc
 
         Parameters
         ----------
         sfincs_map : Path
             The path to the SFINCS model output sfincs_map.nc file.
+        event_name : str
+            The name of the event, used to create the output filename.
         output_root : Optional[Path], optional
             The output directory where the hazard output files are saved.
             By default the output is saved in the same directory as the input.
@@ -68,9 +72,16 @@ class SfincsPostprocess(Method):
         """
         self.input: Input = Input(sfincs_map=sfincs_map)
 
-        self.params: Params = Params(output_root=output_root, file_name=file_name)
+        if output_root is None:
+            output_root = self.input.sfincs_map.parent
+        if event_name is None:  # parent folder equals event name
+            event_name = self.input.sfincs_map.parent.name
+        self.params: Params = Params(output_root=output_root, event_name=event_name)
 
-        self.output: Output = Output(hazard_tif=output_root / self.params.file_name)
+        # NOTE: unique output file name are required by HydroMT-FIAT hazard
+        self.output: Output = Output(
+            sfincs_zsmax=self.params.output_root / f"zsmax_{event_name}.nc"
+        )
 
     def run(self):
         """Run the postprocessing."""
@@ -85,6 +96,8 @@ class SfincsPostprocess(Method):
 
         # get zsmax and save to file witt "water_level" as variable name
         zsmax = sf.results["zsmax"].max(dim="timemax").rename("water_level")
+        zsmax = zsmax.fillna(-9999.0)
+        zsmax.raster.set_nodata(-9999.0)
         zsmax.attrs["units"] = "m"
         zsmax.to_netcdf(
             self.output.sfincs_zsmax,
