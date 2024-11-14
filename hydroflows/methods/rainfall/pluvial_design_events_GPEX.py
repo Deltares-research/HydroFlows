@@ -1,12 +1,20 @@
 """Pluvial design events using GPEX global IDF method."""
+
 from pathlib import Path
 from typing import List, Literal, Optional
 
 import geopandas as gpd
+import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfInt, ListOfStr
+from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows.events import Event, EventSet
+from hydroflows.methods.rainfall.pluvial_design_events import (
+    _plot_hyetograph,
+    _plot_idf_curves,
+    get_hyetograph,
+)
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -42,29 +50,20 @@ class Output(Parameters):
     see also :py:class:`hydroflows.events.EventSet`.
     """
 
+
 class Params(Parameters):
     """Parameters for :py:class:`PluvialDesignEventsGPEX` method."""
 
     event_root: Path
     """Root folder to save the derived design events."""
-    
-    # or simply use the path to the nc directly without
-    # a data catalog?
-    # data_catalog_path: ListOfStr = ["artifact_data"]
-    # """File path to the data catalog, which should contain an entry
-    # for the GPEX dataset."""
-
-    # data_catalog_entry: str = "gpex"
-    # """Name of the entry in the data catalog (specified by `data_catalog_path`)
-    # that corresponds to the GPEX dataset."""
 
     rps: ListOfFloat
     """Return periods of interest."""
 
-    durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
-    """Intensity Duration Frequencies provided as multiply of the data time step."""
+    duration: Literal[3, 6, 12, 24, 48, 72, 120, 240] = 72
+    """Duration of the produced design event."""
 
-    eva_method: Literal["gev", "mev", "pot"] = "gev"
+    eva_method: Literal["gev", "gumb", "mev", "pot"] = "gev"
     """Extreme value distribution method to get the GPEX estimate. 
     Valid options within the GPEX dataset are "gev" for the Generalized Extreme Value ditribution,
     "mev" for the Metastatistical Extreme Value distribution, and "pot" for the
@@ -76,6 +75,17 @@ class Params(Parameters):
     # Note: set by model_validator based on rps if not provided
     event_names: Optional[ListOfStr] = None
     """List of event names associated with return periods."""
+
+    t0: str = "2020-01-01"
+    """Random initial date for the design events."""
+
+    plot_fig: bool = True
+    """Determines whether to plot figures, including the derived design hyetographs
+    as well as the calculated IDF curves per return period."""
+
+    save_idf_csv: bool = True
+    """Determines whether to save the calculated IDF curve values
+    per return period in a csv format."""
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -104,13 +114,16 @@ class PluvialDesignEventsGPEX(ExpandMethod):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "gpex_nc": Path("gpex.nc"),
     }
 
     def __init__(
         self,
+        gpex_nc: Path,
         region: Path,
         event_root: Path = Path("data/events/rainfall"),
         rps: Optional[ListOfFloat] = None,
+        duration: Literal[3, 6, 12, 24, 48, 72, 120, 240] = 72,
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",
         **params,
@@ -119,6 +132,21 @@ class PluvialDesignEventsGPEX(ExpandMethod):
 
         Parameters
         ----------
+        gpex_nc : Path
+            The file path to the GPEX data set.
+        region : Path
+            The file path to the geometry file for which we want
+            to derive GPEX estimates at its centroid pixel.
+        event_root : Path, optional
+            The root folder to save the derived design events, by default "data/events/rainfall".
+        rps : List[float], optional
+            Return periods of design events, by default [2, 5, 10, 20, 39, 50, 100].
+        duration : int
+            Duration of the produced design event.
+        event_names : List[str], optional
+            List of event names for the design events, by "p_event{i}", where i is the event number.
+        wildcard : str, optional
+            The wildcard key for expansion over the design events, by default "event".
         **params
             Additional parameters to pass to the PluvialDesignEventsGPEX Params instance.
 
@@ -129,15 +157,24 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         :py:class:`PluvialDesignEventsGPEX Params <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Params>`
         """
         if rps is None:
-            rps = [1, 2, 5, 10, 20, 50, 100]
+            rps = [
+                2,
+                5,
+                10,
+                20,
+                39,
+                50,
+                100,
+            ]  # subset from the GPEX data up to 100yr rp
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,
+            duration=duration,
             event_names=event_names,
             wildcard=wildcard,
             **params,
         )
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(gpex_nc=gpex_nc, region=region)
         wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
@@ -161,5 +198,60 @@ class PluvialDesignEventsGPEX(ExpandMethod):
             lon=centroid.x.values[0],
             method="nearest",
         )
-        
-        
+
+        expanded_dur = ds["dur"].values[:, None]
+        rates = ds.values / expanded_dur  # estimate rainfall rates
+
+        # Create a new DataArray with the rainfall rates per idf
+        da_idf = xr.DataArray(rates, coords=ds.coords, dims=ds.dims, attrs=ds.attrs)
+
+        # keep duration up to the max user defined duration
+        da_idf = da_idf.sel(dur=slice(None, self.params.duration))
+
+        # Get design events hyetograph for each return period
+        p_hyetograph: xr.DataArray = get_hyetograph(da_idf, intensity_dim="dur")
+
+        # make sure there are no negative values
+        p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
+
+        root = self.output.event_set_yaml.parent
+
+        # save plots
+        if self.params.plot_fig:
+            # create a folder to save the figs
+            plot_dir = Path(root, "figs")
+            plot_dir.mkdir(exist_ok=True)
+
+            _plot_hyetograph(
+                p_hyetograph, Path(plot_dir, "rainfall_hyetograph.png"), rp_dim="tr"
+            )
+            _plot_idf_curves(
+                da_idf, Path(plot_dir, "rainfall_idf_curves.png"), rp_dim="tr"
+            )
+
+        # random starting time
+        dt0 = pd.to_datetime(self.params.t0)
+        time_delta = pd.to_timedelta(p_hyetograph["time"], unit="h").round("10min")
+        p_hyetograph["time"] = dt0 + time_delta
+        p_hyetograph = p_hyetograph.reset_coords(drop=True)
+
+        events_list = []
+        for name, rp in zip(self.params.event_names, p_hyetograph["tr"].values):
+            # save p_rp as csv files
+            fmt_dict = {self.params.wildcard: name}
+            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
+            p_hyetograph.sel(tr=rp).to_pandas().round(2).to_csv(forcing_file)
+            # save event description yaml file
+            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
+            event = Event(
+                name=name,
+                forcings=[{"type": "rainfall", "path": forcing_file}],
+                return_period=rp,
+            )
+            event.set_time_range_from_forcings()
+            event.to_yaml(event_file)
+            events_list.append({"name": name, "path": event_file})
+
+        # make and save event set yaml file
+        event_set = EventSet(events=events_list)
+        event_set.to_yaml(self.output.event_set_yaml)
