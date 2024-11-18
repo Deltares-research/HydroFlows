@@ -263,33 +263,64 @@ class Method(ABC):
 
     ## RUN METHODS
 
-    def dryrun(self, missing_file_error: bool = False) -> None:
-        """Run method with dummy outputs."""
-        self.check_input_output_paths(missing_file_error=missing_file_error)
-        # write output files
-        for _, path in self._output_paths:
-            path.parent.mkdir(parents=True, exist_ok=True)
-            with open(path, "w") as f:
-                f.write("")
+    def dryrun(
+        self, input_files: List[Path], missing_file_error: bool = False
+    ) -> List[Path]:
+        """Run method with dummy outputs.
+
+        Parameters
+        ----------
+        input_files : List[Path]
+            List of input paths to check, by default None.
+        missing_file_error : bool, optional
+            Raise an error if a missing file is encountered, by default False.
+
+        Returns
+        -------
+        List[Path]
+            List of output paths.
+        """
+        for key, value in self.input.model_dump().items():
+            if isinstance(value, Path):
+                if value not in input_files:
+                    msg = f"Input file {self.name}.input.{key} not found: {value}"
+                    if not missing_file_error:  # create dummy file
+                        print(f"WARNING: {msg}")
+                    else:
+                        raise FileNotFoundError(msg)
+        # return output paths
+        return [value for _, value in self._output_paths]
 
     def run_with_checks(self, check_output: bool = True) -> None:
-        """Run the method with input/output checks."""
+        """Run the method with input/output checks.
+
+        Parameters
+        ----------
+        check_output : bool, optional
+            Check if output files are created, by default True.
+        """
         self.check_input_output_paths()
         self.run()
         if check_output:
             self.check_output_exists()
 
-    def check_input_output_paths(self, missing_file_error: bool = True) -> None:
-        """Check if input exists and output parent directory exists."""
+    def check_input_output_paths(
+        self,
+        missing_file_error: bool = True,
+    ) -> None:
+        """Check if input exists and output parent directory exists.
+
+        Parameters
+        ----------
+        missing_file_error : bool, optional
+            Raise an error if a missing file is encountered, by default True.
+        """
         for key, value in self.input.model_dump().items():
             if isinstance(value, Path):
-                msg = f"Input file {self.name}.input.{key} not found: {value}"
                 if not value.is_file():
+                    msg = f"Input file {self.name}.input.{key} not found: {value}"
                     if not missing_file_error:  # create dummy file
                         print(f"WARNING: {msg}")
-                        value.parent.mkdir(parents=True, exist_ok=True)
-                        with open(value, "w") as f:
-                            f.write("")
                     else:
                         raise FileNotFoundError(msg)
         for value in self.output.model_dump().values():

@@ -1,4 +1,5 @@
 import re
+from pathlib import Path
 from weakref import ReferenceType
 
 import pytest
@@ -244,20 +245,29 @@ def test_run(capsys, mocker):
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
     mocker.patch.object(Rule, "_run_method_instance")
-    rule.run(dryrun=True)
+    rule.run()
     captured = capsys.readouterr()
-    assert "Run 1/2: {'region': 'region1'}" in captured.out
-    assert "Run 2/2: {'region': 'region2'}" in captured.out
+    assert "Run 1/2: wildcard values = {'region': 'region1'}" in captured.out
+    assert "Run 2/2: wildcard values = {'region': 'region2'}" in captured.out
 
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
     mock_thread_map.assert_called_with(
         rule._run_method_instance, rule.wildcard_product(), max_workers=2
     )
-    rule.run(dryrun=True)
-    captured = capsys.readouterr()
-    assert "Run 1/2: {'region': 'region1'}" in captured.out
-    assert "Run 2/2: {'region': 'region2'}" in captured.out
+
+
+def test_dryrun():
+    workflow = Workflow(wildcards={"region": ["region1", "region2"]})
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+    rule = Rule(method=test_method, workflow=workflow)
+    output_files = rule.dryrun()
+    assert [
+        Path("region1/output1"),
+        Path("region1/output2"),
+        Path("region2/output1"),
+        Path("region2/output2"),
+    ] == output_files
 
 
 def test_run_method_instance(mocker):
@@ -266,12 +276,10 @@ def test_run_method_instance(mocker):
     rule = Rule(method=test_method, workflow=workflow)
 
     mocker.patch.object(TestMethod, "dryrun")
-    rule._run_method_instance(
-        wildcards={"region": "region1"},
-        dryrun=True,
-        missing_file_error=True,
+    rule._dryrun_method_instance(
+        wildcards={"region": "region1"}, missing_file_error=True, input_files=[]
     )
-    test_method.dryrun.assert_called_with(missing_file_error=True)
+    test_method.dryrun.assert_called_with(missing_file_error=True, input_files=[])
     mocker.patch.object(TestMethod, "run_with_checks")
     rule._run_method_instance(wildcards={"region": "region1"})
     test_method.run_with_checks.assert_called()

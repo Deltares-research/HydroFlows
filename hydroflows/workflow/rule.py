@@ -277,46 +277,73 @@ class Rule:
 
     ## RUN METHODS
 
-    def run(
-        self,
-        max_workers=1,
-        dryrun: bool = False,
-        missing_file_error: bool = False,
-    ) -> None:
+    def run(self, max_workers=1) -> None:
         """Run the rule.
 
         Parameters
         ----------
         max_workers : int, optional
             The maximum number of workers to use, by default 1
-        dryrun : bool, optional
-            Whether to run in dryrun mode, by default False
-        missing_file_error : bool, optional
-            Whether to raise an error if a file is missing, by default False
         """
         wildcard_product = self.wildcard_product()
         nruns = len(wildcard_product)
-        if dryrun or nruns == 1 or max_workers == 1:
+        if nruns == 1 or max_workers == 1:
             for i, wildcards in enumerate(wildcard_product):
-                print(f"Run {i+1}/{nruns}: {wildcards}")
-                self._run_method_instance(
-                    wildcards, dryrun=dryrun, missing_file_error=missing_file_error
-                )
+                print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
+                self._run_method_instance(wildcards)
         else:
             tqdm_kwargs = {}
             if max_workers is not None:
                 tqdm_kwargs.update(max_workers=max_workers)
             thread_map(self._run_method_instance, wildcard_product, **tqdm_kwargs)
 
-    def _run_method_instance(
-        self, wildcards: Dict, dryrun: bool = False, missing_file_error: bool = False
-    ) -> None:
+    def dryrun(
+        self,
+        input_files: Optional[List[Path]] = None,
+        missing_file_error: bool = False,
+    ) -> List[Path]:
+        """Dryrun the rule.
+
+        Parameters
+        ----------
+        input_files : List[Path], optional
+            The input files to use for the dryrun, by default None
+        missing_file_error : bool, optional
+            Whether to raise an error if a file is missing, by default False
+
+        Returns
+        -------
+        List[Path]
+            The output files of the dryrun.
+        """
+        input_files = input_files or []
+        wildcard_product = self.wildcard_product()
+        nruns = len(wildcard_product)
+        output_files = []
+        for i, wildcards in enumerate(wildcard_product):
+            print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
+            output_files_i = self._dryrun_method_instance(
+                wildcards,
+                missing_file_error=missing_file_error,
+                input_files=input_files,
+            )
+            output_files.extend(output_files_i)
+        return output_files
+
+    def _run_method_instance(self, wildcards: Dict) -> None:
         """Run a method instance with the given kwargs."""
         m = self._method_wildcard_instance(wildcards)
-        if dryrun:
-            m.dryrun(missing_file_error=missing_file_error)
-        else:
-            m.run_with_checks()
+        return m.run_with_checks()
+
+    def _dryrun_method_instance(
+        self,
+        wildcards: Dict,
+        input_files: List[Path],
+        missing_file_error: bool = False,
+    ) -> List[Path]:
+        """Dryrun a method instance with the given kwargs."""
+        m = self._method_wildcard_instance(wildcards)
+        return m.dryrun(missing_file_error=missing_file_error, input_files=input_files)
 
 
 class Rules:

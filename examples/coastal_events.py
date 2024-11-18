@@ -15,15 +15,13 @@ if __name__ == "__main__":
 
     # %% Setup variables
     name = "coastal_events"
-    data_dir = "data"
-    input_dir = "input"
+    case_root = Path(pwd, "cases", name)
 
     # Setup the configuration
     config = WorkflowConfig(
         region=Path(pwd, "data/build/region.geojson"),
-        gtsm_catalog=Path(
-            "p:/11209169-003-up2030/data/WATER_LEVEL/data_catalog.yml"
-        ),  # replace with pooch fetched data
+        # TODO replace with pooch fetched data
+        gtsm_catalog=Path("p:/11209169-003-up2030/data/WATER_LEVEL/data_catalog.yml"),
         start_time="2014-01-01",
         end_time="2021-12-31",
         rps=[2, 5, 10],
@@ -37,7 +35,7 @@ if __name__ == "__main__":
         start_time=w.get_ref("$config.start_time"),
         end_time=w.get_ref("$config.end_time"),
         region=w.get_ref("$config.region"),
-        data_root=Path(data_dir, input_dir, "coastal"),
+        data_root="data/gtsm",
     )
     w.add_rule(get_gtsm_data, rule_id="get_gtsm_data")
 
@@ -46,17 +44,12 @@ if __name__ == "__main__":
         tide_timeseries=get_gtsm_data.output.tide_nc,
         bnd_locations=get_gtsm_data.output.bnd_locations,
         rps=w.get_ref("$config.rps"),
-        event_root=Path(data_dir, "events", "coastal"),
+        event_root="data/events",
     )
     w.add_rule(coastal_design_events, rule_id="coastal_design_events")
 
-    # %%
-    # coastal_design_events.run()
-    # %%
-    # wf.run()
-
     # %% Test the workflow
-    w.run(dryrun=True)
+    w.dryrun(input_files=[config.region, config.gtsm_catalog])
 
-    # %% Write to a snakemake workflow file
-    w.to_snakemake(f"cases/{name}/workflow.smk")
+    # %% to snakemake
+    w.to_snakemake(Path(case_root, "Snakefile"))

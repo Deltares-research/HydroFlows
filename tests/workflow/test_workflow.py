@@ -235,15 +235,18 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(mocker, workflow: Workflow, tmp_path):
+def test_workflow_dryrun(mocker, workflow: Workflow, tmp_path: Path):
     w = create_workflow_with_mock_methods(workflow, root=tmp_path)
     mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
-    w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
+    w.dryrun()
     captured_stdout = mock_stdout.getvalue()
     for rule in w.rules:
         assert rule.rule_id in captured_stdout
 
     # Run workflow without region wildcard
+
+
+def test_workflow_run(tmp_path: Path):
     w = Workflow(name="test_workflow")
     root = tmp_path / "test_root"
     root.mkdir()
@@ -263,7 +266,7 @@ def test_workflow_run(mocker, workflow: Workflow, tmp_path):
         root=root,
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
-    w.run(dryrun=True, missing_file_error=True)
+    w.run()
 
 
 def test_output_path_refs(w: Workflow):

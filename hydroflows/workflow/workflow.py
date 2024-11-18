@@ -4,8 +4,6 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import logging
-import os
-import tempfile
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, List, Optional, Union
@@ -187,9 +185,6 @@ class Workflow:
     def run(
         self,
         max_workers=1,
-        dryrun: bool = False,
-        missing_file_error: bool = False,
-        tmpdir: Optional[Path] = None,
     ) -> None:
         """Run the workflow.
 
@@ -198,34 +193,35 @@ class Workflow:
         max_workers : int, optional
             The maximum number of workers, by default 1.
             Only used when dryrun is False.
-        dryrun : bool, optional
-            Run the workflow in dryrun mode, by default False.
         missing_file_error : bool, optional
             Raise an error when a file is missing, by default False.
             This only works when dryrun is True.
-        tmpdir : Optional[Path], optional
-            The temporary directory to run the dryrun in, by default None.
         """
-        # do dryrun in a tmp directory
-        if dryrun:
-            curdir = Path.cwd()
-            if tmpdir is None:
-                tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
-            Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            os.chdir(tmpdir)
-            print(f"Running dryrun in {tmpdir}")
-
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
             print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
-            rule.run(
-                dryrun=dryrun,
-                max_workers=max_workers,
-                missing_file_error=missing_file_error,
-            )
+            rule.run(max_workers=max_workers)
 
-        if dryrun:
-            os.chdir(curdir)
+    def dryrun(
+        self, input_files: Optional[List[Path]] = None, missing_file_error: bool = False
+    ) -> None:
+        """Dryrun the workflow.
+
+        Parameters
+        ----------
+        missing_file_error : bool, optional
+            Raise an error when a file is missing, by default False.
+        input_files : List[Path], optional
+            List of input files to to workflow, by default None.
+        """
+        nrules = len(self.rules)
+        input_files = input_files or []
+        for i, rule in enumerate(self.rules):
+            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            output_files = rule.dryrun(
+                missing_file_error=missing_file_error, input_files=input_files
+            )
+            input_files = list(set(input_files + output_files))
 
     @property
     def _output_path_refs(self) -> Dict[str, str]:
