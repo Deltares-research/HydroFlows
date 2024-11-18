@@ -146,7 +146,7 @@ class FluvialDesignEvents(ExpandMethod):
     def __init__(
         self,
         discharge_nc: Path,
-        event_root: Path = "input/events/fluvial",
+        event_root: Path = "data/events/discharge",
         rps: Optional[List[float]] = None,
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",

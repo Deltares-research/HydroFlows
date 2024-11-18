@@ -11,7 +11,7 @@ from hydroflows.methods.rainfall import (
 )
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsDownscale,
+    SfincsPostprocess,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -127,7 +127,7 @@ sfincs_run = SfincsRun(
 w.add_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
-sfincs_downscale = SfincsDownscale(
+sfincs_postprocess = SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
@@ -140,14 +140,14 @@ sfincs_downscale = SfincsDownscale(
     ),
 )
 
-w.add_rule(sfincs_downscale, rule_id="sfincs_downscale")
+w.add_rule(sfincs_postprocess, rule_id="sfincs_postprocess")
 
 # %%
 fiat_update_hazard = FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
     event_set_yaml=pluvial_events.output.event_set_yaml,
     sim_subfolder=w.get_ref("$config.sim_subfolder"),
-    hazard_maps=sfincs_downscale.output.hazard_tif,
+    hazard_maps=sfincs_postprocess.output.hazard_tif,
     risk=w.get_ref("$config.risk"),
 )
 
