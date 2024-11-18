@@ -149,7 +149,6 @@ class Workflow:
         run_env : Literal["shell", "script"], optional
             The environment in which to run the methods, by default "shell".
         """
-        self.create_references()
         snakefile = Path(snakefile).resolve()
         configfile = snakefile.with_suffix(".config.yml")
         template_env = Environment(
