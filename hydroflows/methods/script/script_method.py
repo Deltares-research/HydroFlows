@@ -3,7 +3,7 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, ClassVar, Dict, List, Union
 
 from pydantic import ConfigDict, ValidationError, model_validator
 
@@ -39,8 +39,10 @@ class ScriptParams(Parameters):
         return data
 
 
-class ScriptInputOutput(Parameters):
-    """Input/Output parameters for ScriptMethod class."""
+class ScriptInput(Parameters):
+    """Input parameters for ScriptMethod class."""
+
+    _type: ClassVar[str] = "input"
 
     model_config = ConfigDict(extra="allow")
 
@@ -54,10 +56,10 @@ class ScriptInputOutput(Parameters):
             data = json.loads(data.replace("'", '"'))
         # check if single path and convert to dict
         elif isinstance(data, (Path, str)):
-            data = {"input1": data}
+            data = {cls._type: data}
         # check if list and convert to dict
         elif isinstance(data, list):
-            data = {f"input{i+1}": item for i, item in enumerate(data)}
+            data = {f"{cls._type}{i+1}": item for i, item in enumerate(data)}
         return data
 
     @model_validator(mode="after")
@@ -69,6 +71,12 @@ class ScriptInputOutput(Parameters):
             except Exception:
                 raise ValidationError(f"{key} not a Path ({value})")
         return self
+
+
+class ScriptOutput(ScriptInput):
+    """Output parameters for ScriptMethod class."""
+
+    _type: ClassVar[str] = "output"
 
 
 class ScriptMethod(Method):
@@ -104,8 +112,8 @@ class ScriptMethod(Method):
         params : Dict
             Parameters.
         """
-        self.input: ScriptInputOutput = ScriptInputOutput.model_validate(input)
-        self.output: ScriptInputOutput = ScriptInputOutput.model_validate(output)
+        self.input: ScriptInput = ScriptInput.model_validate(input)
+        self.output: ScriptOutput = ScriptOutput.model_validate(output)
         self.params: ScriptParams = ScriptParams(script=script, **params)
 
     def run(self):

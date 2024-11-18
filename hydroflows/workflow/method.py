@@ -151,7 +151,7 @@ class Method(ABC):
             "params": {},
         }
         if hasattr(self, "_params"):  # params are optional
-            out_dict["params"] = self.params.model_dump(**dump_kwargs)
+            out_dict["params"] = self.params.to_dict(**dump_kwargs)
         return out_dict
 
     ## SERIALIZATION METHODS
