@@ -138,10 +138,10 @@ event-set (e.g. 1000s of synthetic events).
 
             $ hydroflows create sfincs_pluvial.yml
 
-Running the python code example yields a file ``workflow.smk`` which contains a Snakemake (default) workflow
-which you can then implement in a compute environment of choice. Below you can see the ``.smk`` file content that results from it.
+Running the python code example yields a file ``Snakefile`` which contains a Snakemake (default) workflow
+which you can then implement in a compute environment of choice. Below you can see the file content that results from it.
 
-.. literalinclude:: ../../examples/cases/pluvial_hazard/workflow.smk
+.. literalinclude:: ../../examples/cases/pluvial_hazard/Snakefile
 
 The earlier mentioned wildcards and their expansion and reduction are parsed automatically. The connections between
 the rules is organized via their inputs and outputs.
