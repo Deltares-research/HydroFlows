@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from hydroflows.methods.script.script_method import (
     ScriptInput,
     ScriptMethod,
@@ -33,6 +36,7 @@ if __name__ == "__main__":
 
 
 def test_script_params():
+    # thest params
     params = ScriptParams(
         script=Path("script.py"), param1="value1", param2={"a": 1, "b": 2}
     )
@@ -41,23 +45,34 @@ def test_script_params():
     assert params.param2 == {"a": 1, "b": 2}
 
 
-def test_script_input_output():
-    # test input with various options
-    input = ScriptInput(test=Path("input.txt"))
-    assert input.test == Path("input.txt")
-    input = ScriptInput.model_validate(Path("input.txt"))
-    assert input.input == Path("input.txt")
-    input = ScriptInput.model_validate([Path("input1.txt"), Path("input2.txt")])
-    assert input.input1 == Path("input1.txt")
-    assert input.input2 == Path("input2.txt")
-    input = ScriptInput.model_validate(
-        {"foo": Path("input1.txt"), "bar": Path("input2.txt")}
-    )
-    assert input.foo == Path("input1.txt")
-    assert input.bar == Path("input2.txt")
-    # output inherits from input, only test if new attribute with output name is added
+def test_script_output():
+    # test output with various options
+    output = ScriptOutput(test="output.txt")
+    assert output.test == Path("output.txt")  # test if converted to Path
     output = ScriptOutput.model_validate(Path("output.txt"))
     assert output.output == Path("output.txt")
+    output = ScriptOutput.model_validate([Path("output1.txt"), Path("output2.txt")])
+    assert output.output1 == Path("output1.txt")
+    assert output.output2 == Path("output2.txt")
+    output = ScriptOutput.model_validate(
+        {"foo": Path("output1.txt"), "bar": Path("output2.txt")}
+    )
+    assert output.foo == Path("output1.txt")
+    assert output.bar == Path("output2.txt")
+    # test invalid output
+    with pytest.raises(ValidationError):
+        output = ScriptOutput(test=2)
+
+
+def test_script_input():
+    input = ScriptInput(input="input.txt")
+    assert input.input == Path("input.txt")
+    assert input.script is None
+    input = ScriptInput(script="script.py")
+    assert input.script == Path("script.py")
+    ScriptInput.model_validate({})  # test empty input
+    with pytest.raises(ValidationError):
+        input = ScriptInput(script="script.py", foo=2)
 
 
 def test_script_method_run(tmp_path: Path):
@@ -74,13 +89,26 @@ def test_script_method_run(tmp_path: Path):
         param2={"a": 1, "b": 2},
     )
     # test params, input and output
-    assert method.params.script == script_path
+    assert method.input.script == script_path
     assert method.params.param1 == "value1"
-    assert method.input.input2 == Path("input2.txt")
+    # assert method.input.input2 == Path("input2.txt")
     assert method.output.json_path == output
     # run method and check if output file exists and contains the correct data
     method.run()
     assert output.is_file()
     with open(output, "r") as f:
         data = json.load(f)
-    assert data == method.to_dict(posix_path=True)
+    data0 = method.to_dict(posix_path=True)
+    data0["input"].pop("script")  # remove script field
+    assert data == data0
+
+    # test optional input and params
+    output2 = script_path.parent / "output2.json"
+    method2 = ScriptMethod(script=script_path, output={"json_path": output2})
+    method2.run()
+    assert output2.is_file()
+    with open(output2, "r") as f:
+        data = json.load(f)
+    data0 = method2.to_dict(posix_path=True)
+    data0["input"].pop("script")  # remove script field
+    assert data == data0

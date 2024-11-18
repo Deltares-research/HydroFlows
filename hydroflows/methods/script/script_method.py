@@ -3,9 +3,9 @@
 import json
 import subprocess
 from pathlib import Path
-from typing import Any, ClassVar, Dict, List, Union
+from typing import Any, ClassVar, Dict, Optional
 
-from pydantic import ConfigDict, ValidationError, model_validator
+from pydantic import ConfigDict, model_validator
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -14,36 +14,9 @@ from hydroflows.workflow.method_parameters import Parameters
 class ScriptParams(Parameters):
     """Parameters for ScriptMethod class."""
 
+    _type: ClassVar[str] = "param"
+
     # Allow extra fields in the model
-    model_config = ConfigDict(extra="allow")
-
-    script: Path
-    """Path to the script file."""
-
-    @model_validator(mode="before")
-    @classmethod
-    def _json_to_dict(cls, data: Any) -> Any:
-        # check if json and convert to dict
-        if isinstance(data, dict):
-            for key, value in data.items():
-                if (
-                    isinstance(value, str)
-                    and value.startswith("{")
-                    and value.endswith("}")
-                ):
-                    # replace single quotes with double quotes
-                    try:
-                        data[key] = json.loads(value.replace("'", '"'))
-                    except Exception:
-                        pass
-        return data
-
-
-class ScriptInput(Parameters):
-    """Input parameters for ScriptMethod class."""
-
-    _type: ClassVar[str] = "input"
-
     model_config = ConfigDict(extra="allow")
 
     @model_validator(mode="before")
@@ -62,21 +35,33 @@ class ScriptInput(Parameters):
             data = {f"{cls._type}{i+1}": item for i, item in enumerate(data)}
         return data
 
+
+class ScriptOutput(ScriptParams):
+    """Input parameters for ScriptMethod class."""
+
+    _type: ClassVar[str] = "output"
+
     @model_validator(mode="after")
     def check_extra_fields_are_paths(self):
         """Check that all extra fields are Path types."""
         for key, value in self:
+            if value is None:
+                continue  # skip None values such as initial script
             try:
                 setattr(self, key, Path(value))
             except Exception:
-                raise ValidationError(f"{key} not a Path ({value})")
+                raise ValueError(f"{key} not a Path type ({type(value)})")
         return self
 
 
-class ScriptOutput(ScriptInput):
+class ScriptInput(ScriptOutput):
     """Output parameters for ScriptMethod class."""
 
-    _type: ClassVar[str] = "output"
+    _type: ClassVar[str] = "input"
+
+    # NOTE script field is set optional here to be able to parse json input and add the script field later
+    script: Optional[Path] = None
+    """Path to the script file."""
 
 
 class ScriptMethod(Method):
@@ -95,38 +80,45 @@ class ScriptMethod(Method):
     def __init__(
         self,
         script: Path,
-        input: Union[Path, List[Path], Dict[str, Path]],
-        output: Union[Path, List[Path], Dict[str, Path]],
+        output: Dict[str, Path],
+        input: Dict[str, Path] = None,
         **params,
     ) -> None:
-        """Initialize the class.
+        """Initialize and validate the script method.
 
         Parameters
         ----------
         script : Path
             Path to the script file.
-        input : Union[Path, List[Path], Dict[str, Path]]
-            Input files.
-        output : Union[Path, List[Path], Dict[str, Path]]
+        output : Dict[str, Path]
             Output files.
+        input : Dict[str, Path]
+            Input files.
         params : Dict
             Parameters.
         """
+        # use ScriptParams.model_validate on input first to to parse json input
+        input = {} if input is None else input
         self.input: ScriptInput = ScriptInput.model_validate(input)
+        # set script field
+        self.input.script = Path(script)
         self.output: ScriptOutput = ScriptOutput.model_validate(output)
-        self.params: ScriptParams = ScriptParams(script=script, **params)
+        self.params: ScriptParams = ScriptParams(**params)
 
     def run(self):
         """Run the python script."""
         # add input, params and output as json argument
-        cmd = ["python", self.params.script.as_posix(), self.json_kwargs]
+        cmd = ["python", self.input.script.as_posix(), self.json_kwargs]
         # run with subprocess
         subprocess.run(cmd, check=True)
 
     @property
     def json_kwargs(self):
         """Return input, params and output as json string."""
-        return json.dumps(self.to_dict(posix_path=True))
+        # remove script field
+        data = self.to_dict(posix_path=True)
+        data["input"].pop("script")
+        return json.dumps(data)
 
     def to_kwargs(
         self,
@@ -144,8 +136,10 @@ class ScriptMethod(Method):
             return_refs=return_refs,
             **kwargs,
         )
+        input = self.input.to_dict(**kwargs)
         return {
-            "input": self.input.to_dict(**kwargs),
+            "script": input.pop("script"),  # lower script field
+            "input": input,
             "output": self.output.to_dict(**kwargs),
             **self.params.to_dict(**kwargs),
         }
