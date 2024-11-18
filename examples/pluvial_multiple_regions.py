@@ -3,8 +3,6 @@
 # %% Import modules
 from pathlib import Path
 
-from fetch_data import fetch
-
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
@@ -18,8 +16,8 @@ if __name__ == "__main__":
     # Where the file is currently located
     pwd = Path(__file__).parent
 
-    # %% Fetch the build data
-    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    # %% Fetch the build data (uncomment to fetch data required to run the workflow)
+    # fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
 
     # Variables
     name = "pluvial_multiple_regions"

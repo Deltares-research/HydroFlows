@@ -3,8 +3,6 @@
 # %% Import packages
 from pathlib import Path
 
-from fetch_data import fetch
-
 from hydroflows import Workflow
 from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.sfincs import (
@@ -24,8 +22,8 @@ if __name__ == "__main__":
     # Get current file location
     pwd = Path(__file__).parent
 
-    # %% Fetch the global build data
-    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
+    # fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
 
     # %% Define variables
     name = "fluvial_hazard"
