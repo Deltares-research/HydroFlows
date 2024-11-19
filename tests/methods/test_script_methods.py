@@ -36,13 +36,11 @@ if __name__ == "__main__":
 
 
 def test_script_params():
-    # thest params
-    params = ScriptParams(
-        script=Path("script.py"), param1="value1", param2={"a": 1, "b": 2}
-    )
+    # test params
+    params = ScriptParams(script=Path("script.py"), param1="value1", param2=2)
     assert params.script == Path("script.py")
     assert params.param1 == "value1"
-    assert params.param2 == {"a": 1, "b": 2}
+    assert params.param2 == 2
 
 
 def test_script_output():
@@ -85,13 +83,12 @@ def test_script_method_run(tmp_path: Path):
         script=script_path,
         output={"json_path": output},
         input=[Path("input1.txt"), Path("input2.txt")],
-        param1="value1",
-        param2={"a": 1, "b": 2},
+        params={"param1": "value1", "param2": 2},
     )
     # test params, input and output
     assert method.input.script == script_path
     assert method.params.param1 == "value1"
-    # assert method.input.input2 == Path("input2.txt")
+    assert method.input.input2 == Path("input2.txt")
     assert method.output.json_path == output
     # run method and check if output file exists and contains the correct data
     method.run()

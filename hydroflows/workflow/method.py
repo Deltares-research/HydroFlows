@@ -134,6 +134,19 @@ class Method(ABC):
         params_kw = self.params.to_dict(exclude_defaults=exclude_defaults, **kwargs)
         return {**in_kw, **out_kw, **params_kw}
 
+    def _kwargs_to_key_mapping(self) -> Dict[str, str]:
+        """Return kwarg-key to input/output/params-key mapping."""
+        # check if key is in input, output or params
+        mapping = {}
+        for key in self.to_kwargs().keys():
+            for c in ["input", "output", "params"]:
+                if key in self.dict.get(c, {}):
+                    mapping[key] = f"{c}.{key}"
+                    break
+            if key not in mapping:
+                raise ValueError(f"Key {key} not found in {self.name}.")
+        return mapping
+
     @property
     def dict(self) -> Dict[str, Dict]:
         """Return a dictionary representation of the method input, output and params."""

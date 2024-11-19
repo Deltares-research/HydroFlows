@@ -82,7 +82,7 @@ class ScriptMethod(Method):
         script: Path,
         output: Dict[str, Path],
         input: Dict[str, Path] = None,
-        **params,
+        params: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Initialize and validate the script method.
 
@@ -97,13 +97,13 @@ class ScriptMethod(Method):
         params : Dict
             Parameters.
         """
-        # use ScriptParams.model_validate on input first to to parse json input
         input = {} if input is None else input
+        params = {} if params is None else params
+        # use model_validate on input first to to parse json input, then set script field
         self.input: ScriptInput = ScriptInput.model_validate(input)
-        # set script field
         self.input.script = Path(script)
         self.output: ScriptOutput = ScriptOutput.model_validate(output)
-        self.params: ScriptParams = ScriptParams(**params)
+        self.params: ScriptParams = ScriptParams.model_validate(params)
 
     def run(self):
         """Run the python script."""
@@ -118,6 +118,10 @@ class ScriptMethod(Method):
         # remove script field
         data = self.to_dict(posix_path=True)
         data["input"].pop("script")
+        if data["params"] == {}:
+            data.pop("params")
+        if data["input"] == {}:
+            data.pop("input")
         return json.dumps(data)
 
     def to_kwargs(
@@ -137,9 +141,13 @@ class ScriptMethod(Method):
             **kwargs,
         )
         input = self.input.to_dict(**kwargs)
-        return {
+        params = self.params.to_dict(**kwargs)
+        kwargs = {
             "script": input.pop("script"),  # lower script field
-            "input": input,
             "output": self.output.to_dict(**kwargs),
-            **self.params.to_dict(**kwargs),
         }
+        if input:
+            kwargs["input"] = input
+        if params:
+            kwargs["params"] = params
+        return kwargs
