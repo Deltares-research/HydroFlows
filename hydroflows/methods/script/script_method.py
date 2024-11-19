@@ -73,8 +73,7 @@ class ScriptMethod(Method):
         "script": Path("script.py"),
         "input": [Path("input.txt"), Path("input2.txt")],
         "output": Path("output.txt"),
-        "param1": "value1",
-        "param2": {"a": 1, "b": 2},
+        "params": {"param1": "value1", "param2": 2},
     }
 
     def __init__(

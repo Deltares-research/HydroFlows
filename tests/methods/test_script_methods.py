@@ -95,9 +95,7 @@ def test_script_method_run(tmp_path: Path):
     assert output.is_file()
     with open(output, "r") as f:
         data = json.load(f)
-    data0 = method.to_dict(posix_path=True)
-    data0["input"].pop("script")  # remove script field
-    assert data == data0
+    assert data == json.loads(method.json_kwargs)
 
     # test optional input and params
     output2 = script_path.parent / "output2.json"
@@ -106,6 +104,4 @@ def test_script_method_run(tmp_path: Path):
     assert output2.is_file()
     with open(output2, "r") as f:
         data = json.load(f)
-    data0 = method2.to_dict(posix_path=True)
-    data0["input"].pop("script")  # remove script field
-    assert data == data0
+    assert data == json.loads(method2.json_kwargs)
