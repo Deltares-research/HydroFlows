@@ -71,6 +71,8 @@ test = [
   "hydroflows[extra]",      # needed for testing snake file
 ]
 
+full = ["hydroflows[dev, doc, test, extra]"]
+
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
 
