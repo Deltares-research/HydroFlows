@@ -3,10 +3,9 @@
 # %% Import packages
 from pathlib import Path
 
-from fetch_data import fetch
-
 from hydroflows import Workflow
 from hydroflows.methods.discharge import FluvialDesignEvents
+from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsPostprocess,
@@ -24,9 +23,6 @@ if __name__ == "__main__":
     # Get current file location
     pwd = Path(__file__).parent
 
-    # %% Fetch the global build data
-    fetch(data="artifact-data", output_dir=Path(pwd, "data/global-data"))
-
     # %% Define variables
     name = "fluvial_hazard"
     model_dir = "models"
@@ -38,7 +34,6 @@ if __name__ == "__main__":
     # Setup the configuration
     conf = WorkflowConfig(
         region=Path(pwd, "data/build/region.geojson"),
-        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
         hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml"),
         wflow_exe=Path(pwd, "bin/wflow/bin/wflow_cli.exe"),
@@ -53,12 +48,21 @@ if __name__ == "__main__":
     )
     w = Workflow(name="fluvial_hazard", config=conf)
 
+    fetch_data = ScriptMethod(
+        script=Path("../../fetch_data.py"),
+        output={
+            "output_file": Path("../../data/global-data/global-data.tar.gz"),
+            "data_libs": Path("../../data/global-data/data_catalog.yml"),
+        },
+    )
+    w.add_rule(fetch_data, rule_id="fetch_data")
+
     # %% Build SFINCS model
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
         sfincs_root=Path(model_dir, "sfincs"),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
-        data_libs=w.get_ref("$config.data_libs"),
+        data_libs=fetch_data.output.data_libs,
         res=w.get_ref("$config.sfincs_res"),
         river_upa=w.get_ref("$config.river_upa"),
         plot_fig=w.get_ref("$config.plot_fig"),
@@ -70,7 +74,7 @@ if __name__ == "__main__":
         region=sfincs_build.output.sfincs_region,
         wflow_root=Path(model_dir, "wflow"),
         default_config=w.get_ref("$config.hydromt_wflow_config"),
-        data_libs=w.get_ref("$config.data_libs"),
+        data_libs=fetch_data.output.data_libs,
         gauges=Path(sfincs_build.params.sfincs_root, "gis", "src.geojson"),
         plot_fig=w.get_ref("$config.plot_fig"),
     )
@@ -79,7 +83,7 @@ if __name__ == "__main__":
     # %% Update forcing & run wflow model
     wflow_update = WflowUpdateForcing(
         wflow_toml=wflow_build.output.wflow_toml,
-        data_libs=w.get_ref("$config.data_libs"),
+        data_libs=fetch_data.output.data_libs,
         start_time=w.get_ref("$config.start_date"),
         end_time=w.get_ref("$config.end_date"),
     )
@@ -131,4 +135,4 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(f"cases/{name}/workflow.smk")
+    w.to_snakemake(f"cases/{name}/Snakefile", dryrun=True)

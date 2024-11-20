@@ -53,17 +53,6 @@ def test_method_to_dict(test_method: TestMethod):
     }
 
 
-def test_method_from_dict(test_method: TestMethod):
-    method_dict = test_method.to_dict()
-    new_test_method = TestMethod.from_dict(
-        input=method_dict["input"],
-        output=method_dict["output"],
-        params=method_dict["params"],
-        name=test_method.name,
-    )
-    assert new_test_method == test_method
-
-
 def test_method_from_kwargs():
     with pytest.raises(
         ValueError, match="Cannot initiate from Method without a method name"

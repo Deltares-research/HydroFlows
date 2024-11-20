@@ -51,7 +51,7 @@ class Params(Parameters):
     timestep: int = 86400  # in seconds
     """The timestep for generated forcing in seconds."""
 
-    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources for precipitation,
     temperature, elevation grid of the climate data (optionally) and
