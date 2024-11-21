@@ -136,8 +136,9 @@ class FIATBuild(Method):
                     "The 'setup_exposure_buildings' section is required to set ground elevation."
                 )
             opt["setup_exposure_buildings"][
-                "ground_elevation_file"
+                "ground_elevation"
             ] = self.input.ground_elevation.as_posix()
+            opt["setup_exposure_buildings"]["grnd_elev_unit"] = "meters"
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
