@@ -1,9 +1,10 @@
 """SFINCS postprocess method."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from hydromt_sfincs import SfincsModel, utils
+from matplotlib import pyplot as plt
 
 from hydroflows._typing import JsonDict
 from hydroflows.workflow.method import Method
@@ -43,6 +44,16 @@ class Params(Parameters):
 
     raster_kwargs: JsonDict = {}
     """Kwargs to pass to writer of inundation raster."""
+
+    plot_fig: bool = True
+    """Determines whether to plot a figure with the derived
+    hazard map (maximum water depth)."""
+
+    vmin: Union[float, int] = 0
+    """Minimum value for the plot color scale."""
+
+    vmax: Union[float, int] = 3
+    """Maximum value for the plot color scale."""
 
 
 class SfincsPostprocess(Method):
@@ -121,10 +132,34 @@ class SfincsPostprocess(Method):
         zsmax = zsmax.max(dim="timemax")
 
         # Fourthly, downscale the floodmap
-        utils.downscale_floodmap(
+        da_hmax = utils.downscale_floodmap(
             zsmax=zsmax,
             dep=dep,
             hmin=hmin,
             floodmap_fn=hazard_file,
             **self.params.raster_kwargs,
         )
+
+        if self.params.plot_fig:
+            # create hmax plot and save to mod.root/figs/hmax.png
+            _, ax = sf.plot_basemap(
+                fn_out=None,
+                figsize=(8, 6),
+                variable=da_hmax,
+                plot_bounds=False,
+                plot_geoms=False,
+                bmap="sat",
+                zoomlevel=12,
+                vmin=self.params.vmin,
+                vmax=self.params.vmax,
+                cmap=plt.cm.viridis,
+                cbar_kwargs={"shrink": 0.6, "anchor": (0, 0)},
+            )
+            ax.set_title("SFINCS maximum water depth")
+            figs_path = Path(sf.root, "figs")
+            figs_path.mkdir(parents=True, exist_ok=True)
+            plt.savefig(
+                figs_path / f"{self.params.event_name}_hmax.png",
+                dpi=225,
+                bbox_inches="tight",
+            )
