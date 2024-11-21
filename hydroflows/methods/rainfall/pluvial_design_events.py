@@ -93,6 +93,12 @@ class Params(Parameters):
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
 
+    fig_name_hyeto: str = "rainfall_hyetographs"
+    """Name of the design hyetographs figure."""
+
+    fig_name_idf: str = "rainfall_idf_curves"
+    """Name of the idf figure."""
+
     save_idf_csv: bool = True
     """Determines whether to save the calculated IDF curve values
     per return period in a csv format."""
@@ -250,9 +256,12 @@ class PluvialDesignEvents(ExpandMethod):
             plot_dir = Path(root, "figs")
             plot_dir.mkdir(exist_ok=True)
 
-            _plot_hyetograph(p_hyetograph, Path(plot_dir, "rainfall_hyetograph.png"))
+            _plot_hyetograph(
+                p_hyetograph, Path(plot_dir, f"{self.params.fig_name_hyeto}.png")
+            )
             _plot_idf_curves(
-                ds_idf["return_values"], Path(plot_dir, "rainfall_idf_curves.png")
+                ds_idf["return_values"],
+                Path(plot_dir, f"{self.params.fig_name_idf}.png"),
             )
 
         # random starting time

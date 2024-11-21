@@ -60,7 +60,7 @@ class Params(Parameters):
     rps: ListOfFloat
     """Return periods of interest."""
 
-    duration: int = 72
+    duration: int = 48
     """Duration of the produced design event."""
 
     eva_method: Literal["gev", "gumb", "mev", "pot"] = "gev"
@@ -82,10 +82,6 @@ class Params(Parameters):
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
-
-    save_idf_csv: bool = True
-    """Determines whether to save the calculated IDF curve values
-    per return period in a csv format."""
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -129,7 +125,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         region: Path,
         event_root: Path = Path("data/events/rainfall"),
         rps: Optional[ListOfFloat] = None,
-        duration: int = 72,
+        duration: int = 48,
         event_names: Optional[List[str]] = None,
         wildcard: str = "event",
         **params,
@@ -148,7 +144,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         rps : List[float], optional
             Return periods of design events, by default [2, 5, 10, 20, 39, 50, 100].
         duration : int
-            Duration of the produced design event.
+            Duration of the produced design event, by default 48 hours.
         event_names : List[str], optional
             List of event names for the design events, by "p_event{i}", where i is the event number.
         wildcard : str, optional
@@ -230,10 +226,12 @@ class PluvialDesignEventsGPEX(ExpandMethod):
             plot_dir.mkdir(exist_ok=True)
 
             _plot_hyetograph(
-                p_hyetograph, Path(plot_dir, "rainfall_hyetograph.png"), rp_dim="tr"
+                p_hyetograph,
+                Path(plot_dir, "gpex_rainfall_hyetographs.png"),
+                rp_dim="tr",
             )
             _plot_idf_curves(
-                da_idf, Path(plot_dir, "rainfall_idf_curves.png"), rp_dim="tr"
+                da_idf, Path(plot_dir, "gpex_rainfall_idf_curves.png"), rp_dim="tr"
             )
 
         # random starting time
