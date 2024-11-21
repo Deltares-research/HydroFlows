@@ -149,7 +149,7 @@ class SfincsPostprocess(Method):
                 plot_bounds=False,
                 plot_geoms=False,
                 bmap="sat",
-                zoomlevel=12,
+                zoomlevel="auto",
                 vmin=self.params.vmin,
                 vmax=self.params.vmax,
                 cmap=plt.cm.viridis,

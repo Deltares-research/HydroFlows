@@ -1,7 +1,5 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
-
-from git import Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.utils.parsers import get_wildcards
