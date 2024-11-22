@@ -11,6 +11,7 @@ from hydroflows.events import Event
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsPostprocess,
+    SfincsRegion,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -35,6 +36,16 @@ def copy_tree(
             shutil.copy2(path, dst / path.name)
         elif path.is_dir() and level < max_level:
             copy_tree(path, dst / path.name, ignore, level + 1, max_level)
+
+
+def test_sfincs_region(rio_region: Path, merit_basins: Path, tmp_path: Path):
+    region_root = Path(tmp_path, "build")
+    sfincs_region = SfincsRegion(
+        AOI=str(rio_region),
+        basins=str(merit_basins),
+        region_root=str(region_root),
+    )
+    sfincs_region.run_with_checks()
 
 
 @pytest.mark.requires_data()
