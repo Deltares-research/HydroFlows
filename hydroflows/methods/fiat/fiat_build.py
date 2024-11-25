@@ -1,6 +1,8 @@
 """Module/ Rule for building FIAT models."""
+
 import os
 from pathlib import Path
+from typing import Optional
 
 import geopandas as gpd
 import hydromt_fiat
@@ -34,6 +36,9 @@ class Input(Parameters):
     The file path to the geometry file that defines the region of interest
     for constructing a FIAT model.
     """
+
+    ground_elevation: Optional[Path] = None
+    """Path to the DEM file with to set ground elevation data."""
 
 
 class Output(Parameters):
@@ -91,6 +96,7 @@ class FIATBuild(Method):
         self,
         region: Path,
         fiat_root: Path = "models/fiat",
+        ground_elevation: Optional[Path] = None,
         **params,
     ) -> None:
         """Create and validate a FIATBuild instance.
@@ -102,6 +108,8 @@ class FIATBuild(Method):
             for constructing a FIAT model.
         fiat_root : Path
             The path to the root directory where the FIAT model will be created, by default "models/fiat".
+        ground_elevation : Optional[Path], optional
+            Path to the DEM file with to set ground elevation data, by default None.
         **params
             Additional parameters to pass to the FIATBuild instance.
             See :py:class:`fiat_build Params <hydroflows.methods.fiat.sfincs_build.Params>`.
@@ -114,13 +122,23 @@ class FIATBuild(Method):
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
         self.params: Params = Params(fiat_root=fiat_root, **params)
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, ground_elevation=ground_elevation)
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
         """Run the FIATBuild method."""
         # Read template config
         opt = configread(self.params.config)
+        # add optional ground elevation
+        if self.input.ground_elevation is not None:
+            if "setup_exposure_buildings" not in opt:
+                raise ValueError(
+                    "The 'setup_exposure_buildings' section is required to set ground elevation."
+                )
+            opt["setup_exposure_buildings"][
+                "ground_elevation"
+            ] = self.input.ground_elevation.as_posix()
+            opt["setup_exposure_buildings"]["grnd_elev_unit"] = "meters"
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
@@ -134,11 +152,9 @@ class FIATBuild(Method):
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
-        if model._CLI_ARGS["region"] not in opt:
-            opt = {model._CLI_ARGS["region"]: {"region": {"geom": region_gdf}}, **opt}
-        opt[model._CLI_ARGS["region"]].update(region={"geom": region_gdf})
+
         # Build the model
-        model.build(opt=opt, write=False)
+        model.build(region={"geom": region_gdf}, opt=opt, write=False)
 
         # Set the column headers for newer FIAT verions
         # TODO remove once HydroMT-FIAT supports this
@@ -149,6 +165,7 @@ class FIATBuild(Method):
         )
         for geom in model.exposure.exposure_geoms:
             geom.rename(new_column_headers(geom.columns), axis=1, inplace=True)
+
         # Write to drive
         model.write()
 

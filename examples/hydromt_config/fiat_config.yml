@@ -10,7 +10,7 @@ setup_output:
 setup_vulnerability:
   vulnerability_fn: jrc_vulnerability_curves
   vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
-  unit: m
+  unit: meters
   continent: Europe
 
 setup_exposure_buildings:
@@ -18,7 +18,6 @@ setup_exposure_buildings:
   occupancy_type: OSM
   max_potential_damage: jrc_damage_values
   ground_floor_height: 0
-  unit: m
+  length_unit: "meters"
   extraction_method: centroid
-  damage_types: ["structure", "content"]
   country: "Italy"
