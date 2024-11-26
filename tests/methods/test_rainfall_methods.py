@@ -45,12 +45,13 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0
 
-def test_pluvial_design_hyeto_gpex(rio_region: Path, tmp_path: Path):
+
+def test_pluvial_design_hyeto_gpex(sfincs_region_path: Path, tmp_gpex_data: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
-        gpex_nc=,
-        region=str(rio_region),
-        event_root=Path(tmp_path, "data"),
+        gpex_nc=str(tmp_gpex_data),
+        region=str(sfincs_region_path),
+        event_root=Path(tmp_gpex_data.parent, "events"),
         rps=rps,
         duration=120,
     )
@@ -58,6 +59,7 @@ def test_pluvial_design_hyeto_gpex(rio_region: Path, tmp_path: Path):
     assert len(p_events.params.event_names) == len(rps)
 
     p_events.run_with_checks()
+
 
 def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
     get_era5 = GetERA5Rainfall(

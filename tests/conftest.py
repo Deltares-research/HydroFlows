@@ -87,6 +87,16 @@ def sfincs_tmp_root(test_data_dir: pooch.Pooch, tmp_path: Path) -> Path:
     return tmp_root
 
 
+@pytest.fixture()
+def tmp_gpex_data(test_data_dir: pooch.Pooch, tmp_path: Path) -> Path:
+    """Return the path to the GPEX data."""
+    fetch("global-data", output_dir=test_data_dir)
+    cache_gpex_file = Path(test_data_dir, "gpex.nc")
+    tmp_gpex_file = Path(tmp_path, "gpex.nc")
+    shutil.copy(cache_gpex_file, tmp_gpex_file)
+    return tmp_gpex_file
+
+
 @pytest.fixture(scope="session")
 def rio_region(test_data_dir) -> Path:
     return test_data_dir / "rio_region.geojson"
