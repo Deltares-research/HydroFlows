@@ -20,10 +20,10 @@ HydroFlows is a Python package for automated workflows for globally applicable f
 At its core, it contains a set of methods that can be called via command line interface (CLI) or Python API.
 These are combined into `snakemake <https://snakemake.readthedocs.io>`_ workflows to perform a series of tasks that are common to flood risk assessments.
 
-How to install
-==============
+How to install (for developers)
+===============================
 
-To install HydroFlows, you can use either pixi (recommended for developers), pip or conda/mamba.
+To install HydroFlows, you can use either pixi or mamba.
 The package is not yet available on PyPi or conda-forge, so you need to install it from the GitHub repository.
 
 Using pixi
@@ -64,19 +64,11 @@ then create a conda environment file from the pyproject.toml and install all dep
    git clone git@github.com:Deltares-research/HydroFlows.git
    cd HydroFlows
    python make_env.py
-   conda env create -f environment.yml
+   mamba env create -f environment.yml
    conda activate hydroflows
-   pip install .
+   pip install -e .
+   pre-commit install
 
-Using pip
----------
-
-Using pip you can install HydroFlows and its dependencies directly from GitHub.
-We recommend you also create a virtual/conda environment (not shown below) in which you install the package.
-
-.. code-block:: bash
-
-   pip install git+https://github.com/Deltares-research/HydroFlows.git
 
 How to use
 ==========

@@ -1,7 +1,11 @@
 """Run pluvial design events with existing SFINCS model."""
 
 # %% Import packages
+import os
 from pathlib import Path
+
+# local import
+from fetch_data import fetch
 
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
@@ -18,12 +22,16 @@ if __name__ == "__main__":
     pwd = Path(__file__).parent
 
     # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
-    # fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
 
     # %% General setup of workflow
     # Define variables
     name = "pluvial_risk"
     case_root = Path(pwd, "cases", name)
+
+    # Create the case directory
+    case_root.mkdir(exist_ok=True, parents=True)
+    os.chdir(case_root)
 
     # Setup the config file
     conf = WorkflowConfig(
@@ -35,16 +43,16 @@ if __name__ == "__main__":
         plot_fig=True,
         # sfincs settings
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
         sfincs_res=50,
         river_upa=10,
         # fiat settings
         hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml"),
-        fiat_exe=Path(pwd, "bin/fiat_v0.2.0.dev/fiat.exe"),
+        fiat_exe=Path(pwd, "../bin/fiat_v0.2.0/fiat.exe"),
         continent="Europe",
         risk=True,
         # design events settings
-        rps=[2, 10, 100],
+        rps=[10, 100],
     )
 
     # %% Setup the workflow
@@ -134,3 +142,9 @@ if __name__ == "__main__":
 
     # %% to snakemake
     w.to_snakemake(Path(case_root, "Snakefile"))
+
+    # %% subprocess to run snakemake
+    import subprocess
+
+    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
+    subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)

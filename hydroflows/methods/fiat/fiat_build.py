@@ -1,12 +1,12 @@
 """Module/ Rule for building FIAT models."""
 
-import os
 from pathlib import Path
 from typing import Optional
 
 import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread, configwrite
+from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfPath, ListOfStr
@@ -18,7 +18,7 @@ from hydroflows.workflow.method_parameters import Parameters
 __all__ = ["FIATBuild"]
 
 FIAT_DATA_PATH = Path(
-    os.path.dirname(hydromt_fiat.__file__),
+    Path(hydromt_fiat.__file__).parent,
     "data",
     "hydromt_fiat_catalog_global.yml",
 ).as_posix()
@@ -147,10 +147,13 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         # Setup the model
         root = self.params.fiat_root
+        #
+        logger = setuplog("fiat_build", log_level="DEBUG")
         model = FiatModel(
             root=root,
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
+            logger=logger,
         )
 
         # Build the model
@@ -171,6 +174,11 @@ class FIATBuild(Method):
 
         # Write opt as yaml
         configwrite(root / "fiat_build.yaml", opt)
+
+        # remove empty directories using pathlib
+        for d in root.iterdir():
+            if d.is_dir() and not list(d.iterdir()):
+                d.rmdir()
 
 
 if __name__ == "__main__":
