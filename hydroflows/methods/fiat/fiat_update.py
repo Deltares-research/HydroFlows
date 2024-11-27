@@ -184,7 +184,7 @@ class FIATUpdateHazard(ReduceMethod):
 
         model = FiatModel(
             root=root,
-            mode="w+",
+            mode="r",
         )
         model.read()
 
@@ -249,3 +249,8 @@ class FIATUpdateHazard(ReduceMethod):
 
         # Write the config
         model.write_config()
+
+        # remove empty directories using pathlib in out_root
+        for d in out_root.iterdir():
+            if d.is_dir() and not list(d.iterdir()):
+                d.rmdir()
