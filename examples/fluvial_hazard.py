@@ -24,7 +24,7 @@ if __name__ == "__main__":
     # Get current file location
     pwd = Path(__file__).parent
     # Setup logging
-    logger = setuplog(path="./fluvial_hazard.log")
+    logger = setuplog()
 
     # %% Define variables
     name = "fluvial_hazard"

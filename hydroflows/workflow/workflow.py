@@ -213,12 +213,11 @@ class Workflow:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
             Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
-            logging.info("Running dryrun in %s", tmpdir)
+            logger.info("Running dryrun in %s", tmpdir)
 
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            msg = f">> Rule {i+1}/{nrules}: {rule.rule_id}"
-            logging.info(msg)
+            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(
                 dryrun=dryrun,
                 max_workers=max_workers,
