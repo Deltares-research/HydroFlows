@@ -62,6 +62,10 @@ General method
 
 .. include:: rainfall_methods.rst
 
+.. _api_coastal:
+
+.. include:: coastal_methods.rst
+
 .. _api_discharge:
 
 .. include:: discharge_methods.rst
