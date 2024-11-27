@@ -57,13 +57,7 @@ class Params(Parameters):
 
 
 class GetGTSMData(Method):
-    """Method for getting GTSM waterlevel and surge timeseries at centroid of a region.
-
-    See Also
-    --------
-    :py:function:`hydroflows.methods.coastal.get_gtsm_data.get_gtsm_station`
-    :py:function:`hydroflows.methods.coastal.get_gtsm_data.export_gtsm_data`
-    """
+    """Method for getting GTSM waterlevel and surge timeseries at centroid of a region."""
 
     name: str = "get_gtsm_data"
 
@@ -91,9 +85,9 @@ class GetGTSMData(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Params>`
+        :py:class:`GetGTSMData Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
+        :py:class:`GetGTSMData Output <hydroflows.methods.coastal.get_gtsm_data.Output>`
+        :py:class:`GetGTSMData Params <hydroflows.methods.coastal.get_gtsm_data.Params>`
         """
         self.input: Input = Input(region=region, gtsm_catalog=gtsm_catalog)
         self.params: Params = Params(data_root=data_root, **params)

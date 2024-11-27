@@ -1,4 +1,6 @@
 """Data for examples and testing of HydroFlows."""
+import json
+import sys
 from pathlib import Path
 
 import pooch
@@ -33,6 +35,8 @@ def fetch(
     output_dir: Path | str,
 ):
     """Fetch data by simply calling the function."""
+    print(f"Fetching data: {data} to {output_dir}")
+
     # Quick check whether the data can be found
     choices_raw = list(REGISTRY.keys())
     choices = [item.split(".", 1)[0] for item in choices_raw]
@@ -40,10 +44,7 @@ def fetch(
         raise ValueError(f"Choose one of the following: {choices}")
     idx = choices.index(data)
 
-    # Path to current py-file
-    pwd = Path(__file__).parent
-    if not output_dir.is_absolute():
-        output_dir = Path(pwd, output_dir)
+    # create the output directory
     output_dir.mkdir(parents=True, exist_ok=True)
     # Setup Pooch
     retriever = pooch.create(
@@ -60,9 +61,19 @@ def fetch(
 
 
 if __name__ == "__main__":
-    pwd = Path(__file__).parent
-    cache_dir = Path(pwd, "data")
-    for item in REGISTRY:
-        name = item.split(".", 1)[0]
-        fetch(data=name, output_dir=cache_dir / name)
-    pass
+    if len(sys.argv) == 1 and "snakemake" not in globals():
+        pwd = Path(__file__).parent
+        cache_dir = Path(pwd, "data")
+        for item in REGISTRY:
+            name = item.split(".", 1)[0]
+            fetch(data=name, output_dir=cache_dir / name)
+    else:
+        if len(sys.argv) == 2:  # hydroflows run
+            args = json.loads(sys.argv[1])
+            output_file = Path(args.get("output", {}).get("output_file"))
+        elif "snakemake" in globals():
+            snakemake = globals()["snakemake"]
+            output_file = Path(snakemake.output.output_file)
+        data = output_file.stem.split(".", 2)[0]
+        output_dir = output_file.parent
+        fetch(data=data, output_dir=output_dir)
