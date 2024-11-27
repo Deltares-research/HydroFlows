@@ -145,5 +145,6 @@ if __name__ == "__main__":
 
     # %% subprocess to run snakemake
     import subprocess
+
     subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
     subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
