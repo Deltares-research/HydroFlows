@@ -110,6 +110,9 @@ bin/
 # temporary snakemake files
 */.snakemake/*
 
+# ruff
+.ruff_cache
+
 # vscode
 .vscode
 

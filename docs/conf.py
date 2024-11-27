@@ -83,8 +83,8 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "static/hydromt-icon.svg"
-html_favicon = "static/hydromt-icon.svg"
+html_logo = "_static/hydromt-icon.svg"
+html_favicon = "_static/hydromt-icon.svg"
 autodoc_member_order = "bysource"  # overwrite default alphabetical sort
 autoclass_content = "both"
 
@@ -106,7 +106,7 @@ autodoc_pydantic_field_show_constraints = False
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ["static"]
+html_static_path = ["_static"]
 html_css_files = ["theme-deltares.css"]
 html_theme_options = {
     "show_nav_level": 2,
@@ -122,7 +122,7 @@ html_theme_options = {
         {
             "name": "Deltares",
             "url": "https://www.deltares.nl/en/",
-            "icon": "static/deltares-blue.svg",
+            "icon": "_static/deltares-blue.svg",
             "type": "local",
         },
     ],

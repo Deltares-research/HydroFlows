@@ -1,15 +1,12 @@
 import pytest
 
-# load subclasses to discover all methods
 from hydroflows.methods import METHODS
 from hydroflows.workflow import Method
 
 ALL_METHODS = list(METHODS.entry_points.keys())
 
 
-@pytest.mark.parametrize("method", ALL_METHODS)
-def test_methods(method: str):
-    """Generic method tests."""
+def _init_method(method: str) -> Method:
     # instantiate method with made-up kwargs
     method_class = METHODS.load(method)
     assert method_class.name.lower() == method.lower()
@@ -17,9 +14,16 @@ def test_methods(method: str):
     if not kwargs:
         pytest.skip(f"Skipping {method_class} because it has no _test_kwargs")
     method: Method = method_class(**kwargs)
-    # Test if all input, output and params fields have unique names
-    method._test_unique_keys()
-    # Test if all method __init__ arguments are in input, output or params.
-    method._test_method_kwargs()
-    # Test if the method can be serialized and deserialized
-    method._test_roundtrip()
+    return method
+
+
+@pytest.mark.parametrize("name", ALL_METHODS)
+def test_method_unique_keys(name: str):
+    """Check if the method input, output and params keys are unique."""
+    _init_method(name)._test_unique_keys()
+
+
+@pytest.mark.parametrize("name", ALL_METHODS)
+def test_method_roundtrip(name: str) -> None:
+    """Test if the method can be serialized and deserialized."""
+    _init_method(name)._test_roundtrip()
