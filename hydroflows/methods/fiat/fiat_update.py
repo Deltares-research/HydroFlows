@@ -34,6 +34,7 @@ class Output(Parameters):
     """"The path to the generated combined hazard file (NetCDF) containing all rps."""
 
     fiat_out_cfg: Path
+    """The path to the newly created settings file."""
 
 
 class Params(Parameters):
@@ -205,8 +206,11 @@ class FIATUpdateHazard(ReduceMethod):
         hazard_out = self.output.fiat_hazard.relative_to(
             self.output.fiat_out_cfg.parent
         ).as_posix()
-        model.write_grid(hazard_out)
-        model.set_config("hazard.settings.var_as_band", True)
+        if self.params.risk:
+            model.write_grid(hazard_out)
+            model.set_config("hazard.settings.var_as_band", True)
+        else:
+            model.write_maps(hazard_out)
         model.set_config("hazard.file", hazard_out)
 
         # Write the config

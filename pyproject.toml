@@ -71,6 +71,8 @@ test = [
   "hydroflows[extra]",      # needed for testing snake file
 ]
 
+full = ["hydroflows[dev, doc, test, extra]"]
+
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
 
@@ -178,8 +180,8 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/pluvial_hazard.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
-examples-clean = { cmd = ["rm", "-rf", "examples/pluvial_hazard.smk", "examples/pluvial_hazard.config.yml"] }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/workflow.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 
 docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }

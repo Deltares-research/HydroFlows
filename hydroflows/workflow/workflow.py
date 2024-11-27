@@ -166,10 +166,13 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
+        # Small check for the parent directory
+        snakefile.parent.mkdir(parents=True, exist_ok=True)
+        # After that write
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(snakefile.parent / configfile, "w") as f:
-            yaml.dump(self.config.to_dict(mode="json"), f)
+            yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""

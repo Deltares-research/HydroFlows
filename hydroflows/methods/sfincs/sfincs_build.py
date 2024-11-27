@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -54,12 +54,12 @@ class Params(Parameters):
     """Model resolution [m]."""
 
     # optional parameter
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """
 
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yaml")
+    default_config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a SFINCS model. In this file the different model components
     that are required by the :py:class:`hydromt_sfincs.SfincsModel` are listed.

@@ -41,14 +41,10 @@ class Params(Parameters):
 
 
 class CoastalTidalAnalysis(Method):
-    """Method for deriving tide and surge timeseries from waterlevel timeseries.
+    """
+    Method for deriving tide and surge timeseries from waterlevel timeseries.
 
     Implements hatyan package to do tidal analysis. Uses 94 tidal constituents to estimate tidal signal.
-
-    See Also
-    --------
-    :py:function:`hydroflows.methods.coastal.create_tide_surge_timeseries.plot_tide_components`
-    :py:function:`hydroflows.methods.coastal.create_tide_surge_timeseries.plot_timeseries`
     """
 
     name: str = "coastal_tidal_analysis"
@@ -74,9 +70,9 @@ class CoastalTidalAnalysis(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
+        :py:class:`CoastalTidalAnalysis Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
+        :py:class:`CoastalTidalAnalysis Output <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
+        :py:class:`CoastalTidalAnalysis Params <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
         """
         self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
         self.params: Params = Params(data_root=data_root, **params)
