@@ -1,12 +1,10 @@
 """Pluvial design events using GPEX global IDF method."""
 
-from itertools import product  # noqa: I001
 from pathlib import Path
 from typing import List, Literal, Optional
 
-import hydromt  # we need hydromt for raster functionality # noqa: F401
-import warnings
 import geopandas as gpd
+import hydromt  # we need hydromt for raster functionality # noqa: F401
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -198,38 +196,24 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         centroid = gdf.geometry.centroid
         # read the GPEX nc file
         ds = xr.open_dataset(self.input.gpex_nc)[f"{self.params.eva_method}_estimate"]
-        # set a CRS
-        ds.raster.set_crs(4326)
-        # clip the ds to the gdf extents
-        ds = ds.raster.clip_bbox(gdf.total_bounds, buffer=1, crs=gdf.crs)
+        # get the coordinates for the pixel with values closest to the centroid
+        gpex2d = ds.isel(tr=0, dur=0).squeeze()
+        gpex2d.raster.set_crs(4326)
+        gpex2d = gpex2d.raster.clip_bbox(gdf.total_bounds, buffer=1, crs=gdf.crs)
+        gpex_cell_centroids = gpex2d.raster.vector_grid("point")
+        gpex_cell_centroids["data"] = gpex2d.values.flatten()
+        gpex_cell_centroids = gpex_cell_centroids[
+            ~np.isnan(gpex_cell_centroids["data"])
+        ]
+        idx_nearest = gpex_cell_centroids.sindex.nearest(centroid, return_all=False)[1]
+
         # get GPEX data for the pixel closest to the centroid
         ds_closest = ds.sel(
-            lat=centroid.y.values[0],
-            lon=centroid.x.values[0],
+            lat=gpex_cell_centroids.iloc[idx_nearest].geometry.y.values[0],
+            lon=gpex_cell_centroids.iloc[idx_nearest].geometry.x.values[0],
             method="nearest",
             tr=self.params.rps,
         )
-
-        if np.isnan(ds_closest).all():
-            # TODO change it with proper logging
-            warnings.warn(
-                "The closest pixel to the centroid has no data. The nearest pixel with valid values has been selected instead.",
-                stacklevel=1,
-            )
-            # find the values per rp and dur for the closest pixel with data
-            for tr, dur in product(self.params.rps, ds_closest.dur.values):
-                gpex2d_tr_dur = ds.sel(tr=tr, dur=dur).squeeze()
-                gpex_cell_centroids = gpex2d_tr_dur.raster.vector_grid("point")
-                gpex_cell_centroids["data"] = gpex2d_tr_dur.values.flatten()
-                gpex_cell_centroids = gpex_cell_centroids[
-                    ~np.isnan(gpex_cell_centroids["data"])
-                ]
-                idx_nearest = gpex_cell_centroids.sindex.nearest(
-                    centroid, return_all=False
-                )[1]
-                ds_closest.loc[dict(tr=tr, dur=dur)] = gpex_cell_centroids.iloc[
-                    idx_nearest
-                ].data.values[0]
 
         expanded_dur = ds_closest["dur"].values[:, None]
         rates = ds_closest.values / expanded_dur  # estimate rainfall rates
