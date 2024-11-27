@@ -1,9 +1,13 @@
 """Pluvial design events using GPEX global IDF method."""
 
+from itertools import product  # noqa: I001
 from pathlib import Path
 from typing import List, Literal, Optional
 
+import hydromt  # we need hydromt for raster functionality # noqa: F401
+import warnings
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import xarray as xr
 from pydantic import model_validator
@@ -194,21 +198,51 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         centroid = gdf.geometry.centroid
         # read the GPEX nc file
         ds = xr.open_dataset(self.input.gpex_nc)[f"{self.params.eva_method}_estimate"]
+        # set a CRS
+        ds.raster.set_crs(4326)
+        # clip the ds to the gdf extents
+        ds = ds.raster.clip_bbox(gdf.total_bounds, buffer=1, crs=gdf.crs)
         # get GPEX data for the pixel closest to the centroid
-        ds = ds.sel(
+        ds_closest = ds.sel(
             lat=centroid.y.values[0],
             lon=centroid.x.values[0],
             method="nearest",
             tr=self.params.rps,
         )
 
-        expanded_dur = ds["dur"].values[:, None]
-        rates = ds.values / expanded_dur  # estimate rainfall rates
+        if np.isnan(ds_closest).all():
+            # TODO change it with proper logging
+            warnings.warn(
+                "The closest pixel to the centroid has no data. The nearest pixel with valid values has been selected instead.",
+                stacklevel=1,
+            )
+            # find the values per rp and dur for the closest pixel with data
+            for tr, dur in product(self.params.rps, ds_closest.dur.values):
+                gpex2d_tr_dur = ds.sel(tr=tr, dur=dur).squeeze()
+                gpex_cell_centroids = gpex2d_tr_dur.raster.vector_grid("point")
+                gpex_cell_centroids["data"] = gpex2d_tr_dur.values.flatten()
+                gpex_cell_centroids = gpex_cell_centroids[
+                    ~np.isnan(gpex_cell_centroids["data"])
+                ]
+                idx_nearest = gpex_cell_centroids.sindex.nearest(
+                    centroid, return_all=False
+                )[1]
+                ds_closest.loc[dict(tr=tr, dur=dur)] = gpex_cell_centroids.iloc[
+                    idx_nearest
+                ].data.values[0]
+
+        expanded_dur = ds_closest["dur"].values[:, None]
+        rates = ds_closest.values / expanded_dur  # estimate rainfall rates
 
         # Create a new DataArray with the rainfall rates per idf
-        da_idf = xr.DataArray(rates, coords=ds.coords, dims=ds.dims, attrs=ds.attrs)
+        da_idf = xr.DataArray(
+            rates,
+            coords=ds_closest.coords,
+            dims=ds_closest.dims,
+            attrs=ds_closest.attrs,
+        )
 
-        # keep duration up to the max user defined duration
+        # keep durations up to the max user defined duration
         da_idf = da_idf.sel(dur=slice(None, self.params.duration))
 
         # Get design events hyetograph for each return period
