@@ -2,6 +2,7 @@
 
 # %% Import packages
 from hydroflows import Workflow
+from hydroflows.log import setuplog
 from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
@@ -17,6 +18,7 @@ from hydroflows.methods.wflow import (
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 # %% Create a workflow  with initial config
+logger = setuplog(path="./fluvial_hazard.log")
 conf = WorkflowConfig(
     sfincs_exe="bin/sfincs/sfincs.exe",
     wflow_bin="bin/wflow/wflow_cli.exe",
