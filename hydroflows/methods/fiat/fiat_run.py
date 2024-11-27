@@ -91,18 +91,12 @@ class FIATRun(Method):
     def run(self):
         """Run the FIATRun method."""
         # Get basic info
-        fiat_bin_path = self.params.fiat_bin
-        fiat_cfg_path = self.input.fiat_cfg
+        fiat_bin_path = self.params.fiat_bin.as_posix()
+        fiat_cfg_path = self.input.fiat_cfg.as_posix()
         threads = self.params.threads
 
         # Setup the cli command
-        command = [
-            fiat_bin_path,
-            "run",
-            fiat_cfg_path,
-            "-t",
-            str(threads),
-        ]
+        command = [fiat_bin_path, "run", fiat_cfg_path, "-t", str(threads)]
 
         # Execute the rule
         subprocess.run(command)

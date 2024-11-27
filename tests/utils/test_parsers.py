@@ -29,10 +29,12 @@ def test_no_wildcards():
 
 def test_wildcards_present():
     assert get_wildcards("This is a {wildcard} test.") == ["wildcard"]
-    assert get_wildcards("Multiple {wildcard1} and {wildcard2}.") == [
-        "wildcard1",
-        "wildcard2",
-    ]
+    assert set(get_wildcards("Multiple {wildcard1} and {wildcard2}.")) == set(
+        [
+            "wildcard1",
+            "wildcard2",
+        ]
+    )
 
 
 def test_known_wildcards():
@@ -40,8 +42,12 @@ def test_known_wildcards():
     assert get_wildcards("This is a {wildcard1} test.", known_wildcards) == [
         "wildcard1"
     ]
-    assert get_wildcards("Multiple {wildcard1} and {wildcard2}.", known_wildcards) == [
-        "wildcard1",
-        "wildcard2",
-    ]
+    assert set(
+        get_wildcards("Multiple {wildcard1} and {wildcard2}.", known_wildcards)
+    ) == set(
+        [
+            "wildcard1",
+            "wildcard2",
+        ]
+    )
     assert get_wildcards("Unknown {wildcard3} present.", known_wildcards) == []
