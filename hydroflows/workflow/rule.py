@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 from tqdm.contrib.concurrent import thread_map
 
 from hydroflows.utils.parsers import get_wildcards
+from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 
 if TYPE_CHECKING:
@@ -287,15 +288,17 @@ class Rule:
         """
         wildcard_product = self.wildcard_product()
         nruns = len(wildcard_product)
-        if nruns == 1 or max_workers == 1:
-            for i, wildcards in enumerate(wildcard_product):
-                print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
-                self._run_method_instance(wildcards)
-        else:
-            tqdm_kwargs = {}
-            if max_workers is not None:
-                tqdm_kwargs.update(max_workers=max_workers)
-            thread_map(self._run_method_instance, wildcard_product, **tqdm_kwargs)
+        # set working directory to workflow root
+        with cwd(self.workflow.root):
+            if nruns == 1 or max_workers == 1:
+                for i, wildcards in enumerate(wildcard_product):
+                    print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
+                    self._run_method_instance(wildcards)
+            else:
+                tqdm_kwargs = {}
+                if max_workers is not None:
+                    tqdm_kwargs.update(max_workers=max_workers)
+                thread_map(self._run_method_instance, wildcard_product, **tqdm_kwargs)
 
     def dryrun(
         self,
@@ -320,14 +323,16 @@ class Rule:
         wildcard_product = self.wildcard_product()
         nruns = len(wildcard_product)
         output_files = []
-        for i, wildcards in enumerate(wildcard_product):
-            print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
-            output_files_i = self._dryrun_method_instance(
-                wildcards,
-                missing_file_error=missing_file_error,
-                input_files=input_files,
-            )
-            output_files.extend(output_files_i)
+        # set working directory to workflow root
+        with cwd(self.workflow.root):
+            for i, wildcards in enumerate(wildcard_product):
+                print(f"Run {i+1}/{nruns}: wildcard values = {wildcards}")
+                output_files_i = self._dryrun_method_instance(
+                    wildcards,
+                    missing_file_error=missing_file_error,
+                    input_files=input_files,
+                )
+                output_files.extend(output_files_i)
         return output_files
 
     def _run_method_instance(self, wildcards: Dict) -> None:

@@ -67,7 +67,7 @@ if __name__ == "__main__":
     )
 
     # Create a workflow
-    w = Workflow(config=config)
+    w = Workflow(config=config, name=name, root=case_root)
 
     ## Build workflows
     # Sfincs build
@@ -204,7 +204,7 @@ if __name__ == "__main__":
     w.add_rule(fiat_run, rule_id="fiat_run")
 
     # %% Test the workflow
-    w.dryrun(input_files=[config.region])
+    w.dryrun()
 
     # %% to snakemake
-    w.to_snakemake(Path(case_root, "Snakefile"))
+    w.to_snakemake()

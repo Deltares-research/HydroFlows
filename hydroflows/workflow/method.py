@@ -282,7 +282,7 @@ class Method(ABC):
         """
         for key, value in self.input.model_dump().items():
             if isinstance(value, Path):
-                if value not in input_files:
+                if value not in input_files and not value.is_file():
                     msg = f"Input file {self.name}.input.{key} not found: {value}"
                     if not missing_file_error:  # create dummy file
                         print(f"WARNING: {msg}")

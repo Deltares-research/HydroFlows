@@ -31,7 +31,7 @@ if __name__ == "__main__":
     )
 
     # %% Setup the workflow
-    w = Workflow(config=config)
+    w = Workflow(config=config, name=name, root=case_root)
 
     # %% Get precipitation data
     pluvial_data = GetERA5Rainfall(
@@ -66,7 +66,7 @@ if __name__ == "__main__":
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
     # %% run workflow
-    w.dryrun(input_files=[config.sfincs_region, config.sfincs_inp])
+    w.dryrun()
 
     # %% to snakemake
-    w.to_snakemake(Path(case_root, "Snakefile"))
+    w.to_snakemake()

@@ -30,6 +30,7 @@ class Workflow:
         name="hydroflows",
         config: Optional[Union[Dict, WorkflowConfig]] = None,
         wildcards: Optional[Dict] = None,
+        root: Optional[Path] = None,
     ) -> None:
         """Create a workflow instance.
 
@@ -47,6 +48,9 @@ class Workflow:
         if wildcards is None:
             wildcards = {}
 
+        if root is not None:
+            self.root = root
+
         self.name: str = str(name)
         self.config: WorkflowConfig = (
             WorkflowConfig(**config) if isinstance(config, dict) else config
@@ -59,6 +63,20 @@ class Workflow:
         wc_str = pformat(self.wildcards.to_dict())
         return f"Workflow(\nwildcards={wc_str}\nrules={rules_str}\n)"
 
+    @property
+    def root(self) -> Path:
+        """Get the root of the workflow."""
+        if not hasattr(self, "_root"):
+            return Path.cwd()
+        return self._root
+
+    @root.setter
+    def root(self, root: Path) -> None:
+        """Set the root of the workflow and create the directory if it does not yet exist."""
+        self._root = Path(root)
+        self._root.mkdir(parents=True, exist_ok=True)
+
+            
     def add_rule(self, method: Method, rule_id: Optional[str] = None) -> None:
         """Add a rule to the workflow."""
         rule = Rule(method, self, rule_id)
@@ -133,7 +151,7 @@ class Workflow:
 
     def to_snakemake(
         self,
-        snakefile: Path,
+        snakefile: str = "Snakefile",
         dryrun: bool = False,
     ) -> None:
         """Save the workflow to a snakemake workflow.
@@ -147,34 +165,37 @@ class Workflow:
         run_env : Literal["shell", "script"], optional
             The environment in which to run the methods, by default "shell".
         """
-        snakefile = Path(snakefile).resolve()
-        configfile = snakefile.with_suffix(".config.yml")
+        # set paths and creat directory
+        snake_path = Path(self.root, snakefile).resolve()
+        config_path = snake_path.with_suffix(".config.yml")
+        # create references for the rules
+        self.create_references()
+        # render the snakefile template
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile.name,
+            config_path=config_path.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
-        # Small check for the parent directory
-        snakefile.parent.mkdir(parents=True, exist_ok=True)
-        # After that write
-        with open(snakefile, "w") as f:
+        # write the snakefile and config file
+        with open(snake_path, "w") as f:
             f.write(_str)
-        with open(snakefile.parent / configfile, "w") as f:
+        with open(config_path, "w") as f:
             yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
         yml_dict = {
+            "name": self.name,
+            "root": self.root.as_posix(),
             "config": self.config.to_dict(mode="json"),
             "wildcards": self.wildcards.to_dict(),
             "rules": [r.to_dict() for r in self.rules],
@@ -203,7 +224,7 @@ class Workflow:
             rule.run(max_workers=max_workers)
 
     def dryrun(
-        self, input_files: Optional[List[Path]] = None, missing_file_error: bool = False
+        self, missing_file_error: bool = False
     ) -> None:
         """Dryrun the workflow.
 
@@ -211,11 +232,9 @@ class Workflow:
         ----------
         missing_file_error : bool, optional
             Raise an error when a file is missing, by default False.
-        input_files : List[Path], optional
-            List of input files to to workflow, by default None.
         """
         nrules = len(self.rules)
-        input_files = input_files or []
+        input_files = []
         for i, rule in enumerate(self.rules):
             print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
             output_files = rule.dryrun(

@@ -40,6 +40,8 @@ if __name__ == "__main__":
     w = Workflow(
         config=config,
         wildcards={"region": ["region", "region2"]},
+        name=name,
+        root=case_root,
     )
 
     # %% Build the SFINCS models
@@ -93,12 +95,7 @@ if __name__ == "__main__":
     w.add_rule(sfincs_post, "sfincs_post")
 
     # %% Do a dry run of the workflow
-    w.dryrun(
-        input_files=[
-            Path(str(sfincs_build.input.region).format(region=region))
-            for region in w.wildcards.get("region")
-        ]
-    )
+    w.dryrun()
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(Path(case_root, "Snakefile"))
+    w.to_snakemake()

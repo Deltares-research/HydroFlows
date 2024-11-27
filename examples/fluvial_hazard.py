@@ -49,7 +49,9 @@ if __name__ == "__main__":
         # design event settings
         rps=[2, 5, 10],
     )
-    w = Workflow(name="fluvial_hazard", config=config)
+
+    # setup the workflow
+    w = Workflow(name="fluvial_hazard", config=config, root=case_root)
 
     # %% Build SFINCS model
     sfincs_build = SfincsBuild(
@@ -125,7 +127,7 @@ if __name__ == "__main__":
     w.add_rule(sfincs_post, rule_id="sfincs_post")
 
     # %% Test the workflow
-    w.dryrun(input_files=[config.region])
+    w.dryrun()
 
     # %% Write the workflow to a Snakefile
-    w.to_snakemake(Path(case_root, "Snakefile"))
+    w.to_snakemake()

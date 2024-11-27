@@ -27,7 +27,7 @@ if __name__ == "__main__":
         rps=[2, 5, 10],
     )
 
-    w = Workflow(config=config)
+    w = Workflow(config=config, name=name, root=case_root)
 
     # %% Get the GTSM data
     get_gtsm_data = GetGTSMData(
@@ -49,7 +49,7 @@ if __name__ == "__main__":
     w.add_rule(coastal_design_events, rule_id="coastal_design_events")
 
     # %% Test the workflow
-    w.dryrun(input_files=[config.region, config.gtsm_catalog])
+    w.dryrun()
 
     # %% to snakemake
-    w.to_snakemake(Path(case_root, "Snakefile"))
+    w.to_snakemake()
