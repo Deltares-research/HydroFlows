@@ -5,7 +5,6 @@ from pathlib import Path
 
 import pytest
 import yaml
-from conftest import MockExpandMethod, MockReduceMethod, TestMethod
 
 from hydroflows.workflow import (
     Ref,
@@ -14,6 +13,19 @@ from hydroflows.workflow import (
     WorkflowConfig,
 )
 from hydroflows.workflow.workflow import Wildcards
+from tests.workflow.conftest import (
+    MockExpandMethod,
+    MockReduceMethod,
+    TestMethod,
+    TestMethodOutput,
+)
+
+
+@pytest.fixture()
+def w() -> Workflow:
+    config = {"rps": [2, 50, 100]}
+    wildcards = {"region": ["region1", "region2"]}
+    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
 
 
 @pytest.fixture()
@@ -111,6 +123,7 @@ def test_workflow_rule_from_kwargs(workflow: Workflow, mocker, mock_expand_metho
     workflow.add_rule_from_kwargs(
         method="mock_expand_method", kwargs=kwargs, rule_id="mock_rule"
     )
+    # TODO add check on input._ref dict if references are there
     assert workflow.rules[0].rule_id == "mock_rule"
 
 
@@ -122,6 +135,27 @@ def test_workflow_get_ref(workflow: Workflow, tmp_path):
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
     assert ref.value.as_posix() == "{region}/{event}/file.yml"
+
+
+def test_workflow_create_references(w: Workflow, caplog):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    # Change the output of method2, otherwise output files are not unique among two of the same methods
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+    w.add_rule(method=method2, rule_id="method2")
+    w.create_references()
+    assert w.rules[1].input._refs == {
+        "input_file1": "$rules.method1.output.output_file1",
+        "input_file2": "$rules.method1.output.output_file2",
+    }
+    # catch logger.debug messages
+    with caplog.at_level("DEBUG"):
+        w.create_references()
+    assert (
+        "method1.input.input_file1 (test1) is not an output of another rule"
+        in caplog.text
+    )
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
@@ -230,3 +264,19 @@ def test_workflow_run(mocker, workflow: Workflow, tmp_path):
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     w.run(dryrun=True, missing_file_error=True)
+
+
+def test_output_path_refs(w: Workflow):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(input_file1="output1", input_file2="output2")
+    w.add_rule(method=method2, rule_id="method2")
+
+    with pytest.raises(ValueError, match="All output file paths must be unique"):
+        w._output_path_refs  # noqa: B018
+
+    # Change the output of method2, otherwise output files are not unique among two of the same methods
+    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
+
+    output_path_refs = w._output_path_refs
+    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 5)]

@@ -8,7 +8,8 @@ from hydromt.config import configread, configwrite
 from hydromt_fiat.fiat import FiatModel
 from pydantic import FilePath
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -69,7 +70,7 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
@@ -127,7 +128,6 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
-        opt.update({"setup_region": {"region": {"geom": region_gdf}}})
         # Setup the model
         root = self.params.fiat_root
         model = FiatModel(
@@ -135,8 +135,23 @@ class FIATBuild(Method):
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
         )
+        if model._CLI_ARGS["region"] not in opt:
+            opt = {model._CLI_ARGS["region"]: {"region": {"geom": region_gdf}}, **opt}
+        opt[model._CLI_ARGS["region"]].update(region={"geom": region_gdf})
         # Build the model
-        model.build(opt=opt)
+        model.build(opt=opt, write=False)
+
+        # Set the column headers for newer FIAT verions
+        # TODO remove once HydroMT-FIAT supports this
+        model.exposure.exposure_db.rename(
+            new_column_headers(model.exposure.exposure_db.columns),
+            axis=1,
+            inplace=True,
+        )
+        for geom in model.exposure.exposure_geoms:
+            geom.rename(new_column_headers(geom.columns), axis=1, inplace=True)
+        # Write to drive
+        model.write()
 
         # Write opt as yaml
         configwrite(root / "fiat_build.yaml", opt)

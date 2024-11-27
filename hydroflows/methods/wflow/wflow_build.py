@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import FilePath
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -64,7 +64,7 @@ class Params(Parameters):
     wflow_root: Path
     """The path to the root directory where the wflow model will be created."""
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """

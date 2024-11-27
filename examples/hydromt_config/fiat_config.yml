@@ -1,7 +1,6 @@
-setup_global_settings:
-  keep_temp_files: True
-
 setup_region:
+  region:
+    geom: <region> # placeholder for region vector file
 
 setup_output:
   output_dir: output
@@ -12,7 +11,7 @@ setup_vulnerability:
   vulnerability_fn: jrc_vulnerability_curves
   vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
   unit: m
-  continent: South America
+  continent: Europe
 
 setup_exposure_buildings:
   asset_locations: OSM
@@ -22,4 +21,4 @@ setup_exposure_buildings:
   unit: m
   extraction_method: centroid
   damage_types: ["structure", "content"]
-  country: "Brazil"
+  country: "Italy"
