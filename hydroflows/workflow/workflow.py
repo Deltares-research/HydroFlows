@@ -21,7 +21,7 @@ from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-logger = logging.getLogger("hydroflows")
+logger = logging.getLogger(__name__)
 
 
 class Workflow:
