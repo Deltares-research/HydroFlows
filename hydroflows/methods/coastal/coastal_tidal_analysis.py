@@ -70,9 +70,9 @@ class CoastalTidalAnalysis(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
+        :py:class:`CoastalTidalAnalysis Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
+        :py:class:`CoastalTidalAnalysis Output <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
+        :py:class:`CoastalTidalAnalysis Params <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
         """
         self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
         self.params: Params = Params(data_root=data_root, **params)

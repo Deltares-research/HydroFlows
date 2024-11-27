@@ -88,12 +88,7 @@ class Params(Parameters):
 
 
 class CoastalDesignEvents(ExpandMethod):
-    """Method for deriving extreme event waterlevels from tide and surge timeseries.
-
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.coastal_design_events.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.coastal_design_events.Params>` for method inputs, outputs and params.
-    """
+    """Method for deriving extreme event waterlevels from tide and surge timeseries."""
 
     name: str = "coastal_design_events"
 
@@ -135,9 +130,9 @@ class CoastalDesignEvents(ExpandMethod):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events.Params>`
+        :py:class:`CoastalDesignEvents Input <hydroflows.methods.coastal.coastal_design_events.Input>`
+        :py:class:`CoastalDesignEvents Output <hydroflows.methods.coastal.coastal_design_events.Output>`
+        :py:class:`CoastalDesignEvents Params <hydroflows.methods.coastal.coastal_design_events.Params>`
         """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]

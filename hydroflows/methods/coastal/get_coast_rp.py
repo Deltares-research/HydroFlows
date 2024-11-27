@@ -71,9 +71,9 @@ class GetCoastRP(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
+        :py:class:`GetCoastRP Input <hydroflows.methods.coastal.get_coast_rp.Input>`
+        :py:class:`GetCoastRP Output <hydroflows.methods.coastal.get_coast_rp.Output>`
+        :py:class:`GetCoastRP Params <hydroflows.methods.coastal.get_coast_rp.Params>`
         """
         self.input: Input = Input(region=region, coastrp_catalog=coastrp_catalog)
         self.params: Params = Params(data_root=data_root, **params)
