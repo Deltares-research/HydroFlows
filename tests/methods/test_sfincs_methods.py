@@ -92,6 +92,33 @@ def test_sfincs_run(rio_sfincs_model: Path, tmp_path: Path):
 
 
 @pytest.mark.requires_data()
+@pytest.mark.skipif(
+    platform.system() != "Linux", reason="Docker running only supported on Linux"
+)
+def test_sfincs_run_linux(rio_sfincs_model: Path, tmp_path: Path):
+    tmp_root = Path(tmp_path, "model")
+    copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis", "subgrid"])
+    sfincs_inp = Path(tmp_root, "sfincs.inp")
+    sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
+
+    # modify the tstop to a short time
+    sf = SfincsModel(root=tmp_root, mode="r+")
+    sf.set_config("tref", "20191231 000000")
+    sf.set_config("tstart", "20191231 000000")
+    sf.set_config("tstop", "20191231 010000")
+    sf.write_config()
+
+    assert sfincs_inp.is_file()
+    sf_run = SfincsRun(
+        sfincs_inp=str(sfincs_inp),
+        vm="docker",
+        docker_tag="sfincs-v2.1.1-Dollerup-Release",
+    )
+    assert sf_run.output.sfincs_map == sfincs_map
+    sf_run.run_with_checks()
+
+
+@pytest.mark.requires_data()
 def test_sfincs_postprocess(rio_sfincs_model: Path, tmp_path: Path):
     tmp_root = Path(tmp_path, "model")
     copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])

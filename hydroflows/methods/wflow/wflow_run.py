@@ -2,10 +2,11 @@
 
 import subprocess
 from pathlib import Path
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import model_validator
 
+from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -46,13 +47,21 @@ class Params(Parameters):
     julia_num_threads: int = 4
     """The number of the threads to be used from Julia."""
 
+    vm: Optional[Literal["docker", "singularity"]] = None
+    """The virtual machine environment to use."""
+
+    docker_tag: str = "v0.8.1"
+    """The Docker tag to specify the version of the Docker image to use."""
+
     @model_validator(mode="after")
     def check_wflow_bin(self):
         """Check the Wflow binary path."""
-        if self.wflow_julia:
-            return
-        if self.wflow_bin is None:
-            raise ValueError("Wflow binary path is required.")
+        if self.wflow_bin is None and not self.wflow_julia and self.vm is None:
+            raise ValueError("Specify valid method for running WFLOW")
+        # if self.wflow_julia:
+        #     return
+        # if self.wflow_bin is None:
+        #     raise ValueError("Wflow binary path is required.")
 
 
 class WflowRun(Method):
@@ -112,6 +121,19 @@ class WflowRun(Method):
         if self.params.wflow_julia:
             # julia -e 'using Wflow; Wflow.run()'
             command = ["julia", "-e", "using Wflow; Wflow.run()", wflow_toml]
+        elif self.params.vm is not None:
+            wflow_toml = self.input.wflow_toml.resolve()
+            base_folder = get_wflow_basemodel_root(wflow_toml=wflow_toml)
+
+            command = [
+                "docker",
+                "run",
+                f"-v{base_folder}://data",
+                "-e",
+                f"JULIA_NUM_THREADS={env['JULIA_NUM_THREADS']}"
+                f"deltares/wflow:{self.params.docker_tag}",
+                f"//data/{wflow_toml.relative_to(base_folder).as_posix()}",
+            ]
         else:
             # Command to run wflow_cli with the TOML file
             command = [self.params.wflow_bin.as_posix(), wflow_toml]

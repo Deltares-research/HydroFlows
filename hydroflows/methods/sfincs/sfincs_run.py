@@ -7,6 +7,7 @@ from typing import Literal, Optional
 
 from pydantic import model_validator
 
+from hydroflows.methods.sfincs.sfincs_utils import get_sfincs_basemodel_root
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -48,7 +49,7 @@ class Params(Parameters):
     vm: Optional[Literal["docker", "singularity"]] = None
     """The virtual machine environment to use."""
 
-    docker_tag: str = "latest"
+    docker_tag: str = "sfincs-v2.1.1-Dollerup-Release"
     """The Docker tag to specify the version of the Docker image to use."""
 
     @model_validator(mode="after")
@@ -108,6 +109,8 @@ class SfincsRun(Method):
         # make sure model_root is an absolute path
         model_root = self.input.sfincs_inp.parent.resolve()
 
+        base_folder = get_sfincs_basemodel_root(model_root / "sfincs.inp")
+
         # set command to run depending on OS and VM
         if self.params.sfincs_exe is not None and platform.system() == "Windows":
             sfincs_exe = self.params.sfincs_exe.resolve()
@@ -121,14 +124,18 @@ class SfincsRun(Method):
                 cmd = [
                     "docker",
                     "run",
-                    f"-v{model_root}://data",
+                    f"-v{base_folder}://data",
+                    "-w",
+                    f"/data/{model_root.relative_to(base_folder).as_posix()}",
                     f"deltares/sfincs-cpu:{docker_tag}",
                 ]
             elif vm == "singularity":
                 cmd = [
                     "singularity",
                     "run",
-                    f"-B{model_root}:/data",
+                    f"-B{base_folder}:/data",
+                    "--pwd",
+                    f"/data/{model_root.relative_to(base_folder).as_posix()}",
                     "--nv",
                     f"docker://deltares/sfincs-cpu:{docker_tag}",
                 ]
