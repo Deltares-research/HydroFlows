@@ -12,7 +12,7 @@ from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-logger = getLogger("hydroflows")
+logger = getLogger(__name__)
 
 
 class Input(Parameters):

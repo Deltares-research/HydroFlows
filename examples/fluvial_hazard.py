@@ -4,6 +4,7 @@
 from pathlib import Path
 
 from hydroflows import Workflow
+from hydroflows.log import setuplog
 from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.methods.sfincs import (
@@ -22,6 +23,8 @@ from hydroflows.workflow.workflow_config import WorkflowConfig
 if __name__ == "__main__":
     # Get current file location
     pwd = Path(__file__).parent
+    # Setup logging
+    logger = setuplog()
 
     # %% Define variables
     name = "fluvial_hazard"
@@ -136,3 +139,8 @@ if __name__ == "__main__":
 
     # %% Write the workflow to a Snakefile
     w.to_snakemake(f"cases/{name}/Snakefile", dryrun=True)
+
+    # %%
+    import subprocess
+
+    subprocess.run(["snakemake", "-n"], cwd=f"cases/{name}")
