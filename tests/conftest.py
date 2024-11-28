@@ -1,6 +1,5 @@
 # fixtures with input and output files and folders
 import shutil
-import sys
 from pathlib import Path
 
 import geopandas as gpd
@@ -15,9 +14,7 @@ from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
 from hydroflows.events import EventSet
-
-sys.path.append(str(Path(__file__).parents[1] / "examples"))
-from fetch_data import fetch  # noqa: F401
+from hydroflows.utils.example_data import fetch_data
 
 
 @pytest.fixture(scope="session")
@@ -77,11 +74,10 @@ def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
 
 
 @pytest.fixture()
-def sfincs_tmp_root(test_data_dir: pooch.Pooch, tmp_path: Path) -> Path:
+def sfincs_tmp_root(tmp_path: Path) -> Path:
     """Return the path to the rio data catalog."""
-    cache_dir = test_data_dir / "sfincs_model_livenza"
     tmp_root = tmp_path / "sfincs_model_livenza"
-    fetch("sfincs-model", output_dir=cache_dir)
+    cache_dir = fetch_data("sfincs-model")
     shutil.copytree(cache_dir, tmp_root)
     assert Path(tmp_root, "sfincs.inp").is_file()
     return tmp_root

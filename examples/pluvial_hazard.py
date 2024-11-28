@@ -1,12 +1,12 @@
 """Run pluvial design events with existing SFINCS model."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
-
-from fetch_data import fetch
 
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import SfincsRun, SfincsUpdateForcing
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
@@ -23,11 +23,11 @@ if __name__ == "__main__":
     sfincs_root = Path(model_dir, "sfincs")
 
     # Fetch the sfincs model
-    fetch(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
+    fetch_data(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
 
     # Setup the config file
     conf = WorkflowConfig(
-        sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
+        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],
@@ -73,4 +73,8 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% to snakemake
-    w.to_snakemake(f"cases/{name}/workflow.smk")
+    w.to_snakemake(f"cases/{name}/Snakefile")
+
+    # %% subprocess to run snakemake
+    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd="cases/{name}")
+    subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd="cases/{name}")
