@@ -82,6 +82,7 @@ class WflowBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": Path("hydroflows/cfg/wflow_build.yml"),
     }
 
     def __init__(

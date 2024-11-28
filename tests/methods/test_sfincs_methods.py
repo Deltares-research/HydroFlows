@@ -38,17 +38,17 @@ def copy_tree(
 
 
 @pytest.mark.requires_data()
-def test_sfincs_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+def test_sfincs_build(
+    rio_region: Path, build_cfgs: dict, rio_test_data: Path, tmp_path: Path
+):
     sfincs_root = Path(tmp_path, "model")
     sfincs_build = SfincsBuild(
         region=str(rio_region),
+        config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
-        res=100.0,
-        river_upa=10.0,
         data_libs=str(rio_test_data),
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
-    assert sfincs_build.params.river_upa == 10.0
 
     sfincs_build.run_with_checks()
 

@@ -74,9 +74,6 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
-    continent: str = "South America"
-    """Continent of the region of interest."""
-
 
 class FIATBuild(Method):
     """Rule for building FIAT."""
@@ -85,6 +82,7 @@ class FIATBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": Path("hydroflows/cfg/fiat_build.yml"),
     }
 
     def __init__(

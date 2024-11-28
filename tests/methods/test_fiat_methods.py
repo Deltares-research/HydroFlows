@@ -97,13 +97,15 @@ def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
     return root
 
 
-def test_fiat_build(tmp_path: Path, sfincs_region_path: Path):
+def test_fiat_build(tmp_path: Path, sfincs_region_path: Path, build_cfgs: dict):
     # Setting input data
     region = sfincs_region_path.as_posix()
     fiat_root = Path(tmp_path, "fiat_model")
 
     # Setup the rule
-    rule = FIATBuild(region=region, fiat_root=fiat_root)
+    rule = FIATBuild(
+        region=region, config=build_cfgs["fiat_build"], fiat_root=fiat_root
+    )
     rule.run_with_checks()
 
 

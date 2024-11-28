@@ -55,10 +55,7 @@ if __name__ == "__main__":
         wflow_exe=Path(pwd, "bin/wflow/bin/wflow_cli.exe"),
         sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
         fiat_exe=Path(pwd, "bin/fiat/fiat.exe"),
-        sfincs_res=50,
-        wflow_res=0.0041667,
         rps=[5, 10, 25],
-        river_upa=10,
         continent="Europe",
         risk=True,
         start_date="2014-01-01",
@@ -74,11 +71,9 @@ if __name__ == "__main__":
     # Sfincs build
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
+        config=w.get_ref("$config.hydromt_sfincs_config"),
         sfincs_root=Path(model_dir, "sfincs"),
-        default_config=w.get_ref("$config.hydromt_sfincs_config"),
         data_libs=w.get_ref("$config.data_libs"),
-        res=w.get_ref("$config.sfincs_res"),
-        river_upa=w.get_ref("$config.river_upa"),
         plot_fig=w.get_ref("$config.plot_fig"),
     )
     w.add_rule(sfincs_build, rule_id="sfincs_build")
@@ -86,10 +81,10 @@ if __name__ == "__main__":
     # Wflow build
     wflow_build = WflowBuild(
         region=sfincs_build.output.sfincs_region,
-        wflow_root=Path(model_dir, "wflow"),
-        default_config=w.get_ref("$config.hydromt_wflow_config"),
-        data_libs=w.get_ref("$config.data_libs"),
+        config=w.get_ref("$config.hydromt_wflow_config"),
         gauges=Path(sfincs_build.params.sfincs_root, "gis", "src.geojson"),
+        wflow_root=Path(model_dir, "wflow"),
+        data_libs=w.get_ref("$config.data_libs"),
         plot_fig=w.get_ref("$config.plot_fig"),
     )
 
@@ -98,10 +93,9 @@ if __name__ == "__main__":
     # Fiat build
     fiat_build = FIATBuild(
         region=sfincs_build.output.sfincs_region,
+        config=w.get_ref("$config.hydromt_fiat_config"),
         fiat_root=Path(model_dir, "fiat"),
         data_libs=w.get_ref("$config.data_libs"),
-        config=w.get_ref("$config.hydromt_fiat_config"),
-        continent=w.get_ref("$config.continent"),
     )
 
     w.add_rule(fiat_build, rule_id="fiat_build")

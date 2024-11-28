@@ -7,7 +7,9 @@ from hydroflows.methods.wflow import WflowBuild, WflowUpdateForcing
 
 
 @pytest.mark.requires_data()
-def test_wflow_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+def test_wflow_build(
+    rio_region: Path, build_cfgs: dict, rio_test_data: Path, tmp_path: Path
+):
     # required inputs
     region = rio_region.as_posix()
     wflow_root = Path(tmp_path, "wflow_model")
@@ -15,15 +17,14 @@ def test_wflow_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
     # some additional params
     data_libs = rio_test_data.as_posix()
     gauges = None
-    upstream_area = 10
     plot_fig = False
 
     rule = WflowBuild(
         region=region,
+        config=build_cfgs["wflow_build"],
+        gauges=gauges,
         wflow_root=wflow_root,
         data_libs=data_libs,
-        gauges=gauges,
-        upstream_area=upstream_area,
         plot_fig=plot_fig,
     )
 

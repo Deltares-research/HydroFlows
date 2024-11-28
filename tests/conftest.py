@@ -22,6 +22,15 @@ def test_data_dir() -> Path:
 
 
 @pytest.fixture(scope="session")
+def build_cfgs() -> dict:
+    path = Path(Path(__file__).parent.parent, "hydroflows", "cfg")
+    cfgs = {}
+    for f in path.iterdir():
+        cfgs[f.stem] = f
+    return cfgs
+
+
+@pytest.fixture(scope="session")
 def large_test_data() -> pooch.Pooch:
     """Return a pooch for large test test data."""
     path = Path(__file__).parent / "_large_data"
