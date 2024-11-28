@@ -61,6 +61,16 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
 
 
 @pytest.fixture(scope="session")
+def tmp_merit_hydro_basins(example_data_dir: Path, tmp_path: Path) -> Path:
+    """Return the path to the merit hydro basin."""
+    # fetch("globa-data", output_dir=example_data_dir)
+    cache_merit_file = Path(example_data_dir, "merit_hydro_basins.geojson")
+    tmp_merit_file = Path(tmp_path, "merit_hydro_basins.geojson")
+    shutil.copy(cache_merit_file, tmp_merit_file)
+    return tmp_merit_file
+
+
+@pytest.fixture(scope="session")
 def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio wflow model config file."""
     _ = large_test_data.fetch(

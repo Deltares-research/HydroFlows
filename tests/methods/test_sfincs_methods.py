@@ -38,13 +38,13 @@ def copy_tree(
             copy_tree(path, dst / path.name, ignore, level + 1, max_level)
 
 
-def test_sfincs_region(rio_region: Path, merit_basins: Path, tmp_path: Path):
-    region_root = Path(tmp_path, "build")
+def test_sfincs_region(sfincs_region_path: Path, tmp_merit_hydro_basins: Path):
     sfincs_region = SfincsRegion(
-        AOI=str(rio_region),
-        basins=str(merit_basins),
-        region_root=str(region_root),
+        AOI=str(sfincs_region_path),
+        basins=str(tmp_merit_hydro_basins),
+        region_root=Path(tmp_merit_hydro_basins.parent, "build"),
     )
+
     sfincs_region.run_with_checks()
 
 

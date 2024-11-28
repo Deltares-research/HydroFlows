@@ -18,7 +18,7 @@ class Input(Parameters):
     The file path to the geometry file containing hydrological basins/catchments.
     """
 
-    AOI: Path
+    aoi: Path
     """
     The file path the geometry file defining the Area of Interest (AOI).
     This represents the geographic region for which a flood risk assessment will be conducted.
@@ -53,13 +53,13 @@ class SfincsRegion(Method):
 
     _test_kwargs = {
         "basins": Path("basins.geojson"),
-        "AOI": Path("AOI.geojson"),
+        "aoi": Path("aoi.geojson"),
     }
 
     def __init__(
         self,
         basins: Path,
-        AOI: Path,
+        aoi: Path,
         region_root: Path = Path("data/build"),
         **params,
     ) -> None:
@@ -67,7 +67,7 @@ class SfincsRegion(Method):
 
         Parameters
         ----------
-        AOI : Path
+        aoi : Path
             The file path the geometry file defining the Area of Interest (AOI).
         basins : Path
             The file path to the geometry file containing hydrological basins/catchments.
@@ -85,7 +85,7 @@ class SfincsRegion(Method):
         """
         self.params: Params = Params(region_root=region_root, **params)
 
-        self.input: Input = Input(basins=basins, AOI=AOI)
+        self.input: Input = Input(basins=basins, aoi=aoi)
 
         self.output: Output = Output(
             sfincs_region=self.params.region_root / f"{self.params.region_fn}.geojson"
@@ -96,14 +96,14 @@ class SfincsRegion(Method):
         # Read the file with the basins/cathments
         basins = gpd.read_file(self.input.basins)
         # Read the file with the AOI
-        aoi = gpd.read_file(self.input.AOI)
+        aoi = gpd.read_file(self.input.aoi)
 
         # Set default CRS if missing
         default_crs = "EPSG:4326"
         if aoi.crs is None:
             # TODO change it to logging
             print(
-                f"The AOI file provided ({self.input.AOI}) is not georeferenced. Assigning CRS: {default_crs}."
+                f"The AOI file provided ({self.input.aoi}) is not georeferenced. Assigning CRS: {default_crs}."
             )
             aoi.set_crs(default_crs, inplace=True)
         if basins.crs is None:
