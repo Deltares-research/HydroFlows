@@ -1,4 +1,5 @@
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from hydroflows.methods.script.script_method import (
     ScriptOutput,
     ScriptParams,
 )
+from hydroflows.workflow.workflow import Workflow
 
 
 def write_script(script_path: Path) -> None:
@@ -48,7 +50,7 @@ def test_script_output():
     output = ScriptOutput(test="output.txt")
     assert output.test == Path("output.txt")  # test if converted to Path
     output = ScriptOutput.model_validate(Path("output.txt"))
-    assert output.output == Path("output.txt")
+    assert output.output1 == Path("output.txt")
     output = ScriptOutput.model_validate([Path("output1.txt"), Path("output2.txt")])
     assert output.output1 == Path("output1.txt")
     assert output.output2 == Path("output2.txt")
@@ -63,8 +65,8 @@ def test_script_output():
 
 
 def test_script_input():
-    input = ScriptInput(input="input.txt")
-    assert input.input == Path("input.txt")
+    input = ScriptInput.model_validate("input.txt")
+    assert input.input1 == Path("input.txt")
     assert input.script is None
     input = ScriptInput(script="script.py")
     assert input.script == Path("script.py")
@@ -105,3 +107,23 @@ def test_script_method_run(tmp_path: Path):
     with open(output2, "r") as f:
         data = json.load(f)
     assert data == json.loads(method2.json_kwargs)
+
+
+def test_script_method_snakemake(tmp_path: Path):
+    # initialize workflow
+    workflow = Workflow(name="test_workflow")
+    # test snakemake properties
+    method = ScriptMethod(
+        script=Path("script.py"),
+        output={"output1": Path("output.txt")},
+        input={"input1": Path("input.txt")},
+        params={"param1": "value1", "param2": 2},
+    )
+    workflow.add_rule(method, rule_id="test_rule")
+    workflow.to_snakemake(Path(tmp_path, "Snakefile"))
+    # test snakemake file
+    with open(tmp_path / "input.txt", "w") as f:
+        f.write("")
+    with open(tmp_path / "script.py", "w") as f:
+        f.write("")
+    subprocess.run(["snakemake", "-n"], check=True, cwd=tmp_path)
