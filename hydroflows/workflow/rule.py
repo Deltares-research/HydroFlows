@@ -301,7 +301,7 @@ class Rule:
         nruns = len(wildcard_product)
         if dryrun or nruns == 1 or max_workers == 1:
             for i, wildcards in enumerate(wildcard_product):
-                msg = f"Runing {self.rule_id} {i+1}/{nruns}: {wildcards}"
+                msg = f"Running {self.rule_id} {i+1}/{nruns}: {wildcards}"
                 logger.info(msg)
                 self._run_method_instance(
                     wildcards, dryrun=dryrun, missing_file_error=missing_file_error

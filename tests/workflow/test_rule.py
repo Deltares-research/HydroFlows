@@ -247,8 +247,8 @@ def test_run(caplog, mocker):
     rule = Rule(method=test_method, workflow=workflow)
     mocker.patch.object(Rule, "_run_method_instance")
     rule.run(dryrun=True)
-    assert "Run 1/2: {'region': 'region1'}" in caplog.text
-    assert "Run 2/2: {'region': 'region2'}" in caplog.text
+    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
+    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
 
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
@@ -256,8 +256,8 @@ def test_run(caplog, mocker):
         rule._run_method_instance, rule.wildcard_product(), max_workers=2
     )
     rule.run(dryrun=True)
-    assert "Run 1/2: {'region': 'region1'}" in caplog.text
-    assert "Run 2/2: {'region': 'region2'}" in caplog.text
+    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
+    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
 
 
 def test_run_method_instance(mocker):
