@@ -1,4 +1,4 @@
-import io
+import logging
 import os
 import subprocess
 from pathlib import Path
@@ -235,13 +235,14 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(mocker, workflow: Workflow, tmp_path):
+def test_workflow_run(workflow: Workflow, tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     w = create_workflow_with_mock_methods(workflow, root=tmp_path)
-    mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
+
     w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
-    captured_stdout = mock_stdout.getvalue()
+
     for rule in w.rules:
-        assert rule.rule_id in captured_stdout
+        assert rule.rule_id in caplog.text
 
     # Run workflow without region wildcard
     w = Workflow(name="test_workflow")

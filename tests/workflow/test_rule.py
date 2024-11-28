@@ -1,3 +1,4 @@
+import logging
 import re
 from weakref import ReferenceType
 
@@ -239,15 +240,15 @@ def test_wildcard_product():
     ]
 
 
-def test_run(capsys, mocker):
+def test_run(caplog, mocker):
+    caplog.set_level(logging.INFO)
     workflow = Workflow(wildcards={"region": ["region1", "region2"]})
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
     mocker.patch.object(Rule, "_run_method_instance")
     rule.run(dryrun=True)
-    captured = capsys.readouterr()
-    assert "Run 1/2: {'region': 'region1'}" in captured.out
-    assert "Run 2/2: {'region': 'region2'}" in captured.out
+    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
+    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
 
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
@@ -255,9 +256,8 @@ def test_run(capsys, mocker):
         rule._run_method_instance, rule.wildcard_product(), max_workers=2
     )
     rule.run(dryrun=True)
-    captured = capsys.readouterr()
-    assert "Run 1/2: {'region': 'region1'}" in captured.out
-    assert "Run 2/2: {'region': 'region2'}" in captured.out
+    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
+    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
 
 
 def test_run_method_instance(mocker):

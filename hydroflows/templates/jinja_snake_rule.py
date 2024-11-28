@@ -106,7 +106,7 @@ class JinjaSnakeRule:
     def script(self) -> Optional[str]:
         """Get the rule script."""
         if isinstance(self.method, ScriptMethod):
-            return self.method.script
+            return self.method.input.script.as_posix()
         return None
 
     def _expand_variable(self, val: str, wildcards: List) -> Any:

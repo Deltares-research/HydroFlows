@@ -19,6 +19,7 @@ from typing import Dict, Literal, Optional
 import click
 
 from hydroflows import __version__
+from hydroflows.log import setuplog
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.workflow import Workflow
 
@@ -125,6 +126,7 @@ def method(
     RUNNER is the name of the method to run, e.g., 'build_wflow'.
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
+    logger = setuplog()
     try:
         method: Method = Method.from_kwargs(method, **kwargs)
         if dry_run:
@@ -132,7 +134,7 @@ def method(
         else:
             method.run_with_checks()
     except Exception as e:
-        click.echo(f"Error: {e}")
+        logger.error(e)
         ctx.exit(1)
 
 

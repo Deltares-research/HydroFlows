@@ -1,5 +1,6 @@
 """Get ERA5 rainfall method."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,8 @@ import xarray as xr
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -140,5 +143,5 @@ def get_era5_open_meteo(lat, lon, start_date: datetime, end_date: datetime, vari
         return df
     else:
         # If request failed, return None
-        print(f"Request failed with status code {response.status_code}")
+        logging.info("Request failed with status code %s", response.status_code)
         return None
