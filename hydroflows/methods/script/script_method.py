@@ -29,7 +29,7 @@ class ScriptParams(Parameters):
             data = json.loads(data.replace("'", '"'))
         # check if single path and convert to dict
         elif isinstance(data, (Path, str)):
-            data = {cls._type: data}
+            data = {f"{cls._type}1": data}
         # check if list and convert to dict
         elif isinstance(data, list):
             data = {f"{cls._type}{i+1}": item for i, item in enumerate(data)}

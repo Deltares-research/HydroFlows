@@ -136,3 +136,8 @@ if __name__ == "__main__":
 
     # %% Write the workflow to a Snakefile
     w.to_snakemake(f"cases/{name}/Snakefile", dryrun=True)
+
+    # %%
+    import subprocess
+
+    subprocess.run(["snakemake", "-n"], cwd=f"cases/{name}")
