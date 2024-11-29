@@ -16,6 +16,7 @@ class Input(Parameters):
     basins: Path
     """
     The file path to the geometry file containing hydrological basins/catchments.
+    This file must include a valid coordinate reference system (CRS).
     """
 
     aoi: Path
@@ -44,6 +45,7 @@ class Params(Parameters):
     """Root folder to save the Sfincs region."""
 
     region_fn: str = "sfincs_region"
+    """Name of the output file generated for the Sfincs region."""
 
 
 class SfincsRegion(Method):
@@ -93,27 +95,17 @@ class SfincsRegion(Method):
 
     def run(self):
         """Run the SfincsRegion method."""
-        # Read the file with the basins/cathments
-        basins = gpd.read_file(self.input.basins)
         # Read the file with the AOI
         aoi = gpd.read_file(self.input.aoi)
 
         # Set default CRS if missing
-        default_crs = "EPSG:4326"
         if aoi.crs is None:
-            # TODO change it to logging
-            print(
-                f"The AOI file provided ({self.input.aoi}) is not georeferenced. Assigning CRS: {default_crs}."
-            )
-            aoi.set_crs(default_crs, inplace=True)
-        if basins.crs is None:
-            basins.set_crs(default_crs, inplace=True)
+            aoi.set_crs("EPSG:4326", inplace=True)
 
-        # Ensure both GDFs use the same CRS
-        if aoi.crs != basins.crs:
-            basins = basins.to_crs(aoi.crs)
+        # Read the file with the basins/catchments and mask them to the aoi
+        aoi_basins = gpd.read_file(
+            self.input.basins,
+            mask=aoi,
+        )
 
-        # Perform the intersection filtering
-        filtered_basins = basins[basins.intersects(aoi.unary_union)]
-
-        filtered_basins.to_file(self.output.sfincs_region, driver="GeoJSON")
+        aoi_basins.to_file(self.output.sfincs_region, driver="GeoJSON")

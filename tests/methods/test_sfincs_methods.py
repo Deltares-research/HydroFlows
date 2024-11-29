@@ -20,7 +20,7 @@ SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
 
 def test_sfincs_region(sfincs_region_path: Path, tmp_merit_hydro_basins: Path):
     sfincs_region = SfincsRegion(
-        AOI=str(sfincs_region_path),
+        aoi=str(sfincs_region_path),
         basins=str(tmp_merit_hydro_basins),
         region_root=Path(tmp_merit_hydro_basins.parent, "build"),
     )
