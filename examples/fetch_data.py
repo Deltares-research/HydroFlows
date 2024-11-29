@@ -6,14 +6,13 @@ from pathlib import Path
 import pooch
 
 # update the base URL and registry with new versions of the data
-BASE_URL = "doi:10.5281/zenodo.14164946"
+BASE_URL = "doi:10.5281/zenodo.14193685"
 REGISTRY = {
-    "global-data.tar.gz": "dcd76132eda15ac45f77419c8c8c651b6fa1390b9b44a3c339df789bff6c8a07",
+    "global-data.tar.gz": "341310bd92b002369563ca764a552c17b95595ba07626205b7568c24a76eae5b",
     "fiat-model.tar.gz": "42c8a1c7fe624f724e56b3c0604526fa79847de5c4f1b11da4133d470611aed1",
     "sfincs-model.tar.gz": "0ed6910fe4e52f23210e7607c70c163b1ad0ad5f5d2ea8a68497b84c705e4d18",
     "wflow-model.tar.gz": "0cdf0bdcd073285ac8e39643707eb3687d5d11b12e87697b999947e513b11023",
 }
-
 PROCESSORS = {
     "tar.gz": pooch.Untar,
     "zip": pooch.Unzip,
