@@ -62,7 +62,10 @@ class Params(Parameters):
     event_names: Optional[ListOfStr] = None
     """List of event names associated with return periods."""
 
-    durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
+    duration: int = 48
+    """Duration of the produced design event."""
+
+    timesteps: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
     """Intensity Duration Frequencies provided as multiply of the data time step."""
 
     min_dist_days: int = 0
@@ -129,6 +132,11 @@ class Params(Parameters):
                 raise ValueError(
                     f"For ev_type '{self.ev_type}', distribution must be one of {valid_distributions}."
                 )
+        if self.duration > max(self.timesteps):
+            raise ValueError(
+                f"Duration {self.duration} exceeds the maximum specified value {max(self.timesteps)} "
+                f"from the list of timesteps: {self.timesteps}."
+            )
 
 
 class PluvialDesignEvents(ExpandMethod):
@@ -149,6 +157,7 @@ class PluvialDesignEvents(ExpandMethod):
         ev_type: Literal["BM", "POT"] = "BM",
         distribution: Optional[str] = None,
         wildcard: str = "event",
+        duration: int = 48,
         **params,
     ) -> None:
         """Create and validate a PluvialDesignEvents instance.
@@ -172,6 +181,8 @@ class PluvialDesignEvents(ExpandMethod):
             If None (default) is used, "gumb" is selected for BM and "exp" for POT.
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
+        duration : int
+            Duration of the produced design event, by default 48 hours.
         **params
             Additional parameters to pass to the PluvialDesignEvents Params instance.
 
@@ -190,6 +201,7 @@ class PluvialDesignEvents(ExpandMethod):
             ev_type=ev_type,
             distribution=distribution,
             wildcard=wildcard,
+            duration=duration,
             **params,
         )
         self.input: Input = Input(precip_nc=precip_nc)
@@ -222,11 +234,14 @@ class PluvialDesignEvents(ExpandMethod):
             da,
             ev_type=self.params.ev_type,
             distribution=self.params.distribution,
-            durations=self.params.durations,
+            durations=self.params.timesteps,
             rps=np.maximum(1.001, self.params.rps),
             qthresh=self.params.qthresh,
             min_sample_size=min_sample_size,
         )
+
+        # keep durations up to the max user defined duration
+        ds_idf = ds_idf.sel(duration=slice(None, self.params.duration))
 
         ds_idf = ds_idf.assign_coords(rps=self.params.rps)
         # make sure there are no negative values

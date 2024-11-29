@@ -21,6 +21,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
         rps=rps,
         ev_type="BM",
         distribution="gev",
+        duration=24,
     )
 
     assert len(p_events.params.event_names) == len(rps)
