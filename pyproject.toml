@@ -61,7 +61,7 @@ extra = [
   "jupyter",
   "snakemake",      # Workflow manager
   "graphviz",
-  "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
+  "osmnx>1,<3",     # OpenStreetMap data temporarly pinned
 ]
 test = [
   "pooch",          # test data fetching
