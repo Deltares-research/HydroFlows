@@ -76,7 +76,6 @@ class Workflow:
         self._root = Path(root)
         self._root.mkdir(parents=True, exist_ok=True)
 
-            
     def add_rule(self, method: Method, rule_id: Optional[str] = None) -> None:
         """Add a rule to the workflow."""
         rule = Rule(method, self, rule_id)
@@ -167,7 +166,10 @@ class Workflow:
         """
         # set paths and creat directory
         snake_path = Path(self.root, snakefile).resolve()
-        config_path = snake_path.with_suffix(".config.yml")
+        config_path = Path(
+            snake_path.parent,
+            snake_path.stem,
+        ).with_suffix(".config.yml")
         # create references for the rules
         self.create_references()
         # render the snakefile template
@@ -180,7 +182,7 @@ class Workflow:
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            config_path=config_path.name,
+            configfile=config_path.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
@@ -223,9 +225,7 @@ class Workflow:
             logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(max_workers=max_workers)
 
-    def dryrun(
-        self, missing_file_error: bool = False
-    ) -> None:
+    def dryrun(self, missing_file_error: bool = False) -> None:
         """Dryrun the workflow.
 
         Parameters
@@ -236,7 +236,7 @@ class Workflow:
         nrules = len(self.rules)
         input_files = []
         for i, rule in enumerate(self.rules):
-            logger.info("Running dryrun in %s", tmpdir)
+            logger.info(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
             output_files = rule.dryrun(
                 missing_file_error=missing_file_error, input_files=input_files
             )

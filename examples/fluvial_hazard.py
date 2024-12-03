@@ -4,7 +4,6 @@
 from pathlib import Path
 
 from hydroflows import Workflow
-from hydroflows.log import setuplog
 from hydroflows.methods.discharge import FluvialDesignEvents
 from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.methods.sfincs import (
