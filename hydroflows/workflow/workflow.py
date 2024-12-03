@@ -19,7 +19,7 @@ from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-logger = logging.getLogger("hydroflows")
+logger = logging.getLogger(__name__)
 
 
 class Workflow:
@@ -220,7 +220,7 @@ class Workflow:
         """
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(max_workers=max_workers)
 
     def dryrun(
@@ -236,7 +236,7 @@ class Workflow:
         nrules = len(self.rules)
         input_files = []
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info("Running dryrun in %s", tmpdir)
             output_files = rule.dryrun(
                 missing_file_error=missing_file_error, input_files=input_files
             )

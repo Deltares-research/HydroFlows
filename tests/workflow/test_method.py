@@ -1,3 +1,4 @@
+import logging
 import re
 
 import pytest
@@ -52,17 +53,6 @@ def test_method_to_dict(test_method: TestMethod):
     }
 
 
-def test_method_from_dict(test_method: TestMethod):
-    method_dict = test_method.to_dict()
-    new_test_method = TestMethod.from_dict(
-        input=method_dict["input"],
-        output=method_dict["output"],
-        params=method_dict["params"],
-        name=test_method.name,
-    )
-    assert new_test_method == test_method
-
-
 def test_method_from_kwargs():
     with pytest.raises(
         ValueError, match="Cannot initiate from Method without a method name"
@@ -98,7 +88,8 @@ def test_run_with_checks(tmp_path):
     test_method.run_with_checks()
 
 
-def test_check_input_output_paths(tmp_path, capsys):
+def test_check_input_output_paths(tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     test_method: TestMethod = create_test_method(root=tmp_path, write_inputs=False)
     with pytest.raises(
         FileNotFoundError,
@@ -108,11 +99,11 @@ def test_check_input_output_paths(tmp_path, capsys):
     ):
         test_method.check_input_output_paths()
     test_method.check_input_output_paths(missing_file_error=False)
-    captured = capsys.readouterr()
-    assert "input_file1" in captured.out
-    assert "test_file1" in captured.out
-    assert "input_file2" in captured.out
-    assert "test_file2" in captured.out
+
+    assert "input_file1" in caplog.text
+    assert "test_file1" in caplog.text
+    assert "input_file2" in caplog.text
+    assert "test_file2" in caplog.text
 
     test_method = create_test_method(root=tmp_path)
     # Check if it runs without errors

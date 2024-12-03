@@ -1,5 +1,6 @@
 # fixtures with input and output files and folders
 import shutil
+import sys
 from pathlib import Path
 
 import geopandas as gpd
@@ -15,10 +16,19 @@ from shapely.geometry import Point, Polygon
 
 from hydroflows.events import EventSet
 
+EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
+sys.path.append(EXAMPLE_DIR.as_posix())
+from fetch_data import fetch  # noqa: F401
+
 
 @pytest.fixture(scope="session")
 def test_data_dir() -> Path:
     return Path(__file__).parent / "_data"
+
+
+@pytest.fixture(scope="session")
+def example_data_dir() -> Path:
+    return Path(EXAMPLE_DIR, "data")
 
 
 @pytest.fixture(scope="session")
@@ -72,16 +82,25 @@ def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
     return path
 
 
-@pytest.fixture(scope="session")
-def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
+@pytest.fixture()
+def sfincs_tmp_root(example_data_dir: Path, tmp_path: Path) -> Path:
     """Return the path to the rio data catalog."""
-    _ = large_test_data.fetch(
-        "rio_sfincs_model.zip",
-        processor=pooch.Unzip(extract_dir="rio_sfincs_model"),
-    )
-    path = Path(large_test_data.path) / "rio_sfincs_model" / "sfincs.inp"
-    assert path.is_file()
-    return path
+    cache_dir = example_data_dir / "sfincs_model_livenza"
+    tmp_root = tmp_path / "sfincs_model_livenza"
+    fetch("sfincs-model", output_dir=cache_dir)
+    shutil.copytree(cache_dir, tmp_root)
+    assert Path(tmp_root, "sfincs.inp").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def tmp_gpex_data(example_data_dir: Path, tmp_path: Path) -> Path:
+    """Return the path to the GPEX data."""
+    fetch("global-data", output_dir=example_data_dir)
+    cache_gpex_file = Path(example_data_dir, "gpex.nc")
+    tmp_gpex_file = Path(tmp_path, "gpex.nc")
+    shutil.copy(cache_gpex_file, tmp_gpex_file)
+    return tmp_gpex_file
 
 
 @pytest.fixture(scope="session")

@@ -54,7 +54,7 @@ class Params(Parameters):
     """Model resolution [m]."""
 
     # optional parameter
-    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """

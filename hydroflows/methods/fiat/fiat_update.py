@@ -1,7 +1,7 @@
 """FIAT updating submodule/ rules."""
 
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import List, Literal, Optional, Union
 
 from hydromt_fiat.fiat import FiatModel
 
@@ -18,13 +18,14 @@ class Input(Parameters):
     fiat_cfg: Path
     """The file path to the FIAT configuration (toml) file."""
 
-    event_set_yaml: Path
-    """The path to the event description file, used to filter hazard maps,
-    see also :py:class:`hydroflows.events.EventSet`."""
-
-    # single path should also be allowed for validation !
     hazard_maps: Union[WildcardPath, ListOfPath]
     """List of paths to hazard maps the event description file."""
+
+    event_set_yaml: Optional[Path] = None
+    """The path to the event description file,
+    used to get the return periods of events :py:class:`hydroflows.events.EventSet`.
+    Optional for a single hazard map.
+    """
 
 
 class Output(Parameters):
@@ -46,21 +47,18 @@ class Params(Parameters):
         For more details on the setup_hazard method used in hydromt_fiat
     """
 
-    event_set_name: str
-    """The name of the event set"""
+    sim_name: str
+    """The name of the simulation folder."""
 
     sim_subfolder: str = "simulations"
     """The subfolder relative to the basemodel where the simulation folders are stored."""
 
-    map_type: str = "water_depth"
+    map_type: Literal["water_level", "water_depth"] = "water_level"
     """"The data type of each map specified in the data catalog. A single map type
     applies for all the elements."""
 
     risk: bool = True
     """"The parameter that defines if a risk analysis is required."""
-
-    var: str = "zsmax"
-    """"Variable name."""
 
 
 class FIATUpdateHazard(ReduceMethod):
@@ -85,13 +83,18 @@ class FIATUpdateHazard(ReduceMethod):
         fiat_cfg: Path,
         event_set_yaml: Path,
         hazard_maps: Union[Path, List[Path]],
-        event_set_name: Optional[str] = None,
+        risk: bool = True,
+        map_type: Literal["water_level", "water_depth"] = "water_level",
         sim_subfolder: str = "simulations",
+        sim_name: Optional[str] = None,
         **params,
     ):
         """Create and validate a FIATUpdateHazard instance.
 
-        FIAT simulations are stored in {basemodel}/{sim_subfolder}/{event_set_name}.
+        Either hazard_maps or single_hazard_map should be provided.
+        If single_hazard_map is provided, risk analysis is disabled.
+
+        FIAT simulations are stored in {basemodel}/{sim_subfolder}/{sim_name}.
 
         Parameters
         ----------
@@ -99,10 +102,15 @@ class FIATUpdateHazard(ReduceMethod):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
-        hazard_maps : Path or List[Path]
-            The path to the hazard maps. If a single path is provided, it should contain a wildcard.
+        hazard_maps : Path or List[Path], optional
+            The path to the hazard maps. It can be a list of paths, a single path containing a wildcard,
+            or a single path to a single hazard map.
+        map_type : Literal["water_level", "water_depth"], optional
+            The hazard data type
         sim_subfolder : Path, optional
             The subfolder relative to the basemodel where the simulation folders are stored.
+        sim_name : str, optional
+            The name of the simulation folder. If None, the stem of the event set file or the first hazard map is used.
 
         **params
             Additional parameters to pass to the FIATUpdateHazard instance.
@@ -120,20 +128,41 @@ class FIATUpdateHazard(ReduceMethod):
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
         )
-        if event_set_name is None:
-            # NOTE: FIAT runs with full event sets with RPs.
-            # Name of event set is the stem of the event set file
-            event_set_name = self.input.event_set_yaml.stem
+
+        # get the simulation name
+        if sim_name is None:
+            if self.input.event_set_yaml is not None:
+                sim_name = self.input.event_set_yaml.stem
+            elif isinstance(self.input.hazard_maps, list):
+                sim_name = self.input.hazard_maps[0].stem
+            else:
+                sim_name = "default"
+
+        # check if risk analysis is required
+        if (
+            isinstance(self.input.hazard_maps, list)
+            and len(self.input.hazard_maps) == 1
+        ):
+            risk = False
 
         self.params: Params = Params(
-            event_set_name=event_set_name, sim_subfolder=sim_subfolder, **params
+            sim_name=sim_name,
+            sim_subfolder=sim_subfolder,
+            map_type=map_type,
+            risk=risk,
+            **params,
         )
+        if self.params.risk and self.input.event_set_yaml is None:
+            raise ValueError(
+                "Event set is required for risk analysis. "
+                "Please provide an event set yaml file or set risk=False."
+            )
 
         # output root is the simulation folder
         fiat_root = (
             self.input.fiat_cfg.parent
             / self.params.sim_subfolder
-            / self.params.event_set_name
+            / self.params.sim_name
         )
         self.output: Output = Output(
             fiat_hazard=fiat_root / "hazard" / "hazard.nc",
@@ -155,7 +184,7 @@ class FIATUpdateHazard(ReduceMethod):
 
         model = FiatModel(
             root=root,
-            mode="w+",
+            mode="r",
         )
         model.read()
 
@@ -171,34 +200,39 @@ class FIATUpdateHazard(ReduceMethod):
             model.config["exposure"]["geom"], root, out_root
         )
 
-        ## WARNING! code below is necessary for now, as hydromt_fiat cant deliver
         # READ the hazard catalog
-        event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
-
-        # extract all names
-        hazard_names = [event["name"] for event in event_set.events]
-
-        # filter out the right path names
-        hazard_fns = []
-        for name in hazard_names:
-            for fn in hazard_maps:
-                if name in fn.stem:
-                    hazard_fns.append(fn)
-                    break
+        if self.input.event_set_yaml is not None:
+            event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
+            # filter out the right path names / sort them in the right order
+            names = [event["name"] for event in event_set.events]
+            hazard_fns = []
+            for name in names:
+                for fn in hazard_maps:
+                    if name in fn.as_posix():
+                        hazard_fns.append(fn)
+                        break
+            if len(hazard_fns) != len(names):
+                raise ValueError(
+                    f"Could not find all hazard maps for the event set {self.input.event_set_yaml}"
+                )
+            hazard_maps = hazard_fns
 
         # get return periods
-        rps = [event_set.get_event(name).return_period for name in hazard_names]
+        if self.params.risk:  # get matching hazard maps and return periods
+            rps = [event_set.get_event(name).return_period for name in names]
+        else:
+            rps = None
 
         # Setup the hazard map
         # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
         # a ValueError if the metadata of those same maps does not contain a nodata value. Here we impose a random -9999.
         model.setup_config(**config)
         model.setup_hazard(
-            hazard_fns,
+            map_fn=hazard_maps,
             map_type=self.params.map_type,
             rp=rps,
             risk_output=self.params.risk,
-            var="flood_map",
+            var=self.params.map_type,  # water_level or water_depth
             nodata=-9999.0,
         )
         # change root to simulation folder
@@ -215,3 +249,8 @@ class FIATUpdateHazard(ReduceMethod):
 
         # Write the config
         model.write_config()
+
+        # remove empty directories using pathlib in out_root
+        for d in out_root.iterdir():
+            if d.is_dir() and not list(d.iterdir()):
+                d.rmdir()

@@ -61,6 +61,7 @@ extra = [
   "jupyter",
   "snakemake",      # Workflow manager
   "graphviz",
+  "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
 ]
 test = [
   "pooch",          # test data fetching
@@ -70,6 +71,8 @@ test = [
   "pytest-timeout", # darn hanging tests
   "hydroflows[extra]",      # needed for testing snake file
 ]
+
+full = ["hydroflows[dev, doc, test, extra]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
@@ -133,7 +136,6 @@ convention = "numpy"
 channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
-  "sphinx_autosummary_accessors",
   "sphinx_design",
   "hatyan",
   "autodoc_pydantic",
