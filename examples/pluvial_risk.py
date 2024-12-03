@@ -5,8 +5,11 @@ import os
 import subprocess
 from pathlib import Path
 
+from hydroflows.log import setuplog
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
-from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
+from hydroflows.methods.rainfall import (
+    PluvialDesignEventsGPEX,
+)
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsPostprocess,
@@ -27,6 +30,7 @@ if __name__ == "__main__":
     # Define variables
     name = "pluvial_risk"
     case_root = Path(pwd, "cases", name)
+    setuplog(path=case_root / "hydroflows.log", level="DEBUG")
 
     # Create the case directory
     case_root.mkdir(exist_ok=True, parents=True)
@@ -81,21 +85,12 @@ if __name__ == "__main__":
     )
     w.add_rule(fiat_build, rule_id="fiat_build")
 
-    # %% Get precipitation data
-    pluvial_data = GetERA5Rainfall(
+    pluvial_events = PluvialDesignEventsGPEX(
+        gpex_nc=conf.data_libs[0].parent / "gpex.nc",  # FIXME use hydromt.datacatalog
         region=sfincs_build.output.sfincs_region,
-        data_root="data/era5",
-        start_date=w.get_ref("$config.start_date"),
-        end_date=w.get_ref("$config.end_date"),
-    )
-    w.add_rule(pluvial_data, rule_id="pluvial_data")
-
-    # %% Derive pluviual events from precipitation data
-    pluvial_events = PluvialDesignEvents(
-        precip_nc=pluvial_data.output.precip_nc,
         event_root="data/events",
         rps=w.get_ref("$config.rps"),
-        wildcard="pluvial_events",  # FIXME rename to event_set_name ??
+        wildcard="pluvial_events",
     )
     w.add_rule(pluvial_events, rule_id="pluvial_events")
 

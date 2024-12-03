@@ -16,10 +16,17 @@ from shapely.geometry import Point, Polygon
 from hydroflows.events import EventSet
 from hydroflows.utils.example_data import fetch_data
 
+EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
+
 
 @pytest.fixture(scope="session")
 def test_data_dir() -> Path:
     return Path(__file__).parent / "_data"
+
+
+@pytest.fixture(scope="session")
+def example_data_dir() -> Path:
+    return Path(EXAMPLE_DIR, "data")
 
 
 @pytest.fixture(scope="session")
@@ -81,6 +88,16 @@ def sfincs_tmp_root(tmp_path: Path) -> Path:
     shutil.copytree(cache_dir, tmp_root)
     assert Path(tmp_root, "sfincs.inp").is_file()
     return tmp_root
+
+
+@pytest.fixture()
+def tmp_gpex_data(example_data_dir: Path, tmp_path: Path) -> Path:
+    """Return the path to the GPEX data."""
+    fetch_data("global-data", output_dir=example_data_dir)
+    cache_gpex_file = Path(example_data_dir, "gpex.nc")
+    tmp_gpex_file = Path(tmp_path, "gpex.nc")
+    shutil.copy(cache_gpex_file, tmp_gpex_file)
+    return tmp_gpex_file
 
 
 @pytest.fixture(scope="session")
