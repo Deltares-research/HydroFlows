@@ -49,7 +49,10 @@ class SfincsRegion(Method):
     }
 
     def __init__(
-        self, subbasins: Path, aoi: Path, region: Path = Path("sfincs_region.geojson")
+        self,
+        subbasins: Path,
+        aoi: Path,
+        sfincs_region: Path = Path("sfincs_region.geojson"),
     ) -> None:
         """Create and validate a SfincsRegion instance.
 
@@ -70,7 +73,7 @@ class SfincsRegion(Method):
         """
         self.input: Input = Input(subbasins=subbasins, aoi=aoi)
 
-        self.output: Output = Output(sfincs_region=region)
+        self.output: Output = Output(sfincs_region=sfincs_region)
 
     def run(self):
         """Run the SfincsRegion method."""

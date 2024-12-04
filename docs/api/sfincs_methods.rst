@@ -12,7 +12,6 @@ Get Sfincs region
 
    sfincs_region.SfincsRegion
    sfincs_region.Input
-   sfincs_region.Params
    sfincs_region.Output
 
 Build Sfincs model
