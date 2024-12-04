@@ -8,14 +8,14 @@ from hydroflows.methods.wflow import WflowBuild, WflowUpdateForcing
 
 @pytest.mark.requires_data()
 def test_wflow_build(
-    rio_region: Path, build_cfgs: dict, rio_test_data: Path, tmp_path: Path
+    region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
     # required inputs
-    region = rio_region.as_posix()
+    region = region.as_posix()
     wflow_root = Path(tmp_path, "wflow_model")
 
     # some additional params
-    data_libs = rio_test_data.as_posix()
+    data_libs = global_catalog.as_posix()
     gauges = None
     plot_fig = False
 
@@ -37,18 +37,18 @@ def test_wflow_build(
 
 @pytest.mark.requires_data()
 def test_wflow_update_forcing(
-    rio_wflow_model: Path, rio_test_data: Path, tmp_path: Path
+    wflow_test_model: Path, global_catalog: Path, tmp_path: Path
 ):
     # copy the wflow model to the tmp_path
     root = tmp_path / "model"
-    shutil.copytree(rio_wflow_model.parent, root)
+    shutil.copytree(wflow_test_model, root)
     # required inputs
-    wflow_toml = Path(root, rio_wflow_model.name)
+    wflow_toml = Path(root, "wflow_sbm.toml")
     start_time = "2020-02-01"
     end_time = "2020-02-10"
 
     # additional param
-    data_libs = rio_test_data.as_posix()
+    data_libs = global_catalog.as_posix()
 
     rule = WflowUpdateForcing(
         wflow_toml=wflow_toml,
