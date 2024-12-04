@@ -47,12 +47,14 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     assert df.max().max() == 1.0
 
 
-def test_pluvial_design_hyeto_gpex(sfincs_region_path: Path, tmp_gpex_data: Path):
+def test_pluvial_design_hyeto_gpex(
+    sfincs_region_path: Path, gpex_data: Path, tmp_path: Path
+):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
-        gpex_nc=str(tmp_gpex_data),
+        gpex_nc=str(gpex_data),
         region=str(sfincs_region_path),
-        event_root=Path(tmp_gpex_data.parent, "events"),
+        event_root=Path(tmp_path, "events"),
         rps=rps,
         duration=120,
     )

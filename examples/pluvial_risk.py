@@ -2,10 +2,8 @@
 
 # %% Import packages
 import os
+import subprocess
 from pathlib import Path
-
-# local import
-from fetch_data import fetch
 
 from hydroflows.log import setuplog
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
@@ -18,6 +16,7 @@ from hydroflows.methods.sfincs import (
     SfincsRun,
     SfincsUpdateForcing,
 )
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
@@ -25,7 +24,7 @@ if __name__ == "__main__":
     pwd = Path(__file__).parent
 
     # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
-    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    cache_dir = fetch_data(data="global-data")
 
     # %% General setup of workflow
     # Define variables
@@ -41,18 +40,18 @@ if __name__ == "__main__":
     conf = WorkflowConfig(
         # general settings
         region=Path(pwd, "data/build/region.geojson"),
-        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
+        data_libs=[Path(cache_dir, "data_catalog.yml")],
         start_date="2000-01-01",
         end_date="2021-12-31",
         plot_fig=True,
         # sfincs settings
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
+        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
         sfincs_res=50,
         river_upa=10,
         # fiat settings
         hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml"),
-        fiat_exe=Path(pwd, "../bin/fiat_v0.2.0/fiat.exe"),
+        fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
         continent="Europe",
         risk=True,
         # design events settings
@@ -139,7 +138,6 @@ if __name__ == "__main__":
     w.to_snakemake(Path(case_root, "Snakefile"))
 
     # %% subprocess to run snakemake
-    import subprocess
-
     subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
-    subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
