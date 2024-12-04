@@ -19,12 +19,12 @@ SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
 
 
 def test_sfincs_region(
-    sfincs_region_path: Path, tmp_merit_hydro_basins: Path, tmp_path: Path
+    sfincs_region_path: Path, merit_hydro_basins: Path, tmp_path: Path
 ):
     sfincs_region = SfincsRegion(
         aoi=str(sfincs_region_path),
-        basins=str(tmp_merit_hydro_basins),
-        region_root=Path(tmp_path, "build"),
+        subbasins=str(merit_hydro_basins),
+        region=Path(tmp_path, "data", "sfincs_region.geojson"),
     )
 
     sfincs_region.run_with_checks()
