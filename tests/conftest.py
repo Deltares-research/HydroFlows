@@ -71,7 +71,7 @@ def global_data() -> Path:
 @pytest.fixture(scope="session")
 def global_catalog(global_data: Path) -> Path:
     """Return path to data catalog of global data."""
-    return global_data / "data_catalog.yml"    
+    return global_data / "data_catalog.yml"
 
 
 @pytest.fixture(scope="session")
