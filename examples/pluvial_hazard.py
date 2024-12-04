@@ -27,7 +27,7 @@ if __name__ == "__main__":
 
     # Setup the config file
     conf = WorkflowConfig(
-        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
+        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],
@@ -77,4 +77,5 @@ if __name__ == "__main__":
 
     # %% subprocess to run snakemake
     subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd="cases/{name}")
-    subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd="cases/{name}")
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd="cases/{name}")

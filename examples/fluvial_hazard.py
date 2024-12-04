@@ -1,6 +1,7 @@
 """Build a fluvial hazard workflow."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow
@@ -136,7 +137,6 @@ if __name__ == "__main__":
     w.to_snakemake(f"cases/{name}/Snakefile", dryrun=True)
 
     # %%
-    import subprocess
-
     subprocess.run(["snakemake", "-n"], cwd=f"cases/{name}")
-    subprocess.run(["snakemake", "-c 1"], cwd=f"cases/{name}")
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c 1"], cwd=f"cases/{name}")

@@ -1,6 +1,7 @@
 """Build pluvial & fluvial flood risk workflow."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow
@@ -51,9 +52,9 @@ if __name__ == "__main__":
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
         hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml"),
         hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml"),
-        wflow_exe=Path(pwd, "../bin/wflow_v0.8.1/bin/wflow_cli.exe"),
-        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
-        fiat_exe=Path(pwd, "../bin/fiat_v0.2.0/fiat.exe"),
+        wflow_exe=Path(pwd, "bin/wflow_v0.8.1/bin/wflow_cli.exe"),
+        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+        fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
         sfincs_res=50,
         wflow_res=0.0041667,
         rps=[5, 10, 25],
@@ -209,7 +210,6 @@ if __name__ == "__main__":
     w.to_snakemake(f"cases/{name}/Snakefile")
 
     # %%
-    import subprocess
-
     subprocess.run(["snakemake", "--unlock"], cwd=f"cases/{name}")
-    subprocess.run(["snakemake", "-c 2", "--rerun-incomplete"], cwd=f"cases/{name}")
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c 2", "--rerun-incomplete"], cwd=f"cases/{name}")

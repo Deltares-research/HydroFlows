@@ -46,12 +46,12 @@ if __name__ == "__main__":
         plot_fig=True,
         # sfincs settings
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
+        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
         sfincs_res=50,
         river_upa=10,
         # fiat settings
         hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml"),
-        fiat_exe=Path(pwd, "../bin/fiat_v0.2.0/fiat.exe"),
+        fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
         continent="Europe",
         risk=True,
         # design events settings
@@ -139,4 +139,5 @@ if __name__ == "__main__":
 
     # %% subprocess to run snakemake
     subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
-    subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
