@@ -36,8 +36,8 @@ def test_rule_to_dict(rule: Rule):
     rule_dict = rule.to_dict()
     assert rule_dict["method"] == "test_method"
     assert rule_dict["kwargs"] == {
-        "input_file1": "test_file1",
-        "input_file2": "test_file2",
+        "input_file1": "$config.test_method_input_file1",
+        "input_file2": "$config.test_method_input_file2",
         "out_root": ".",
         "param": "param",
     }
@@ -239,6 +239,14 @@ def test_wildcard_product():
         {"region": "xx", "event": ["1", "b"]},
     ]
 
+def test_rule_add_method_inputs_to_config(rule, workflow):
+    for refs in rule.method.input._refs.values():
+        assert refs.startswith("$config.")
+    assert "test_method_input_file1" in workflow.config.to_dict().keys()
+    assert "test_method_input_file2" in workflow.config.to_dict().keys()
+   
+
+
 
 def test_run(caplog, mocker):
     caplog.set_level(logging.INFO)
@@ -275,6 +283,8 @@ def test_run_method_instance(mocker):
     mocker.patch.object(TestMethod, "run_with_checks")
     rule._run_method_instance(wildcards={"region": "region1"})
     test_method.run_with_checks.assert_called()
+
+
 
 
 def test_rules(workflow, rule):

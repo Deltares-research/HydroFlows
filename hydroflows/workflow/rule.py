@@ -4,7 +4,7 @@ import logging
 import warnings
 import weakref
 from itertools import product
-from pathlib import Path
+from pathlib import Path, PosixPath
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
@@ -60,6 +60,9 @@ class Rule:
         # add weak reference to workflow to avoid circular references
         self._workflow_ref = weakref.ref(workflow)
 
+        # move method inputs to config
+        
+
         # placeholders for wildcards detection
         self._wildcard_fields: List[str] = []
         self._wildcards: Dict[str, List] = {}
@@ -72,6 +75,7 @@ class Rule:
         # detect and validate wildcards
         self._detect_wildcards()
         self._validate_wildcards()
+        self._create_references_for_method_inputs()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -278,8 +282,37 @@ class Rule:
 
         return wc_product
 
-    ## RUN METHODS
+    def _create_references_for_method_inputs(self):
+        output_path_refs = self.workflow._output_path_refs
+        for key, value in self.method.input:
+            # Skip if key is already present in input refs
+            if key in self.method.input._refs:
+                continue
+            if isinstance(value, Path):
+                    value = value.as_posix()
+            if isinstance(value, list): # Reduce method can contain list
+                for v in value:
+                    if v in self.workflow._output_path_refs:
+                        self.method.input._refs.update({key:output_path_refs.get(v)})
+                continue
+            if value in self.workflow._output_path_refs:
+                self.method.input._refs.update({key:output_path_refs.get(value)})
+            else:
+                config_key = f"{self.method.name}_{key}"
+                logger.info("Adding %s to config", config_key)
+                # Add input to config
+                self.workflow.config = self.workflow.config.model_copy(update={config_key: value})
+                # Replace methond input with reference to config
+                config_ref = "$config." + config_key
+                self.method.input._refs.update({key: config_ref})
+                
 
+
+    def _add_method_params_to_config(self):
+        for p in self.method.params:
+            pass
+
+    ## RUN METHODS
     def run(
         self,
         max_workers=1,
@@ -321,6 +354,7 @@ class Rule:
             m.dryrun(missing_file_error=missing_file_error)
         else:
             m.run_with_checks()
+    
 
 
 class Rules:
