@@ -10,6 +10,7 @@ __all__ = ["fetch_data"]
 logger = logging.getLogger(__name__)
 
 # update the base URL and registry with new versions of the data
+# use create_artifact.py script in the p-drive hydroflows-test-data folder to update the registry
 BASE_URL = "doi:10.5281/zenodo.14267480"
 with open(Path(__file__).parent / "registry.json", "r") as f:
     REGISTRY = json.load(f)
