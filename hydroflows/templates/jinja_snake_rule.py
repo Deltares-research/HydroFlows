@@ -1,6 +1,7 @@
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
+from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.utils.parsers import get_wildcards
 
 if TYPE_CHECKING:
@@ -97,9 +98,16 @@ class JinjaSnakeRule:
         return val
 
     @property
-    def shell_args(self) -> Dict[str, str]:
+    def hydroflows_shell_kwargs(self) -> Dict[str, str]:
         """Get the rule shell arguments."""
-        return {key: self._parse_shell_variable(key) for key in self.method.to_kwargs()}
+        return self.method._kwargs_to_key_mapping()
+
+    @property
+    def script(self) -> Optional[str]:
+        """Get the rule script."""
+        if isinstance(self.method, ScriptMethod):
+            return self.method.input.script.as_posix()
+        return None
 
     def _expand_variable(self, val: str, wildcards: List) -> Any:
         expand_lst = []
@@ -130,11 +138,3 @@ class JinjaSnakeRule:
         elif isinstance(val, str) and val.startswith("$wildcards."):
             val = val.split(".")[1].upper()
         return str(val)
-
-    def _parse_shell_variable(self, key: str) -> str:
-        """Parse the key value pair for the shell command."""
-        # check if key is in input, output or params
-        for c in self.method.dict:
-            if key in self.method.dict[c]:
-                return f"{c}.{key}"
-        raise ValueError(f"Key {key} not found in input, output or params.")

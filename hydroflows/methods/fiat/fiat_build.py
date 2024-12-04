@@ -1,21 +1,24 @@
 """Module/ Rule for building FIAT models."""
-import os
+
 from pathlib import Path
+from typing import Optional
 
 import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread, configwrite
+from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["FIATBuild"]
 
 FIAT_DATA_PATH = Path(
-    os.path.dirname(hydromt_fiat.__file__),
+    Path(hydromt_fiat.__file__).parent,
     "data",
     "hydromt_fiat_catalog_global.yml",
 ).as_posix()
@@ -33,6 +36,9 @@ class Input(Parameters):
     The file path to the geometry file that defines the region of interest
     for constructing a FIAT model.
     """
+
+    ground_elevation: Optional[Path] = None
+    """Path to the DEM file with to set ground elevation data."""
 
 
 class Output(Parameters):
@@ -61,11 +67,11 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
-    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yaml")
+    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yml")
     """The path to the configuration file (.yml) that defines the settings
     to build a FIAT model. In this file the different model components
     that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
@@ -90,6 +96,7 @@ class FIATBuild(Method):
         self,
         region: Path,
         fiat_root: Path = "models/fiat",
+        ground_elevation: Optional[Path] = None,
         **params,
     ) -> None:
         """Create and validate a FIATBuild instance.
@@ -101,6 +108,8 @@ class FIATBuild(Method):
             for constructing a FIAT model.
         fiat_root : Path
             The path to the root directory where the FIAT model will be created, by default "models/fiat".
+        ground_elevation : Optional[Path], optional
+            Path to the DEM file with to set ground elevation data, by default None.
         **params
             Additional parameters to pass to the FIATBuild instance.
             See :py:class:`fiat_build Params <hydroflows.methods.fiat.sfincs_build.Params>`.
@@ -113,13 +122,23 @@ class FIATBuild(Method):
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
         self.params: Params = Params(fiat_root=fiat_root, **params)
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, ground_elevation=ground_elevation)
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
         """Run the FIATBuild method."""
         # Read template config
         opt = configread(self.params.config)
+        # add optional ground elevation
+        if self.input.ground_elevation is not None:
+            if "setup_exposure_buildings" not in opt:
+                raise ValueError(
+                    "The 'setup_exposure_buildings' section is required to set ground elevation."
+                )
+            opt["setup_exposure_buildings"][
+                "ground_elevation"
+            ] = self.input.ground_elevation.as_posix()
+            opt["setup_exposure_buildings"]["grnd_elev_unit"] = "meters"
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
@@ -128,16 +147,38 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         # Setup the model
         root = self.params.fiat_root
+        #
+        logger = setuplog("fiat_build", log_level="DEBUG")
         model = FiatModel(
             root=root,
             mode="w+",
             data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
+            logger=logger,
         )
+
         # Build the model
-        model.build(region={"geom": region_gdf}, opt=opt)
+        model.build(region={"geom": region_gdf}, opt=opt, write=False)
+
+        # Set the column headers for newer FIAT verions
+        # TODO remove once HydroMT-FIAT supports this
+        model.exposure.exposure_db.rename(
+            new_column_headers(model.exposure.exposure_db.columns),
+            axis=1,
+            inplace=True,
+        )
+        for geom in model.exposure.exposure_geoms:
+            geom.rename(new_column_headers(geom.columns), axis=1, inplace=True)
+
+        # Write to drive
+        model.write()
 
         # Write opt as yaml
         configwrite(root / "fiat_build.yaml", opt)
+
+        # remove empty directories using pathlib
+        for d in root.iterdir():
+            if d.is_dir() and not list(d.iterdir()):
+                d.rmdir()
 
 
 if __name__ == "__main__":

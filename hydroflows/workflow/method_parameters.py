@@ -1,5 +1,6 @@
 """Pydantic models for method parameters."""
 
+import json
 from pathlib import Path
 from typing import Dict, List, Literal, Tuple, Type
 
@@ -84,13 +85,15 @@ class Parameters(BaseModel):
             elif return_refs and k in self._refs and k not in exclude_ref_keys:
                 # return cross-references (str)
                 out_dict[k] = self._refs[k]
-                continue  # skip further processing (quote_str)
+                continue  # skip further processing
 
             if posix_path and isinstance(org_val, Path):
                 # convert Path to posix path (str)
                 v = org_val.as_posix()
             if quote_str and isinstance(v, str):
                 v = f'"{v}"'
+            elif isinstance(v, dict) and mode == "json":
+                v = json.dumps(v)
             out_dict[k] = v
 
         return out_dict

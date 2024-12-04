@@ -88,16 +88,7 @@ class Params(Parameters):
 
 
 class CoastalDesignEventFromRPData(ExpandMethod):
-    """Method for deriving extreme event waterlevels from tide and surge timeseries using a return period dataset.
-
-    Utilizes :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`,
-    :py:class:`Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`, and
-    :py:class:`Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>` for method inputs, outputs and params.
-
-    See Also
-    --------
-    :py:function:`hydroflows.methods.coastal.coastal_design_events_from_rp_data.plot_hydrographs`
-    """
+    """Method for deriving extreme event waterlevels from tide and surge timeseries using a return period dataset."""
 
     name: str = "coastal_design_events_from_rp_data"
 
@@ -142,9 +133,9 @@ class CoastalDesignEventFromRPData(ExpandMethod):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>`
+        :py:class:`CoastalDesignEventFromRPData Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`
+        :py:class:`CoastalDesignEventFromRPData Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`
+        :py:class:`CoastalDesignEventFromRPData Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>`
         """
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,

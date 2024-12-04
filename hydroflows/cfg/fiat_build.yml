@@ -1,6 +1,3 @@
-setup_global_settings:
-  keep_temp_files: True
-
 setup_output:
   output_dir: output
   output_csv_name: output.csv

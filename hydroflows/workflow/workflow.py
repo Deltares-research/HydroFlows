@@ -21,7 +21,7 @@ from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-logger = logging.getLogger("hydroflows")
+logger = logging.getLogger(__name__)
 
 
 class Workflow:
@@ -166,10 +166,13 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
+        # Small check for the parent directory
+        snakefile.parent.mkdir(parents=True, exist_ok=True)
+        # After that write
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(snakefile.parent / configfile, "w") as f:
-            yaml.dump(self.config.to_dict(mode="json"), f)
+            yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
@@ -210,11 +213,11 @@ class Workflow:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
             Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
-            print(f"Running dryrun in {tmpdir}")
+            logger.info("Running dryrun in %s", tmpdir)
 
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(
                 dryrun=dryrun,
                 max_workers=max_workers,
