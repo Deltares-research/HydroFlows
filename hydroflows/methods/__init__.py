@@ -30,6 +30,7 @@ __eps__ = {
     "coastal_design_events": "hydroflows.methods.coastal.coastal_design_events:CoastalDesignEvents",
     "coastal_design_events_from_rp_data": "hydroflows.methods.coastal.coastal_design_events_from_rp_data:CoastalDesignEventFromRPData",
     "coastal_tidal_analysis": "hydroflows.methods.coastal.coastal_tidal_analysis:CoastalTidalAnalysis",
+    "future_slr": "hydroflows.methods.coastal.future_climate_sea_level:FutureSLR",
     "get_coast_rp": "hydroflows.methods.coastal.get_coast_rp:GetCoastRP",
     "get_gtsm_data": "hydroflows.methods.coastal.get_gtsm_data:GetGTSMData",
     "floodmarks_validation": "hydroflows.methods.hazard_validation.floodmarks:FloodmarksValidation",
