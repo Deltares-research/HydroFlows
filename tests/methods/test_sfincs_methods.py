@@ -24,7 +24,7 @@ def test_sfincs_region(
     sfincs_region = SfincsRegion(
         aoi=str(sfincs_region_path),
         subbasins=str(merit_hydro_basins),
-        region=Path(tmp_path, "data", "sfincs_region.geojson"),
+        sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
     )
 
     sfincs_region.run_with_checks()
