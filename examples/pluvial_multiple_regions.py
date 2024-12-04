@@ -3,8 +3,6 @@
 # %% Import modules
 from pathlib import Path
 
-from fetch_data import fetch
-
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
@@ -12,6 +10,7 @@ from hydroflows.methods.sfincs import (
     SfincsRun,
     SfincsUpdateForcing,
 )
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
@@ -19,7 +18,7 @@ if __name__ == "__main__":
     pwd = Path(__file__).parent
 
     # %% Fetch the build data
-    fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    cache_dir = fetch_data(data="global-data")
 
     # Variables
     name = "pluvial_multiple_regions"
@@ -32,8 +31,8 @@ if __name__ == "__main__":
     # Setup the configuration
     conf = WorkflowConfig(
         config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
-        sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
+        data_libs=[Path(cache_dir, "data_catalog.yml")],
+        sfincs_exe=Path(pwd, "../bin/sfincs_v2.1.1/sfincs.exe"),
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],

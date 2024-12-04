@@ -17,11 +17,12 @@ dependencies = [
   "geopandas",                # Reading vector data
   "hatyan",                   # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git", # hydromt plugin for FIAT models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@9a053e073fdc635069261333fe8f789240d1118a", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pooch",                    # test data fetching
   "pydantic",                 # data validation
   "requests",                 # data fetching
   "tqdm",                     # progress bar
@@ -61,9 +62,9 @@ extra = [
   "jupyter",
   "snakemake",      # Workflow manager
   "graphviz",
+  "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
 ]
 test = [
-  "pooch",          # test data fetching
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
@@ -135,7 +136,6 @@ convention = "numpy"
 channels = ["conda-forge", "bioconda"]
 deps_not_in_conda = [
   "hydromt_fiat",
-  "sphinx_autosummary_accessors",
   "sphinx_design",
   "hatyan",
   "autodoc_pydantic",
@@ -148,7 +148,6 @@ platforms = ["win-64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 hydroflows = { path = ".", editable = true }
-hydromt_fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", rev = "7dc74df15137dcbf2ca026923108fb92f5fd704f" }
 
 # conda dependencies
 [tool.pixi.dependencies]
@@ -180,12 +179,12 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/workflow.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-pluvial"] }
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
 docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 

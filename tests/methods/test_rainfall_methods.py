@@ -8,6 +8,7 @@ from hydroflows.methods.rainfall import (
     FutureClimateRainfall,
     GetERA5Rainfall,
     PluvialDesignEvents,
+    PluvialDesignEventsGPEX,
     PluvialHistoricalEvents,
 )
 
@@ -20,6 +21,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
         rps=rps,
         ev_type="BM",
         distribution="gev",
+        duration=24,
     )
 
     assert len(p_events.params.event_names) == len(rps)
@@ -43,6 +45,23 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     fn_csv = tmp_precip_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
     assert df.max().max() == 1.0
+
+
+def test_pluvial_design_hyeto_gpex(
+    sfincs_region_path: Path, gpex_data: Path, tmp_path: Path
+):
+    rps = [20, 39, 100]
+    p_events = PluvialDesignEventsGPEX(
+        gpex_nc=str(gpex_data),
+        region=str(sfincs_region_path),
+        event_root=Path(tmp_path, "events"),
+        rps=rps,
+        duration=120,
+    )
+
+    assert len(p_events.params.event_names) == len(rps)
+
+    p_events.run_with_checks()
 
 
 def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):

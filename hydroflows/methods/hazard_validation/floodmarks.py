@@ -1,5 +1,6 @@
 """Validate simulated hazard maps using floodmarks method."""
 
+import logging
 import warnings
 from pathlib import Path
 from typing import Literal, Union
@@ -17,6 +18,8 @@ from shapely.geometry import Point, box
 from hydroflows._typing import ListOfFloat, TupleOfInt
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -214,7 +217,7 @@ class FloodmarksValidation(Method):
                 "No floodmarks found within the modeled flood hazard map extents."
             )
 
-        print(
+        logging.info(
             f"Floodmarks inside the simulated region: {num_floodmarks_inside}, Floodmarks outside: {num_floodmarks_outside}"
         )
 

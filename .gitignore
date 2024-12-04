@@ -120,6 +120,7 @@ bin/
 tests/_large_data/data
 tests/_large_data/registry.txt
 tests/_bin
+tests/_data
 
 # only force add
 examples/

@@ -21,7 +21,7 @@ from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-logger = logging.getLogger("hydroflows")
+logger = logging.getLogger(__name__)
 
 
 class Workflow:
@@ -213,11 +213,11 @@ class Workflow:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
             Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
-            print(f"Running dryrun in {tmpdir}")
+            logger.info("Running dryrun in %s", tmpdir)
 
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(
                 dryrun=dryrun,
                 max_workers=max_workers,

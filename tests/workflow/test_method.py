@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -85,7 +86,8 @@ def test_run_with_checks(tmp_path):
     test_method.run_with_checks()
 
 
-def test_check_input_output_paths(tmp_path, capsys):
+def test_check_input_output_paths(tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     test_method: TestMethod = create_test_method(root=tmp_path, write_inputs=False)
     with pytest.raises(
         FileNotFoundError,
@@ -95,11 +97,11 @@ def test_check_input_output_paths(tmp_path, capsys):
     ):
         test_method.check_input_output_paths()
     test_method.check_input_output_paths(missing_file_error=False)
-    captured = capsys.readouterr()
-    assert "input_file1" in captured.out
-    assert "test_file1" in captured.out
-    assert "input_file2" in captured.out
-    assert "test_file2" in captured.out
+
+    assert "input_file1" in caplog.text
+    assert "test_file1" in caplog.text
+    assert "input_file2" in caplog.text
+    assert "test_file2" in caplog.text
     # check if files are written
     assert "test_file1" in os.listdir(tmp_path)
     assert "test_file2" in os.listdir(tmp_path)

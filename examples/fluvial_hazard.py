@@ -1,14 +1,15 @@
 """Build a fluvial hazard workflow."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow
+from hydroflows.log import setuplog
 from hydroflows.methods.discharge import FluvialDesignEvents
-from hydroflows.methods.script.script_method import ScriptMethod
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsPostprocess,
+    SfincsDownscale,
     SfincsRun,
     SfincsUpdateForcing,
 )
@@ -17,11 +18,14 @@ from hydroflows.methods.wflow import (
     WflowRun,
     WflowUpdateForcing,
 )
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 if __name__ == "__main__":
     # Get current file location
     pwd = Path(__file__).parent
+    # Setup logging
+    logger = setuplog()
 
     # %% Define variables
     name = "fluvial_hazard"
@@ -31,6 +35,9 @@ if __name__ == "__main__":
     output_dir = "output"
     simu_dir = "simulations"
 
+    # Fetch the global data
+    cache_dir = fetch_data(data="global-data")
+
     # Setup the configuration
     conf = WorkflowConfig(
         region=Path(pwd, "data/build/region.geojson"),
@@ -38,6 +45,7 @@ if __name__ == "__main__":
         hydromt_wflow_config=Path(pwd, "hydromt_config/wflow_config.yml"),
         wflow_exe=Path(pwd, "bin/wflow/bin/wflow_cli.exe"),
         sfincs_exe=Path(pwd, "bin/sfincs/sfincs.exe"),
+        data_libs=[Path(cache_dir, "data_catalog.yml")],
         start_date="2014-01-01",
         end_date="2021-12-31",
         rps=[2, 5, 10],
@@ -48,21 +56,12 @@ if __name__ == "__main__":
     )
     w = Workflow(name="fluvial_hazard", config=conf)
 
-    fetch_data = ScriptMethod(
-        script=Path("../../fetch_data.py"),
-        output={
-            "output_file": Path("../../data/global-data/global-data.tar.gz"),
-            "data_libs": Path("../../data/global-data/data_catalog.yml"),
-        },
-    )
-    w.add_rule(fetch_data, rule_id="fetch_data")
-
     # %% Build SFINCS model
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
         sfincs_root=Path(model_dir, "sfincs"),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
-        data_libs=fetch_data.output.data_libs,
+        data_libs=w.get_ref("$config.data_libs"),
         res=w.get_ref("$config.sfincs_res"),
         river_upa=w.get_ref("$config.river_upa"),
         plot_fig=w.get_ref("$config.plot_fig"),
@@ -74,7 +73,7 @@ if __name__ == "__main__":
         region=sfincs_build.output.sfincs_region,
         wflow_root=Path(model_dir, "wflow"),
         default_config=w.get_ref("$config.hydromt_wflow_config"),
-        data_libs=fetch_data.output.data_libs,
+        data_libs=w.get_ref("$config.data_libs"),
         gauges=Path(sfincs_build.params.sfincs_root, "gis", "src.geojson"),
         plot_fig=w.get_ref("$config.plot_fig"),
     )
@@ -83,7 +82,7 @@ if __name__ == "__main__":
     # %% Update forcing & run wflow model
     wflow_update = WflowUpdateForcing(
         wflow_toml=wflow_build.output.wflow_toml,
-        data_libs=fetch_data.output.data_libs,
+        data_libs=w.get_ref("$config.data_libs"),
         start_time=w.get_ref("$config.start_date"),
         end_time=w.get_ref("$config.end_date"),
     )
@@ -122,11 +121,11 @@ if __name__ == "__main__":
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
     # %% Postprocess the sfincs output
-    sfincs_post = SfincsPostprocess(
+    sfincs_post = SfincsDownscale(
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
         depth_min=w.get_ref("$config.depth_min"),
-        hazard_root=Path(output_dir, "hazard"),
+        output_root=Path(output_dir, "hazard"),
         event_name="{fluvial_events}",
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")
@@ -136,3 +135,8 @@ if __name__ == "__main__":
 
     # %% Write the workflow to a Snakefile
     w.to_snakemake(f"cases/{name}/Snakefile", dryrun=True)
+
+    # %%
+    subprocess.run(["snakemake", "-n"], cwd=f"cases/{name}")
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c 1"], cwd=f"cases/{name}")

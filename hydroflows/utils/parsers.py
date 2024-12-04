@@ -1,6 +1,7 @@
 """Some parser utils to be used with pydantic validators."""
 
 import re
+from pathlib import Path
 from typing import List, Optional
 
 __all__ = ["str_to_list", "get_wildcards"]
@@ -37,16 +38,18 @@ def str_to_tuple(v: str) -> tuple[str, str]:
     return tuple(clean_list)
 
 
-def get_wildcards(s, known_wildcards: Optional[List[str]] = None) -> List[str]:
+def get_wildcards(s, known_wildcards: Optional[List[str | Path]] = None) -> List[str]:
     """Return a list of wildcards in the form of `{*}` from a string.
 
     Parameters
     ----------
-    s : str
+    s : str | Path
         The string to search for wildcards.
     known_wildcards : List[str], optional
         List of known wildcards, by default None
     """
+    if isinstance(s, Path):
+        s = s.as_posix()
     if known_wildcards is not None:
         # Define the regex pattern to match known wildcards
         pattern = r"\{" + "|".join(known_wildcards) + r"\}"
@@ -57,5 +60,10 @@ def get_wildcards(s, known_wildcards: Optional[List[str]] = None) -> List[str]:
     # Find all matches of the pattern in the string
     matches = re.findall(pattern, str(s))
 
-    # Return list of matches with curly braces stripped
-    return [str(wc).strip("{}") for wc in matches]
+    # Return list of unique matches with curly braces stripped
+    return list(set([str(wc).strip("{}") for wc in matches]))
+
+
+def has_wildcards(s: str | Path) -> bool:
+    """Check if a string or path contains a wildcard."""
+    return any(get_wildcards(s))

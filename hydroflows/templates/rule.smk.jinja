@@ -14,11 +14,12 @@ rule {{ rule.rule_id }}:
         {% for key, value in rule.output.items() %}
         {{ key }}={{ value }},
         {% endfor %}
+    {% if rule.script %}
+    script:
+        "{{ rule.script }}"
+    {% else %}
     shell:
         """
-        {% if rule.shell_args %}
-        {{ rule.shell_args|join(' ') }}
-        {% else %}
         hydroflows method {{ rule.method_name }} \
         {% for key, value in rule.hydroflows_shell_kwargs.items() %}
         {{ key }}="{{ '{' }}{{ value }}{{ '}' }}" \
@@ -26,6 +27,6 @@ rule {{ rule.rule_id }}:
         {% if dryrun %}
         --dryrun \
         {% endif %}
-        {% endif %}
         """
+    {% endif %}
 {% endmacro %}

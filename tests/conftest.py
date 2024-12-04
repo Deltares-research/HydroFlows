@@ -14,6 +14,9 @@ from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
 from hydroflows.events import EventSet
+from hydroflows.utils.example_data import fetch_data
+
+EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
 
 
 @pytest.fixture(scope="session")
@@ -28,6 +31,11 @@ def build_cfgs() -> dict:
     for f in path.iterdir():
         cfgs[f.stem] = f
     return cfgs
+
+
+@pytest.fixture(scope="session")
+def example_data_dir() -> Path:
+    return Path(EXAMPLE_DIR, "data")
 
 
 @pytest.fixture(scope="session")
@@ -81,16 +89,23 @@ def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
     return path
 
 
-@pytest.fixture(scope="session")
-def rio_sfincs_model(large_test_data: pooch.Pooch) -> Path:
+@pytest.fixture()
+def sfincs_tmp_root(tmp_path: Path) -> Path:
     """Return the path to the rio data catalog."""
-    _ = large_test_data.fetch(
-        "rio_sfincs_model.zip",
-        processor=pooch.Unzip(extract_dir="rio_sfincs_model"),
-    )
-    path = Path(large_test_data.path) / "rio_sfincs_model" / "sfincs.inp"
-    assert path.is_file()
-    return path
+    tmp_root = tmp_path / "sfincs_model_livenza"
+    cache_dir = fetch_data("sfincs-model")
+    shutil.copytree(cache_dir, tmp_root)
+    assert Path(tmp_root, "sfincs.inp").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def gpex_data() -> Path:
+    """Return the path to the GPEX data."""
+    cache_dir = fetch_data("global-data")
+    gpex_file = cache_dir / "gpex.nc"
+    assert gpex_file.is_file()
+    return gpex_file
 
 
 @pytest.fixture(scope="session")
@@ -243,6 +258,7 @@ def event_set(event_set_file) -> EventSet:
 
 @pytest.fixture()
 def sfincs_region():
+    """Livenza region."""
     return gpd.GeoDataFrame(
         geometry=[
             Polygon(
