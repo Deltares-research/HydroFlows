@@ -213,6 +213,14 @@ class Workflow:
             input_dict[wc] = {"type": "string[]", "value": self.wildcards.get(wc)}
         if dryrun:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
+        # wc_tup = list(product(*self.wildcards.values))
+        # prod = [
+        #     dict(zip(self.wildcards.names, list(vals))) for vals in wc_tup
+        # ]
+        # input_dict = {
+        #     **input_dict,
+        #     **{name+"_list": [] for name in self.wildcards.names},
+        # }
 
         _str = template_workflow.render(
             version=__version__,
@@ -224,12 +232,14 @@ class Workflow:
             f.write(_str)
 
         # Write CWL config file
-        config = {}
-        for key, value in input_dict.items():
-            if value["type"] == "File":
-                config[key] = value["value"]
-            else:
-                config[key] = value["value"]
+        config = {key: value["value"] for key, value in input_dict.items()}
+        # config = {}
+        # for key, value in input_dict.items():
+        #     config[key] = value["value"]
+        #     # if value["type"] == "File":
+        #     #     config[key] = value["value"]
+        #     # else:
+        #     #     config[key] = value["value"]
         with open(configfile, "w") as f:
             yaml.dump(config, f)
 
