@@ -1,6 +1,7 @@
 """Run pluvial design events with existing SFINCS model."""
 
-# %% Import modules
+# %%
+# Import modules
 import subprocess
 from pathlib import Path
 
@@ -17,7 +18,8 @@ from hydroflows.workflow import Workflow, WorkflowConfig
 # Where the file is currently located
 pwd = Path(__file__).parent
 
-# %% Fetch the build data
+# %%
+# Fetch the build data
 cache_dir = fetch_data(data="global-data")
 
 # Setup workflow settings and configuration
@@ -37,7 +39,8 @@ config = WorkflowConfig(
     rps=[2, 5, 10],
 )
 
-# %% Setup the workflow
+# %%
+# Setup the workflow
 w = Workflow(
     config=config,
     wildcards={"region": ["region", "region2"]},
@@ -45,7 +48,8 @@ w = Workflow(
     root=case_root,
 )
 
-# %% Build the SFINCS models
+# %%
+# Build the SFINCS models
 sfincs_build = SfincsBuild(
     region="../../data/build/{region}.geojson",  # NOTE: case in sub-subfolder of pwd
     sfincs_root="models/sfincs/{region}",
@@ -54,7 +58,8 @@ sfincs_build = SfincsBuild(
 )
 w.add_rule(sfincs_build, "sfincs_build")
 
-# %% Get Rainfall timeseries
+# %%
+# Get Rainfall timeseries
 get_rainfall = GetERA5Rainfall(
     region=sfincs_build.output.sfincs_region,
     data_root="data/era5/{region}",
@@ -63,7 +68,8 @@ get_rainfall = GetERA5Rainfall(
 )
 w.add_rule(get_rainfall, rule_id="get_rainfall")
 
-# %% Derive pluvial events from rainfall data
+# %%
+# Derive pluvial events from rainfall data
 pluvial_events = PluvialDesignEvents(
     precip_nc=get_rainfall.output.precip_nc,
     event_root="data/events/{region}",
@@ -72,7 +78,8 @@ pluvial_events = PluvialDesignEvents(
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")
 
-# %% Update the SFINCS models
+# %%
+# Update the SFINCS models
 sfincs_update = SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
@@ -80,7 +87,8 @@ sfincs_update = SfincsUpdateForcing(
 )
 w.add_rule(sfincs_update, rule_id="sfincs_update")
 
-# %% Run SFINCS model
+# %%
+# Run SFINCS model
 sfincs_run = SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
@@ -95,13 +103,16 @@ sfincs_post = SfincsDownscale(
 )
 w.add_rule(sfincs_post, "sfincs_post")
 
-# %% Do a dry run of the workflow
+# %%
+# Do a dry run of the workflow
 w.dryrun()
 
-# %% Write the workflow to a Snakefile
+# %%
+# Write the workflow to a Snakefile
 w.to_snakemake()
 
-# %% (test) run the workflow with snakemake
+# %%
+# (test) run the workflow with snakemake
 # test snakefile
 subprocess.run(["snakemake", "-n"], cwd=w.root)
 # uncomment to run the workflow

@@ -1,6 +1,7 @@
 """Generate coastal events example."""
 
-# %% Import modules
+# %%
+# Import modules
 from pathlib import Path
 
 from hydroflows.methods.coastal import (
@@ -10,16 +11,19 @@ from hydroflows.methods.coastal import (
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
-# %% Where the current file is located
+# %%
+# Where the current file is located
 pwd = Path(__file__).parent
 
 cache_dir = fetch_data(data="global-data")
 
-# %% Setup variables
+# %%
+# Setup variables
 name = "coastal_events"
 case_root = Path(pwd, "cases", name)
 
-# %% Setup the configuration
+# %%
+# Setup the configuration
 config = WorkflowConfig(
     region=Path(pwd, "data/build/region.geojson"),
     gtsm_catalog=Path(cache_dir, "data_catalog.yml"),
@@ -30,7 +34,8 @@ config = WorkflowConfig(
 
 w = Workflow(config=config, name=name, root=case_root)
 
-# %% Get the GTSM data
+# %%
+# Get the GTSM data
 get_gtsm_data = GetGTSMData(
     gtsm_catalog=w.get_ref("$config.gtsm_catalog"),
     start_time=w.get_ref("$config.start_time"),
@@ -40,7 +45,8 @@ get_gtsm_data = GetGTSMData(
 )
 w.add_rule(get_gtsm_data, rule_id="get_gtsm_data")
 
-# %% Generate coastal design events
+# %%
+# Generate coastal design events
 coastal_design_events = CoastalDesignEvents(
     surge_timeseries=get_gtsm_data.output.surge_nc,
     tide_timeseries=get_gtsm_data.output.tide_nc,
@@ -50,8 +56,10 @@ coastal_design_events = CoastalDesignEvents(
 )
 w.add_rule(coastal_design_events, rule_id="coastal_design_events")
 
-# %% Test the workflow
+# %%
+# Test the workflow
 w.dryrun()
 
-# %% to snakemake
+# %%
+# to snakemake
 w.to_snakemake()

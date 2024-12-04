@@ -1,6 +1,7 @@
 """Run pluvial design events with existing SFINCS model."""
 
-# %% Import packages
+# %%
+# Import packages
 import os
 import subprocess
 from pathlib import Path
@@ -22,10 +23,12 @@ from hydroflows.workflow import Workflow, WorkflowConfig
 # Where the current file is located
 pwd = Path(__file__).parent
 
-# %% Fetch the global build data (uncomment to fetch data required to run the workflow)
+# %%
+# Fetch the global build data (uncomment to fetch data required to run the workflow)
 cache_dir = fetch_data(data="global-data")
 
-# %% General setup of workflow
+# %%
+# General setup of workflow
 # Define variables
 name = "pluvial_risk"
 case_root = Path(pwd, "cases", name)
@@ -35,7 +38,8 @@ os.chdir(case_root)
 # Setup the log file
 setuplog(path=case_root / "hydroflows.log", level="DEBUG")
 
-# %% Setup the config file
+# %%
+# Setup the config file
 conf = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/build/region.geojson"),
@@ -57,10 +61,12 @@ conf = WorkflowConfig(
     rps=[10, 100],
 )
 
-# %% Setup the workflow
+# %%
+# Setup the workflow
 w = Workflow(config=conf)
 
-# %% Sfincs build
+# %%
+# Sfincs build
 sfincs_build = SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
@@ -72,7 +78,8 @@ sfincs_build = SfincsBuild(
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
-# %% Fiat build
+# %%
+# Fiat build
 fiat_build = FIATBuild(
     region=sfincs_build.output.sfincs_region,
     ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
@@ -83,7 +90,8 @@ fiat_build = FIATBuild(
 )
 w.add_rule(fiat_build, rule_id="fiat_build")
 
-# %% define pluvial events from GPEX
+# %%
+# Define pluvial events from GPEX
 pluvial_events = PluvialDesignEventsGPEX(
     gpex_nc=conf.data_libs[0].parent / "gpex.nc",  # FIXME use hydromt.datacatalog
     region=sfincs_build.output.sfincs_region,
@@ -93,27 +101,31 @@ pluvial_events = PluvialDesignEventsGPEX(
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")
 
-# %% Update the sfincs model with pluviual events
+# %%
+# Update the sfincs model with pluviual events
 sfincs_update = SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
 )
 w.add_rule(sfincs_update, rule_id="sfincs_update")
 
-# %% Run the sfincs model
+# %%
+# Run the sfincs model
 sfincs_run = SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
 w.add_rule(sfincs_run, rule_id="sfincs_run")
 
-# %% Postprocesses SFINCS results
+# %%
+# Postprocesses SFINCS results
 sfincs_post = SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
 w.add_rule(sfincs_post, rule_id="sfincs_post")
 
-# %% Update FIAT hazard
+# %%
+# Update FIAT hazard
 fiat_update = FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
     event_set_yaml=pluvial_events.output.event_set_yaml,
@@ -130,13 +142,16 @@ fiat_run = FIATRun(
 )
 w.add_rule(fiat_run, rule_id="fiat_run")
 
-# %% run workflow
+# %%
+# run workflow
 w.dryrun()
 
-# %% to snakemake
+# %%
+# to snakemake
 w.to_snakemake()
 
-# %% (test) run the workflow with snakemake
+# %%
+# (test) run the workflow with snakemake
 subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=w.root)
 # uncomment to run the workflow
 # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=w.root)

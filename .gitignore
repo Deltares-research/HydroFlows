@@ -122,8 +122,8 @@ tests/_large_data/registry.txt
 tests/_bin
 tests/_data
 
-# only force add
-examples/
+# ignore example outputs
+examples/cases
 # pixi environments
 .pixi
 *.egg-info

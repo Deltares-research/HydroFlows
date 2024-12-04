@@ -1,6 +1,7 @@
 """Build a fluvial hazard workflow."""
 
-# %% Import packages
+# %%
+# Import packages
 import subprocess
 from pathlib import Path
 
@@ -20,17 +21,21 @@ from hydroflows.methods.wflow import (
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-#%% Get current file location
+# %%
+# Get current file location
 pwd = Path(__file__).parent
 
-# %% Fetch the global build data (uncomment to fetch data required to run the workflow)
+# %%
+# Fetch the global build data (uncomment to fetch data required to run the workflow)
 cache_dir = fetch_data(data="global-data")
 
-# %% Define variables
+# %%
+# Define variables
 name = "fluvial_hazard"
 case_root = Path(pwd, "cases", name)
 
-#%% Setup the configuration
+# %%
+# Setup the configuration
 config = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/build/region.geojson"),
@@ -51,10 +56,12 @@ config = WorkflowConfig(
     rps=[2, 5, 10],
 )
 
-#%% setup the workflow
+# %%
+# setup the workflow
 w = Workflow(name="fluvial_hazard", config=config, root=case_root)
 
-# %% Build SFINCS model
+# %%
+# Build SFINCS model
 sfincs_build = SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
@@ -66,7 +73,8 @@ sfincs_build = SfincsBuild(
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
-# %% Build wflow model
+# %%
+# Build wflow model
 wflow_build = WflowBuild(
     region=sfincs_build.output.sfincs_region,
     wflow_root="models/wflow",
@@ -77,7 +85,8 @@ wflow_build = WflowBuild(
 )
 w.add_rule(wflow_build, rule_id="wflow_build")
 
-# %% Update forcing & run wflow model
+# %%
+# Update forcing & run wflow model
 wflow_update = WflowUpdateForcing(
     wflow_toml=wflow_build.output.wflow_toml,
     data_libs=w.get_ref("$config.data_libs"),
@@ -86,14 +95,16 @@ wflow_update = WflowUpdateForcing(
 )
 w.add_rule(wflow_update, rule_id="wflow_update")
 
-# %% Run the wflow model
+# %%
+# Run the wflow model
 wflow_run = WflowRun(
     wflow_toml=wflow_update.output.wflow_out_toml,
     wflow_bin=w.get_ref("$config.wflow_exe"),
 )
 w.add_rule(wflow_run, rule_id="wflow_run")
 
-# %% Derive fluvial design events
+# %%
+# Derive fluvial design events
 fluvial_events = FluvialDesignEvents(
     discharge_nc=wflow_run.output.wflow_output_timeseries,
     rps=w.get_ref("$config.rps"),
@@ -103,21 +114,24 @@ fluvial_events = FluvialDesignEvents(
 )
 w.add_rule(fluvial_events, rule_id="fluvial_events")
 
-# %% prepare sfincs models per event, run & postprocess
+# %%
+# Prepare sfincs models per event, run & postprocess
 sfincs_update = SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=fluvial_events.output.event_yaml,
 )
 w.add_rule(sfincs_update, rule_id="sfincs_update")
 
-# %% Run the Sfincs model(s)
+# %%
+# Run the Sfincs model(s)
 sfincs_run = SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
 w.add_rule(sfincs_run, rule_id="sfincs_run")
 
-# %% Postprocess the sfincs output
+# %%
+# Postprocess the sfincs output
 sfincs_post = SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
@@ -127,13 +141,16 @@ sfincs_post = SfincsDownscale(
 )
 w.add_rule(sfincs_post, rule_id="sfincs_post")
 
-# %% Test the workflow
+# %%
+# Test the workflow
 w.dryrun()
 
-# %% Write the workflow to a Snakefile
+# %%
+# Write the workflow to a Snakefile
 w.to_snakemake()
 
-# %% (test) run the workflow with snakemake
+# %%
+# (test) run the workflow with snakemake
 subprocess.run(["snakemake", "-n"], cwd=w.root)
 # uncomment to run the workflow
 # subprocess.run(["snakemake", "-c 1"], cwd=w.root)

@@ -1,6 +1,7 @@
 """Build pluvial & fluvial flood risk workflow."""
 
-# %% Import packages
+# %%
+# Import packages
 import subprocess
 from pathlib import Path
 
@@ -32,10 +33,12 @@ from hydroflows.workflow.workflow_config import WorkflowConfig
 # Where the current file is located
 pwd = Path(__file__).parent
 
-# %% Fetch the global build data
+# %%
+# Fetch the global build data
 cache_dir = fetch_data(data="global-data")
 
-# %% General configuration of workflow
+# %%
+# General configuration of workflow
 name = "pluvial_fluvial_risk"  # for now
 case_root = Path(pwd, "cases", name)
 
@@ -65,10 +68,12 @@ config = WorkflowConfig(
     rps=[5, 10, 25],
 )
 
-# %% Create a workflow
+# %%
+# Create a workflow
 w = Workflow(config=config, name=name, root=case_root)
 
-# %% Sfincs build
+# %%
+# Sfincs build
 sfincs_build = SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
@@ -80,7 +85,8 @@ sfincs_build = SfincsBuild(
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
-# %% Wflow build
+# %%
+# Wflow build
 wflow_build = WflowBuild(
     region=sfincs_build.output.sfincs_region,
     wflow_root="models/wflow",
@@ -91,7 +97,8 @@ wflow_build = WflowBuild(
 )
 w.add_rule(wflow_build, rule_id="wflow_build")
 
-# %% Fiat build
+# %%
+# Fiat build
 fiat_build = FIATBuild(
     region=sfincs_build.output.sfincs_region,
     ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
@@ -102,7 +109,8 @@ fiat_build = FIATBuild(
 )
 w.add_rule(fiat_build, rule_id="fiat_build")
 
-# %% Update and run wflow + generate fluvial events
+# %%
+# Update and run wflow + generate fluvial events
 # Update forcing
 wflow_update = WflowUpdateForcing(
     wflow_toml=wflow_build.output.wflow_toml,
@@ -129,7 +137,8 @@ fluvial_events = FluvialDesignEvents(
 )
 w.add_rule(fluvial_events, rule_id="fluvial_events")
 
-# %% Pluvial events
+# %%
+# Pluvial events
 # Get the data
 
 pluvial_data = GetERA5Rainfall(
@@ -150,11 +159,13 @@ pluvial_events = PluvialDesignEvents(
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")
 
-# %% Combine fluvial and pluvial events into one set
+# %%
+# Combine fluvial and pluvial events into one set
 all_events = w.wildcards.get("pluvial_events") + w.wildcards.get("fluvial_events")
 w.wildcards.set("all_events", all_events)
 
-# %% Updating, running and postprocessing SFINCS model for combined events
+# %%
+# Updating, running and postprocessing SFINCS model for combined events
 # Sfincs update with precip
 sfincs_update = SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
@@ -176,7 +187,8 @@ sfincs_post = SfincsPostprocess(
 )
 w.add_rule(sfincs_post, rule_id="sfincs_post")
 
-# %% Update and run FIAT for both event sets
+# %%
+# Update and run FIAT for both event sets
 # Set the combined event_set of both fluvial and pluvial
 w.wildcards.set("event_set", ["fluvial_events", "pluvial_events"])
 
@@ -196,13 +208,16 @@ fiat_run = FIATRun(
 )
 w.add_rule(fiat_run, rule_id="fiat_run")
 
-# %% Test the workflow
+# %%
+# Test the workflow
 w.dryrun()
 
-# %% Write the workflow to a Snakefile
+# %%
+# Write the workflow to a Snakefile
 w.to_snakemake()
 
-# %% (test) run the workflow with snakemake
+# %%
+# (test) run the workflow with snakemake
 # dryrun the workflow
 subprocess.run(["snakemake", "-n"], cwd=w.root)
 # uncomment to run the workflow
