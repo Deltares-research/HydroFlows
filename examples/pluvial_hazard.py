@@ -1,10 +1,12 @@
 """Run pluvial design events with existing SFINCS model."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
 
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import SfincsRun, SfincsUpdateForcing
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
@@ -18,7 +20,7 @@ if __name__ == "__main__":
     case_root = Path(pwd, "cases", name)
 
     # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
-    # fetch(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
+    fetch_data(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
 
     # Setup the config file
     config = WorkflowConfig(
@@ -70,3 +72,8 @@ if __name__ == "__main__":
 
     # %% to snakemake
     w.to_snakemake()
+
+    # %% subprocess to run snakemake
+    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=w.root)
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=w.root)

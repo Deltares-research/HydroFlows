@@ -1,6 +1,7 @@
 """Build pluvial & fluvial flood risk workflow."""
 
 # %% Import packages
+import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow
@@ -25,14 +26,15 @@ from hydroflows.methods.wflow import (
     WflowRun,
     WflowUpdateForcing,
 )
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 if __name__ == "__main__":
     # Where the current file is located
     pwd = Path(__file__).parent
 
-    # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
-    # fetch(data="global-data", output_dir=Path(pwd, "data/global-data"))
+    # %% Fetch the global build data
+    cache_dir = fetch_data(data="global-data")
 
     # %% General setup of workflow
     # Define variables
@@ -43,7 +45,7 @@ if __name__ == "__main__":
     config = WorkflowConfig(
         # general settings
         region=Path(pwd, "data/build/region.geojson"),
-        data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
+        data_libs=[Path(cache_dir, "data_catalog.yml")],
         plot_fig=True,
         start_date="2014-01-01",
         end_date="2021-12-31",
@@ -59,7 +61,7 @@ if __name__ == "__main__":
         wflow_res=0.0041667,
         # fiat settings
         hydromt_fiat_config=Path(pwd, "hydromt_config/fiat_config.yml"),
-        fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
+        fiat_exe=Path(pwd, "bin/fiat/fiat.exe"),
         continent="Europe",
         risk=True,
         # design events settings
@@ -91,18 +93,17 @@ if __name__ == "__main__":
         gauges=Path(sfincs_build.params.sfincs_root, "gis", "src.geojson"),
         plot_fig=w.get_ref("$config.plot_fig"),
     )
-
     w.add_rule(wflow_build, rule_id="wflow_build")
 
     # Fiat build
     fiat_build = FIATBuild(
         region=sfincs_build.output.sfincs_region,
+        ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
         fiat_root="models/fiat",
         data_libs=w.get_ref("$config.data_libs"),
         config=w.get_ref("$config.hydromt_fiat_config"),
         continent=w.get_ref("$config.continent"),
     )
-
     w.add_rule(fiat_build, rule_id="fiat_build")
 
     ## Update and run wflow + generate fluvial events
@@ -175,9 +176,6 @@ if __name__ == "__main__":
     # Postprocesses SFINCS results
     sfincs_post = SfincsPostprocess(
         sfincs_map=sfincs_run.output.sfincs_map,
-        sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
-        depth_min=w.get_ref("$config.depth_min"),
-        hazard_root="output/hazard",
         event_name="{all_events}",
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")
@@ -190,8 +188,7 @@ if __name__ == "__main__":
     fiat_update = FIATUpdateHazard(
         fiat_cfg=fiat_build.output.fiat_cfg,
         event_set_yaml="data/events/{event_set}.yml",
-        event_set_name="{event_set}",
-        hazard_maps=sfincs_post.output.hazard_tif,
+        hazard_maps=sfincs_post.output.sfincs_zsmax,
         risk=w.get_ref("$config.risk"),
     )
     w.add_rule(fiat_update, rule_id="fiat_update")
@@ -206,5 +203,11 @@ if __name__ == "__main__":
     # %% Test the workflow
     w.dryrun()
 
-    # %% to snakemake
+    # %% Write the workflow to a Snakefile
     w.to_snakemake()
+
+    # %%
+    # dryrun the workflow
+    subprocess.run(["snakemake", "-n"], cwd=w.root)
+    # uncomment to run the workflow
+    # subprocess.run(["snakemake", "-c", "1"], cwd=w.root)

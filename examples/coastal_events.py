@@ -7,11 +7,14 @@ from hydroflows.methods.coastal import (
     CoastalDesignEvents,
     GetGTSMData,
 )
+from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
 if __name__ == "__main__":
     # Where the current file is located
     pwd = Path(__file__).parent
+
+    cache_dir = fetch_data(data="global-data")
 
     # %% Setup variables
     name = "coastal_events"
@@ -20,8 +23,7 @@ if __name__ == "__main__":
     # Setup the configuration
     config = WorkflowConfig(
         region=Path(pwd, "data/build/region.geojson"),
-        # TODO replace with pooch fetched data
-        gtsm_catalog=Path("p:/11209169-003-up2030/data/WATER_LEVEL/data_catalog.yml"),
+        gtsm_catalog=Path(cache_dir, "data_catalog.yml"),
         start_time="2014-01-01",
         end_time="2021-12-31",
         rps=[2, 5, 10],

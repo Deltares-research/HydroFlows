@@ -22,6 +22,7 @@ dependencies = [
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "matplotlib",               # plotting
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
   "requests",                 # data fetching
   "tqdm",                     # progress bar
@@ -64,7 +65,6 @@ extra = [
   "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
 ]
 test = [
-  "pooch",          # test data fetching
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
@@ -177,21 +177,12 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-examples-clean = { cmd = "echo clean $EXAMPLE && rm -rf examples/cases/$EXAMPLE/**", env = { EXAMPLE = "pluvial_hazard" }}
-examples-create = { cmd = "echo create $EXAMPLE && python $EXAMPLE.py", cwd = "examples", env = { EXAMPLE = "pluvial_hazard" }}
-examples-run = { cmd = "echo run $EXAMPLE; cd examples/cases/$EXAMPLE; snakemake -c $CORES --rerun-incomplete", depends_on = ["examples-create"], env = { EXAMPLE = "pluvial_hazard", CORES = "1" }}
-examples-run-clean = { depends_on = ["examples-clean", "examples-run"] }
-# examples-create-all = { cmd = "ls *.py | xargs -n 1 python", cwd = "examples" }  # xargs -n does not (yet) work in pixi
-examples-create-fluvial = { cmd = "python fluvial_hazard.py", cwd = "examples", inputs = ["examples/fluvial_hazard.py"], outputs = ["examples/cases/fluvial_hazard/Snakefile"]}
-examples-create-pluvial = { cmd = "python pluvial_hazard.py", cwd = "examples", inputs = ["examples/pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"]}
-examples-create-coastal = { cmd = "python coastal_events.py", cwd = "examples", inputs = ["examples/coastal_events.py"], outputs = ["examples/cases/coastal_events/Snakefile"]}
-examples-create-pluvial-fluvial = { cmd = "python pluvial_fluvial_risk.py", cwd = "examples", inputs = ["examples/pluvial_fluvial_risk.py"], outputs = ["examples/cases/pluvial_fluvial_risk/Snakefile"]}
-examples-create-multi-region = { cmd = "python pluvial_multiple_regions.py", cwd = "examples", inputs = ["examples/pluvial_multiple_regions.py"], outputs = ["examples/cases/pluvial_multiple_regions/Snakefile"]}
-examples-create-all = { depends_on = ["examples-create-fluvial", "examples-create-pluvial", "examples-create-pluvial-fluvial", "examples-create-multi-region"] } # "examples-create-coastal" needs gtms data to be available
-examples-clean-all = { cmd = "rm -rf examples/cases/**" }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-create-pluvial"] }
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-create-pluvial"] }
+
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
 docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 
