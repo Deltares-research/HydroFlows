@@ -179,12 +179,12 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/workflow.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-pluvial"] }
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
 docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 
