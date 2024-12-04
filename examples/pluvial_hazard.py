@@ -9,71 +9,70 @@ from hydroflows.methods.sfincs import SfincsRun, SfincsUpdateForcing
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
 
-if __name__ == "__main__":
-    # Where the current file is located
-    pwd = Path(__file__).parent
+# Where the current file is located
+pwd = Path(__file__).parent
 
-    # %% General setup of workflow
-    # Define variables
-    name = "pluvial_hazard"  # for now
-    sfincs_root = Path("models/sfincs")
-    case_root = Path(pwd, "cases", name)
+# %% General setup of workflow
+# Define variables
+name = "pluvial_hazard"  # for now
+sfincs_root = Path("models/sfincs")
+case_root = Path(pwd, "cases", name)
 
-    # %% Fetch the global build data (uncomment to fetch data required to run the workflow)
-    fetch_data(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
+# %% Fetch the global build data (uncomment to fetch data required to run the workflow)
+fetch_data(data="sfincs-model", output_dir=Path(pwd, "cases", name, sfincs_root))
 
-    # Setup the config file
-    config = WorkflowConfig(
-        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
-        sfincs_inp=sfincs_root / "sfincs.inp",
-        sfincs_region=sfincs_root / "gis" / "region.geojson",
-        start_date="2014-01-01",
-        end_date="2021-12-31",
-        rps=[2, 5, 10],
-    )
+# %% Setup the config file
+config = WorkflowConfig(
+    sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+    sfincs_inp=sfincs_root / "sfincs.inp",
+    sfincs_region=sfincs_root / "gis" / "region.geojson",
+    start_date="2014-01-01",
+    end_date="2021-12-31",
+    rps=[2, 5, 10],
+)
 
-    # %% Setup the workflow
-    w = Workflow(config=config, name=name, root=case_root)
+# %% Setup the workflow
+w = Workflow(config=config, name=name, root=case_root)
 
-    # %% Get precipitation data
-    pluvial_data = GetERA5Rainfall(
-        region=w.get_ref("$config.sfincs_region"),
-        data_root="data/era5",
-        start_date=w.get_ref("$config.start_date"),
-        end_date=w.get_ref("$config.end_date"),
-    )
-    w.add_rule(pluvial_data, rule_id="pluvial_data")
+# %% Get precipitation data
+pluvial_data = GetERA5Rainfall(
+    region=w.get_ref("$config.sfincs_region"),
+    data_root="data/era5",
+    start_date=w.get_ref("$config.start_date"),
+    end_date=w.get_ref("$config.end_date"),
+)
+w.add_rule(pluvial_data, rule_id="pluvial_data")
 
-    # %% Derive pluviual events from precipitation data
-    pluvial_events = PluvialDesignEvents(
-        precip_nc=pluvial_data.output.precip_nc,
-        event_root="data/events",
-        rps=w.get_ref("$config.rps"),
-        wildcard="pluvial_events",
-    )
-    w.add_rule(pluvial_events, rule_id="pluvial_events")
+# %% Derive pluviual events from precipitation data
+pluvial_events = PluvialDesignEvents(
+    precip_nc=pluvial_data.output.precip_nc,
+    event_root="data/events",
+    rps=w.get_ref("$config.rps"),
+    wildcard="pluvial_events",
+)
+w.add_rule(pluvial_events, rule_id="pluvial_events")
 
-    # %% Update the sfincs model with pluviual events
-    sfincs_update = SfincsUpdateForcing(
-        sfincs_inp=w.get_ref("$config.sfincs_inp"),
-        event_yaml=pluvial_events.output.event_yaml,
-    )
-    w.add_rule(sfincs_update, rule_id="sfincs_update")
+# %% Update the sfincs model with pluviual events
+sfincs_update = SfincsUpdateForcing(
+    sfincs_inp=w.get_ref("$config.sfincs_inp"),
+    event_yaml=pluvial_events.output.event_yaml,
+)
+w.add_rule(sfincs_update, rule_id="sfincs_update")
 
-    # %% Run the sfincs model
-    sfincs_run = SfincsRun(
-        sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=w.get_ref("$config.sfincs_exe"),
-    )
-    w.add_rule(sfincs_run, rule_id="sfincs_run")
+# %% Run the sfincs model
+sfincs_run = SfincsRun(
+    sfincs_inp=sfincs_update.output.sfincs_out_inp,
+    sfincs_exe=w.get_ref("$config.sfincs_exe"),
+)
+w.add_rule(sfincs_run, rule_id="sfincs_run")
 
-    # %% run workflow
-    w.dryrun()
+# %% run workflow
+w.dryrun()
 
-    # %% to snakemake
-    w.to_snakemake()
+# %% to snakemake
+w.to_snakemake()
 
-    # %% subprocess to run snakemake
-    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=w.root)
-    # uncomment to run the workflow
-    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=w.root)
+# %% subprocess to run snakemake
+subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=w.root)
+# uncomment to run the workflow
+# subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=w.root)
