@@ -1,8 +1,10 @@
+import platform
 import shutil
 import subprocess
 from pathlib import Path
 
 import pytest
+from hydromt_wflow import WflowModel
 
 from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
@@ -75,3 +77,23 @@ def test_wflow_run_julia(rio_wflow_model: Path, tmp_path: Path):
     # run the model
     rule = WflowRun(wflow_toml=wflow_toml, wflow_julia=True)
     rule.run_with_checks()
+
+
+@pytest.mark.requires_data()
+@pytest.mark.skipif(
+    platform.system() != "Linux", reason="Docker running only supported on Linux"
+)
+def test_wflow_run_linux(wflow_tmp_root: Path):
+    wflow_toml = Path(wflow_tmp_root, "simulations", "default", "wflow_sbm.toml")
+    wflow_scalar = Path(wflow_toml.parent, "run_default", "output_scalar.nc")
+
+    wf = WflowModel(root=wflow_toml.parent, mode="r+")
+    wf.setup_config(
+        **{"starttime": "2014-01-01T00:00:00", "endtime": "2014-01-01T00:00:00"}
+    )
+    wf.write_config()
+
+    assert wflow_toml.is_file()
+    wf_run = WflowRun(wflow_toml=wflow_toml, vm="docker", docker_tag="v0.8.1")
+    assert wf_run.output.wflow_output_timeseries == wflow_scalar
+    wf_run.run_with_checks()

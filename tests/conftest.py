@@ -82,11 +82,21 @@ def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
 
 @pytest.fixture()
 def sfincs_tmp_root(tmp_path: Path) -> Path:
-    """Return the path to the rio data catalog."""
+    """Return the path to the sfincs test model."""
     tmp_root = tmp_path / "sfincs_model_livenza"
     cache_dir = fetch_data("sfincs-model")
     shutil.copytree(cache_dir, tmp_root)
     assert Path(tmp_root, "sfincs.inp").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def wflow_tmp_root(tmp_path: Path) -> Path:
+    """Return the path to the wflow test model."""
+    tmp_root = tmp_path / "wflow_model_livenza"
+    cache_dir = fetch_data("wflow-model")
+    shutil.copytree(cache_dir, tmp_root)
+    assert Path(tmp_root, "wflow_sbm.toml").is_file()
     return tmp_root
 
 

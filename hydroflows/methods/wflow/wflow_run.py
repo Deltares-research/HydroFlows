@@ -130,7 +130,7 @@ class WflowRun(Method):
                 "run",
                 f"-v{base_folder}://data",
                 "-e",
-                f"JULIA_NUM_THREADS={env['JULIA_NUM_THREADS']}"
+                f"JULIA_NUM_THREADS={env['JULIA_NUM_THREADS']}",
                 f"deltares/wflow:{self.params.docker_tag}",
                 f"//data/{wflow_toml.relative_to(base_folder).as_posix()}",
             ]

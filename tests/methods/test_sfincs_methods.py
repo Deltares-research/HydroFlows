@@ -60,7 +60,7 @@ def test_sfincs_run(sfincs_tmp_root: Path):
     sf.write_config()
 
     assert sfincs_inp.is_file()
-    sf_run = SfincsRun(sfincs_inp=str(sfincs_inp, sfincs_exe=SFINCS_EXE))
+    sf_run = SfincsRun(sfincs_inp=str(sfincs_inp), sfincs_exe=SFINCS_EXE)
     assert sf_run.output.sfincs_map == sfincs_map
     sf_run.run_with_checks()
 
@@ -69,14 +69,12 @@ def test_sfincs_run(sfincs_tmp_root: Path):
 @pytest.mark.skipif(
     platform.system() != "Linux", reason="Docker running only supported on Linux"
 )
-def test_sfincs_run_linux(rio_sfincs_model: Path, tmp_path: Path):
-    tmp_root = Path(tmp_path, "model")
-    # copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis", "subgrid"])
-    sfincs_inp = Path(tmp_root, "sfincs.inp")
+def test_sfincs_run_linux(sfincs_tmp_root: Path):
+    sfincs_inp = Path(sfincs_tmp_root, "sfincs.inp")
     sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
 
     # modify the tstop to a short time
-    sf = SfincsModel(root=tmp_root, mode="r+")
+    sf = SfincsModel(root=sfincs_tmp_root, mode="r+")
     sf.set_config("tref", "20191231 000000")
     sf.set_config("tstart", "20191231 000000")
     sf.set_config("tstop", "20191231 010000")
@@ -90,6 +88,24 @@ def test_sfincs_run_linux(rio_sfincs_model: Path, tmp_path: Path):
     )
     assert sf_run.output.sfincs_map == sfincs_map
     sf_run.run_with_checks()
+
+    sf_event_inp = Path(sfincs_tmp_root, "simulations", "p_event01", "sfincs.inp")
+    sf_event_map = Path(sf_event_inp.parent, "sfincs_map.nc")
+
+    sf_event = SfincsModel(root=sf_event_inp.parent, mode="r+")
+    sf_event.set_config("tref", "20191231 000000")
+    sf_event.set_config("tstart", "20191231 000000")
+    sf_event.set_config("tstop", "20191231 010000")
+    sf_event.write_config()
+
+    assert sf_event_inp.is_file()
+    sf_event_run = SfincsRun(
+        sfincs_inp=str(sf_event_inp),
+        vm="docker",
+        docker_tag="sfincs-v2.1.1-Dollerup-Release",
+    )
+    assert sf_event_run.output.sfincs_map == sf_event_map
+    sf_event_run.run_with_checks()
 
 
 @pytest.mark.requires_data()

@@ -203,4 +203,12 @@ class WflowUpdateForcing(Method):
                 units="seconds",
             ),
         )
+
+        # Make sure files paths as posix, write_forcing() doesn't do this correctly.
+        w.setup_config(
+            **{
+                "input.path_forcing": Path(w.config["input.path_forcing"]).as_posix(),
+                "input.path_static": Path(w.config["input.path_static"]).as_posix(),
+            }
+        )
         w.write_config(config_name=self.output.wflow_out_toml.name)
