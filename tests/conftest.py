@@ -13,6 +13,7 @@ import xarray as xr
 from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
+from hydroflows.cfg import CFG_DIR
 from hydroflows.events import EventSet
 from hydroflows.utils.example_data import fetch_data
 
@@ -26,9 +27,8 @@ def test_data_dir() -> Path:
 
 @pytest.fixture(scope="session")
 def build_cfgs() -> dict:
-    path = Path(Path(__file__).parent.parent, "hydroflows", "cfg")
     cfgs = {}
-    for f in path.iterdir():
+    for f in CFG_DIR.iterdir():
         cfgs[f.stem] = f
     return cfgs
 

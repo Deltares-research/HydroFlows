@@ -9,6 +9,7 @@ from hydromt_sfincs import SfincsModel
 from pydantic import Field, FilePath, model_validator
 
 from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -18,13 +19,13 @@ __all__ = ["SfincsBuild"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SfincsBuild` method."""
 
-    region: FilePath
+    region: Path
     """
     The file path to the geometry file that defines the region of interest
     for constructing a SFINCS model.
     """
 
-    config: FilePath
+    config: FilePath = CFG_DIR / "sfincs_build.yml"
     """
     The path to the configuration file (.yml) that defines the settings
     to build a SFINCS model. In this file the different model components
@@ -96,12 +97,13 @@ class SfincsBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": CFG_DIR / "sfincs_build.yml",
     }
 
     def __init__(
         self,
         region: Path,
-        config: Path,
+        config: Path = CFG_DIR / "sfincs_build.yml",
         sfincs_root: Path = Path("models/sfincs"),
         **params,
     ) -> None:
