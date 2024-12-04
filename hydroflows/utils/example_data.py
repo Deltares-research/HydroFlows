@@ -1,4 +1,5 @@
 """Data for examples and testing of HydroFlows."""
+import json
 import logging
 from pathlib import Path
 
@@ -9,13 +10,9 @@ __all__ = ["fetch_data"]
 logger = logging.getLogger(__name__)
 
 # update the base URL and registry with new versions of the data
-BASE_URL = "doi:10.5281/zenodo.14237379"
-REGISTRY = {
-    "global-data.tar.gz": "dcd76132eda15ac45f77419c8c8c651b6fa1390b9b44a3c339df789bff6c8a07",
-    "fiat-model.tar.gz": "ba9ad369b260ad2ebc6bec8a15f5abfe339d8f21d72675c99d926233f6bab2a3",
-    "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
-    "wflow-model.tar.gz": "f53a279921f2e9090319c928a75e021554bcae5e9d8bfcb65e5d766cbfb05f6e",
-}
+BASE_URL = "doi:10.5281/zenodo.14267480"
+with open(Path(__file__).parent / "registry.json", "r") as f:
+    REGISTRY = json.load(f)
 CACHE_DIR = Path("~", ".cache", "hydroflows").expanduser()
 PROCESSORS = {
     "tar.gz": pooch.Untar,

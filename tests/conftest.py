@@ -91,13 +91,12 @@ def sfincs_tmp_root(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def tmp_gpex_data(example_data_dir: Path, tmp_path: Path) -> Path:
+def gpex_data() -> Path:
     """Return the path to the GPEX data."""
-    fetch_data("global-data", output_dir=example_data_dir)
-    cache_gpex_file = Path(example_data_dir, "gpex.nc")
-    tmp_gpex_file = Path(tmp_path, "gpex.nc")
-    shutil.copy(cache_gpex_file, tmp_gpex_file)
-    return tmp_gpex_file
+    cache_dir = fetch_data("global-data")
+    gpex_file = cache_dir / "gpex.nc"
+    assert gpex_file.is_file()
+    return gpex_file
 
 
 @pytest.fixture(scope="session")
@@ -250,6 +249,7 @@ def event_set(event_set_file) -> EventSet:
 
 @pytest.fixture()
 def sfincs_region():
+    """Livenza region."""
     return gpd.GeoDataFrame(
         geometry=[
             Polygon(
