@@ -69,6 +69,15 @@ def rio_test_data(large_test_data: pooch.Pooch) -> Path:
 
 
 @pytest.fixture(scope="session")
+def merit_hydro_basins() -> Path:
+    """Return the path to the merit hydro basin."""
+    cache_dir = fetch_data("global-data")
+    merit_file = cache_dir / "cat_MERIT_Hydro_v07_Basins_v01.gpkg"
+    assert merit_file.is_file()
+    return merit_file
+
+
+@pytest.fixture(scope="session")
 def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
     """Return the path to the rio wflow model config file."""
     _ = large_test_data.fetch(
