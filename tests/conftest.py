@@ -22,31 +22,47 @@ EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
 
 @pytest.fixture(scope="session")
 def has_docker():
-    return subprocess.run(["docker", "-v"]).returncode == 0
+    try:
+        return subprocess.run(["docker", "-v"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
 
 @pytest.fixture(scope="session")
 def has_apptainer():
-    return subprocess.run(["apptainer", "version"]).returncode == 0
+    try:
+        return subprocess.run(["apptainer", "version"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
 
 @pytest.fixture(scope="session")
 def has_wflow_julia():
-    return subprocess.run(["julia", "-e", "using Wflow"]).returncode == 0
+    try:
+        return subprocess.run(["julia", "-e", "using Wflow"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
 
 @pytest.fixture(scope="session")
 def has_fiat_python():
     try:
         import fiat  # noqa: F401
+
         return True
     except ImportError:
         return False
+
 
 @pytest.fixture(scope="session")
 def sfincs_exe():
     return Path(EXAMPLE_DIR, "bin", "sfincs_v2.1.1", "sfincs.exe")
 
+
 @pytest.fixture(scope="session")
 def wflow_exe():
     return Path(EXAMPLE_DIR, "bin", "wflow_v0.8.1", "wflow_cli.exe")
+
 
 @pytest.fixture(scope="session")
 def fiat_exe():
@@ -155,6 +171,7 @@ def wflow_tmp_root(tmp_path: Path) -> Path:
     assert Path(tmp_root, "wflow_sbm.toml").is_file()
     return tmp_root
 
+
 @pytest.fixture()
 def wflow_sim_tmp_root(wflow_tmp_root: Path) -> Path:
     """Return the path to the wflow test model nested simulation."""
@@ -166,6 +183,7 @@ def wflow_sim_tmp_root(wflow_tmp_root: Path) -> Path:
     assert Path(sim_tmp_root, "wflow_sbm.toml").is_file()
     return sim_tmp_root
 
+
 @pytest.fixture()
 def fiat_tmp_root(tmp_path: Path) -> Path:
     """Return the path to the fiat test model."""
@@ -175,6 +193,7 @@ def fiat_tmp_root(tmp_path: Path) -> Path:
     shutil.copytree(cache_dir, tmp_root, ignore=ignore)
     assert Path(tmp_root, "settings.toml").is_file()
     return tmp_root
+
 
 @pytest.fixture()
 def fiat_sim_tmp_root(fiat_tmp_root: Path):
@@ -186,6 +205,7 @@ def fiat_sim_tmp_root(fiat_tmp_root: Path):
     shutil.copytree(cache_dir / sim_folder, sim_tmp_root, ignore=ignore)
     assert Path(sim_tmp_root, "settings.toml").is_file()
     return sim_tmp_root
+
 
 @pytest.fixture()
 def gpex_data() -> Path:

@@ -99,7 +99,9 @@ class SfincsRun(Method):
         :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
         :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
         """
-        self.params: Params = Params(sfincs_exe=sfincs_exe, run_method=run_method, **params)
+        self.params: Params = Params(
+            sfincs_exe=sfincs_exe, run_method=run_method, **params
+        )
         self.input: Input = Input(sfincs_inp=sfincs_inp)
         self.output: Output = Output(
             sfincs_map=self.input.sfincs_inp.parent / "sfincs_map.nc"

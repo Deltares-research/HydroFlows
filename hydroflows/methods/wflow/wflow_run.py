@@ -48,7 +48,6 @@ class Params(Parameters):
     julia_num_threads: int = 4
     """The number of the threads to be used from Julia."""
 
-
     docker_tag: str = "v0.8.1"
     """The Docker tag to specify the version of the Docker image to use."""
 
@@ -56,7 +55,10 @@ class Params(Parameters):
     def check_wflow_bin(self):
         """Check the Wflow binary path."""
         if self.wflow_bin is None and self.run_method == "exe":
-            raise ValueError("Path to the Wflow executable is required when running Wflow as an executable.")
+            raise ValueError(
+                "Path to the Wflow executable is required when running Wflow as an executable."
+            )
+
 
 class WflowRun(Method):
     """Rule for running a Wflow model."""
@@ -114,14 +116,21 @@ class WflowRun(Method):
         base_folder = get_wflow_basemodel_root(wflow_toml=wflow_toml).as_posix()
         wflow_toml = wflow_toml.relative_to(base_folder).as_posix()
 
-        env=None
+        env = None
         # Path to the wflow_cli executable
         if self.params.run_method == "exe":
             # Command to run wflow_cli with the TOML file
             command = [self.params.wflow_bin.as_posix(), wflow_toml]
             env = {"JULIA_NUM_THREADS": nthreads}
         elif self.params.run_method == "julia":
-            command = ["julia", "-t", nthreads, "-e", "using Wflow; Wflow.run()", wflow_toml]
+            command = [
+                "julia",
+                "-t",
+                nthreads,
+                "-e",
+                "using Wflow; Wflow.run()",
+                wflow_toml,
+            ]
         elif self.params.run_method == "docker":
             command = [
                 "docker",
@@ -142,6 +151,6 @@ class WflowRun(Method):
                 f"docker://deltares/wflow:{self.params.docker_tag}",
                 f"//data/{wflow_toml}",
             ]
-    
+
         # Call the executable using subprocess
         subprocess.run(command, env=env, check=True, cwd=base_folder)

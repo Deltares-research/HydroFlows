@@ -118,7 +118,9 @@ def test_fiat_update_hazard(
 
 
 @pytest.mark.parametrize("method", ["python", "exe"])
-def test_fiat_run(fiat_sim_tmp_root: Path, method: str, fiat_exe: Path, has_fiat_python: bool):
+def test_fiat_run(
+    fiat_sim_tmp_root: Path, method: str, fiat_exe: Path, has_fiat_python: bool
+):
     if method == "exe" and not fiat_exe.is_file():
         pytest.skip(f"FIAT executable not found at {fiat_exe}")
     elif method == "exe" and platform.system() != "Windows":

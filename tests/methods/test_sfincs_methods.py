@@ -1,7 +1,6 @@
 import datetime
 import platform
 from pathlib import Path
-from typing import Literal
 
 import pytest
 from hydromt_sfincs import SfincsModel
