@@ -1,5 +1,6 @@
 # fixtures with input and output files and folders
 import shutil
+import subprocess
 from pathlib import Path
 
 import geopandas as gpd
@@ -17,6 +18,39 @@ from hydroflows.events import EventSet
 from hydroflows.utils.example_data import fetch_data
 
 EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
+
+
+@pytest.fixture(scope="session")
+def has_docker():
+    return subprocess.run(["docker", "-v"]).returncode == 0
+
+@pytest.fixture(scope="session")
+def has_apptainer():
+    return subprocess.run(["apptainer", "version"]).returncode == 0
+
+@pytest.fixture(scope="session")
+def has_wflow_julia():
+    return subprocess.run(["julia", "-e", "using Wflow"]).returncode == 0
+
+@pytest.fixture(scope="session")
+def has_fiat_python():
+    try:
+        import fiat  # noqa: F401
+        return True
+    except ImportError:
+        return False
+
+@pytest.fixture(scope="session")
+def sfincs_exe():
+    return Path(EXAMPLE_DIR, "bin", "sfincs_v2.1.1", "sfincs.exe")
+
+@pytest.fixture(scope="session")
+def wflow_exe():
+    return Path(EXAMPLE_DIR, "bin", "wflow_v0.8.1", "wflow_cli.exe")
+
+@pytest.fixture(scope="session")
+def fiat_exe():
+    return Path(EXAMPLE_DIR, "bin", "fiat_v0.2.0", "fiat.exe")
 
 
 @pytest.fixture(scope="session")
@@ -83,22 +117,66 @@ def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
 @pytest.fixture()
 def sfincs_tmp_root(tmp_path: Path) -> Path:
     """Return the path to the sfincs test model."""
-    tmp_root = tmp_path / "sfincs_model_livenza"
+    tmp_root = tmp_path / "sfincs-model"
     cache_dir = fetch_data("sfincs-model")
-    shutil.copytree(cache_dir, tmp_root)
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
     assert Path(tmp_root, "sfincs.inp").is_file()
     return tmp_root
 
 
 @pytest.fixture()
+def sfincs_sim_tmp_root(sfincs_tmp_root: Path) -> Path:
+    """Return the path to the sfincs test model nested simulation."""
+    sim_folder = "simulations/p_event01"
+    sim_tmp_root = sfincs_tmp_root / sim_folder
+    cache_dir = fetch_data("sfincs-model")
+    shutil.copytree(cache_dir / sim_folder, sim_tmp_root)
+    assert Path(sim_tmp_root, "sfincs.inp").is_file()
+    return sim_tmp_root
+
+
+@pytest.fixture()
 def wflow_tmp_root(tmp_path: Path) -> Path:
     """Return the path to the wflow test model."""
-    tmp_root = tmp_path / "wflow_model_livenza"
+    tmp_root = tmp_path / "wflow-model"
     cache_dir = fetch_data("wflow-model")
-    shutil.copytree(cache_dir, tmp_root)
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
     assert Path(tmp_root, "wflow_sbm.toml").is_file()
     return tmp_root
 
+@pytest.fixture()
+def wflow_sim_tmp_root(wflow_tmp_root: Path) -> Path:
+    """Return the path to the wflow test model nested simulation."""
+    sim_folder = "simulations/default"
+    sim_tmp_root = wflow_tmp_root / sim_folder
+    cache_dir = fetch_data("wflow-model")
+    ignore = shutil.ignore_patterns("run_default")
+    shutil.copytree(cache_dir / sim_folder, sim_tmp_root, ignore=ignore)
+    assert Path(sim_tmp_root, "wflow_sbm.toml").is_file()
+    return sim_tmp_root
+
+@pytest.fixture()
+def fiat_tmp_root(tmp_path: Path) -> Path:
+    """Return the path to the fiat test model."""
+    tmp_root = tmp_path / "fiat-model"
+    cache_dir = fetch_data("fiat-model")
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
+    assert Path(tmp_root, "settings.toml").is_file()
+    return tmp_root
+
+@pytest.fixture()
+def fiat_sim_tmp_root(fiat_tmp_root: Path):
+    """Return the path to the fiat test model nested simulation."""
+    sim_folder = "simulations/fluvial_events"
+    sim_tmp_root = fiat_tmp_root / sim_folder
+    cache_dir = fetch_data("fiat-model")
+    ignore = shutil.ignore_patterns("output")
+    shutil.copytree(cache_dir / sim_folder, sim_tmp_root, ignore=ignore)
+    assert Path(sim_tmp_root, "settings.toml").is_file()
+    return sim_tmp_root
 
 @pytest.fixture()
 def gpex_data() -> Path:

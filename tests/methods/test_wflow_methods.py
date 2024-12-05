@@ -63,37 +63,40 @@ def test_wflow_update_forcing(
 
 
 @pytest.mark.requires_data()
-@pytest.mark.skipif(True, reason="requires complete wflow model instance")
-def test_wflow_run_julia(rio_wflow_model: Path, tmp_path: Path):
+@pytest.mark.parametrize("method", ["docker", "exe", "julia", "apptainer"])
+def test_wflow_run(
+    wflow_sim_tmp_root: Path,
+    method: str,
+    has_wflow_julia: bool,
+    wflow_exe: Path,
+    has_docker: bool,
+    has_apptainer: bool,
+):
     # check if wflow julia is installed
-    s = subprocess.run(["julia", "-e", "using Wflow"])
-    if s.returncode != 0:
+    if method == "julia" and not has_wflow_julia:
         pytest.skip("Wflow Julia is not installed.")
-    # copy the wflow model to the tmp_path
-    root = tmp_path / "model"
-    shutil.copytree(rio_wflow_model.parent, root)
-    wflow_toml = Path(root, rio_wflow_model.name)
+    elif method == "exe" and wflow_exe.is_file() is False:
+        pytest.skip(f"Wflow executable is not available {wflow_exe}")
+    elif method == "exe" and platform.system() != "Windows":
+        pytest.skip("Wflow exe only supported on Windows")
+    elif method == "docker" and has_docker is False:
+        pytest.skip("Docker is not available.")
+    elif method == "apptainer" and has_apptainer is False:
+        pytest.skip("Apptainer is not available.")
 
     # run the model
-    rule = WflowRun(wflow_toml=wflow_toml, wflow_julia=True)
-    rule.run_with_checks()
-
-
-@pytest.mark.requires_data()
-@pytest.mark.skipif(
-    platform.system() != "Linux", reason="Docker running only supported on Linux"
-)
-def test_wflow_run_linux(wflow_tmp_root: Path):
-    wflow_toml = Path(wflow_tmp_root, "simulations", "default", "wflow_sbm.toml")
+    wflow_toml = Path(wflow_sim_tmp_root, "wflow_sbm.toml")
     wflow_scalar = Path(wflow_toml.parent, "run_default", "output_scalar.nc")
+    if wflow_scalar.is_file():
+        wflow_scalar.unlink()
 
-    wf = WflowModel(root=wflow_toml.parent, mode="r+")
+    wf = WflowModel(root=wflow_sim_tmp_root, mode="r+")
     wf.setup_config(
-        **{"starttime": "2014-01-01T00:00:00", "endtime": "2014-01-01T00:00:00"}
+        **{"starttime": "2014-01-01T00:00:00", "endtime": "2014-01-02T00:00:00"}
     )
     wf.write_config()
-
     assert wflow_toml.is_file()
-    wf_run = WflowRun(wflow_toml=wflow_toml, vm="docker", docker_tag="v0.8.1")
+
+    wf_run = WflowRun(wflow_toml=wflow_toml, julia_num_threads=2, run_method=method)
     assert wf_run.output.wflow_output_timeseries == wflow_scalar
     wf_run.run_with_checks()

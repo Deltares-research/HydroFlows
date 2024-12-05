@@ -229,8 +229,5 @@ def get_wflow_basemodel_root(wflow_toml: Path) -> Path:
         config = tomli.load(f)
 
     static_path = config["input"]["path_static"]
-
-    n = 0
-    n = max(n, static_path.count("../"))
-
-    return wflow_toml.parents[n]
+    basemodel_root = Path(wflow_toml.parent, static_path).resolve().parent
+    return basemodel_root
