@@ -10,10 +10,23 @@ from hydroflows.events import Event
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsDownscale,
+    SfincsRegion,
     SfincsRun,
     SfincsUpdateForcing,
 )
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
+
+
+def test_sfincs_region(
+    sfincs_region_path: Path, merit_hydro_basins: Path, tmp_path: Path
+):
+    sfincs_region = SfincsRegion(
+        aoi=str(sfincs_region_path),
+        subbasins=str(merit_hydro_basins),
+        sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
+    )
+
+    sfincs_region.run_with_checks()
 
 
 @pytest.mark.requires_data()
