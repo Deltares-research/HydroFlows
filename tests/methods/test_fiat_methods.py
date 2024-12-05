@@ -117,6 +117,7 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
+@pytest.mark.requires_data()
 @pytest.mark.parametrize("method", ["python", "exe"])
 def test_fiat_run(
     fiat_sim_tmp_root: Path, method: str, fiat_exe: Path, has_fiat_python: bool
