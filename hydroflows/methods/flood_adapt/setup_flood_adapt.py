@@ -89,10 +89,10 @@ class SetupFloodAdapt(Method):
 
         # Create FloodAdapt Database Builder config
         fa_db_config(
-            self.params.output_dir,
-            str(Path(self.params.output_dir, "fiat")),
-            str(Path(self.params.output_dir, "sfincs")),
-            str(Path(self.params.output_dir, "events")),
+            self.params.output_dir.as_posix(),
+            Path(self.params.output_dir, "fiat").as_posix(),
+            Path(self.params.output_dir, "sfincs").as_posix(),
+            Path(self.params.output_dir, "events").as_posix(),
         )
 
         pass
