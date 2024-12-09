@@ -1,17 +1,6 @@
 # import required packages
-import os
-from hydromt_fiat.fiat import FiatModel
 from hydromt.log import setuplog
-from pathlib import Path
-import geopandas as gpd
-from hydromt.config import configread
-
-# Need to comment out assert set(self.exposure_geoms[0]["object_id"]
-# Change the working directory to the script's directory
-script_dir = os.path.dirname(os.path.abspath(__file__))
-os.chdir(script_dir)
-
-# Build model von config file
+from hydromt_fiat.fiat import FiatModel
 
 
 def translate_model(root, new_root):
@@ -44,10 +33,3 @@ def translate_model(root, new_root):
 
     fm.set_root(new_root)
     fm.write()
-
-
-# testrun
-translate_model(
-    root=,
-    new_root=,
-)
