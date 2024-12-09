@@ -44,12 +44,13 @@ class Output(Parameters):
 
     fiat_input: Path
     """The path to the translated FIAT model configuration."""
-    
+
     sfincs_input: Path
     """The path to the copied sfincs model configuration."""
-    
+
     probabilistic_set: Path | None = None
     """The path to the event set configuration."""
+
 
 class SetupFloodAdapt(Method):
     """Rule for setting up the input for the FloodAdapt Database Builder."""
@@ -104,19 +105,27 @@ class SetupFloodAdapt(Method):
     def run(self):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
-        translate_model(self.input.fiat_base_model, Path(self.params.output_dir, "fiat"))
+        translate_model(
+            self.input.fiat_base_model, Path(self.params.output_dir, "fiat")
+        )
 
         # prepare and copy sfincs model
-        shutil.copytree(self.input.sfincs_base_model, Path(self.params.output_dir, "sfincs"), dirs_exist_ok=True)
+        shutil.copytree(
+            self.input.sfincs_base_model,
+            Path(self.params.output_dir, "sfincs"),
+            dirs_exist_ok=True,
+        )
 
         # prepare probabilistic set
         if self.input.event_set_yaml is not None:
-            translate_events(self.input.event_set_yaml, Path(self.params.output_dir, "events"), "probabilistic_set")
-            
-            # Create FloodAdapt Database Builder config
-            fa_db_config(
-            probabilistic_set = "events"
+            translate_events(
+                self.input.event_set_yaml,
+                Path(self.params.output_dir, "events"),
+                "probabilistic_set",
             )
+
+            # Create FloodAdapt Database Builder config
+            fa_db_config(probabilistic_set="events")
 
         else:
             # Create FloodAdapt Database Builder config
@@ -127,7 +136,7 @@ class SetupFloodAdapt(Method):
 
 def fa_db_config(
     output_dir: Path = "flood_adapt_builder",
-    database_path: Path = "flood_adapt_db", 
+    database_path: Path = "flood_adapt_db",
     fiat_config: Path = "fiat",
     sfincs_config: Path = "sfincs",
     probabilistic_set: Path | None = None,
@@ -148,7 +157,7 @@ def fa_db_config(
         The path to the probabilistic event set configuration, by default None.
     """
     databasebuilder_config = {
-        "name": "fa_database", 
+        "name": "fa_database",
         "database_path": database_path,
         "sfincs": sfincs_config,
         "fiat": fiat_config,
@@ -163,7 +172,5 @@ def fa_db_config(
     if probabilistic_set is not None:
         databasebuilder_config["probabilistic_set"] = probabilistic_set
 
-    with open(
-        Path(output_dir, "fa_build.toml"), "w"
-    ) as toml_file:
+    with open(Path(output_dir, "fa_build.toml"), "w") as toml_file:
         toml.dump(databasebuilder_config, toml_file)
