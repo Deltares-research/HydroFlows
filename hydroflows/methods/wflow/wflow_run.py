@@ -2,7 +2,11 @@
 
 import subprocess
 from pathlib import Path
+from typing import Literal, Optional
 
+from pydantic import model_validator
+
+from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -34,11 +38,26 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`WflowRun`."""
 
-    wflow_bin: Path
+    run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe"
+    """How to run wflow. Options are 'exe' for running the executable directly (only on Windows),
+    'docker' or 'apptainer' for running the model in a container."""
+
+    wflow_bin: Optional[Path] = None
     """The path to the wflow executable."""
 
     julia_num_threads: int = 4
     """The number of the threads to be used from Julia."""
+
+    docker_tag: str = "v0.8.1"
+    """The Docker tag to specify the version of the Docker image to use."""
+
+    @model_validator(mode="after")
+    def check_wflow_bin(self):
+        """Check the Wflow binary path."""
+        if self.wflow_bin is None and self.run_method == "exe":
+            raise ValueError(
+                "Path to the Wflow executable is required when running Wflow as an executable."
+            )
 
 
 class WflowRun(Method):
@@ -51,13 +70,22 @@ class WflowRun(Method):
         "wflow_bin": Path("wflow_cli.exe"),
     }
 
-    def __init__(self, wflow_toml: Path, wflow_bin: Path, **params) -> "WflowRun":
+    def __init__(
+        self,
+        wflow_toml: Path,
+        run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe",
+        wflow_bin: Optional[Path] = None,
+        **params,
+    ) -> "WflowRun":
         """Create and validate a WflowRun instance.
 
         Parameters
         ----------
         wflow_toml : Path
             The file path to the Wflow (toml) configuration file.
+        run_method : Literal["exe", "docker", "apptainer"]
+            How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
+            'docker' or 'apptainer' for running the model in a container.
         wflow_bin : Path
             The path to the Wflow executable
         **params
@@ -70,7 +98,9 @@ class WflowRun(Method):
         :py:class:`wflow_run Output <hydroflows.methods.wflow.wflow_run.Output>`
         :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`
         """
-        self.params: Params = Params(wflow_bin=wflow_bin, **params)
+        self.params: Params = Params(
+            wflow_bin=wflow_bin, run_method=run_method, **params
+        )
         self.input: Input = Input(wflow_toml=wflow_toml)
         self.output: Output = Output(
             wflow_output_timeseries=self.input.wflow_toml.parent
@@ -81,13 +111,46 @@ class WflowRun(Method):
     def run(self):
         """Run the WflowRun method."""
         # Set environment variable JULIA_NUM_THREADS
-        env = {"JULIA_NUM_THREADS": str(self.params.julia_num_threads)}
+        nthreads = str(self.params.julia_num_threads)
+        wflow_toml = self.input.wflow_toml.resolve()
+        base_folder = get_wflow_basemodel_root(wflow_toml=wflow_toml).as_posix()
+        wflow_toml = wflow_toml.relative_to(base_folder).as_posix()
 
+        env = None
         # Path to the wflow_cli executable
-        wflow_cli_path = self.params.wflow_bin
-
-        # Command to run wflow_cli with the TOML file
-        command = [str(wflow_cli_path), str(self.input.wflow_toml)]
+        if self.params.run_method == "exe":
+            # Command to run wflow_cli with the TOML file
+            command = [self.params.wflow_bin.as_posix(), wflow_toml]
+            env = {"JULIA_NUM_THREADS": nthreads}
+        elif self.params.run_method == "julia":
+            command = [
+                "julia",
+                "-t",
+                nthreads,
+                "-e",
+                "using Wflow; Wflow.run()",
+                wflow_toml,
+            ]
+        elif self.params.run_method == "docker":
+            command = [
+                "docker",
+                "run",
+                f"-v{base_folder}://data",
+                "-e",
+                f"JULIA_NUM_THREADS={nthreads}",
+                f"deltares/wflow:{self.params.docker_tag}",
+                f"//data/{wflow_toml}",
+            ]
+        elif self.params.run_method == "apptainer":
+            command = [
+                "apptainer",
+                "run",
+                f"-B{base_folder}://data",
+                "--env",
+                f"JULIA_NUM_THREADS={nthreads}",
+                f"docker://deltares/wflow:{self.params.docker_tag}",
+                f"//data/{wflow_toml}",
+            ]
 
         # Call the executable using subprocess
-        subprocess.run(command, env=env, check=True)
+        subprocess.run(command, env=env, check=True, cwd=base_folder)

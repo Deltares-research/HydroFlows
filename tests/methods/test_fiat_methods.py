@@ -3,54 +3,9 @@
 import platform
 from pathlib import Path
 
-import geopandas as gpd
-import numpy as np
 import pytest
-import xarray as xr
 
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
-
-FIAT_EXE = Path(
-    Path(__file__).parent.parent,
-    "_bin",
-    "fiat",
-    "fiat.exe",
-)
-
-
-@pytest.fixture()
-def hazard_map_data(sfincs_test_region: Path) -> xr.DataArray:
-    # Get extent sfincs model
-    geom = gpd.read_file(sfincs_test_region).to_crs(4326)
-    bbox = list(geom.bounds.loc[0])
-
-    # Make coordinates for hazard map
-    lons = np.linspace(bbox[0], bbox[2], 5)
-    lats = np.linspace(bbox[3], bbox[1], 5)
-
-    data = np.ones([len(lats), len(lons)])
-    da = xr.DataArray(data, coords={"lat": lats, "lon": lons}, dims=["lat", "lon"])
-    da.name = "flood_map"
-    da.raster.set_crs(4326)
-    # da.raster.set_nodata(nodata=-9999.)
-    da = da.raster.gdal_compliant()
-    return da
-
-
-@pytest.fixture()
-def first_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
-    # Set root
-    root = Path(tmp_path, "flood_map_rp010.nc")
-    hazard_map_data.to_netcdf(root)
-    return root
-
-
-@pytest.fixture()
-def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
-    # Set root
-    root = Path(tmp_path, "flood_map_rp050.nc")
-    (hazard_map_data * 2).to_netcdf(root)
-    return root
 
 
 def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
@@ -82,17 +37,28 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
-# TODO add the hazard data.
-@pytest.mark.skipif(not FIAT_EXE.exists(), reason="fiat executable not found")
-@pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_fiat_run(fiat_tmp_model: Path):
+@pytest.mark.requires_data()
+@pytest.mark.parametrize("method", ["python", "exe"])
+def test_fiat_run(
+    fiat_sim_model: Path, method: str, fiat_exe: Path, has_fiat_python: bool
+):
+    if method == "exe" and not fiat_exe.is_file():
+        pytest.skip(f"FIAT executable not found at {fiat_exe}")
+    elif method == "exe" and platform.system() != "Windows":
+        pytest.skip("FIAT exe only supported on Windows")
+    elif method == "python" and not has_fiat_python:
+        pytest.skip("FIAT python package not found")
+    elif method == "python" and platform.system() != "Windows":
+        # FIXME: FIAT python does currently not work on Linux
+        # when reading the vulnerability curves
+        # ERROR: Cannot cast array data from dtype('<U32') to dtype('float64') according to the rule 'safe'
+        pytest.skip("FIAT python does currently not work on Linux..")
+
     # specify in- and output
     fiat_cfg = Path(
-        fiat_tmp_model,
-        "simulations",
-        "fluvial_events",
+        fiat_sim_model,
         "settings.toml",
     )
     # Setup the method
-    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=FIAT_EXE)
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
     rule.run_with_checks()

@@ -1,5 +1,6 @@
 # fixtures with input and output files and folders
 import shutil
+import subprocess
 from pathlib import Path
 
 import geopandas as gpd
@@ -16,6 +17,56 @@ from hydroflows.events import EventSet
 from hydroflows.utils.example_data import fetch_data
 
 EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
+
+
+## The executables of the models
+@pytest.fixture(scope="session")
+def has_docker():
+    try:
+        return subprocess.run(["docker", "-v"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def has_apptainer():
+    try:
+        return subprocess.run(["apptainer", "version"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def has_wflow_julia():
+    try:
+        return subprocess.run(["julia", "-e", "using Wflow"]).returncode == 0
+    except FileNotFoundError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def has_fiat_python():
+    try:
+        import fiat  # noqa: F401
+
+        return True
+    except ImportError:
+        return False
+
+
+@pytest.fixture(scope="session")
+def sfincs_exe():
+    return Path(EXAMPLE_DIR, "bin", "sfincs_v2.1.1", "sfincs.exe")
+
+
+@pytest.fixture(scope="session")
+def wflow_exe():
+    return Path(EXAMPLE_DIR, "bin", "wflow_v0.8.1", "bin", "wflow_cli.exe")
+
+
+@pytest.fixture(scope="session")
+def fiat_exe():
+    return Path(EXAMPLE_DIR, "bin", "fiat_v0.2.1", "fiat.exe")
 
 
 ## Genaral directories and files
@@ -84,7 +135,7 @@ def merit_hydro_basins(global_data: Path) -> Path:
 
 ## The cached and temporary models
 @pytest.fixture(scope="session")
-def fiat_test_model() -> Path:
+def fiat_cached_model() -> Path:
     """Return path to the cached fiat model."""
     path = fetch_data("fiat-model")
     assert Path(path, "settings.toml")
@@ -92,45 +143,89 @@ def fiat_test_model() -> Path:
 
 
 @pytest.fixture()
-def fiat_tmp_model(tmp_path: Path, fiat_test_model: Path) -> Path:
-    """Return the path fiat model in temp directory."""
-    tmp_root = tmp_path / "fiat_test_model"
-    shutil.copytree(fiat_test_model, tmp_root)
+def fiat_tmp_model(tmp_path: Path, fiat_cached_model: Path) -> Path:
+    """Return the path of the fiat model in temp directory."""
+    tmp_root = tmp_path / "fiat_tmp_model"
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(fiat_cached_model, tmp_root, ignore=ignore)
     assert Path(tmp_root, "settings.toml").is_file()
     return tmp_root
 
 
-@pytest.fixture(scope="session")
-def wflow_test_model() -> Path:
-    """Return the path to cached wflow model."""
-    path = fetch_data("wflow-model")
-    assert Path(path, "wflow_sbm.toml").is_file()
-    return path
+@pytest.fixture()
+def fiat_sim_model(fiat_cached_model: Path, fiat_tmp_model: Path):
+    """Return the path of the temporary fiat model for simulations."""
+    sim_dir = "simulations/fluvial_events"
+    sim_root = fiat_tmp_model / sim_dir
+    ignore = shutil.ignore_patterns("output")
+    shutil.copytree(fiat_cached_model / sim_dir, sim_root, ignore=ignore)
+    assert Path(sim_root, "settings.toml").is_file()
+    return sim_root
 
 
 @pytest.fixture(scope="session")
-def sfincs_test_model() -> Path:
+def sfincs_cached_model() -> Path:
     """Return the path to cached sfincs model."""
     path = fetch_data("sfincs-model")
     assert Path(path, "sfincs.inp").is_file()
     return path
 
 
+@pytest.fixture()
+def sfincs_tmp_model(tmp_path: Path, sfincs_cached_model: Path) -> Path:
+    """Return the path sfincs model in temp directory."""
+    tmp_root = tmp_path / "sfincs_tmp_model"
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(sfincs_cached_model, tmp_root, ignore=ignore)
+    assert Path(tmp_root, "sfincs.inp").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def sfincs_sim_model(sfincs_cached_model: Path, sfincs_tmp_model: Path) -> Path:
+    """Return the path to the sfincs test model nested simulation."""
+    sim_dir = "simulations/p_event01"
+    sim_root = sfincs_tmp_model / sim_dir
+    shutil.copytree(sfincs_cached_model / sim_dir, sim_root)
+    assert Path(sim_root, "sfincs.inp").is_file()
+    return sim_root
+
+
 @pytest.fixture(scope="session")
-def sfincs_test_region(sfincs_test_model: Path):
+def sfincs_test_region(sfincs_cached_model: Path):
     """Return the path to the pre-made sfincs region vector file."""
-    path = sfincs_test_model / "gis" / "region.geojson"
+    path = sfincs_cached_model / "gis" / "region.geojson"
     assert path.is_file()
     return path
 
 
+@pytest.fixture(scope="session")
+def wflow_cached_model() -> Path:
+    """Return the path to cached wflow model."""
+    path = fetch_data("wflow-model")
+    assert Path(path, "wflow_sbm.toml").is_file()
+    return path
+
+
 @pytest.fixture()
-def sfincs_tmp_model(tmp_path: Path, sfincs_test_model: Path) -> Path:
-    """Return the path sfincs model in temp directory."""
-    tmp_root = tmp_path / "sfincs_test_model"
-    shutil.copytree(sfincs_test_model, tmp_root)
-    assert Path(tmp_root, "sfincs.inp").is_file()
+def wflow_tmp_model(tmp_path: Path, wflow_cached_model: Path) -> Path:
+    """Return the path to the temporary wflow model for testing."""
+    tmp_root = tmp_path / "wflow_tmp_model"
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(wflow_cached_model, tmp_root, ignore=ignore)
+    assert Path(tmp_root, "wflow_sbm.toml").is_file()
     return tmp_root
+
+
+@pytest.fixture()
+def wflow_sim_model(wflow_cached_model: Path, wflow_tmp_model: Path) -> Path:
+    """Return the path to the wflow test model nested simulation."""
+    sim_dir = "simulations/default"
+    sim_root = wflow_tmp_model / sim_dir
+    ignore = shutil.ignore_patterns("run_default")
+    shutil.copytree(wflow_cached_model / sim_dir, sim_root, ignore=ignore)
+    assert Path(sim_root, "wflow_sbm.toml").is_file()
+    return sim_root
 
 
 @pytest.fixture()
@@ -142,6 +237,51 @@ def gpex_data(global_data: Path) -> Path:
 
 
 ## Some files made on the fly
+@pytest.fixture()
+def hazard_map_data(sfincs_test_region: Path) -> xr.DataArray:
+    # Get extent sfincs model
+    geom = gpd.read_file(sfincs_test_region).to_crs(4326)
+    bbox = list(geom.bounds.loc[0])
+
+    # Make coordinates for hazard map
+    lons = np.linspace(bbox[0], bbox[2], 5)
+    lats = np.linspace(bbox[3], bbox[1], 5)
+
+    data = np.ones([len(lats), len(lons)])
+    da = xr.DataArray(data, coords={"lat": lats, "lon": lons}, dims=["lat", "lon"])
+    da.name = "flood_map"
+    da.raster.set_crs(4326)
+    # da.raster.set_nodata(nodata=-9999.)
+    da = da.raster.gdal_compliant()
+    return da
+
+
+@pytest.fixture()
+def first_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
+    # Set root
+    root = Path(tmp_path, "flood_map_rp010.nc")
+    hazard_map_data.to_netcdf(root)
+    return root
+
+
+@pytest.fixture()
+def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
+    # Set root
+    root = Path(tmp_path, "flood_map_rp050.nc")
+    (hazard_map_data * 2).to_netcdf(root)
+    return root
+
+
+@pytest.fixture()
+def sfincs_src_points():
+    return gpd.GeoDataFrame(
+        geometry=[
+            Point(282937.059, 5079303.114),
+        ],
+        crs="EPSG:32633",
+    )
+
+
 @pytest.fixture()
 def tmp_csv(tmp_path: Path) -> Path:
     """Create a temporary csv file."""
@@ -273,16 +413,6 @@ def tmp_tif(tmp_path: Path) -> Path:
         dst.write(data, 1)
     # dst.close()
     return tif_file
-
-
-@pytest.fixture()
-def sfincs_src_points():
-    return gpd.GeoDataFrame(
-        geometry=[
-            Point(282937.059, 5079303.114),
-        ],
-        crs="EPSG:32633",
-    )
 
 
 @pytest.fixture()
