@@ -43,13 +43,17 @@ class Output(Parameters):
     """
 
     fiat_input: Path
-
+    """The path to the translated FIAT model configuration."""
+    
     sfincs_input: Path
-
+    """The path to the copied sfincs model configuration."""
+    
     probabilistic_set: Path | None = None
-
+    """The path to the event set configuration."""
 
 class SetupFloodAdapt(Method):
+    """Rule for setting up the input for the FloodAdapt Database Builder."""
+
     name: str = "setup_flood_adapt"
 
     def __init__(
@@ -59,6 +63,27 @@ class SetupFloodAdapt(Method):
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
     ):
+        """Create and validate a SetupFloodAdapt instance.
+
+        Parameters
+        ----------
+        sfincs_base_model : Path
+            The file path to the SFINCS base model.
+        fiat_base_model : Path
+            The file path to the FIAT base model.
+        event_set_yaml : Path, optional
+            The file path to the HydroFlows event set yaml file.
+        output_dir: Path, optional
+            The folder where the output is stored, by default "flood_adapt_builder".
+        **params
+            Additional parameters to pass to the GetERA5Rainfall instance.
+
+        See Also
+        --------
+        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Input>`
+        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Output>`
+        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
+        """
         self.input = Input(
             sfincs_base_model=sfincs_base_model,
             fiat_base_model=fiat_base_model,
@@ -77,6 +102,7 @@ class SetupFloodAdapt(Method):
             )
 
     def run(self):
+        """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(self.input.fiat_base_model, Path(self.params.output_dir, "fiat"))
 
@@ -106,6 +132,21 @@ def fa_db_config(
     sfincs_config: Path = "sfincs",
     probabilistic_set: Path | None = None,
 ):
+    """Create a TOML configuration file for the FloodAdapt Database Builder.
+
+    Parameters
+    ----------
+    output_dir : Path, optional
+        The directory where the output file will be saved, by default "flood_adapt_builder".
+    database_path : Path, optional
+        The path to the FloodAdapt database, by default "flood_adapt_db".
+    fiat_config : Path, optional
+        The path to the FIAT configuration, by default "fiat".
+    sfincs_config : Path, optional
+        The path to the SFINCS configuration, by default "sfincs".
+    probabilistic_set : Path | None, optional
+        The path to the probabilistic event set configuration, by default None.
+    """
     databasebuilder_config = {
         "name": "fa_database", 
         "database_path": database_path,
