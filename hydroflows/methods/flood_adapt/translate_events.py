@@ -130,7 +130,7 @@ def translate_events(
 
     """
     # Create output directory
-    fn_floodadapt = Path.joinpath(fa_events, test_set_name)
+    fn_floodadapt = Path.joinpath(fa_events)
     if not os.path.exists(fn_floodadapt):
         os.makedirs(fn_floodadapt)
 

@@ -78,21 +78,21 @@ class SetupFloodAdapt(Method):
 
     def run(self):
         # prepare fiat model
-        translate_model(self.input.fiat_base_model, self.params.output_dir)
+        translate_model(self.input.fiat_base_model, Path(self.params.output_dir, "fiat"))
 
         # prepare and copy sfincs model
-        shutil.copy(self.input.sfincs_base_model, self.input.sfincs_base_model)
+        shutil.copytree(self.input.sfincs_base_model, Path(self.params.output_dir, "sfincs"), dirs_exist_ok=True)
 
         # prepare probabilistic set
         if self.input.event_set_yaml is not None:
-            translate_events(self.input.event_set_yaml, self.params.output_dir)
+            translate_events(self.input.event_set_yaml, Path(self.params.output_dir, "events"), "probabilistic_set")
 
         # Create FloodAdapt Database Builder config
         fa_db_config(
             self.params.output_dir,
-            self.output.fiat_config,
-            self.output.sfincs_input,
-            self.output.probabilistic_set,
+            str(Path(self.params.output_dir, "fiat")),
+            str(Path(self.params.output_dir, "sfincs")),
+            str(Path(self.params.output_dir, "events")),
         )
 
         pass
@@ -119,6 +119,6 @@ def fa_db_config(
         },
     }
     with open(
-        os.path.join(database_path, "fa_database_builder_config.toml"), "w"
+        os.path.join(database_path, "fa_build.toml"), "w"
     ) as toml_file:
         toml.dump(databasebuilder_config, toml_file)
