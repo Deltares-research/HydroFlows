@@ -136,7 +136,7 @@ class SetupFloodAdapt(Method):
 
 def fa_db_config(
     output_dir: Path = "flood_adapt_builder",
-    database_path: Path = "flood_adapt_db",
+    database_path: Path = "Database/flood_adapt_db",
     fiat_config: Path = "fiat",
     sfincs_config: Path = "sfincs",
     probabilistic_set: Path | None = None,
