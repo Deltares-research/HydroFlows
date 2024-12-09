@@ -1,7 +1,12 @@
 from pathlib import Path
+import shutil
+import os
+import toml
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.method.translate_FIAT import translate_model
+from hydroflows.workflow.method.translate_events import translate_events
 
 __all__ = ["SetupFloodAdapt"]
 
@@ -36,7 +41,7 @@ class Output(Parameters):
     The file path to the flood adaptation model.
     """
 
-    fiat_config: Path
+    fiat_input: Path
 
     sfincs_input: Path
 
@@ -72,9 +77,37 @@ class SetupFloodAdapt(Method):
 
     def run(self):
         # prepare fiat model
+        translate_model(self.input.fiat_base_model, self.params.output_dir)
 
         # prepare and copy sfincs model
-
+        shutil.copy(self.input.sfincs_base_model, self.input.sfincs_base_model)
+        
         # prepare probabilistic set
+        if self.input.event_set_yaml is not None:
+            translate_events(self.input.event_set_yaml, self.params.output_dir)
+        
+        # Create FloodAdapt Database Builder config
+        fa_db_config(self.params.output_dir, self.output.fiat_config, self.output.sfincs_input, self.output.probabilistic_set)
 
         pass
+
+
+def fa_db_config(database_path: Path, fiat_config: Path, sfincs_config: Path, probabilistic_set: Path | None = None):
+    databasebuilder_config = {
+        "name": "fa_database",  #TODO: hard coded or input parameter?
+        "database_path": database_path,
+        "sfincs": sfincs_config,
+        "fiat": fiat_config,
+        "probabilistic_set": probabilistic_set,
+        "unit_system" : "metric", #TODO: hard coded or input parameter?
+        "gui": {
+            "max_flood_depth": 2,  #TODO: hard coded or input parameter?
+            "max_aggr_dmg":10000000, #TODO: hard coded or input parameter?
+            "max_footprint_dmg": 250000, #TODO: hard coded or input parameter?
+            "max_benefits": 50000000 #TODO: hard coded or input parameter?
+        }
+    }
+    with open(
+        os.path.join(database_path, "fa_database_builder_config.toml"), "w"
+    ) as toml_file:
+        toml.dump(databasebuilder_config, toml_file)
