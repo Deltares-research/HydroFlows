@@ -18,6 +18,7 @@ __eps__ = {
     "pluvial_design_events_GPEX": "hydroflows.methods.rainfall.pluvial_design_events_GPEX:PluvialDesignEventsGPEX",
     "pluvial_historical_events": "hydroflows.methods.rainfall.pluvial_historical_events:PluvialHistoricalEvents",
     "future_climate_rainfall": "hydroflows.methods.rainfall.future_climate_rainfall:FutureClimateRainfall",
+    "sfincs_region": "hydroflows.methods.sfincs.sfincs_region:SfincsRegion",
     "sfincs_build": "hydroflows.methods.sfincs.sfincs_build:SfincsBuild",
     "sfincs_run": "hydroflows.methods.sfincs.sfincs_run:SfincsRun",
     "sfincs_postprocess": "hydroflows.methods.sfincs.sfincs_postprocess:SfincsPostprocess",
