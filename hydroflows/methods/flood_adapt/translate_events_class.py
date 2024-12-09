@@ -1,17 +1,20 @@
-import tomli_w
-import toml
-from pathlib import Path
-import pathlib
-import os
-from hydroflows.events import EventSet
-from typing import Union
-import pandas as pd
-from pydantic import BaseModel
 import logging
+import os
+import pathlib
+from pathlib import Path
+from typing import Union
+
+import pandas as pd
+import toml
+import tomli_w
+from pydantic import BaseModel
+
+from hydroflows.events import EventSet
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
 # run the event in the FloodAdapt model. This foldr must be placed into the Floodadapt input/events folder.
-# NOTE: FloodAdapt does not support multiple water level stations, hence the time series can only be provided for one water level station. Only offshore models support that functionality. 
+# NOTE: FloodAdapt does not support multiple water level stations, hence the time series can only be provided for one water level station. Only offshore models support that functionality.
+
 
 class RiverModel(BaseModel):
     source: str = None
@@ -19,7 +22,6 @@ class RiverModel(BaseModel):
 
 
 class FloodAdaptEvent(BaseModel):
-
     name: str
     description: str = ""
     mode: str = "single_event"
@@ -33,6 +35,17 @@ class FloodAdaptEvent(BaseModel):
     tide: dict = {}
     surge: dict = {}
 
+    @property
+    def attrs(self) -> dict:
+        """
+        Returns all attributes of the class as a dictionary.
+
+        Returns
+        -------
+        dict
+            A dictionary containing all the attributes of the FloodAdapt instance.
+        """
+        return self.dict(exclude_none=True)
 
     def create_tide_file(self) -> pd.DataFrame:
         """
@@ -53,8 +66,9 @@ class FloodAdaptEvent(BaseModel):
         df_tide = pd.DataFrame()
         df_tide["time"] = pd.date_range(start=start, end=end, freq="h")
         df_tide["tide"] = 0
-        
+
         return df_tide
+
     @staticmethod
     def read_csv_stations(filepath: Union[str, Path]) -> list:
         """
@@ -87,10 +101,6 @@ class FloodAdaptEvent(BaseModel):
             return all_stations
 
 
-class EventModel(BaseModel):
-    attrs: FloodAdaptEvent
-
-
 class ForcingSources:
     def __init__(self):
         """
@@ -103,7 +113,11 @@ class ForcingSources:
         self.discharge = None
 
 
-def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] = None, test_set_name: str = None):
+def translate_events(
+    root: Union[str, Path] = None,
+    fa_events: Union[str, Path] = None,
+    test_set_name: str = None,
+):
     """
     Translate hydroMT events to floodadapt events.
 
@@ -115,7 +129,6 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
         Folder to write the floodadapt events to, by default None
 
     """
-
     # Create output directory
     fn_floodadapt = Path.joinpath(fa_events, test_set_name)
     if not os.path.exists(fn_floodadapt):
@@ -149,7 +162,7 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
         # Time
         fa_event.time["start_time"] = str(tstart).replace(":", "").replace("-", "")
         fa_event.time["end_time"] = str(tstop).replace(":", "").replace("-", "")
-        
+
         # Forcings
         for i in forcings:
             # Rainfall
@@ -161,9 +174,9 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
             else:
                 forcing_sources.rainfall = i.path.as_posix()
                 fa_event.rainfall["source"] = "timeseries"
-                fa_event.rainfall["timeseries_file"] = (
-                    f"{Path(forcing_sources.rainfall).stem}.csv"
-                )
+                fa_event.rainfall[
+                    "timeseries_file"
+                ] = f"{Path(forcing_sources.rainfall).stem}.csv"
             # Water level
             if "water_level" not in i.type and forcing_sources.water_level == None:
                 fa_event.tide["source"] = "timeseries"
@@ -182,16 +195,16 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
                 )
                 if len(csv_station_timeseries_waterlevel) == 1:
                     fa_event.tide["source"] = "timeseries"
-                    fa_event.tide["timeseries_file"] = (
-                        f"{Path(forcing_sources.water_level).stem}.csv"
-                    )
+                    fa_event.tide[
+                        "timeseries_file"
+                    ] = f"{Path(forcing_sources.water_level).stem}.csv"
                 else:
                     logging.error(
-                        f"FloodAdapt does not support more than one water level."
+                        "FloodAdapt does not support more than one water level."
                     )
                     return
                     # NOTE: More than one water level location are not supported in FA (possibly in offshore models only)
-                    #for key, value in csv_station_timeseries_waterlevel.items():
+                    # for key, value in csv_station_timeseries_waterlevel.items():
                     #    fa_event.tide[key] = {}
                     #    fa_event.tide[key]["source"] = "timeseries"
                     #    fa_event.tide[key]["timeseries_file"] = f"{key}.csv"
@@ -231,9 +244,8 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
         if not os.path.exists(event_fn):
             os.makedirs(event_fn)
 
-        obj = EventModel(attrs=fa_event)
         with open(os.path.join(event_fn, f"{name}.toml"), "wb") as f:
-            tomli_w.dump(obj.attrs.dict(exclude_none=True), f)
+            tomli_w.dump(fa_event.attrs, f)
 
         # Copy dataset into folder
         if forcing_sources.rainfall != None:
@@ -262,7 +274,7 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
             if len(csv_station_timeseries_discharge) == 1:
                 df_discharge = pd.read_csv(forcing_sources.discharge)
                 df_discharge.to_csv(
-                    event_fn / fa_event.river[0]['timeseries_file'],
+                    event_fn / fa_event.river[0]["timeseries_file"],
                     index=False,
                     header=None,
                 )
@@ -297,5 +309,7 @@ def translate_events(root: Union[str, Path] = None, fa_events: Union[str, Path] 
         }
 
         # Write final toml or dict.
-        with open(os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w") as toml_file:
+        with open(
+            os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w"
+        ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
