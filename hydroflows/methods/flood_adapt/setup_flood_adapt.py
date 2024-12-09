@@ -99,7 +99,7 @@ class SetupFloodAdapt(Method):
         )
         if self.input.event_set_yaml is not None:
             self.output.probabilistic_set = Path(
-                self.params.output_dir, "events", "probabilistic_set.toml"
+                self.params.output_dir, "probabilistic_set", "probabilistic_set.toml"
             )
 
     def run(self):
@@ -116,16 +116,16 @@ class SetupFloodAdapt(Method):
             dirs_exist_ok=True,
         )
 
-        # prepare probabilistic set
+        # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
             translate_events(
                 self.input.event_set_yaml,
-                Path(self.params.output_dir, "events"),
+                Path(self.params.output_dir, "probabilistic_set"),
                 "probabilistic_set",
             )
 
             # Create FloodAdapt Database Builder config
-            fa_db_config(probabilistic_set="events")
+            fa_db_config(probabilistic_set="probabilistic_set")
 
         else:
             # Create FloodAdapt Database Builder config
@@ -136,7 +136,6 @@ class SetupFloodAdapt(Method):
 
 def fa_db_config(
     output_dir: Path = "flood_adapt_builder",
-    database_path: Path = "Database/flood_adapt_db",
     fiat_config: Path = "fiat",
     sfincs_config: Path = "sfincs",
     probabilistic_set: Path | None = None,
@@ -147,8 +146,6 @@ def fa_db_config(
     ----------
     output_dir : Path, optional
         The directory where the output file will be saved, by default "flood_adapt_builder".
-    database_path : Path, optional
-        The path to the FloodAdapt database, by default "flood_adapt_db".
     fiat_config : Path, optional
         The path to the FIAT configuration, by default "fiat".
     sfincs_config : Path, optional
@@ -157,8 +154,8 @@ def fa_db_config(
         The path to the probabilistic event set configuration, by default None.
     """
     databasebuilder_config = {
-        "name": "fa_database",
-        "database_path": database_path,
+        "name": "floodadapt_db",
+        "database_path": "Database",
         "sfincs": sfincs_config,
         "fiat": fiat_config,
         "unit_system": "metric",  # TODO: hard coded or input parameter?
