@@ -86,30 +86,31 @@ class SetupFloodAdapt(Method):
         # prepare probabilistic set
         if self.input.event_set_yaml is not None:
             translate_events(self.input.event_set_yaml, Path(self.params.output_dir, "events"), "probabilistic_set")
+            
+            # Create FloodAdapt Database Builder config
+            fa_db_config(
+            probabilistic_set = "events"
+            )
 
-        # Create FloodAdapt Database Builder config
-        fa_db_config(
-            self.params.output_dir.as_posix(),
-            Path(self.params.output_dir, "fiat").as_posix(),
-            Path(self.params.output_dir, "sfincs").as_posix(),
-            Path(self.params.output_dir, "events").as_posix(),
-        )
+        else:
+            # Create FloodAdapt Database Builder config
+            fa_db_config()
 
         pass
 
 
 def fa_db_config(
-    database_path: Path,
-    fiat_config: Path,
-    sfincs_config: Path,
+    output_dir: Path = "flood_adapt_builder",
+    database_path: Path = "flood_adapt_db", 
+    fiat_config: Path = "fiat",
+    sfincs_config: Path = "sfincs",
     probabilistic_set: Path | None = None,
 ):
     databasebuilder_config = {
-        "name": "fa_database",  # TODO: hard coded or input parameter?
+        "name": "fa_database", 
         "database_path": database_path,
         "sfincs": sfincs_config,
         "fiat": fiat_config,
-        "probabilistic_set": probabilistic_set,
         "unit_system": "metric",  # TODO: hard coded or input parameter?
         "gui": {
             "max_flood_depth": 2,  # TODO: hard coded or input parameter?
@@ -118,7 +119,10 @@ def fa_db_config(
             "max_benefits": 50000000,  # TODO: hard coded or input parameter?
         },
     }
+    if probabilistic_set is not None:
+        databasebuilder_config["probabilistic_set"] = probabilistic_set
+
     with open(
-        os.path.join(database_path, "fa_build.toml"), "w"
+        Path(output_dir, "fa_build.toml"), "w"
     ) as toml_file:
         toml.dump(databasebuilder_config, toml_file)
