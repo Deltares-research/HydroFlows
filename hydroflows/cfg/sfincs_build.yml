@@ -36,7 +36,13 @@ setup_subgrid:
   nbins: 8
 
 setup_river_inflow:
-  hydrography: merit_hydro
-  river_upa: 10.0  # river upstream area threshold [km2]
+  # Uncomment when hydromt_sfincs is next released
+  # hydrography: merit_hydro
+  # river_upa: 10.0  # river upstream area threshold [km2]
+  # river_len: 1000
+  # keep_rivers_geom: True
+  # Delete when hydromt_sfincs is next released
+  rivers: rivers_lin2019_v1
   river_len: 1000
   keep_rivers_geom: True
+  reverse_river_geom: True # Remove when switching to hydrography
