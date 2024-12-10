@@ -1,3 +1,4 @@
+"""Setup FloodAdapt method."""
 import os
 import shutil
 from pathlib import Path
@@ -128,7 +129,6 @@ class SetupFloodAdapt(Method):
             translate_events(
                 self.input.event_set_yaml,
                 Path(self.params.output_dir, "probabilistic_set"),
-                "probabilistic_set",
             )
 
             # Create FloodAdapt Database Builder config

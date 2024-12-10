@@ -1,3 +1,5 @@
+"""Translate HydroFlows events to FloodAdapt events."""
+
 import logging
 import os
 import pathlib
@@ -20,24 +22,50 @@ class RiverModel(BaseModel):
     """Input parameters for the :py:class:`RiverModel`."""
 
     source: str = None
+    """Source of the river discharge data. Default set to "timeseries"."""
+
     timeseries_file: str = None
+    """File path to the river discharge time series file."""
 
 
 class FloodAdaptEvent(BaseModel):
     """Input parameters for the :py:class:`FloodAdaptEvent`."""
 
     name: str
+    """Name of the event."""
+
     description: str = ""
+    """Description of the event."""
+
     mode: str = "single_event"
+    """Mode of each event. Default set to "single event"."""
+
     template: str = "Historical_nearshore"
+    """FloodAdapt event template for each event. Default set to "Historical_nearshore."""
+
     timing: str = "historical"
+    """Timing of the event. Default set to "historical"."""
+
     water_level_offset: dict = {}
+    """Water level offset of the event."""
+
     wind: dict = {}
+    """Dictionary of the wind. Default set to "None". """
+
     rainfall: dict = {}
+    """Dictionary of the rainfall. Dictionary should include keys, values: source: "timeseries", timeseries_file: filepath."""
+
     river: list[RiverModel] = None
+    """List of dictionaries of the river discharge. Each river is described in one dictionary. Dictionary should include keys, values: source: "timeseries", timeseries_file: filepath. """
+
     time: dict = {}
+    """Timeframe of the event"""
+
     tide: dict = {}
+    """Dictionary of the tide. Dictionary should include keys, values: source: "timeseries", timeseries_file: filepath."""
+
     surge: dict = {}
+    """Dictionary of the wind. Default set to "None". """
 
     @property
     def attrs(self) -> dict:
@@ -108,31 +136,47 @@ class FloodAdaptEvent(BaseModel):
 class ForcingSources:
     """Input parameters for the :py:class:`ForcingSources`."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        rainfall: Union[str, Path] = None,
+        water_level: Union[str, Path] = None,
+        discharge: Union[str, Path] = None,
+    ) -> None:
         """
         Initialize ForcingSources object.
 
         Sets all forcing sources to None. These include rainfall, water level and discharge.
+
+        Parameters
+        ----------
+        rainfall : Union[str, Path], optional
+            The file path to the rainfall data.
+        water_level : Union[str, Path], optional
+            The file path to the water_level data.
+        discharge : Union[str, Path], optional
+            The file path to the river discharge data.
         """
-        self.rainfall = None
-        self.water_level = None
-        self.discharge = None
+        self.rainfall = rainfall
+        self.water_level = water_level
+        self.discharge = discharge
 
 
 def translate_events(
     root: Union[str, Path] = None,
     fa_events: Union[str, Path] = None,
-    test_set_name: str = None,
+    test_set_name: str = "probabilistic_set",
 ):
     """
     Translate HydroFlows events to floodAdapt events.
 
     Parameters
     ----------
-    root : Union[str, Path], optional
+    root : Union[str, Path]
         Path to the root folder of the events, by default None
-    fa_events : Union[str, Path], optional
+    fa_events : Union[str, Path]
         Folder to write the floodadapt events to, by default None
+    test_set_name : str
+        Name of the test set. Default is set to "probabilistic_set"
 
     """
     # Create output directory
@@ -230,7 +274,7 @@ def translate_events(
                 csv_station_timeseries_discharge = fa_event.read_csv_stations(
                     forcing_sources.discharge
                 )
-                for key, value in csv_station_timeseries_discharge.items():
+                for key in csv_station_timeseries_discharge.items():
                     rivers.timeseries_file = f"{key}.csv"
                     river.append(rivers.dict())
                 fa_event.river = river

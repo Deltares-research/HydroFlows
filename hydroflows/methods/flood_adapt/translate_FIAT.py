@@ -1,4 +1,4 @@
-# import required packages
+"""Translate Delft_FIAT model to be compatible with FloodAdapt."""
 from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
 
