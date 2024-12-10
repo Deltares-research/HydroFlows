@@ -86,9 +86,9 @@ class SetupFloodAdapt(Method):
         :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
         """
         self.input = Input(
-            sfincs_base_model = sfincs_base_model,
-            fiat_base_model = fiat_base_model,
-            event_set_yaml = event_set_yaml,
+            sfincs_base_model=sfincs_base_model,
+            fiat_base_model=fiat_base_model,
+            event_set_yaml=event_set_yaml,
         )
         self.params = Params(output_dir=output_dir)
 
@@ -106,7 +106,8 @@ class SetupFloodAdapt(Method):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(
-            os.path.dirname(self.input.fiat_base_model), Path(self.params.output_dir, "fiat")
+            os.path.dirname(self.input.fiat_base_model),
+            Path(self.params.output_dir, "fiat"),
         )
 
         # prepare and copy sfincs model
