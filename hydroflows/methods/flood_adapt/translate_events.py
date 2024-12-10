@@ -17,11 +17,15 @@ from hydroflows.events import EventSet
 
 
 class RiverModel(BaseModel):
+    """Input parameters for the :py:class:`RiverModel`."""
+
     source: str = None
     timeseries_file: str = None
 
 
 class FloodAdaptEvent(BaseModel):
+    """Input parameters for the :py:class:`FloodAdaptEvent`."""
+
     name: str
     description: str = ""
     mode: str = "single_event"
@@ -72,7 +76,7 @@ class FloodAdaptEvent(BaseModel):
     @staticmethod
     def read_csv_stations(filepath: Union[str, Path]) -> list:
         """
-        Reads a CSV file containing station data and returns a list of stations.
+        Read a CSV file containing station data and returns a list of stations.
 
         The CSV file is expected to have either two columns or more. The first column must be the timestamp of the timeseries.
         If the CSV file contains more than one station, individual DataFrames for each station are returned with keys in the format "station_{column_name}".
@@ -102,6 +106,8 @@ class FloodAdaptEvent(BaseModel):
 
 
 class ForcingSources:
+    """Input parameters for the :py:class:`ForcingSources`."""
+
     def __init__(self):
         """
         Initialize ForcingSources object.
@@ -119,7 +125,7 @@ def translate_events(
     test_set_name: str = None,
 ):
     """
-    Translate hydroMT events to floodadapt events.
+    Translate HydroFlows events to floodAdapt events.
 
     Parameters
     ----------

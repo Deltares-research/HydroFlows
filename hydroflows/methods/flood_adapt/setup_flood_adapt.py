@@ -13,6 +13,8 @@ __all__ = ["SetupFloodAdapt"]
 
 
 class Input(Parameters):
+    """Input parameters for the :py:class:`SetupFloodAdapt` method."""
+
     sfincs_base_model: Path
     """
     The file path to the SFINCS base model config file.
@@ -29,14 +31,9 @@ class Input(Parameters):
     """
 
 
-class Params(Parameters):
-    output_dir: Path = Path("flood_adapt_builder")
-    """
-    The directory where the output files will be saved.
-    """
-
-
 class Output(Parameters):
+    """Output parameters for the :py:class:`SetupFloodAdapt` method."""
+
     fa_build_toml: Path
     """
     The file path to the flood adaptation model.
@@ -50,6 +47,15 @@ class Output(Parameters):
 
     probabilistic_set: Path | None = None
     """The path to the event set configuration."""
+
+
+class Params(Parameters):
+    """Parameters for the :py:class:`SetupFloodAdapt` method."""
+
+    output_dir: Path = Path("flood_adapt_builder")
+    """
+    The directory where the output files will be saved.
+    """
 
 
 class SetupFloodAdapt(Method):

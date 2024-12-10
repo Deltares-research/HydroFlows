@@ -4,6 +4,21 @@ from hydromt_fiat.fiat import FiatModel
 
 
 def translate_model(root, new_root):
+    """
+    Translate a FIAT model from the given root directory to a new root directory.
+
+    Parameters
+    ----------
+    root : str or Path
+        The path to the root directory of the existing FIAT model.
+    new_root : str or Path
+        The path to the new root directory where the translated FIAT model will be saved.
+
+    Notes
+    -----
+    The translation involves renaming columns in both exposure databases and geometry
+    objects to match the required format for the new model.
+    """
     logger = setuplog("hydromt_fiat", log_level=10)
     fm = FiatModel(root=root, mode="w+", logger=logger)
 
