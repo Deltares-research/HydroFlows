@@ -172,10 +172,10 @@ def translate_events(
         # Forcings
         for i in forcings:
             # Rainfall
-            if "rainfall" not in i.type and forcing_sources.rainfall == None:
+            if "rainfall" not in i.type and forcing_sources.rainfall is None:
                 fa_event.rainfall["source"] = "none"
                 fa_event.rainfall["increase"] = 0.0
-            elif forcing_sources.rainfall != None:
+            elif forcing_sources.rainfall is not None:
                 pass
             else:
                 forcing_sources.rainfall = i.path.as_posix()
@@ -184,13 +184,13 @@ def translate_events(
                     "timeseries_file"
                 ] = f"{Path(forcing_sources.rainfall).stem}.csv"
             # Water level
-            if "water_level" not in i.type and forcing_sources.water_level == None:
+            if "water_level" not in i.type and forcing_sources.water_level is None:
                 fa_event.tide["source"] = "timeseries"
                 forcing_sources.water_level = "synthetic"
                 df_tide = fa_event.create_tide_file()
                 fa_event.tide["timeseries_file"] = "tide.csv"
             elif (
-                forcing_sources.water_level != None
+                forcing_sources.water_level is not None
                 and forcing_sources.water_level != "synthetic"
             ):
                 pass
@@ -219,9 +219,9 @@ def translate_events(
             fa_event.water_level_offset["units"] = "feet"
 
             # RiverModel
-            if "discharge" not in i.type and forcing_sources.discharge == None:
+            if "discharge" not in i.type and forcing_sources.discharge is None:
                 fa_event.river = []
-            elif forcing_sources.discharge != None:
+            elif forcing_sources.discharge is not None:
                 pass
             else:
                 river = []
@@ -254,14 +254,14 @@ def translate_events(
             tomli_w.dump(fa_event.attrs, f)
 
         # Copy dataset into folder
-        if forcing_sources.rainfall != None:
+        if forcing_sources.rainfall is not None:
             df_rain = pd.read_csv(forcing_sources.rainfall)
             df_rain.to_csv(
                 event_fn / fa_event.rainfall["timeseries_file"],
                 index=False,
                 header=None,
             )
-        if forcing_sources.water_level != None:
+        if forcing_sources.water_level is not None:
             if "synthetic" in forcing_sources.water_level:
                 df_tide.to_csv(event_fn / "tide.csv", index=False, header=None)
             elif len(csv_station_timeseries_waterlevel) == 1:
@@ -276,7 +276,7 @@ def translate_events(
                     value.to_csv(
                         os.path.join(event_fn, f"{key}.csv"), index=False, header=None
                     )
-        if forcing_sources.discharge != None:
+        if forcing_sources.discharge is not None:
             if len(csv_station_timeseries_discharge) == 1:
                 df_discharge = pd.read_csv(forcing_sources.discharge)
                 df_discharge.to_csv(
