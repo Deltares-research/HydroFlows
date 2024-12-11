@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 from pydantic import Field, FilePath, model_validator
 
-from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows._typing import DataCatalogPath
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -79,7 +79,7 @@ class Params(Parameters):
     """The path to the root directory where the SFINCS model will be created."""
 
     # optional parameter
-    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """
