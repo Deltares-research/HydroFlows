@@ -36,10 +36,10 @@ def test_rule_to_dict(rule: Rule):
     rule_dict = rule.to_dict()
     assert rule_dict["method"] == "test_method"
     assert rule_dict["kwargs"] == {
-        "input_file1": "$config.test_method_input_file1",
-        "input_file2": "$config.test_method_input_file2",
-        "out_root": ".",
-        "param": "param",
+        "input_file1": "$config.test_rule_input_file1",
+        "input_file2": "$config.test_rule_input_file2",
+        "out_root": "$config.test_rule_out_root",
+        "param": "$config.test_rule_param",
     }
     assert rule_dict["rule_id"] == "test_rule"
 
@@ -240,13 +240,6 @@ def test_wildcard_product():
     ]
 
 
-def test_rule_add_method_inputs_to_config(rule, workflow):
-    for refs in rule.method.input._refs.values():
-        assert refs.startswith("$config.")
-    assert "test_method_input_file1" in workflow.config.to_dict().keys()
-    assert "test_method_input_file2" in workflow.config.to_dict().keys()
-
-
 def test_create_references_for_method_inputs(workflow: Workflow):
     method1 = TestMethod(input_file1="test.file", input_file2="test2.file")
     workflow.add_rule(method=method1, rule_id="method1")
@@ -284,6 +277,7 @@ def test_add_method_params_to_config(workflow: Workflow):
     }
     # default_param should not be included in workflow.config
     assert "default_param" not in workflow.config.to_dict().values()
+    assert "default_param2" not in workflow.config.to_dict().values()
 
 
 def test_run(caplog, mocker):

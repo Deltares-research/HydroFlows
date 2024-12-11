@@ -22,6 +22,7 @@ class TestMethodParams(Parameters):
     param: str | None = None
     out_root: Path
     default_param: str = "default_param"
+    default_param2: str = "default_param2"
 
 
 class TestMethod(Method):
@@ -34,6 +35,7 @@ class TestMethod(Method):
         param: None | str = None,
         out_root: Path | None = None,
         default_param: str = "default_param",
+        **params,
     ) -> None:
         self.input: TestMethodInput = TestMethodInput(
             input_file1=input_file1,
