@@ -134,9 +134,13 @@ if __name__ == "__main__":
 
     # %% Prepare FloodAdapt
     fa_run = SetupFloodAdapt(
-        fiat_base_model=Path(r"cases\pluvial_risk\models\fiat\settings.toml"),
-        sfincs_base_model=Path(r"cases\pluvial_risk\models\sfincs\sfincs.inp"),
-        event_set_yaml=Path(r"cases\pluvial_risk\data\events\pluvial_events.yml"),
+        fiat_base_model=Path(case_root, "cases/pluvial_risk/models/fiat/settings.toml"),
+        sfincs_base_model=Path(
+            case_root, "cases/pluvial_risk/models/sfincs/sfincs.inp"
+        ),
+        event_set_yaml=Path(
+            case_root, "cases/pluvial_risk/data/events/pluvial_events.yml"
+        ),
     )
     w.add_rule(fa_run, rule_id="setup_flood_adapt")
     # %% run workflow
