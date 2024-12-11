@@ -88,27 +88,6 @@ class Workflow:
         m = Method.from_kwargs(name=str(method), **kwargs)
         self.add_rule(m, rule_id)
 
-    def create_references(self, overwrite=False) -> None:
-        """Set references to the input of rules that use the output of other rules in the workflow."""
-        output_path_refs = self._output_path_refs
-        for rule in self.rules:
-            for key, value in rule.input:
-                if not overwrite and key in rule.input._refs:
-                    continue
-                if isinstance(value, Path):
-                    value = value.as_posix()
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.input.{key} is not a Path object (but {type(value)})"
-                    )
-                    continue
-                if value in output_path_refs:
-                    rule.input._refs.update({key: output_path_refs.get(value)})
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.input.{key} ({value}) is not an output of another rule"
-                    )
-
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
         return Ref(ref, self)
