@@ -25,10 +25,9 @@ dependencies = [
   "pydantic",                 # data validation
   "requests",                 # data fetching
   "tqdm",                     # progress bar
-  "tqdm",                     # progress bar
   "xarray",                   # data handling
   "jinja2",                   # templating
-  "hatyan",                   # tidal analysis
+  "cwltool; platform_system != 'Windows'",
 ]
 
 requires-python = ">=3.10"
