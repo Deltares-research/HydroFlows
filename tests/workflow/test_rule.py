@@ -271,6 +271,21 @@ def test_create_references_for_method_inputs(workflow: Workflow):
     }
 
 
+def test_add_method_params_to_config(workflow: Workflow):
+    method = TestMethod(
+        input_file1="test.file", input_file2="test2.file", param="test_param"
+    )
+    workflow.add_rule(method=method)
+    # Assert the non-default test_param has been moved to config
+    assert workflow.config.test_method_param == "test_param"
+    assert workflow.rules[0].method.params._refs == {
+        "param": "$config.test_method_param",
+        "out_root": "$config.test_method_out_root",
+    }
+    # default_param should not be included in workflow.config
+    assert "default_param" not in workflow.config.to_dict().values()
+
+
 def test_run(caplog, mocker):
     caplog.set_level(logging.INFO)
     workflow = Workflow(wildcards={"region": ["region1", "region2"]})

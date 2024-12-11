@@ -4,6 +4,7 @@ import logging
 import warnings
 import weakref
 from itertools import product
+from inspect import signature
 from pathlib import Path, PosixPath
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -75,6 +76,7 @@ class Rule:
         self._detect_wildcards()
         self._validate_wildcards()
         self._create_references_for_method_inputs()
+        self._add_method_params_to_config()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -307,9 +309,18 @@ class Rule:
                 config_ref = "$config." + config_key
                 self.method.input._refs.update({key: config_ref})
 
-    def _add_method_params_to_config(self):
+    def _add_method_params_to_config(self) -> None:
+        sig = signature(type(self.method))
         for p in self.method.params:
-            pass
+            key, value = p
+            default_value = sig.parameters.get(key).default
+            if value != default_value:
+                config_key = f"{self.rule_id}_{key}"
+                self.workflow.config = self.workflow.config.model_copy(
+                    update={config_key: value}
+                )
+                config_ref = "$config." + config_key
+                self.method.params._refs.update({key: config_ref})
 
     ## RUN METHODS
     def run(

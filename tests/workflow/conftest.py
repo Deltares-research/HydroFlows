@@ -33,6 +33,7 @@ class TestMethod(Method):
         input_file2: Path,
         param: None | str = None,
         out_root: Path | None = None,
+        default_param: str = "default_param",
     ) -> None:
         self.input: TestMethodInput = TestMethodInput(
             input_file1=input_file1,
