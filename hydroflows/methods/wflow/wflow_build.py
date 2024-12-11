@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows._typing import DataCatalogPath
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
@@ -57,7 +57,7 @@ class Params(Parameters):
     `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
     """
 
-    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """

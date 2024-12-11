@@ -52,8 +52,11 @@ class Params(Parameters):
     end_time: datetime = datetime(2018, 12, 31)
     """End date for the fetched timeseries"""
 
-    catalog_key: str = "gtsm_codec_reanalysis_10min_v1"
+    catalog_key: str = "gtsm_codec_reanalysis"
     """Data catalog key for GTSM data."""
+
+    buffer: float = 2000
+    """Buffer around region to look for GTSM stations, [m]"""
 
 
 class GetGTSMData(Method):
@@ -111,6 +114,7 @@ class GetGTSMData(Method):
             self.params.catalog_key,
             geom=region,
             time_tuple=(self.params.start_time, self.params.end_time),
+            buffer=self.params.buffer
         )
 
         s = gtsm["surge"]

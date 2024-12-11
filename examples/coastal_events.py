@@ -2,17 +2,18 @@
 
 # %% Import modules
 import os
+import subprocess
 from pathlib import Path
 
 from hydroflows.log import setuplog
-from hydroflows.methods.sfincs import (
-    SfincsBuild,
-    SfincsUpdateForcing,
-    SfincsRun,
-)
 from hydroflows.methods.coastal import (
     CoastalDesignEvents,
     GetGTSMData,
+)
+from hydroflows.methods.sfincs import (
+    SfincsBuild,
+    SfincsRun,
+    SfincsUpdateForcing,
 )
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow import Workflow, WorkflowConfig
@@ -42,14 +43,14 @@ if __name__ == "__main__":
     config = WorkflowConfig(
         # General settings
         region=Path(pwd, "data/build/region.geojson"),
-        gtsm_catalog=Path(cache_dir, "data_catalog.yml"),
-        data_libs=[Path(cache_dir, "data_catalog.yml")],
-        start_time="2014-01-01",
-        end_time="2021-12-31",
+        data_libs=Path(cache_dir, "data_catalog.yml"),
+        start_time="2000-01-01",
+        end_time="2018-12-31",
         plot_fig=True,
         # sfincs settings
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+        sfincs_vm = "docker",
+        sfincs_tag = "sfincs-v2.1.1-Dollerup-Release",
         sfincs_res=50,
         river_upa=10,
         # design events
@@ -73,8 +74,9 @@ if __name__ == "__main__":
     w.add_rule(sfincs_build,rule_id="sfincs_build")
 
     # %% Get the GTSM data
+
     get_gtsm_data = GetGTSMData(
-        gtsm_catalog=w.get_ref("$config.gtsm_catalog"),
+        gtsm_catalog=w.get_ref("$config.data_libs"),
         start_time=w.get_ref("$config.start_time"),
         end_time=w.get_ref("$config.end_time"),
         region=w.get_ref("$config.region"),
@@ -105,7 +107,8 @@ if __name__ == "__main__":
     
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
-        sfincs_exe=w.get_ref("$config.sfincs_exe")
+        run_method=w.get_ref("$config.sfincs_vm"),
+        docker_tag=w.get_ref("$config.sfincs_tag")
     )
 
     w.add_rule(sfincs_run, rule_id="sfincs_run")
@@ -113,4 +116,10 @@ if __name__ == "__main__":
     w.run(dryrun=True)
 
     # %% Write to a snakemake workflow file
-    w.to_snakemake(f"cases/{name}/workflow.smk")
+    w.to_snakemake(Path(case_root, "Snakefile"))
+
+    # %% Snakemake dryrun
+    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
+
+    # %% Snakemake run
+    # subprocess.run(["snakemake","-c 1", "--rerun-incomplete"], cwd=case_root)
