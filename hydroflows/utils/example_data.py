@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 # update the base URL and registry with new versions of the data
 # use create_artifact.py script in the p-drive hydroflows-test-data folder to update the registry
 with open(Path(__file__).parent / "registry.json", "r") as f:
-    DATABASE = json.load(f)["test_data"]
+    DATABASE = json.load(f)
     BASE_URL = DATABASE["url"]
     REGISTRY = DATABASE["data"]
 CACHE_DIR = Path("~", ".cache", "hydroflows").expanduser()

@@ -1,12 +1,9 @@
 {
-    "test_data":
-    {
-        "url": "doi:10.5281/zenodo.14280572",
-        "data": {
-            "fiat-model.tar.gz": "ba9ad369b260ad2ebc6bec8a15f5abfe339d8f21d72675c99d926233f6bab2a3",
-            "global-data.tar.gz": "34b38a3a13200a7f4461ff86425ceef5f2d2dcf80abfc8a1fb024823bc565360",
-            "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
-            "wflow-model.tar.gz": "d64eb186f034fca32d88ee9a834eea4b5d518c848485c3a586772eb2ead8b0ef"
-        }
+    "url": "doi:10.5281/zenodo.14280572",
+    "data": {
+        "fiat-model.tar.gz": "ba9ad369b260ad2ebc6bec8a15f5abfe339d8f21d72675c99d926233f6bab2a3",
+        "global-data.tar.gz": "34b38a3a13200a7f4461ff86425ceef5f2d2dcf80abfc8a1fb024823bc565360",
+        "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
+        "wflow-model.tar.gz": "d64eb186f034fca32d88ee9a834eea4b5d518c848485c3a586772eb2ead8b0ef"
     }
 }
