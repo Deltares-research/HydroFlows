@@ -5,6 +5,7 @@ from typing import Dict, Literal, Optional, cast
 
 import geopandas as gdf
 from hydromt_sfincs import SfincsModel
+from hydromt_sfincs.sfincs_input import SfincsInput
 
 from hydroflows.events import Event, Forcing
 from hydroflows.utils.path_utils import make_relative_paths
@@ -102,3 +103,26 @@ def parse_event_sfincs(
     # Write forcing and config only
     sf.write_forcing()
     sf.write_config()
+
+
+def get_sfincs_basemodel_root(sfincs_inp: Path) -> Path:
+    """Get folder with SFINCS static files.
+
+    Parameters
+    ----------
+    sfincs_inp : Path
+        Path to event sfincs.inp file.
+
+    Returns
+    -------
+    Path
+        Path to parent directory with static files.
+    """
+    inp = SfincsInput.from_file(sfincs_inp)
+    config = inp.to_dict()
+    n = 0
+    for key, value in config.items():
+        if "file" in key and "../" in value:
+            n = max(n, value.count("../"))
+
+    return sfincs_inp.parents[n]

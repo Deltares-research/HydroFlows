@@ -156,7 +156,7 @@ w.add_rule(fiat_update_hazard, rule_id="fiat_update_hazard")
 # %%
 fiat_run = FIATRun(
     fiat_cfg=fiat_update_hazard.output.fiat_out_cfg,
-    fiat_bin=w.get_ref("$config.fiat_exe"),
+    fiat_exe=w.get_ref("$config.fiat_exe"),
 )
 
 w.add_rule(fiat_run, rule_id="fiat_run")

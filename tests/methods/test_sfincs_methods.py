@@ -15,8 +15,6 @@ from hydroflows.methods.sfincs import (
 )
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 
-SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
-
 
 def test_sfincs_region(
     sfincs_region_path: Path, merit_hydro_basins: Path, tmp_path: Path
@@ -59,31 +57,56 @@ def test_sfincs_update(sfincs_tmp_root: Path, test_data_dir: Path):
 
 
 @pytest.mark.requires_data()
-@pytest.mark.skipif(not SFINCS_EXE.exists(), reason="sfincs executable not found")
-@pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_sfincs_run(sfincs_tmp_root: Path):
-    sfincs_inp = Path(sfincs_tmp_root, "sfincs.inp")
+@pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_root", "sfincs_sim_tmp_root"])
+@pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
+def test_sfincs_run(
+    sfincs_root: Path,
+    method: str,
+    has_docker: bool,
+    has_apptainer: bool,
+    sfincs_exe: Path,
+    request,
+):
+    if method == "docker" and not has_docker:
+        pytest.skip("Docker not available")
+    elif method == "apptainer" and not has_apptainer:
+        pytest.skip("Apptainer not available")
+    elif method == "exe" and not sfincs_exe.is_file():
+        pytest.skip(f"SFINCS executable not found at {sfincs_exe}")
+    elif method == "exe" and platform.system() != "Windows":
+        pytest.skip("SFINCS exe only supported on Windows")
+    # load fixture
+    sfincs_root: Path = request.getfixturevalue(sfincs_root)
+
+    sfincs_inp = Path(sfincs_root, "sfincs.inp")
     sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
+    sfincs_log = Path(sfincs_inp.parent, "sfincs.log")
+    if sfincs_map.is_file():
+        sfincs_map.unlink()
+    if sfincs_log.is_file():
+        sfincs_log.unlink()
 
     # modify the tstop to a short time
-    sf = SfincsModel(root=sfincs_tmp_root, mode="r+")
+    sf = SfincsModel(root=sfincs_root, mode="r+")
     sf.set_config("tref", "20191231 000000")
     sf.set_config("tstart", "20191231 000000")
     sf.set_config("tstop", "20191231 010000")
     sf.write_config()
 
     assert sfincs_inp.is_file()
-    sf_run = SfincsRun(sfincs_inp=str(sfincs_inp), sfincs_exe=SFINCS_EXE)
+    sf_run = SfincsRun(
+        sfincs_inp=str(sfincs_inp), run_method=method, sfincs_exe=sfincs_exe
+    )
     assert sf_run.output.sfincs_map == sfincs_map
     sf_run.run_with_checks()
 
 
 @pytest.mark.requires_data()
-def test_sfincs_downscale(sfincs_tmp_root: Path):
-    tmp_hazard_root = Path(sfincs_tmp_root, "hazard")
+def test_sfincs_downscale(sfincs_sim_tmp_root: Path, sfincs_tmp_root: Path):
+    tmp_hazard_root = Path(sfincs_tmp_root.parent, "hazard")
 
     sf_post = SfincsDownscale(
-        sfincs_map=str(sfincs_tmp_root / "sfincs_map.nc"),
+        sfincs_map=str(sfincs_sim_tmp_root / "sfincs_map.nc"),
         sfincs_subgrid_dep=str(sfincs_tmp_root / "subgrid" / "dep_subgrid.tif"),
         output_root=str(tmp_hazard_root),
         event_name="test",
