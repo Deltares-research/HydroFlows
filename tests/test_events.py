@@ -82,7 +82,7 @@ def test_event(tmp_csv: Path, tmp_path: Path):
 
 def test_event_set(test_data_dir: Path):
     event_set = EventSet(
-        root=str(test_data_dir),
+        root=str(test_data_dir / "rainfall_events"),
         events=[
             {"name": "rp050", "path": "event_rp050.yml"},
             {"name": "rp010", "path": "event_rp010.yml"},

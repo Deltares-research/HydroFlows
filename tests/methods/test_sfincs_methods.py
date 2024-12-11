@@ -48,7 +48,7 @@ def test_sfincs_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
 def test_sfincs_update(sfincs_tmp_root: Path, test_data_dir: Path):
     sf = SfincsUpdateForcing(
         sfincs_inp=str(sfincs_tmp_root / "sfincs.inp"),
-        event_yaml=str(test_data_dir / "event_rp010.yml"),
+        event_yaml=str(test_data_dir / "rainfall_events" / "event_rp010.yml"),
         event_name="rp010",
         sim_subfolder="sim",
     )

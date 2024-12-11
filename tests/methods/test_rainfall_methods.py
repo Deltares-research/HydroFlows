@@ -101,7 +101,7 @@ def test_future_climate_rainfall(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "events.yml"
+    event_set_yaml = test_data_dir / "rainfall_events" / "events.yml"
 
     out_root = Path(tmp_path / "CC_scaling")
 

@@ -356,7 +356,7 @@ def tmp_tif(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def event_set_file(test_data_dir) -> Path:
-    return test_data_dir / "events.yml"
+    return test_data_dir / "rainfall_events" / "events.yml"
 
 
 @pytest.fixture()
