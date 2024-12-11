@@ -10,7 +10,7 @@ from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
 from pydantic import FilePath
 
-from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows._typing import DataCatalogPath
 from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
@@ -76,7 +76,7 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
