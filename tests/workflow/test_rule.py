@@ -253,9 +253,22 @@ def test_create_references_for_method_inputs(workflow: Workflow):
     method2 = TestMethod(
         input_file1="$rules.method1.output.output_file1",
         input_file2="$rules.method1.output.output_file2",
+        out_root="root",
     )
     workflow.add_rule(method=method2, rule_id="method2")
-    assert workflow
+    # Assert that refs of inputs of first rule are pointing to config
+    assert workflow.rules[0].method.input._refs == {
+        "input_file1": "$config.method1_input_file1",
+        "input_file2": "$config.method1_input_file2",
+    }
+    # Assert that workflow config contains the input values of the first rule
+    assert workflow.config.method1_input_file1 == "test.file"
+    assert workflow.config.method1_input_file2 == "test2.file"
+    # Assert that refs of second rule point to output of first rule
+    assert workflow.rules[1].method.input._refs == {
+        "input_file1": "$rules.method1.output.output_file1",
+        "input_file2": "$rules.method1.output.output_file2",
+    }
 
 
 def test_run(caplog, mocker):
