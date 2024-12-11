@@ -61,7 +61,6 @@ class Rule:
         self._workflow_ref = weakref.ref(workflow)
 
         # move method inputs to config
-        
 
         # placeholders for wildcards detection
         self._wildcard_fields: List[str] = []
@@ -289,24 +288,24 @@ class Rule:
             if key in self.method.input._refs:
                 continue
             if isinstance(value, Path):
-                    value = value.as_posix()
-            if isinstance(value, list): # Reduce method can contain list
+                value = value.as_posix()
+            if isinstance(value, list):  # Reduce method can contain list
                 for v in value:
                     if v in self.workflow._output_path_refs:
-                        self.method.input._refs.update({key:output_path_refs.get(v)})
+                        self.method.input._refs.update({key: output_path_refs.get(v)})
                 continue
-            if value in self.workflow._output_path_refs:
-                self.method.input._refs.update({key:output_path_refs.get(value)})
+            if value in self.workflow._output_path_refs.values():
+                self.method.input._refs.update({key: value})
             else:
-                config_key = f"{self.method.name}_{key}"
+                config_key = f"{self.rule_id}_{key}"
                 logger.info("Adding %s to config", config_key)
                 # Add input to config
-                self.workflow.config = self.workflow.config.model_copy(update={config_key: value})
+                self.workflow.config = self.workflow.config.model_copy(
+                    update={config_key: value}
+                )
                 # Replace methond input with reference to config
                 config_ref = "$config." + config_key
                 self.method.input._refs.update({key: config_ref})
-                
-
 
     def _add_method_params_to_config(self):
         for p in self.method.params:
@@ -354,7 +353,6 @@ class Rule:
             m.dryrun(missing_file_error=missing_file_error)
         else:
             m.run_with_checks()
-    
 
 
 class Rules:

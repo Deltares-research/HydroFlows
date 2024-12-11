@@ -239,13 +239,23 @@ def test_wildcard_product():
         {"region": "xx", "event": ["1", "b"]},
     ]
 
+
 def test_rule_add_method_inputs_to_config(rule, workflow):
     for refs in rule.method.input._refs.values():
         assert refs.startswith("$config.")
     assert "test_method_input_file1" in workflow.config.to_dict().keys()
     assert "test_method_input_file2" in workflow.config.to_dict().keys()
-   
 
+
+def test_create_references_for_method_inputs(workflow: Workflow):
+    method1 = TestMethod(input_file1="test.file", input_file2="test2.file")
+    workflow.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(
+        input_file1="$rules.method1.output.output_file1",
+        input_file2="$rules.method1.output.output_file2",
+    )
+    workflow.add_rule(method=method2, rule_id="method2")
+    assert workflow
 
 
 def test_run(caplog, mocker):
@@ -283,8 +293,6 @@ def test_run_method_instance(mocker):
     mocker.patch.object(TestMethod, "run_with_checks")
     rule._run_method_instance(wildcards={"region": "region1"})
     test_method.run_with_checks.assert_called()
-
-
 
 
 def test_rules(workflow, rule):
