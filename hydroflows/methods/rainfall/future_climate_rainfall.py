@@ -75,9 +75,6 @@ class Params(Parameters):
     event_names_output: Optional[ListOfStr] = None
     """List of event names for the scaled future climate events."""
 
-    time_col: str = "time"
-    """Time column name per event csv file."""
-
     input: Input = Field(exclude=True)
     """Internal variable to link input."""
 
@@ -219,7 +216,7 @@ class FutureClimateRainfall(ExpandMethod):
             forcing_file = Path(
                 self.output.future_event_csv.as_posix().format(**fmt_dict)
             )
-            future_event_df.to_csv(forcing_file, index=False)
+            future_event_df.to_csv(forcing_file, index=True)
 
             # write event to yaml
             future_event_file = Path(

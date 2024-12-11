@@ -14,6 +14,8 @@ from hydroflows.workflow.method_parameters import Parameters
 
 logger = getLogger(__name__)
 
+__all__ = ["FutureSLR"]
+
 
 class Input(Parameters):
     """Input parameters for the :py:class:`FutureSLR` method."""
@@ -54,10 +56,11 @@ class Params(Parameters):
     for different climate models can be taken via:
     `IPCC WGI Interactive Atlas <https://interactive-atlas.ipcc.ch/>`_"""
 
-    slr_unit: Literal["m", "cm", "mm", "ft", "in"]
+    slr_unit: Literal["m", "cm", "mm", "ft", "in"] = "m"
     """The unit (length) of the sea level rise value (`slr_value`),
     Valid options are 'm' for meters, 'cm' for centimeters,
-    "mm" for milimeters, "ft" for feet and "in" for inches."""
+    "mm" for milimeters, "ft" for feet and "in" for inches.
+    Default is 'm'."""
 
     event_root: Path
     """Root folder to save the derived offset events."""
@@ -70,9 +73,6 @@ class Params(Parameters):
 
     event_names_output: Optional[ListOfStr] = None
     """List of event names for the offset future climate events."""
-
-    time_col: str = "time"
-    """Time column name per event csv file."""
 
     input: Input = Field(exclude=True)
     """Internal variable to link input."""
@@ -104,13 +104,13 @@ class Params(Parameters):
 
 
 class FutureSLR(ExpandMethod):
-    """Rule for deriving future (climate) sea level rise by applying a user-specified offset to an event."""
+    """Rule for deriving future (climate) sea level (rise) by applying a user-specified offset to an event."""
 
     name: str = "future_slr"
 
     _test_kwargs = {
         "scenario_name": "RCP85",
-        "slr_change": 0.12,
+        "slr_value": 0.12,
         "event_set_yaml": Path("event_set.yaml"),
         "event_names_input": ["wl_event1", "wl_event2"],
     }
@@ -118,9 +118,9 @@ class FutureSLR(ExpandMethod):
     def __init__(
         self,
         scenario_name: str,
-        slr_change: int,
+        slr_value: float,
         event_set_yaml: Path,
-        event_root: Path = Path("data/events/future_climate_slr"),
+        event_root: Path = Path("data/events/future_climate_sea_level"),
         wildcard: str = "future_event",
         event_names_input: Optional[List[str]] = None,
         event_names_output: Optional[List[str]] = None,
@@ -135,12 +135,13 @@ class FutureSLR(ExpandMethod):
             for a future climate projection.
         scenario_name: str
             Future scenario name for which the Sea Level Rise offset is applied.
-        slr_change: float
-            Temperature change corresponding to the future climate scenario `scenario_name`,
-            indicating the temperature difference between the year of the event
-            to be scaled and the future climate period of interest.
+        slr_value: float
+            Sea level rise (SLR) change value corresponding to the future climate scenario `scenario_name`.
+            This value is added to the input event (water level) time series specified in `event_set_yaml`.
+            The unit of the SLR value can be determined in the `slr_unit` parameter. As default the value
+            is expected in meters.
         event_root: Path, optional
-            Root folder to save the derived scaled events, by default "data/events/future_rainfall".
+            Root folder to save the derived scaled events, by default "data/events/future_climate_sea_level".
         wildcard: str
             The wildcard key for expansion over the scaled events, default is "future_event".
         event_names_input, event_names_output: Optional[List[str]]
@@ -159,7 +160,7 @@ class FutureSLR(ExpandMethod):
 
         self.params: Params = Params(
             scenario_name=scenario_name,
-            slr_change=slr_change,
+            slr_value=slr_value,
             event_root=event_root,
             wildcard=wildcard,
             event_names_input=event_names_input,
@@ -190,7 +191,7 @@ class FutureSLR(ExpandMethod):
             # Load the event
             event: Event = event_set.get_event(name)
 
-            # get precip event
+            # get water level event
             if len(event.forcings) > 1:
                 logger.warning(
                     f"Event {name} has more than one forcing. The first water level forcing is used."
@@ -216,7 +217,7 @@ class FutureSLR(ExpandMethod):
             forcing_file = Path(
                 self.output.future_event_csv.as_posix().format(**fmt_dict)
             )
-            future_event_df.to_csv(forcing_file, index=False)
+            future_event_df.to_csv(forcing_file, index=True)
 
             # write event to yaml
             future_event_file = Path(

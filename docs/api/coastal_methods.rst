@@ -57,3 +57,14 @@ Coastal Design events from return period dataset
     coastal_design_events_from_rp_data.Input
     coastal_design_events_from_rp_data.Output
     coastal_design_events_from_rp_data.Params
+
+Future climate coastal events
+-----------------------------
+
+.. autosummary::
+    :toctree: ../_generated
+
+    future_climate_sea_level.FutureSLR
+    future_climate_sea_level.Input
+    future_climate_sea_level.Output
+    future_climate_sea_level.Params
