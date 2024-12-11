@@ -1,0 +1,6 @@
+name: h_event02
+forcings:
+- type: water_level
+  path: h_event02.csv
+  locs_path: bnd_locations.gpkg
+  locs_id_col: stations
