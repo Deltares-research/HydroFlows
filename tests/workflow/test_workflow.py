@@ -32,7 +32,7 @@ def w() -> Workflow:
 def workflow_yaml_dict():
     return {
         "config": {
-            "input_file": "tests/_data/rio_region.geojson",
+            "input_file": "tests/_data/region.geojson",
             "events": ["1", "2", "3"],
             "root": "root",
         },
@@ -168,7 +168,7 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     assert w.rules[0].rule_id == "mock_expand_method"
     assert w.rules[1].rule_id == "mock_reduce_method"
     assert isinstance(w.config, WorkflowConfig)
-    assert w.config.input_file == "tests/_data/rio_region.geojson"
+    assert w.config.input_file == "tests/_data/region.geojson"
 
     test_yml = {
         "config": {"region": "data/test_region.geojson", "rps": [5, 10, 50]},

@@ -73,15 +73,13 @@ def bnd_locations() -> gpd.GeoDataFrame:
 
 @pytest.mark.requires_data()
 @pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
-def test_get_gtsm_data(
-    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
-):
+def test_get_gtsm_data(region: Path, tmp_path: Path, catalog_path: Path = catalog_path):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
 
     params = {"start_time": start_time, "end_time": end_time}
 
-    region = rio_region.as_posix()
+    region = region.as_posix()
     data_dir = Path(tmp_path, "gtsm_data")
 
     rule = GetGTSMData(
@@ -110,14 +108,10 @@ def test_create_tide_surge_timeseries(
 
 @pytest.mark.requires_data()
 @pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
-def test_get_coast_rp(
-    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
-):
+def test_get_coast_rp(region: Path, tmp_path: Path, catalog_path: Path = catalog_path):
     data_dir = Path(tmp_path, "coast_rp")
 
-    rule = GetCoastRP(
-        region=rio_region, coastrp_catalog=catalog_path, data_root=data_dir
-    )
+    rule = GetCoastRP(region=region, coastrp_catalog=catalog_path, data_root=data_dir)
 
     rule.run_with_checks()
 

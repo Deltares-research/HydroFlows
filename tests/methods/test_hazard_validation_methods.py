@@ -9,9 +9,9 @@ from hydroflows.methods.hazard_validation import FloodmarksValidation
 
 
 @pytest.fixture()
-def hazard_map_data(rio_region: Path) -> xr.DataArray:
+def hazard_map_data(region: Path) -> xr.DataArray:
     # Get extent sfincs model
-    geom = gpd.read_file(rio_region).to_crs(4326)
+    geom = gpd.read_file(region)
     bbox = list(geom.bounds.loc[0])
 
     # Make coordinates for hazard map
@@ -39,14 +39,14 @@ def hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
 
 
 def test_floodmarks_validation(
-    tmp_path: Path, tmp_floodmark_points: Path, hazard_map: Path, rio_region: Path
+    tmp_path: Path, tmp_floodmark_points: Path, hazard_map: Path, region: Path
 ):
     out_root = Path(tmp_path / "data")
 
     rule = FloodmarksValidation(
         floodmarks_geom=tmp_floodmark_points,
         flood_hazard_map=hazard_map,
-        region=rio_region,
+        region=region,
         waterlevel_col="water_level_obs",
         waterlevel_unit="m",
         out_root=out_root,
