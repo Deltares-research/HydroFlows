@@ -82,11 +82,11 @@ def test_translate_events(tmp_event: Path, tmp_output_event: Path):
 
 
 def test_fa_setup(
-    fiat_base_model_path: Path, sfincs_inp_path: Path, event_set_yaml_path: Path
+    fiat_cfg_path: Path, sfincs_inp_path: Path, event_set_yaml_path: Path
 ):
     # Setup the rule
     rule = SetupFloodAdapt(
-        fiat_base_model=fiat_base_model_path,
+        fiat_cfg=fiat_cfg_path,
         sfincs_inp=sfincs_inp_path,
         event_set_yaml=event_set_yaml_path,
     )

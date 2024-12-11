@@ -5,6 +5,7 @@ from pathlib import Path
 
 import toml
 
+from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
 from hydroflows.methods.flood_adapt.translate_FIAT import translate_model
 from hydroflows.workflow.method import Method
@@ -21,7 +22,7 @@ class Input(Parameters):
     The file path to the SFINCS base model config file.
     """
 
-    fiat_base_model: Path
+    fiat_cfg: Path
     """
     The file path to the FIAT base model config file.
     """
@@ -40,10 +41,10 @@ class Output(Parameters):
     The file path to the flood adaptation model.
     """
 
-    fiat_input: Path
+    fiat_out_cfg: Path
     """The path to the translated FIAT model configuration."""
 
-    sfincs_input: Path
+    sfincs_out_inp: Path
     """The path to the copied sfincs model configuration."""
 
     probabilistic_set: Path | None = None
@@ -67,7 +68,7 @@ class SetupFloodAdapt(Method):
     def __init__(
         self,
         sfincs_inp: Path,
-        fiat_base_model: Path,
+        fiat_cfg: Path,
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
     ):
@@ -77,7 +78,7 @@ class SetupFloodAdapt(Method):
         ----------
         sfincs_inp : Path
             The file path to the SFINCS base model.
-        fiat_base_model : Path
+        fiat_cfg : Path
             The file path to the FIAT base model.
         event_set_yaml : Path, optional
             The file path to the HydroFlows event set yaml file.
@@ -92,17 +93,17 @@ class SetupFloodAdapt(Method):
         :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Output>`
         :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
         """
-        self.input = Input(
+        self.input: Input = Input(
             sfincs_inp=sfincs_inp,
-            fiat_base_model=fiat_base_model,
+            fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
         )
-        self.params = Params(output_dir=output_dir)
+        self.params: Params = Params(output_dir=output_dir)
 
-        self.output = Output(
+        self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
-            fiat_input=Path(self.params.output_dir, "fiat", "settings.toml"),
-            sfincs_input=Path(self.params.output_dir, "sfincs", "sfincs.inp"),
+            fiat_out_cfg=Path(self.params.output_dir, "fiat", "settings.toml"),
+            sfincs_out_inp=Path(self.params.output_dir, "sfincs", "sfincs.inp"),
         )
         if self.input.event_set_yaml is not None:
             self.output.probabilistic_set = Path(
@@ -113,7 +114,7 @@ class SetupFloodAdapt(Method):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(
-            os.path.dirname(self.input.fiat_base_model),
+            os.path.dirname(self.input.fiat_cfg),
             Path(self.params.output_dir, "fiat"),
         )
 
@@ -142,39 +143,21 @@ class SetupFloodAdapt(Method):
 
 
 def fa_db_config(
-    output_dir: Path = "flood_adapt_builder",
-    fiat_config: Path = "fiat",
-    sfincs_config: Path = "sfincs",
+    config: Path = Path(HYDROMT_CONFIG_DIR / "fa_database_build.yml"),
     probabilistic_set: Path | None = None,
 ):
-    """Create a TOML configuration file for the FloodAdapt Database Builder.
-
+    """Create the path to the configuration file (.yml) that defines the settings.
+    
     Parameters
     ----------
-    output_dir : Path, optional
-        The directory where the output file will be saved, by default "flood_adapt_builder".
-    fiat_config : Path, optional
-        The path to the FIAT configuration, by default "fiat".
-    sfincs_config : Path, optional
-        The path to the SFINCS configuration, by default "sfincs".
-    probabilistic_set : Path | None, optional
-        The path to the probabilistic event set configuration, by default None.
+    config : Path
+        The file path to the SFINCS base model.
+    probabilistic_set : Path, optional
+        The file path to the HydroFlows event set yaml file.
     """
-    databasebuilder_config = {
-        "name": "floodadapt_db",
-        "database_path": "Database",
-        "sfincs": sfincs_config,
-        "fiat": fiat_config,
-        "unit_system": "metric",  # TODO: hard coded or input parameter?
-        "gui": {
-            "max_flood_depth": 2,  # TODO: hard coded or input parameter?
-            "max_aggr_dmg": 10000000,  # TODO: hard coded or input parameter?
-            "max_footprint_dmg": 250000,  # TODO: hard coded or input parameter?
-            "max_benefits": 50000000,  # TODO: hard coded or input parameter?
-        },
-    }
+    config = toml.load(config)
     if probabilistic_set is not None:
-        databasebuilder_config["probabilistic_set"] = probabilistic_set
+        config["probabilistic_set"] = probabilistic_set
 
-    with open(Path(output_dir, "fa_build.toml"), "w") as toml_file:
-        toml.dump(databasebuilder_config, toml_file)
+    with open(Path("flood_adapt_builder", "fa_build.toml"), "w") as toml_file:
+        toml.dump(config, toml_file)

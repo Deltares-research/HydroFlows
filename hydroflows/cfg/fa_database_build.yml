@@ -1,0 +1,10 @@
+name: "floodadapt_db"
+database_path": "Database"
+sfincs: sfincs_config
+fiat: fiat_config,
+unit_system: metric
+gui:
+  max_flood_depth: 2
+  max_aggr_dmg: 10000000
+  max_footprint_dmg: 250000
+  max_benefits: 50000000

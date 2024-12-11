@@ -134,20 +134,20 @@ if __name__ == "__main__":
 
     # %% Prepare FloodAdapt
     fa_run = SetupFloodAdapt(
-        fiat_base_model=Path(case_root, "models/fiat/settings.toml"),
+        fiat_cfg=Path(case_root, "models/fiat/settings.toml"),
         sfincs_inp=Path(case_root, "models/sfincs/sfincs.inp"),
         event_set_yaml=Path(case_root, "data/events/pluvial_events.yml"),
     )
     w.add_rule(fa_run, rule_id="setup_flood_adapt")
 
     # %% run workflow
-    w.run(dryrun=True)
+    w.run(dryrun=False)
 
     # %% to snakemake
     w.to_snakemake(Path(case_root, "Snakefile"))
 
     # %% subprocess to run snakemake
-    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
+    #subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
     # uncomment to run the workflow
-    # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
+    #subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
     #

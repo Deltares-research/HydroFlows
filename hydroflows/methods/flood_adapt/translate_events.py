@@ -77,7 +77,7 @@ class FloodAdaptEvent(BaseModel):
         dict
             A dictionary containing all the attributes of the FloodAdapt instance.
         """
-        return self.dict(exclude_none=True)
+        return self.model_dump(exclude_none=True)
 
     def create_tide_file(self) -> pd.DataFrame:
         """
