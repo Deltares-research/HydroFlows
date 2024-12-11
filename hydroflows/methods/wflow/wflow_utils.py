@@ -7,6 +7,7 @@ import cartopy.io.img_tiles as cimgt
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import tomli
 import xarray as xr
 from dateutil.relativedelta import relativedelta
 from matplotlib import colors
@@ -209,3 +210,24 @@ def plot_basemap(
             Path(fn_out).parent.mkdir(parents=True)
         plt.savefig(fn_out, dpi=300, bbox_inches="tight")
     return fig, ax
+
+
+def get_wflow_basemodel_root(wflow_toml: Path) -> Path:
+    """Get folder with WFLOW static files from input.path_static config.
+
+    Parameters
+    ----------
+    wflow_toml : Path
+        Path to event wflow toml file.
+
+    Returns
+    -------
+    Path
+        Path to parent directory with static files.
+    """
+    with open(wflow_toml, "rb") as f:
+        config = tomli.load(f)
+
+    static_path = config["input"]["path_static"]
+    basemodel_root = Path(wflow_toml.parent, static_path).resolve().parent
+    return basemodel_root

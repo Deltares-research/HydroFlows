@@ -17,17 +17,23 @@ dependencies = [
   "geopandas",                # Reading vector data
   "hatyan",                   # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@f13442064892ad408f51404b7530ba2d658c1015", # hydromt plugin for FIAT models
+  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@9a053e073fdc635069261333fe8f789240d1118a", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
+  "jinja2",                   # templating
   "matplotlib",               # plotting
+  "netcdf4",                  # data handling
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pooch",                    # test data fetching
   "pydantic",                 # data validation
+  "pyyaml",                   # configs
   "requests",                 # data fetching
+  "shapely",                  # geometry
+  "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
   "xarray",                   # data handling
-  "jinja2",                   # templating
 ]
+
 
 requires-python = ">=3.10"
 readme = "README.rst"
@@ -59,12 +65,11 @@ doc = [
 ]
 extra = [
   "jupyter",
-  "snakemake",      # Workflow manager
+  "snakemake>=8.20, <9.0",      # Workflow manager
   "graphviz",
   "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
 ]
 test = [
-  "pooch",          # test data fetching
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
@@ -154,22 +159,23 @@ hydroflows = { path = ".", editable = true }
 hydromt = ">=0.9.4,<1.0"
 hydromt_sfincs = ">=1.1.0,<1.2"
 hydromt_wflow = ">=0.6,<0.7"
-snakemake = "*"
 
-# [tool.pixi.feature.py310.dependencies]
-# python = "3.10.*"
+[tool.pixi.feature.models.dependencies]  # pixi only
+delft_fiat = "0.2.0"  # Delft fiat
+juliaup = "*"         # julia package manager to install julia & wflow
+
+[tool.pixi.feature.extra.dependencies]
+snakemake = { version= ">=8.20,<9.0", channel= "bioconda" }
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "doc", "test", "extra", "py311"], solve-group = "py311" }
+default = { features = ["dev", "doc", "test", "extra", "py311", "models"], solve-group = "py311" }
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
-# dev-py310 = { features = ["dev", "doc", "test", "extra", "py310"], solve-group = "py310" }
-# test-py310 = { features = ["test"], solve-group = "py310" }
-test-py311 = { features = ["test"], solve-group = "py311" }
+test-py311 = { features = ["test", "extra"], solve-group = "py311" }
 
 [tool.pixi.tasks]
 install-pre-commit = "pre-commit install"
@@ -179,13 +185,18 @@ lint = { cmd = ["pre-commit", "run", "--all"] }
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
 
-examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/workflow.smk"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
+examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples-pluvial"] }
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples-pluvial"] }
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
 docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
+
+# Installation julia and wflow
+install-julia = "juliaup add 1.10.5 && juliaup override unset && juliaup override set 1.10.5"
+update-add-wflow = "julia --eval='using Pkg; Registry.update(); Pkg.add(name=\"Wflow\", version=\"0.8.1\")'"
+install-wflow = { depends_on = ["install-julia", "update-add-wflow"] }

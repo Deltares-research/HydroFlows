@@ -19,13 +19,6 @@ FIAT_DATA_PATH = Path(
     "hydromt_fiat_catalog_global.yml",
 ).as_posix()
 
-FIAT_EXE = Path(
-    Path(__file__).parent.parent,
-    "_bin",
-    "fiat",
-    "fiat.exe",
-)
-
 
 @pytest.fixture()
 def fiat_simple_root(tmp_path: Path, sfincs_region_path):
@@ -124,12 +117,25 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
-# TODO add the hazard data.
-@pytest.mark.skipif(not FIAT_EXE.exists(), reason="fiat executable not found")
-@pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_fiat_run(tmp_path: Path, fiat_simple_root: Path):
+@pytest.mark.requires_data()
+@pytest.mark.parametrize("method", ["python", "exe"])
+def test_fiat_run(
+    fiat_sim_tmp_root: Path, method: str, fiat_exe: Path, has_fiat_python: bool
+):
+    if method == "exe" and not fiat_exe.is_file():
+        pytest.skip(f"FIAT executable not found at {fiat_exe}")
+    elif method == "exe" and platform.system() != "Windows":
+        pytest.skip("FIAT exe only supported on Windows")
+    elif method == "python" and not has_fiat_python:
+        pytest.skip("FIAT python package not found")
+    elif method == "python" and platform.system() != "Windows":
+        # FIXME: FIAT python does currently not work on Linux
+        # when reading the vulnerability curves
+        # ERROR: Cannot cast array data from dtype('<U32') to dtype('float64') according to the rule 'safe'
+        pytest.skip("FIAT python does currently not work on Linux..")
+
     # specify in- and output
-    fiat_cfg = Path(fiat_simple_root) / "settings.toml"
+    fiat_cfg = Path(fiat_sim_tmp_root, "settings.toml")
     # Setup the method
-    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=FIAT_EXE)
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
     rule.run_with_checks()
