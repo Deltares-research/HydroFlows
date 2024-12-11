@@ -3,7 +3,6 @@
 import logging
 import warnings
 import weakref
-from inspect import signature
 from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
@@ -284,23 +283,17 @@ class Rule:
         return wc_product
 
     def _create_references_for_method_inputs(self):
-        output_path_refs = self.workflow._output_path_refs
         for key, value in self.method.input:
             # Skip if key is already present in input refs
-            if key in self.method.input._refs:
+            if key in self.method.input._refs or value is None:
                 continue
             if isinstance(value, Path):
                 value = value.as_posix()
-            if isinstance(value, list):  # Reduce method can contain list
-                for v in value:
-                    if v in self.workflow._output_path_refs:
-                        self.method.input._refs.update({key: output_path_refs.get(v)})
-                continue
             if value in self.workflow._output_path_refs.values():
                 self.method.input._refs.update({key: value})
             else:
                 config_key = f"{self.rule_id}_{key}"
-                logger.info("Adding %s to config", config_key)
+                logger.debug("Adding %s to config", config_key)
                 # Add input to config
                 self.workflow.config = self.workflow.config.model_copy(
                     update={config_key: value}
@@ -310,18 +303,13 @@ class Rule:
                 self.method.input._refs.update({key: config_ref})
 
     def _add_method_params_to_config(self) -> None:
-        sig = signature(type(self.method))
         for p in self.method.params:
             key, value = p
-            # Get default param value by inspecting the object
-            if key in sig.parameters:
-                default_value = sig.parameters.get(key).default
             # Check if key can be found in method Params class
-            elif key in self.method.params.model_fields:
+            if key in self.method.params.model_fields:
                 default_value = self.method.params.model_fields.get(key).default
             else:
-                err_msg = f"Method parameter, {key}, not recognized."
-                raise ValueError(err_msg)
+                default_value = None
 
             if value != default_value:
                 config_key = f"{self.rule_id}_{key}"
@@ -329,6 +317,7 @@ class Rule:
                     update={config_key: value}
                 )
                 config_ref = "$config." + config_key
+                logging.debug("Adding %s to config", config_key)
                 self.method.params._refs.update({key: config_ref})
 
     ## RUN METHODS
