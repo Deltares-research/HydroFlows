@@ -3,9 +3,9 @@
 import logging
 import warnings
 import weakref
-from itertools import product
 from inspect import signature
-from pathlib import Path, PosixPath
+from itertools import product
+from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
