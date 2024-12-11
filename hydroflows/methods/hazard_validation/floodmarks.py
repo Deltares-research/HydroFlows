@@ -16,6 +16,7 @@ from pydantic import PositiveInt
 from shapely.geometry import Point, box
 
 from hydroflows._typing import ListOfFloat, TupleOfInt
+from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -360,29 +361,6 @@ def R2(actual, predicted):
     ss_residual = np.sum((actual - predicted) ** 2)
     r2 = 1 - (ss_residual / ss_total)
     return r2
-
-
-def convert_to_meters(value: float, waterlevel_unit) -> float:
-    """
-    Convert a value to meters.
-
-    Parameters
-    ----------
-    value (float): Value to convert.
-    unit (str): The unit of the value ("m", "cm", "mm", "ft", or "in").
-
-    Returns
-    -------
-    float: value converted to meters.
-    """
-    CONVERSION_FACTORS = {
-        "m": 1,
-        "cm": 0.01,
-        "mm": 0.001,
-        "ft": 0.3048,  # 1 foot = 0.3048 meters
-        "in": 0.0254,  # 1 inch = 0.0254 meters
-    }
-    return value * CONVERSION_FACTORS[waterlevel_unit]
 
 
 def _plot_scores(

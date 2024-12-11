@@ -94,7 +94,7 @@ def test_data_dir() -> Path:
 @pytest.fixture()
 def event_set_file(test_data_dir) -> Path:
     """Return the path to the event set yaml."""
-    return test_data_dir / "events.yml"
+    return test_data_dir / "rainfall_events" / "events.yml"
 
 
 @pytest.fixture()

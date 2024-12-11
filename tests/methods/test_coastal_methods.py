@@ -9,15 +9,17 @@ import pytest
 import xarray as xr
 from shapely.geometry import Point
 
+from hydroflows.events import EventSet
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
 from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
     CoastalDesignEventFromRPData,
 )
 from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
+from hydroflows.methods.coastal.future_slr import FutureSLR
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
 
-catalog_path = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\data_catalog.yml")
+catalog_path = Path(R"p:\11209169-003-up2030\data\WATER_LEVEL\data_catalog.yml")
 
 
 @pytest.fixture()
@@ -164,3 +166,30 @@ def test_coastal_event_from_rp_data(
     )
 
     rule.run_with_checks()
+
+
+def test_future_climate_sea_level(
+    test_data_dir: Path,
+    tmp_path: Path,
+):
+    event_set_yaml = test_data_dir / "coastal_events" / "coastal_events.yml"
+
+    out_root = Path(tmp_path / "future_climate_sea_level")
+
+    rule = FutureSLR(
+        event_set_yaml=event_set_yaml,
+        scenario_name="RCP85",
+        slr_value=50,
+        slr_unit="cm",
+        event_root=out_root,
+    )
+
+    rule.run_with_checks()
+
+    fn_scaled_event_set = rule.output.future_event_set_yaml
+    scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)
+    assert isinstance(scaled_event_set.events, list)
+
+    # are all paths absolute
+    assert all([Path(event["path"]).is_absolute() for event in scaled_event_set.events])
+    assert all([Path(event["path"]).exists() for event in scaled_event_set.events])

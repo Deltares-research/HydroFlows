@@ -99,7 +99,7 @@ def test_future_climate_rainfall(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "events.yml"
+    event_set_yaml = test_data_dir / "rainfall_events" / "events.yml"
 
     out_root = Path(tmp_path / "CC_scaling")
 
@@ -108,7 +108,6 @@ def test_future_climate_rainfall(
         scenario_name="RCP85",
         dT=2.5,
         event_root=out_root,
-        time_col="date",
     )
 
     rule.run_with_checks()
