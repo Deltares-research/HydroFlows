@@ -16,7 +16,7 @@ __all__ = ["SetupFloodAdapt"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SetupFloodAdapt` method."""
 
-    sfincs_base_model: Path
+    sfincs_inp: Path
     """
     The file path to the SFINCS base model config file.
     """
@@ -66,7 +66,7 @@ class SetupFloodAdapt(Method):
 
     def __init__(
         self,
-        sfincs_base_model: Path,
+        sfincs_inp: Path,
         fiat_base_model: Path,
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
@@ -75,7 +75,7 @@ class SetupFloodAdapt(Method):
 
         Parameters
         ----------
-        sfincs_base_model : Path
+        sfincs_inp : Path
             The file path to the SFINCS base model.
         fiat_base_model : Path
             The file path to the FIAT base model.
@@ -93,7 +93,7 @@ class SetupFloodAdapt(Method):
         :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
         """
         self.input = Input(
-            sfincs_base_model=sfincs_base_model,
+            sfincs_inp=sfincs_inp,
             fiat_base_model=fiat_base_model,
             event_set_yaml=event_set_yaml,
         )
@@ -119,7 +119,7 @@ class SetupFloodAdapt(Method):
 
         # prepare and copy sfincs model
         shutil.copytree(
-            os.path.dirname(self.input.sfincs_base_model),
+            os.path.dirname(self.input.sfincs_inp),
             Path(self.params.output_dir, "sfincs"),
             dirs_exist_ok=True,
         )
