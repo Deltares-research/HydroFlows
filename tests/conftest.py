@@ -6,20 +6,20 @@ from pathlib import Path
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import pooch
 import pytest
 import rasterio
 import rasterio.transform
 import xarray as xr
-from requests import HTTPError
 from shapely.geometry import Point, Polygon
 
+from hydroflows.cfg import CFG_DIR
 from hydroflows.events import EventSet
 from hydroflows.utils.example_data import fetch_data
 
 EXAMPLE_DIR = Path(Path(__file__).parents[1], "examples")
 
 
+## The executables of the models
 @pytest.fixture(scope="session")
 def has_docker():
     try:
@@ -61,164 +61,225 @@ def sfincs_exe():
 
 @pytest.fixture(scope="session")
 def wflow_exe():
-    return Path(EXAMPLE_DIR, "bin", "wflow_v0.8.1", "wflow_cli.exe")
+    return Path(EXAMPLE_DIR, "bin", "wflow_v0.8.1", "bin", "wflow_cli.exe")
 
 
 @pytest.fixture(scope="session")
 def fiat_exe():
-    return Path(EXAMPLE_DIR, "bin", "fiat_v0.2.0", "fiat.exe")
+    return Path(EXAMPLE_DIR, "bin", "fiat_v0.2.1", "fiat.exe")
 
 
+## Genaral directories and files
 @pytest.fixture(scope="session")
-def test_data_dir() -> Path:
-    return Path(__file__).parent / "_data"
+def build_cfgs() -> dict:
+    """Return a dictonary of the build yaml's."""
+    cfgs = {}
+    for f in CFG_DIR.iterdir():
+        cfgs[f.stem] = f
+    return cfgs
 
 
 @pytest.fixture(scope="session")
 def example_data_dir() -> Path:
+    """Return the path to the example data directory."""
     return Path(EXAMPLE_DIR, "data")
 
 
 @pytest.fixture(scope="session")
-def large_test_data() -> pooch.Pooch:
-    """Return a pooch for large test test data."""
-    path = Path(__file__).parent / "_large_data"
-    try:  # get registry from remote
-        base_url = r"https://github.com/Deltares-research/hydroflows-data/releases/download/data"
-        registry_file = pooch.retrieve(
-            url=f"{base_url}/registry.txt",
-            known_hash=None,
-            path=path,
-            fname="registry.txt",
-        )
-    except HTTPError:  # use cached registry
-        base_url = str(path / "data")
-        registry_file = path / "registry.txt"
-    if not Path(registry_file).is_file():
-        raise FileNotFoundError(f"Registry file not found: {registry_file}")
-    # create a Pooch instance for the large test data
-    large_test_data = pooch.create(
-        path=path / "data",
-        base_url=base_url,
-        registry=None,
-    )
-    large_test_data.load_registry(path / "registry.txt")
-    return large_test_data
+def test_data_dir() -> Path:
+    """Return the path to the testdata directory."""
+    return Path(__file__).parent / "_data"
+
+
+@pytest.fixture()
+def event_set_file(test_data_dir) -> Path:
+    """Return the path to the event set yaml."""
+    return test_data_dir / "events.yml"
+
+
+@pytest.fixture()
+def event_set(event_set_file) -> EventSet:
+    """Return event set."""
+    return EventSet.from_yaml(event_set_file)
 
 
 @pytest.fixture(scope="session")
-def rio_test_data(large_test_data: pooch.Pooch) -> Path:
-    """Return the path to the rio data catalog."""
-    paths = large_test_data.fetch(
-        "rio_data_catalog.zip",
-        processor=pooch.Unzip(extract_dir="rio_data_catalog"),
-    )
-    path = Path(paths[0]).parent / "data_catalog.yml"
+def region():
+    """Path to the region vector file."""
+    path = EXAMPLE_DIR / "data" / "build" / "region.geojson"
     assert path.is_file()
     return path
 
 
 @pytest.fixture(scope="session")
-def merit_hydro_basins() -> Path:
+def global_data() -> Path:
+    """Return path to global data directory."""
+    path = fetch_data("global-data")
+    assert Path(path, "data_catalog.yml").is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def global_catalog(global_data: Path) -> Path:
+    """Return path to data catalog of global data."""
+    return global_data / "data_catalog.yml"
+
+
+@pytest.fixture(scope="session")
+def merit_hydro_basins(global_data: Path) -> Path:
     """Return the path to the merit hydro basin."""
-    cache_dir = fetch_data("global-data")
-    merit_file = cache_dir / "cat_MERIT_Hydro_v07_Basins_v01.gpkg"
+    merit_file = global_data / "cat_MERIT_Hydro_v07_Basins_v01.gpkg"
     assert merit_file.is_file()
     return merit_file
 
 
+## The cached and temporary models
 @pytest.fixture(scope="session")
-def rio_wflow_model(large_test_data: pooch.Pooch) -> Path:
-    """Return the path to the rio wflow model config file."""
-    _ = large_test_data.fetch(
-        "rio_wflow_model.zip",
-        processor=pooch.Unzip(extract_dir="rio_wflow_model"),
-    )
-    path = large_test_data.path / "rio_wflow_model" / "wflow.toml"
-    assert path.is_file()
+def fiat_cached_model() -> Path:
+    """Return path to the cached fiat model."""
+    path = fetch_data("fiat-model")
+    assert Path(path, "settings.toml")
     return path
 
 
 @pytest.fixture()
-def sfincs_tmp_root(tmp_path: Path) -> Path:
-    """Return the path to the sfincs test model."""
-    tmp_root = tmp_path / "sfincs-model"
-    cache_dir = fetch_data("sfincs-model")
+def fiat_tmp_model(tmp_path: Path, fiat_cached_model: Path) -> Path:
+    """Return the path of the fiat model in temp directory."""
+    tmp_root = tmp_path / "fiat_tmp_model"
     ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
-    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
-    assert Path(tmp_root, "sfincs.inp").is_file()
-    return tmp_root
-
-
-@pytest.fixture()
-def sfincs_sim_tmp_root(sfincs_tmp_root: Path) -> Path:
-    """Return the path to the sfincs test model nested simulation."""
-    sim_folder = "simulations/p_event01"
-    sim_tmp_root = sfincs_tmp_root / sim_folder
-    cache_dir = fetch_data("sfincs-model")
-    shutil.copytree(cache_dir / sim_folder, sim_tmp_root)
-    assert Path(sim_tmp_root, "sfincs.inp").is_file()
-    return sim_tmp_root
-
-
-@pytest.fixture()
-def wflow_tmp_root(tmp_path: Path) -> Path:
-    """Return the path to the wflow test model."""
-    tmp_root = tmp_path / "wflow-model"
-    cache_dir = fetch_data("wflow-model")
-    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
-    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
-    assert Path(tmp_root, "wflow_sbm.toml").is_file()
-    return tmp_root
-
-
-@pytest.fixture()
-def wflow_sim_tmp_root(wflow_tmp_root: Path) -> Path:
-    """Return the path to the wflow test model nested simulation."""
-    sim_folder = "simulations/default"
-    sim_tmp_root = wflow_tmp_root / sim_folder
-    cache_dir = fetch_data("wflow-model")
-    ignore = shutil.ignore_patterns("run_default")
-    shutil.copytree(cache_dir / sim_folder, sim_tmp_root, ignore=ignore)
-    assert Path(sim_tmp_root, "wflow_sbm.toml").is_file()
-    return sim_tmp_root
-
-
-@pytest.fixture()
-def fiat_tmp_root(tmp_path: Path) -> Path:
-    """Return the path to the fiat test model."""
-    tmp_root = tmp_path / "fiat-model"
-    cache_dir = fetch_data("fiat-model")
-    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
-    shutil.copytree(cache_dir, tmp_root, ignore=ignore)
+    shutil.copytree(fiat_cached_model, tmp_root, ignore=ignore)
     assert Path(tmp_root, "settings.toml").is_file()
     return tmp_root
 
 
 @pytest.fixture()
-def fiat_sim_tmp_root(fiat_tmp_root: Path):
-    """Return the path to the fiat test model nested simulation."""
-    sim_folder = "simulations/fluvial_events"
-    sim_tmp_root = fiat_tmp_root / sim_folder
-    cache_dir = fetch_data("fiat-model")
+def fiat_sim_model(fiat_cached_model: Path, fiat_tmp_model: Path):
+    """Return the path of the temporary fiat model for simulations."""
+    sim_dir = "simulations/fluvial_events"
+    sim_root = fiat_tmp_model / sim_dir
     ignore = shutil.ignore_patterns("output")
-    shutil.copytree(cache_dir / sim_folder, sim_tmp_root, ignore=ignore)
-    assert Path(sim_tmp_root, "settings.toml").is_file()
-    return sim_tmp_root
+    shutil.copytree(fiat_cached_model / sim_dir, sim_root, ignore=ignore)
+    assert Path(sim_root, "settings.toml").is_file()
+    return sim_root
+
+
+@pytest.fixture(scope="session")
+def sfincs_cached_model() -> Path:
+    """Return the path to cached sfincs model."""
+    path = fetch_data("sfincs-model")
+    assert Path(path, "sfincs.inp").is_file()
+    return path
 
 
 @pytest.fixture()
-def gpex_data() -> Path:
+def sfincs_tmp_model(tmp_path: Path, sfincs_cached_model: Path) -> Path:
+    """Return the path sfincs model in temp directory."""
+    tmp_root = tmp_path / "sfincs_tmp_model"
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(sfincs_cached_model, tmp_root, ignore=ignore)
+    assert Path(tmp_root, "sfincs.inp").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def sfincs_sim_model(sfincs_cached_model: Path, sfincs_tmp_model: Path) -> Path:
+    """Return the path to the sfincs test model nested simulation."""
+    sim_dir = "simulations/p_event01"
+    sim_root = sfincs_tmp_model / sim_dir
+    shutil.copytree(sfincs_cached_model / sim_dir, sim_root)
+    assert Path(sim_root, "sfincs.inp").is_file()
+    return sim_root
+
+
+@pytest.fixture(scope="session")
+def sfincs_test_region(sfincs_cached_model: Path):
+    """Return the path to the pre-made sfincs region vector file."""
+    path = sfincs_cached_model / "gis" / "region.geojson"
+    assert path.is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def wflow_cached_model() -> Path:
+    """Return the path to cached wflow model."""
+    path = fetch_data("wflow-model")
+    assert Path(path, "wflow_sbm.toml").is_file()
+    return path
+
+
+@pytest.fixture()
+def wflow_tmp_model(tmp_path: Path, wflow_cached_model: Path) -> Path:
+    """Return the path to the temporary wflow model for testing."""
+    tmp_root = tmp_path / "wflow_tmp_model"
+    ignore = shutil.ignore_patterns("simulations", "*.tar.gz")
+    shutil.copytree(wflow_cached_model, tmp_root, ignore=ignore)
+    assert Path(tmp_root, "wflow_sbm.toml").is_file()
+    return tmp_root
+
+
+@pytest.fixture()
+def wflow_sim_model(wflow_cached_model: Path, wflow_tmp_model: Path) -> Path:
+    """Return the path to the wflow test model nested simulation."""
+    sim_dir = "simulations/default"
+    sim_root = wflow_tmp_model / sim_dir
+    ignore = shutil.ignore_patterns("run_default")
+    shutil.copytree(wflow_cached_model / sim_dir, sim_root, ignore=ignore)
+    assert Path(sim_root, "wflow_sbm.toml").is_file()
+    return sim_root
+
+
+@pytest.fixture()
+def gpex_data(global_data: Path) -> Path:
     """Return the path to the GPEX data."""
-    cache_dir = fetch_data("global-data")
-    gpex_file = cache_dir / "gpex.nc"
+    gpex_file = global_data / "gpex.nc"
     assert gpex_file.is_file()
     return gpex_file
 
 
-@pytest.fixture(scope="session")
-def rio_region(test_data_dir) -> Path:
-    return test_data_dir / "rio_region.geojson"
+## Some files made on the fly
+@pytest.fixture()
+def hazard_map_data(sfincs_test_region: Path) -> xr.DataArray:
+    # Get extent sfincs model
+    geom = gpd.read_file(sfincs_test_region).to_crs(4326)
+    bbox = list(geom.bounds.loc[0])
+
+    # Make coordinates for hazard map
+    lons = np.linspace(bbox[0], bbox[2], 5)
+    lats = np.linspace(bbox[3], bbox[1], 5)
+
+    data = np.ones([len(lats), len(lons)])
+    da = xr.DataArray(data, coords={"lat": lats, "lon": lons}, dims=["lat", "lon"])
+    da.name = "flood_map"
+    da.raster.set_crs(4326)
+    # da.raster.set_nodata(nodata=-9999.)
+    da = da.raster.gdal_compliant()
+    return da
+
+
+@pytest.fixture()
+def first_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
+    # Set root
+    root = Path(tmp_path, "flood_map_rp010.nc")
+    hazard_map_data.to_netcdf(root)
+    return root
+
+
+@pytest.fixture()
+def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
+    # Set root
+    root = Path(tmp_path, "flood_map_rp050.nc")
+    (hazard_map_data * 2).to_netcdf(root)
+    return root
+
+
+@pytest.fixture()
+def sfincs_src_points():
+    return gpd.GeoDataFrame(
+        geometry=[
+            Point(282937.059, 5079303.114),
+        ],
+        crs="EPSG:32633",
+    )
 
 
 @pytest.fixture()
@@ -355,52 +416,6 @@ def tmp_tif(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def event_set_file(test_data_dir) -> Path:
-    return test_data_dir / "events.yml"
-
-
-@pytest.fixture()
-def event_set(event_set_file) -> EventSet:
-    return EventSet.from_yaml(event_set_file)
-
-
-@pytest.fixture()
-def sfincs_region():
-    """Livenza region."""
-    return gpd.GeoDataFrame(
-        geometry=[
-            Polygon(
-                [
-                    [318650.0, 5040000.0],
-                    [316221.0, 5044767.0],
-                    [327359.0, 5050442.0],
-                    [329788.0, 5045675.0],
-                    [318650.0, 5040000.0],
-                ]
-            )
-        ],
-        crs="EPSG:32633",
-    )
-
-
-@pytest.fixture()
-def sfincs_region_path(tmp_path: Path, sfincs_region: gpd.GeoDataFrame) -> Path:
-    p = Path(tmp_path, "region.geojson")
-    sfincs_region.to_file(p)
-    return p
-
-
-@pytest.fixture()
-def sfincs_src_points():
-    return gpd.GeoDataFrame(
-        geometry=[
-            Point(282937.059, 5079303.114),
-        ],
-        crs="EPSG:32633",
-    )
-
-
-@pytest.fixture()
 def tmp_floodmark_points(tmp_path: Path) -> Path:
     """Create a temporary GeoJSON file."""
     geojson_file = tmp_path / "floodmarks.geojson"
@@ -418,14 +433,3 @@ def tmp_floodmark_points(tmp_path: Path) -> Path:
     gdf.to_file(geojson_file, driver="GeoJSON")
 
     return geojson_file
-
-
-@pytest.fixture(scope="function")  # noqa: PT003
-def sfincs_tmp_model_root(test_data_dir, tmpdir):
-    """Return a temporary directory with a copy of the sfincs model."""
-    # copy the sfincs model to a temporary directory
-    sfincs_model_root_tmp = tmpdir / "sfincs_model"
-    # copy
-    sfincs_model_root = test_data_dir / "sfincs_model"
-    shutil.copytree(sfincs_model_root, sfincs_model_root_tmp)
-    return sfincs_model_root_tmp
