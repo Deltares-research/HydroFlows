@@ -313,7 +313,16 @@ class Rule:
         sig = signature(type(self.method))
         for p in self.method.params:
             key, value = p
-            default_value = sig.parameters.get(key).default
+            # Get default param value by inspecting the object
+            if key in sig.parameters:
+                default_value = sig.parameters.get(key).default
+            # Check if key can be found in method Params class
+            elif key in self.method.params.model_fields:
+                default_value = self.method.params.model_fields.get(key).default
+            else:
+                err_msg = f"Method parameter, {key}, not recognized."
+                raise ValueError(err_msg)
+
             if value != default_value:
                 config_key = f"{self.rule_id}_{key}"
                 self.workflow.config = self.workflow.config.model_copy(
