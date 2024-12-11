@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 from hydroflows.log import setuplog
-from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
+from hydroflows.methods.fiat import FIATBuild
 from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 from hydroflows.methods.rainfall import (
     PluvialDesignEventsGPEX,
@@ -115,36 +115,15 @@ if __name__ == "__main__":
     )
     w.add_rule(sfincs_post, rule_id="sfincs_post")
 
-    # %% Update FIAT hazard
-    fiat_update = FIATUpdateHazard(
-        fiat_cfg=fiat_build.output.fiat_cfg,
-        event_set_yaml=pluvial_events.output.event_set_yaml,
-        map_type="water_level",
-        hazard_maps=sfincs_post.output.sfincs_zsmax,
-        risk=w.get_ref("$config.risk"),
-    )
-    w.add_rule(fiat_update, rule_id="fiat_update")
-
-    # Run FIAT
-    fiat_run = FIATRun(
-        fiat_cfg=fiat_update.output.fiat_out_cfg,
-        fiat_exe=w.get_ref("$config.fiat_exe"),
-    )
-    w.add_rule(fiat_run, rule_id="fiat_run")
-
     # %% Prepare FloodAdapt
     fa_run = SetupFloodAdapt(
-        fiat_base_model=Path(case_root, "cases/pluvial_risk/models/fiat/settings.toml"),
-        sfincs_base_model=Path(
-            case_root, "cases/pluvial_risk/models/sfincs/sfincs.inp"
-        ),
-        event_set_yaml=Path(
-            case_root, "cases/pluvial_risk/data/events/pluvial_events.yml"
-        ),
+        fiat_base_model=Path(case_root, "models/fiat/settings.toml"),
+        sfincs_inp=Path(case_root, "models/sfincs/sfincs.inp"),
+        event_set_yaml=Path(case_root, "data/events/pluvial_events.yml"),
     )
     w.add_rule(fa_run, rule_id="setup_flood_adapt")
     # %% run workflow
-    w.run(dryrun=True)
+    w.run(dryrun=False)
 
     # %% to snakemake
     w.to_snakemake(Path(case_root, "Snakefile"))
