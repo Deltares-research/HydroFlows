@@ -64,7 +64,7 @@ Future climate coastal events
 .. autosummary::
     :toctree: ../_generated
 
-    future_climate_sea_level.FutureSLR
-    future_climate_sea_level.Input
-    future_climate_sea_level.Output
-    future_climate_sea_level.Params
+    future_slr.FutureSLR
+    future_slr.Input
+    future_slr.Output
+    future_slr.Params
