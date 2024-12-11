@@ -49,8 +49,8 @@ if __name__ == "__main__":
         plot_fig=True,
         # sfincs settings
         hydromt_sfincs_config=Path(pwd, "hydromt_config/sfincs_config.yml"),
-        sfincs_vm = "docker",
-        sfincs_tag = "sfincs-v2.1.1-Dollerup-Release",
+        sfincs_vm="docker",
+        sfincs_tag="sfincs-v2.1.1-Dollerup-Release",
         sfincs_res=50,
         river_upa=10,
         # design events
@@ -63,15 +63,15 @@ if __name__ == "__main__":
 
     sfincs_build = SfincsBuild(
         region=w.get_ref("$config.region"),
-        sfincs_root=Path(model_dir,"sfincs"),
+        sfincs_root=Path(model_dir, "sfincs"),
         default_config=w.get_ref("$config.hydromt_sfincs_config"),
         data_libs=w.get_ref("$config.data_libs"),
         res=w.get_ref("$config.sfincs_res"),
         river_upa=w.get_ref("$config.river_upa"),
-        plot_fig=w.get_ref("$config.plot_fig")
+        plot_fig=w.get_ref("$config.plot_fig"),
     )
 
-    w.add_rule(sfincs_build,rule_id="sfincs_build")
+    w.add_rule(sfincs_build, rule_id="sfincs_build")
 
     # %% Get the GTSM data
 
@@ -98,17 +98,17 @@ if __name__ == "__main__":
     sfincs_update = SfincsUpdateForcing(
         sfincs_inp=sfincs_build.output.sfincs_inp,
         sim_subfolder=simu_dir,
-        event_yaml=coastal_design_events.output.event_yaml
+        event_yaml=coastal_design_events.output.event_yaml,
     )
 
     w.add_rule(sfincs_update, rule_id="sfincs_update")
 
     # %%
-    
+
     sfincs_run = SfincsRun(
         sfincs_inp=sfincs_update.output.sfincs_out_inp,
         run_method=w.get_ref("$config.sfincs_vm"),
-        docker_tag=w.get_ref("$config.sfincs_tag")
+        docker_tag=w.get_ref("$config.sfincs_tag"),
     )
 
     w.add_rule(sfincs_run, rule_id="sfincs_run")

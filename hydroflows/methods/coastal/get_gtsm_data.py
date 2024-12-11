@@ -114,7 +114,7 @@ class GetGTSMData(Method):
             self.params.catalog_key,
             geom=region,
             time_tuple=(self.params.start_time, self.params.end_time),
-            buffer=self.params.buffer
+            buffer=self.params.buffer,
         )
 
         s = gtsm["surge"]
