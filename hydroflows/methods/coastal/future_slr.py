@@ -91,7 +91,7 @@ class Params(Parameters):
                     )
             else:
                 self.event_names_input = event_names
-        # Check if the event_names_output are provided and same lenght as event_input_name or set them
+        # Check if the event_names_output are provided and same length as event_input_name or set them
         if self.event_names_output is not None:
             if len(self.event_names_output) != len(self.event_names_input):
                 raise ValueError(

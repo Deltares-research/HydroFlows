@@ -15,7 +15,7 @@ from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
     CoastalDesignEventFromRPData,
 )
 from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
-from hydroflows.methods.coastal.future_climate_sea_level import FutureSLR
+from hydroflows.methods.coastal.future_slr import FutureSLR
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
 
