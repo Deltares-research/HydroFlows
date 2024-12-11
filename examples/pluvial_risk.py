@@ -7,6 +7,7 @@ from pathlib import Path
 
 from hydroflows.log import setuplog
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
+from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 from hydroflows.methods.rainfall import (
     PluvialDesignEventsGPEX,
 )
@@ -131,6 +132,13 @@ if __name__ == "__main__":
     )
     w.add_rule(fiat_run, rule_id="fiat_run")
 
+    # %% Prepare FloodAdapt
+    fa_run = SetupFloodAdapt(
+        fiat_base_model=Path(r"cases\pluvial_risk\models\fiat\settings.toml"),
+        sfincs_base_model=Path(r"cases\pluvial_risk\models\sfincs\sfincs.inp"),
+        event_set_yaml=Path(r"cases\pluvial_risk\data\events\pluvial_events.yml"),
+    )
+    w.add_rule(fa_run, rule_id="setup_flood_adapt")
     # %% run workflow
     w.run(dryrun=True)
 
