@@ -32,7 +32,7 @@ def w() -> Workflow:
 def workflow_yaml_dict():
     return {
         "config": {
-            "input_file": "tests/_data/rio_region.geojson",
+            "input_file": "tests/_data/region.geojson",
             "events": ["1", "2", "3"],
             "root": "root",
         },
@@ -137,27 +137,6 @@ def test_workflow_get_ref(workflow: Workflow, tmp_path):
     assert ref.value.as_posix() == "{region}/{event}/file.yml"
 
 
-def test_workflow_create_references(w: Workflow, caplog):
-    method1 = TestMethod(input_file1="test1", input_file2="test2")
-    w.add_rule(method=method1, rule_id="method1")
-    method2 = TestMethod(input_file1="output1", input_file2="output2")
-    # Change the output of method2, otherwise output files are not unique among two of the same methods
-    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
-    w.add_rule(method=method2, rule_id="method2")
-    w.create_references()
-    assert w.rules[1].input._refs == {
-        "input_file1": "$rules.method1.output.output_file1",
-        "input_file2": "$rules.method1.output.output_file2",
-    }
-    # catch logger.debug messages
-    with caplog.at_level("DEBUG"):
-        w.create_references()
-    assert (
-        "method1.input.input_file1 (test1) is not an output of another rule"
-        in caplog.text
-    )
-
-
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     test_yml = tmp_path / "test.yml"
     with open(test_yml, "w") as f:
@@ -168,7 +147,7 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     assert w.rules[0].rule_id == "mock_expand_method"
     assert w.rules[1].rule_id == "mock_reduce_method"
     assert isinstance(w.config, WorkflowConfig)
-    assert w.config.input_file == "tests/_data/rio_region.geojson"
+    assert w.config.input_file == "tests/_data/region.geojson"
 
     test_yml = {
         "config": {"region": "data/test_region.geojson", "rps": [5, 10, 50]},

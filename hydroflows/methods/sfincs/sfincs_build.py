@@ -6,9 +6,10 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
+from pydantic import Field, FilePath, model_validator
 
-from hydroflows._typing import ListOfPath, ListOfStr
-from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows._typing import DataCatalogPath
+from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -24,6 +25,16 @@ class Input(Parameters):
     for constructing a SFINCS model.
     """
 
+    config: FilePath = CFG_DIR / "sfincs_build.yml"
+    """
+    The path to the configuration file (.yml) that defines the settings
+    to build a SFINCS model. In this file the different model components
+    that are required by the :py:class:`hydromt_sfincs.SfincsModel` are listed.
+    Every component defines the setting for each hydromt_sfincs setup methods.
+    For more information see hydromt_sfincs method
+    `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
+    """
+
 
 class Output(Parameters):
     """Output parameters for the :py:class:`SfincsBuild` method."""
@@ -34,8 +45,25 @@ class Output(Parameters):
     sfincs_region: Path
     """The path to the derived SFINCS region GeoJSON file."""
 
-    sfincs_subgrid_dep: Path
+    sfincs_subgrid_dep: Optional[Path] = None
     """The path to the derived SFINCS subgrid depth geotiff file."""
+
+    sfincs_src_points: Optional[Path] = None
+    """The path to the derived river source points GeoJSON file."""
+
+    input: Input = Field(exclude=True)
+
+    @model_validator(mode="after")
+    def _optional_outputs(self):
+        # read the configuration
+        opt = configread(self.input.config)
+        # set optional output paths based on config
+        if "setup_subgrid" in opt:
+            self.sfincs_subgrid_dep = (
+                self.sfincs_inp.parent / "subgrid" / "dep_subgrid.tif"
+            )
+        if "setup_river_inflow" in opt:
+            self.sfincs_src_points = self.sfincs_inp.parent / "gis" / "src.geojson"
 
 
 class Params(Parameters):
@@ -50,32 +78,11 @@ class Params(Parameters):
     sfincs_root: Path
     """The path to the root directory where the SFINCS model will be created."""
 
-    res: float
-    """Model resolution [m]."""
-
     # optional parameter
-    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
     """
-
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "sfincs_build.yml")
-    """The path to the configuration file (.yml) that defines the settings
-    to build a SFINCS model. In this file the different model components
-    that are required by the :py:class:`hydromt_sfincs.SfincsModel` are listed.
-    Every component defines the setting for each hydromt_sfincs setup methods.
-    For more information see hydromt_sfincs method
-    `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
-    """
-
-    merge_config: Optional[Path] = None
-    """The path to a configuration file (.yml) to be merged with the default config."""
-
-    merge_kwargs: Optional[dict] = None
-    """Additional keyword arguments to pass to the merge method."""
-
-    river_upa: float = 30
-    """River upstream area threshold [km2]."""
 
     plot_fig: bool = True
     """Determines whether to plot a figure with the
@@ -90,13 +97,14 @@ class SfincsBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": CFG_DIR / "sfincs_build.yml",
     }
 
     def __init__(
         self,
         region: Path,
+        config: Path = CFG_DIR / "sfincs_build.yml",
         sfincs_root: Path = Path("models/sfincs"),
-        res: float = 100,
         **params,
     ) -> None:
         """Create and validate a SfincsBuild instance.
@@ -121,25 +129,23 @@ class SfincsBuild(Method):
         :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
         :py:class:`hydromt_sfincs.SfincsModel`
         """
-        self.params: Params = Params(sfincs_root=sfincs_root, res=res, **params)
-        self.input: Input = Input(region=region)
+        self.params: Params = Params(sfincs_root=sfincs_root, **params)
+        self.input: Input = Input(region=region, config=config)
         self.output: Output = Output(
             sfincs_inp=self.params.sfincs_root / "sfincs.inp",
             sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",
-            sfincs_subgrid_dep=self.params.sfincs_root / "subgrid" / "dep_subgrid.tif",
+            input=self.input,
         )
 
     def run(self):
         """Run the SfincsBuild method."""
         # read the configuration
-        opt = configread(self.params.default_config)
-        # TODO merge config
+        opt = configread(self.input.config)
+
         # update placeholders in the config
-        opt["setup_grid_from_region"].update(
-            res=self.params.res, region={"geom": str(self.input.region)}
-        )
+        opt["setup_grid_from_region"].update(region={"geom": str(self.input.region)})
         opt["setup_mask_active"].update(mask=str(self.input.region))
-        opt["setup_river_inflow"].update(river_upa=self.params.river_upa)
+
         # create the hydromt model
         root = self.output.sfincs_inp.parent
         sf = SfincsModel(

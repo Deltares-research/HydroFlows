@@ -47,13 +47,11 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     assert df.max().max() == 1.0
 
 
-def test_pluvial_design_hyeto_gpex(
-    sfincs_region_path: Path, gpex_data: Path, tmp_path: Path
-):
+def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
         gpex_nc=str(gpex_data),
-        region=str(sfincs_region_path),
+        region=str(region),
         event_root=Path(tmp_path, "events"),
         rps=rps,
         duration=120,
@@ -64,9 +62,9 @@ def test_pluvial_design_hyeto_gpex(
     p_events.run_with_checks()
 
 
-def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
+def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
     get_era5 = GetERA5Rainfall(
-        region=str(sfincs_region_path),
+        region=str(region),
         data_root=str(tmp_path / "data"),
         filename="era5.nc",
         start_date="2023-11-01",
@@ -101,7 +99,7 @@ def test_future_climate_rainfall(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "events.yml"
+    event_set_yaml = test_data_dir / "rainfall_events" / "events.yml"
 
     out_root = Path(tmp_path / "CC_scaling")
 
@@ -110,7 +108,6 @@ def test_future_climate_rainfall(
         scenario_name="RCP85",
         dT=2.5,
         event_root=out_root,
-        time_col="date",
     )
 
     rule.run_with_checks()
