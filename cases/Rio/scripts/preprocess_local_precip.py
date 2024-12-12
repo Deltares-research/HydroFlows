@@ -37,19 +37,19 @@ def main(
 
     ds_station_res = xr.Dataset.from_dataframe(df_station_res)
 
-    out_root = os.getcwd()
-    parent_dir = os.path.dirname(out_root)
-    new_folder = os.path.join(parent_dir, "preprocessed_data")
+    out_root = (
+        Path(os.path.abspath(__file__)).parent.parent / "data" / "preprocessed-data"
+    )
 
-    if not os.path.exists(new_folder):
-        os.makedirs(new_folder)
+    if not os.path.exists(out_root):
+        os.makedirs(out_root)
 
     out_fn = f"output_scalar_resampled_precip_station{station_to_export}.nc"
-    ds_station_res.to_netcdf(os.path.join(new_folder, out_fn))
+    ds_station_res.to_netcdf(os.path.join(out_root, out_fn))
 
 
 if __name__ == "__main__":
-    precip_raw_root = "p:/11209169-003-up2030/data/PRECIPITATION/rio"
+    precip_raw_root = "p:/11209169-003-up2030/cases/rio_new/data/local-data/rainfall"
     precip_raw_fn = "bq-results-20240701-123456-1719837312017.csv"
     station_to_export = 11
     time_start = "1997-01-01"

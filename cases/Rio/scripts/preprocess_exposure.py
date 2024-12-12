@@ -13,15 +13,13 @@ import numpy as np
 from shapely.geometry import MultiPolygon, Polygon
 
 data_source = (
-    Path(os.path.abspath(__file__)).parent.parent
-    / "setup_data"
-    / "hydromt_fiat_exposure"
+    Path(os.path.abspath(__file__)).parent.parent / "data" / "preprocessed-data"
 )  # make a relative path
 
 crs = "EPSG:31983"
 
 # area of interest
-region_path = Path(data_source) / "region.gpkg"
+region_path = Path(data_source.parent) / "region.gpkg"
 region = gpd.read_file(region_path).to_crs(crs)
 
 
