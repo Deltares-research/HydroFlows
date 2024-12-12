@@ -110,7 +110,7 @@ class SetupFloodAdapt(Method):
                 self.params.output_dir, "probabilistic_set", "probabilistic_set.toml"
             )
 
-    def run(self):
+    def run(self, sfincs_bnd: list = None, sfincs_bzs: list = None):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(
@@ -124,6 +124,12 @@ class SetupFloodAdapt(Method):
             Path(self.params.output_dir, "sfincs"),
             dirs_exist_ok=True,
         )
+        if "sfincs.bnd" not in Path(self.params.output_dir, "sfincs"):
+            sfincs_bnd.to_file(Path(self.params.output_dir, "sfincs", "sfincs.bnd"))
+
+        if "sfincs.bzs" not in Path(self.params.output_dir, "sfincs"):
+            sfincs_bzs = [0, 0]
+            sfincs_bzs.to_file(Path(self.params.output_dir, "sfincs", "sfincs.bzs"))
 
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
@@ -147,7 +153,7 @@ def fa_db_config(
     probabilistic_set: Path | None = None,
 ):
     """Create the path to the configuration file (.yml) that defines the settings.
-    
+
     Parameters
     ----------
     config : Path
