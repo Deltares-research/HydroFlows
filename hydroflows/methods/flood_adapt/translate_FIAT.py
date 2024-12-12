@@ -33,6 +33,7 @@ def translate_model(root, new_root):
         "secondary_object_type": "Secondary Object Type",
         "max_damage_structure": "Max Potential Damage: Structure",
         "max_damage_content": "Max Potential Damage: Content",
+        "max_damage_total": "Max Potential Damage: Total",
         "ground_flht": "Ground Floor Height",
         "extract_method": "Extraction Method",
         "ground_elevtn": "Ground Elevation",
