@@ -58,6 +58,7 @@ class Params(Parameters):
             raise ValueError(
                 "Path to the Wflow executable is required when running Wflow as an executable."
             )
+        return self
 
 
 class WflowRun(Method):
