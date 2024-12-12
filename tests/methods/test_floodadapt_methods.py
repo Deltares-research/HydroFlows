@@ -8,19 +8,46 @@ import hydroflows.methods.flood_adapt.translate_events as events
 import hydroflows.methods.flood_adapt.translate_FIAT as fiat
 from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
-fa_event_config = toml.load(tmp_output_event.joinpath("probalistic_event.toml"))
-assert fa_event_config["mode"] == "risk"
-assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
-assert fa_event_config["name"] == tmp_output_event.stem
 
-# get single event files
-events = fa_event_config["subevent_name"]
-for event in events:
-    event_config = toml.load(tmp_output_event.joinpath(event, f"{event}.toml"))
-    event_config.extent()
+def NestedDictValues(d):
+    """
+    Recursively yields all values from a nested dictionary.
+
+    Parameters
+    ----------
+    d : dict
+        The nested dictionary from which to extract values.
+
+    Yields
+    ------
+    Any
+        Each value found in the nested dictionary, including values in nested dictionaries.
+    """
+    for v in d.values():
+        if isinstance(v, dict):
+            yield from NestedDictValues(v)
+        else:
+            yield v
 
 
 def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
+    """
+    Test the translate_fiat_model function.
+
+    This function tests that the translate_fiat_model function can translate a FIAT model
+    into the format expected by FloodAdapt.
+
+    It checks that the required columns are present in the exposure CSV file, that the
+    exposure data exists, that the vulnerability data exists, and that the output data
+    folder exists.
+
+    Parameters
+    ----------
+    tmp_base_model : Path
+        The path to the temporary FIAT model.
+    tmp_output_model : Path
+        The path to the temporary translated model.
+    """
     fiat.translate_model(tmp_base_model, tmp_output_model)
 
     exposure = pd.read_csv(tmp_output_model.joinpath("exposure", "exposure.csv"))
@@ -58,27 +85,62 @@ def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
 
 
 def test_translate_events(tmp_event: Path, tmp_output_event: Path):
+    """
+    Test the translate_events function.
+
+    This function tests that the translate_events function can translate a probabilistic
+    event set into the format expected by FloodAdapt.
+
+    It checks that the required columns are present in the exposure CSV file, that the
+    exposure data exists, that the vulnerability data exists, and that the output data
+    folder exists.
+
+    Parameters
+    ----------
+    tmp_event : Path
+        The path to the temporary event set.
+    tmp_output_event : Path
+        The path to the temporary translated event set.
+    """
     events.translate_events(tmp_event, tmp_output_event)
 
     assert tmp_output_event.joinpath("probalistic_event.toml").exists()
 
-    fa_event_config = toml.load(tmp_output_event.joinpath("probalistic_event.toml"))
+    fa_event_config = tmp_output_event.joinpath(
+        "probabilistic_event", "probalistic_event.toml"
+    )
     assert fa_event_config["mode"] == "risk"
     assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
     assert fa_event_config["name"] == tmp_output_event.stem
 
-    # get single event files
-    ## Check if all the csv files in the toml are also there as a file
-    events = fa_event_config["subevent_name"]
-    for event in events:
-        event_config = toml.load(tmp_output_event.joinpath(event, f"{event}.toml"))
-        event_dict_extend = event_config.extent()
-        csv_files_config = []
-        for forcing in event_dict_extend:
-            if ".csv" in forcing:
-                csv_files_config.append(forcing)
-        csv_files = tmp_output_event.joinpath(event).glob("*.csv")
-    assert csv_files_config == csv_files
+    tmp_output_event = Path(
+        r"C:\Users\rautenba\repos\HydroFlows\examples\cases\pluvial_risk\flood_adapt_builder"
+    )
+    fa_event_config = toml.load(
+        tmp_output_event.joinpath("probabilistic_set", "probabilistic_set.toml")
+    )
+    assert fa_event_config["mode"] == "risk"
+    assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
+    assert fa_event_config["name"] == "probabilistic_set"
+
+    # Check if timeseries.csv per forcing exists
+    event_names = fa_event_config["subevent_name"]
+    for event in event_names:
+        event_config = toml.load(
+            tmp_output_event.joinpath("probabilistic_set", event, f"{event}.toml")
+        )
+        dict_values = list(NestedDictValues(event_config))
+        csv_files_forcings_config = [
+            item.split(".")[0]
+            for item in dict_values
+            if isinstance(item, str) and item.endswith(".csv")
+        ]
+        csv_files_forcings = []
+        for filename in (
+            Path(tmp_output_event).joinpath("probabilistic_set", event).glob("*.csv")
+        ):
+            csv_files_forcings.append(filename.stem)
+    assert csv_files_forcings_config == csv_files_forcings
 
 
 def test_fa_setup(
