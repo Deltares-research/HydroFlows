@@ -30,6 +30,16 @@ def NestedDictValues(d):
             yield v
 
 
+def test_fa_setup(fiat_cfg: Path, sfincs_inp: Path, event_set_yaml: Path):
+    # Setup the rule
+    rule = SetupFloodAdapt(
+        fiat_cfg=fiat_cfg,
+        sfincs_inp=sfincs_inp,
+        event_set_yaml=event_set_yaml,
+    )
+    rule.run_with_checks()
+
+
 def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
     """
     Test the translate_fiat_model function.
@@ -141,15 +151,3 @@ def test_translate_events(tmp_event: Path, tmp_output_event: Path):
         ):
             csv_files_forcings.append(filename.stem)
     assert csv_files_forcings_config == csv_files_forcings
-
-
-def test_fa_setup(
-    fiat_cfg_path: Path, sfincs_inp_path: Path, event_set_yaml_path: Path
-):
-    # Setup the rule
-    rule = SetupFloodAdapt(
-        fiat_cfg=fiat_cfg_path,
-        sfincs_inp=sfincs_inp_path,
-        event_set_yaml=event_set_yaml_path,
-    )
-    rule.run_with_checks()
