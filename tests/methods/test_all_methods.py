@@ -1,7 +1,7 @@
 import pytest
 
-from hydroflows.methods import METHODS
 from hydroflows.workflow import Method
+from hydroflows.workflow.method_entrypoints import METHODS
 
 ALL_METHODS = list(METHODS.entry_points.keys())
 

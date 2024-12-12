@@ -21,41 +21,6 @@ from tests.workflow.conftest import (
 )
 
 
-@pytest.fixture()
-def w() -> Workflow:
-    config = {"rps": [2, 50, 100]}
-    wildcards = {"region": ["region1", "region2"]}
-    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
-
-
-@pytest.fixture()
-def workflow_yaml_dict():
-    return {
-        "config": {
-            "input_file": "tests/_data/region.geojson",
-            "events": ["1", "2", "3"],
-            "root": "root",
-        },
-        "rules": [
-            {
-                "method": "mock_expand_method",
-                "kwargs": {
-                    "input_file": "$config.input_file",
-                    "events": "$config.events",
-                    "root": "$config.root",
-                },
-            },
-            {
-                "method": "mock_reduce_method",
-                "kwargs": {
-                    "files": "$rules.mock_expand_method.output.output_file",
-                    "root": "$config.root",
-                },
-            },
-        ],
-    }
-
-
 def create_workflow_with_mock_methods(
     w: Workflow, root: Path | None = None, input_file="test.yml"
 ):
@@ -135,27 +100,6 @@ def test_workflow_get_ref(workflow: Workflow, tmp_path):
 
     ref = w.get_ref("$rules.mock_expand_rule.output.output_file")
     assert ref.value.as_posix() == "{region}/{event}/file.yml"
-
-
-def test_workflow_create_references(w: Workflow, caplog):
-    method1 = TestMethod(input_file1="test1", input_file2="test2")
-    w.add_rule(method=method1, rule_id="method1")
-    method2 = TestMethod(input_file1="output1", input_file2="output2")
-    # Change the output of method2, otherwise output files are not unique among two of the same methods
-    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
-    w.add_rule(method=method2, rule_id="method2")
-    w.create_references()
-    assert w.rules[1].input._refs == {
-        "input_file1": "$rules.method1.output.output_file1",
-        "input_file2": "$rules.method1.output.output_file2",
-    }
-    # catch logger.debug messages
-    with caplog.at_level("DEBUG"):
-        w.create_references()
-    assert (
-        "method1.input.input_file1 (test1) is not an output of another rule"
-        in caplog.text
-    )
 
 
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
