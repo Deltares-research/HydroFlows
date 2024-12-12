@@ -85,6 +85,7 @@ class Params(Parameters):
         # create a reference to the event wildcard
         if "event_names" not in self._refs:
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+        return self
 
 
 class CoastalDesignEvents(ExpandMethod):

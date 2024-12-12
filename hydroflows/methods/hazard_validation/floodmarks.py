@@ -1,7 +1,6 @@
 """Validate simulated hazard maps using floodmarks method."""
 
 import logging
-import warnings
 from pathlib import Path
 from typing import Literal, Union
 
@@ -13,7 +12,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pydantic import PositiveInt
-from shapely.geometry import Point, box
+from shapely.geometry import Point
 
 from hydroflows._typing import ListOfFloat, TupleOfInt
 from hydroflows.utils.units import convert_to_meters
@@ -140,9 +139,6 @@ class FloodmarksValidation(Method):
            Path to the geometry file (shapefile, GeoJSON or GeoPackage) with floodmark locations as
            points. The corresponding water levels are defined by the property specified
            in :py:attr:`waterlevel_col`.
-        region : Path
-            Path to the geometry file defining the area for hazard simulation,
-            such as the SFINCS region GeoJSON.
         flood_hazard_map : Path
             The file path to the flood hazard map to be used for validation.
         scores_root : Path, optional
@@ -192,37 +188,25 @@ class FloodmarksValidation(Method):
         if gdf.crs != proj_crs:
             gdf = gdf.to_crs(proj_crs)
 
-        # Find the flood hazard map extents/bounds
-        flood_bounds = floodmap.raster.box.buffer(
-            abs(floodmap.raster.res[0] * 1)
-        ).total_bounds
-        # Create a polygon from the bounds
-        flood_bounds_polygon = box(
-            flood_bounds[0], flood_bounds[1], flood_bounds[2], flood_bounds[3]
-        )
-
-        # Convert the flood bounds polygon to a GeoDataFrame
-        flood_bounds_gdf = gpd.GeoDataFrame(
-            geometry=[flood_bounds_polygon], crs=proj_crs
-        )
-
         # Include flood marks that fall within the flood_bounds_gdf
-        gdf_in_region = gdf[gdf.geometry.within(flood_bounds_gdf.unary_union)]
+        gdf_in_region = gdf[gdf.geometry.within(floodmap.raster.box.union_all())]
 
         # Number of points inside (outside) the modeled region
         num_floodmarks_inside = len(gdf_in_region)
         num_floodmarks_outside = len(gdf) - num_floodmarks_inside
 
         if num_floodmarks_inside == 0:
-            ValueError(
+            raise ValueError(
                 "No floodmarks found within the modeled flood hazard map extents."
             )
 
         logging.info(
-            f"Floodmarks inside the simulated region: {num_floodmarks_inside}, Floodmarks outside: {num_floodmarks_outside}"
+            f"Floodmarks inside the simulated region: {num_floodmarks_inside}/{num_floodmarks_outside}"
         )
 
-        gdf_in_region["geometry"] = gdf_in_region["geometry"].apply(multipoint_to_point)
+        gdf_in_region.loc[:, "geometry"] = gdf_in_region["geometry"].apply(
+            multipoint_to_point
+        )
 
         # Sample the floodmap at the floodmark locs
         samples: xr.DataArray = floodmap.raster.sample(gdf_in_region)
@@ -398,9 +382,7 @@ def _plot_scores(
     if bins is None:
         bins = np.linspace(vmin, vmax, nbins + 1)
 
-    bounds = floodmap_ds.raster.box.buffer(
-        abs(floodmap_ds.raster.res[0] * 1)
-    ).total_bounds
+    bounds = floodmap_ds.raster.box.total_bounds
     extent = np.array(bounds)[[0, 2, 1, 3]]
 
     proj_crs = floodmap_ds.raster.crs
@@ -479,8 +461,7 @@ def _plot_scores(
     scores_gdf["binned"] = pd.cut(scores_gdf["difference"], bins=bins, labels=False)
 
     if len(scores_gdf[scores_gdf["binned"].isna() == True]) > 0:
-        warnings.simplefilter("always")
-        warnings.warn(
+        logger.warning(
             "There are flood mark difference (observed - modeled) values that fall outside "
             "the determined bin range and thus were excluded from the plot. "
             "Consider adjusting the plotting settings.",

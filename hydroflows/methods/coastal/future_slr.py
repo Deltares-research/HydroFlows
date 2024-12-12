@@ -101,6 +101,7 @@ class Params(Parameters):
             self.event_names_output = [
                 f"{name}_{self.scenario_name}" for name in self.event_names_input
             ]
+        return self
 
 
 class FutureSLR(ExpandMethod):

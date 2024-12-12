@@ -64,6 +64,7 @@ class Output(Parameters):
             )
         if "setup_river_inflow" in opt:
             self.sfincs_src_points = self.sfincs_inp.parent / "gis" / "src.geojson"
+        return self
 
 
 class Params(Parameters):

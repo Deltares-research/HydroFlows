@@ -8,6 +8,7 @@ import pytest
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
 
 
+@pytest.mark.requires_test_data()
 def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     # Setting input data
     region = sfincs_test_region.as_posix()
@@ -20,6 +21,7 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     rule.run_with_checks()
 
 
+@pytest.mark.requires_test_data()
 def test_fiat_update_hazard(
     fiat_tmp_model: Path,
     first_hazard_map: Path,
@@ -37,7 +39,7 @@ def test_fiat_update_hazard(
     rule.run_with_checks()
 
 
-@pytest.mark.requires_data()
+@pytest.mark.requires_test_data()
 @pytest.mark.parametrize("method", ["python", "exe"])
 def test_fiat_run(
     fiat_sim_model: Path, method: str, fiat_exe: Path, has_fiat_python: bool
