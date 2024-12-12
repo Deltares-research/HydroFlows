@@ -125,11 +125,19 @@ class SetupFloodAdapt(Method):
             dirs_exist_ok=True,
         )
         if "sfincs.bnd" not in Path(self.params.output_dir, "sfincs"):
-            sfincs_bnd.to_file(Path(self.params.output_dir, "sfincs", "sfincs.bnd"))
+            with open(
+                Path(self.params.output_dir, "sfincs", "sfincs.bnd"), "w"
+            ) as output:
+                for row in sfincs_bnd:
+                    output.write(str(row) + " ")
 
         if "sfincs.bzs" not in Path(self.params.output_dir, "sfincs"):
             sfincs_bzs = [0, 0]
-            sfincs_bzs.to_file(Path(self.params.output_dir, "sfincs", "sfincs.bzs"))
+            with open(
+                Path(self.params.output_dir, "sfincs", "sfincs.bzs"), "w"
+            ) as output:
+                for row in sfincs_bzs:
+                    output.write(str(row) + " ")
 
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
