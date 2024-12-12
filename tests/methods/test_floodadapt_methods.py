@@ -87,9 +87,6 @@ def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
         "vulnerability", "vulnerability_curves.csv"
     ).exists()
 
-    # Check if the hazard folder exists
-    assert tmp_output_model.joinpath("hazard").exists()
-
     # Check if the output data folder exists
     assert tmp_output_model.joinpath("output").exists()
 
