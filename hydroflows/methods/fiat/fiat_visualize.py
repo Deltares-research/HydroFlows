@@ -132,15 +132,19 @@ class FIATVisualize(Method):
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
             scenario_name=scenario_name,
-            metrics_full_path=metrics_path,
-            config_base_path=self.input.infometrics_template.parent,
+            metrics_full_path=self.output.metrics.joinpath(
+                scenario_name
+            ),  # Users/rautenba/repos/Database/charleston_test/output/scenarios/current_test_set_no_measures/Infometrics_current_test_set_no_measures.csv')
+            config_base_path=self.input.infographics_template.parent,  #'C:\\Users\\rautenba\\repos\\Database\\charleston_test\\static\\templates\\Infographics'
             output_base_path=self.output.joinpath(
                 self.input.event_name.load_toml()["name"]
             ),
         ).write_infographics_to_file()
 
         # Write the metrics to file
-        metrics_writer = MetricsFileWriter(self.input.infometrics_template)
+        metrics_writer = MetricsFileWriter(
+            self.input.infometrics_template
+        )  # floodadapt_db/templates/infometrics/infographic_metrics_config_risk.toml # distinguish b/w risk and single event
 
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
