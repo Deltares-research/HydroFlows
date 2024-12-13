@@ -443,6 +443,16 @@ class Rules:
         if hasattr(self, key):
             raise ValueError(f"Rule {key} already exists.")
         setattr(self, key, rule)
+        # Determine where the rule should be added in the list
+        if rule.dependency is not None:
+            ind = self.names.index(rule.dependency) + 1
+            # If there is already a rule in that position, break tie based on loop_depth with highest loop depth last
+            if ind != len(self.names) and rule.loop_depth > self[ind].loop_depth:
+                ind += 1
+        # If rule input does not depend on others, put at beginning after other rules with no input dependencies.
+        else:
+            ind = len([rule for rule in self if rule.dependency is None])
+        # self.names.insert(ind,key)
         self.names.append(key)
 
     def __iter__(self) -> Iterator[Rule]:
