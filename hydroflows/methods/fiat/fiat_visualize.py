@@ -132,10 +132,6 @@ class FIATVisualize(Method):
                 self.input.event_name.load_toml()["name"]
             ),
         ).write_infographics_to_file()
-        # Write infometrics
-        # Get options for metric configurations
-        metric_types = ["mandatory"]
-        metric_types += ["infographic"]
 
         # Write the metrics to file
         metrics_writer = MetricsFileWriter(self.input.infometrics_template)
