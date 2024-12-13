@@ -76,6 +76,10 @@ class Rule:
         self._validate_wildcards()
         self._create_references_for_method_inputs()
         self._add_method_params_to_config()
+        self._parameter_lists()
+        self._detect_dependency()
+
+        self.loop_depth = len(self.wildcards["explode"])
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -283,14 +287,15 @@ class Rule:
         return wc_product
 
     def _create_references_for_method_inputs(self):
+        output_path_refs = self.workflow._output_path_refs
         for key, value in self.method.input:
             # Skip if key is already present in input refs
             if key in self.method.input._refs or value is None:
                 continue
             if isinstance(value, Path):
                 value = value.as_posix()
-            if value in self.workflow._output_path_refs.values():
-                self.method.input._refs.update({key: value})
+            if value in output_path_refs.keys():
+                self.method.input._refs.update({key: output_path_refs[value]})
             else:
                 config_key = f"{self.rule_id}_{key}"
                 logger.debug("Adding %s to config", config_key)
@@ -319,6 +324,35 @@ class Rule:
                 config_ref = "$config." + config_key
                 logging.debug("Adding %s to config", config_key)
                 self.method.params._refs.update({key: config_ref})
+
+    def _parameter_lists(self):
+        parameters = {
+            "input": {},
+            "output": {},
+            "params": {},
+        }
+
+        for wildcard in self.wildcard_product():
+            method = self._method_wildcard_instance(wildcard)
+            for name in parameters:
+                for key, value in getattr(method, name):
+                    if key not in parameters[name]:
+                        parameters[name][key] = []
+                    parameters[name][key].append(value)
+
+        self.parameter_list = parameters
+
+    def _detect_dependency(self):
+        # Fetch name of reference iff the reference is to a rule
+        input_refs = list(self.method.input._refs.values())
+        refs = [
+            item.split(".")[1] for item in input_refs if item.split(".")[0] == "$rules"
+        ]
+        self.dependency = None
+        for name in reversed(self.workflow.rules.names):
+            if any([name == ref for ref in refs]):
+                self.dependency = name
+                break
 
     ## RUN METHODS
     def run(

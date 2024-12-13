@@ -244,8 +244,8 @@ def test_create_references_for_method_inputs(workflow: Workflow):
     method1 = TestMethod(input_file1="test.file", input_file2="test2.file")
     workflow.add_rule(method=method1, rule_id="method1")
     method2 = TestMethod(
-        input_file1="$rules.method1.output.output_file1",
-        input_file2="$rules.method1.output.output_file2",
+        input_file1=method1.output.output_file1,
+        input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
         out_root="root",
     )
     workflow.add_rule(method=method2, rule_id="method2")
