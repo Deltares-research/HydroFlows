@@ -121,11 +121,17 @@ class FIATVisualize(Method):
         """Run the FIATVisualize method."""
         # Write infographics
         fiat_config = self.input.fiat_cfg.load_toml()
-        mode = fiat_config["hazard"]["mode"]
+        risk = fiat_config["hazard"]["risk"]
+        if risk == True:
+            mode = "risk"
+        else:
+            mode = "single_event"
+
+        scenario_name = self.input.event_name.load_toml()["name"]
         # Get the infographic
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
-            scenario_name=self.input.event_name.load_toml()["name"],
+            scenario_name=scenario_name,
             metrics_full_path=metrics_path,
             config_base_path=self.input.infometrics_template.parent,
             output_base_path=self.output.joinpath(
@@ -140,9 +146,7 @@ class FIATVisualize(Method):
             df_results=pd.read_csv(
                 self.input.fiat_cfg.parent / "exposure" / "exposure.csv"
             ),
-            metrics_path=self.output.fiat_infometrics.joinpath(
-                self.input.event_name.load_toml()["name"]
-            ),
+            metrics_path=self.output.fiat_infometrics.joinpath(scenario_name),
             write_aggregate=None,
         )
 
