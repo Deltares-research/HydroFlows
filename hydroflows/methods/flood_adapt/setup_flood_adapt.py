@@ -3,9 +3,9 @@ import os
 import shutil
 from pathlib import Path
 
-import geopandas as gpd
 import toml
 from hydromt.config import configread
+from hydromt_sfincs import SfincsModel
 
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
@@ -127,12 +127,15 @@ class SetupFloodAdapt(Method):
             dirs_exist_ok=True,
         )
         if not Path(self.params.output_dir, "sfincs", "sfincs.bnd").exists():
-            region = self.input.fiat_cfg.parent / "geoms" / "region.geojson"
-            sfincs_bnd_region = gpd.read_file(region)
+            sm = SfincsModel(
+                root=self.input.sfincs_inp.parent,
+                mode="r",
+            )
+            x = sm.grid["x"].values
+            y = sm.grid["y"].values
             sfincs_bnd = []
-            sfincs_bnd_x = sfincs_bnd_region.centroid[0].x
-            sfincs_bnd_y = sfincs_bnd_region.centroid[0].y
-            sfincs_bnd = [sfincs_bnd_x, sfincs_bnd_y]
+            sfincs_bnd.append(x[0])
+            sfincs_bnd.append(y[0])
             with open(
                 Path(self.params.output_dir, "sfincs", "sfincs.bnd"), "w"
             ) as output:
