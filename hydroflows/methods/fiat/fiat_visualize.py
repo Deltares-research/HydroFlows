@@ -6,6 +6,7 @@ import pandas as pd
 
 # from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
 # from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
+from hydromt.config import configread
 from pydantic import FilePath
 
 from hydroflows.cfg import CFG_DIR
@@ -57,7 +58,7 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    output_dir: Path = Path("fiat_metrics")
+    output_dir: Path = ("fiat_metrics",)
 
 
 class FIATVisualize(Method):
@@ -72,7 +73,6 @@ class FIATVisualize(Method):
         output_dir: Path = "fiat_metrics",
         infographics_template: FilePath = CFG_DIR / "config_charts.yml",
         infometrics_template: FilePath = CFG_DIR / "metrics_config.yml",
-        **params,
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
@@ -86,9 +86,6 @@ class FIATVisualize(Method):
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
             Path to the infometrics template file.
-        **params
-            Additional parameters to pass to the FIATVisualize instance.
-            See :py:class:`fiat_build Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
 
         See Also
         --------
@@ -97,43 +94,38 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(output_dir=self.params.output_dir, **params)
+        self.params: Params = Params(output_dir=output_dir)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
             event_name=event_name,
         )
         self.output: Output = Output(
-            fiat_infometrics=self.params.fiat_output / "infometrics.txt",
-            fiat_infographics=self.params.fiat_output / "infographics.html",
+            fiat_infometrics=self.params.output_dir / "infometrics.txt",
+            fiat_infographics=self.params.output_dir / "infographics.html",
         )
+
+        self.infographics_template = infographics_template
+        self.infometrics_template = infometrics_template
 
     def run(self):
         """Run the FIATVisualize method."""
-        # Write infographics
-        fiat_config = self.input.fiat_cfg.load_toml()
-        risk = fiat_config["hazard"]["risk"]
-        if risk == True:
+        events = configread(self.input.event_name)["events"]
+        if len(events) > 1:
             mode = "risk"
         else:
             mode = "single_event"
 
         scenario_name = self.input.event_name.stem
-        # Get the infographic
-        InforgraphicFactory.create_infographic_file_writer(
-            infographic_mode=mode,
-            scenario_name=scenario_name,
-            metrics_full_path=self.output.metrics.joinpath(
-                scenario_name
-            ),  # Users/rautenba/repos/Database/charleston_test/output/scenarios/current_test_set_no_measures/Infometrics_current_test_set_no_measures.csv')
-            config_base_path=self.input.infographics_template.parent,
-            output_base_path=self.output.joinpath(self.input.event_name.stem),
-        ).write_infographics_to_file()
 
         # Write the metrics to file
-        metrics_writer = MetricsFileWriter(
-            self.input.infometrics_template
-        )  # floodadapt_db/templates/infometrics/infographic_metrics_config_risk.toml # distinguish b/w risk and single event
+        if mode == "risk":
+            metrics_config = (
+                self.infometrics_template.parent / "metrics_config_risk.yml"
+            )
+        else:
+            metrics_config = self.infometrics_template
 
+        metrics_writer = MetricsFileWriter(metrics_config)
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
                 self.input.fiat_cfg.parent / "exposure" / "exposure.csv"
@@ -151,3 +143,14 @@ class FIATVisualize(Method):
             ),
             write_aggregate="all",
         )
+
+        # Write the infographic
+        InforgraphicFactory.create_infographic_file_writer(
+            infographic_mode=mode,
+            scenario_name=scenario_name,
+            metrics_full_path=self.output.metrics.joinpath(
+                scenario_name
+            ),  # Users/rautenba/repos/Database/charleston_test/output/scenarios/current_test_set_no_measures/Infometrics_current_test_set_no_measures.csv')
+            config_base_path=self.input.infographics_template.parent,
+            output_base_path=self.output.joinpath(self.input.event_name.stem),
+        ).write_infographics_to_file()
