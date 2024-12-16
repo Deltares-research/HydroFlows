@@ -36,12 +36,13 @@ def test_method_to_kwargs(test_method: TestMethod):
     expected_kwargs = {
         "input_file1": "test_file1",
         "input_file2": "test_file2",
-        "out_root": ".",
         "param": "param",
+        "out_root": ".",
     }
     assert kwargs == expected_kwargs
     kwargs = test_method.to_kwargs(exclude_defaults=False)
     expected_kwargs["default_param"] = "default_param"
+    expected_kwargs["default_param2"] = "default_param2"
     assert kwargs == expected_kwargs
 
 

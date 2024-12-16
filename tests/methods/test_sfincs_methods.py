@@ -16,11 +16,12 @@ from hydroflows.methods.sfincs import (
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 
 
+@pytest.mark.requires_test_data()
 def test_sfincs_region(
-    sfincs_region_path: Path, merit_hydro_basins: Path, tmp_path: Path
+    sfincs_test_region: Path, merit_hydro_basins: Path, tmp_path: Path
 ):
     sfincs_region = SfincsRegion(
-        aoi=str(sfincs_region_path),
+        aoi=str(sfincs_test_region),
         subbasins=str(merit_hydro_basins),
         sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
     )
@@ -28,36 +29,36 @@ def test_sfincs_region(
     sfincs_region.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+@pytest.mark.requires_test_data()
+def test_sfincs_build(
+    region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
+):
     sfincs_root = Path(tmp_path, "model")
     sfincs_build = SfincsBuild(
-        region=str(rio_region),
+        region=str(region),
+        config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
-        res=100.0,
-        river_upa=10.0,
-        data_libs=str(rio_test_data),
+        data_libs=str(global_catalog),
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
-    assert sfincs_build.params.river_upa == 10.0
 
     sfincs_build.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_update(sfincs_tmp_root: Path, test_data_dir: Path):
+@pytest.mark.requires_test_data()
+def test_sfincs_update(sfincs_tmp_model: Path, test_data_dir: Path):
     sf = SfincsUpdateForcing(
-        sfincs_inp=str(sfincs_tmp_root / "sfincs.inp"),
-        event_yaml=str(test_data_dir / "event_rp010.yml"),
+        sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
+        event_yaml=str(test_data_dir / "rainfall_events" / "event_rp010.yml"),
         event_name="rp010",
         sim_subfolder="sim",
     )
-    assert sf.output.sfincs_out_inp == sfincs_tmp_root / "sim" / "rp010" / "sfincs.inp"
+    assert sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / "rp010" / "sfincs.inp"
     sf.run_with_checks()
 
 
-@pytest.mark.requires_data()
-@pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_root", "sfincs_sim_tmp_root"])
+@pytest.mark.requires_test_data()
+@pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_model", "sfincs_sim_model"])
 @pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
 def test_sfincs_run(
     sfincs_root: Path,
@@ -101,13 +102,13 @@ def test_sfincs_run(
     sf_run.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_downscale(sfincs_sim_tmp_root: Path, sfincs_tmp_root: Path):
-    tmp_hazard_root = Path(sfincs_tmp_root.parent, "hazard")
+@pytest.mark.requires_test_data()
+def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
+    tmp_hazard_root = Path(sfincs_tmp_model, "hazard")
 
     sf_post = SfincsDownscale(
-        sfincs_map=str(sfincs_sim_tmp_root / "sfincs_map.nc"),
-        sfincs_subgrid_dep=str(sfincs_tmp_root / "subgrid" / "dep_subgrid.tif"),
+        sfincs_map=str(sfincs_sim_model / "sfincs_map.nc"),
+        sfincs_subgrid_dep=str(sfincs_tmp_model / "subgrid" / "dep_subgrid.tif"),
         output_root=str(tmp_hazard_root),
         event_name="test",
     )
@@ -116,10 +117,11 @@ def test_sfincs_downscale(sfincs_sim_tmp_root: Path, sfincs_tmp_root: Path):
     sf_post.run_with_checks()
 
 
-def test_parse_event_sfincs(sfincs_tmp_root: Path, tmp_path: Path):
+@pytest.mark.requires_test_data()
+def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     # get dummy location within the model domain
     # read gis/region.geojson
-    sf = SfincsModel(root=sfincs_tmp_root, mode="r")
+    sf = SfincsModel(root=sfincs_tmp_model, mode="r")
     sf.read()
     # create dummy bnd points
     sf.setup_waterlevel_bnd_from_mask(merge=False)
@@ -165,10 +167,10 @@ def test_parse_event_sfincs(sfincs_tmp_root: Path, tmp_path: Path):
     )
 
     parse_event_sfincs(
-        root=sfincs_tmp_root, event=event, out_root=sfincs_tmp_root / "sim" / "test"
+        root=sfincs_tmp_model, event=event, out_root=sfincs_tmp_model / "sim" / "test"
     )
 
-    sf = SfincsModel(root=sfincs_tmp_root / "sim" / "test", mode="r")
+    sf = SfincsModel(root=sfincs_tmp_model / "sim" / "test", mode="r")
     sf.read()
     assert sf.config["tstart"] == datetime.datetime(2020, 1, 1, 0, 0)
     assert (sf.forcing["bzs"].index.values == 1).all()

@@ -8,9 +8,10 @@ import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
+from pydantic import FilePath
 
-from hydroflows._typing import ListOfPath, ListOfStr
-from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows._typing import DataCatalogPath
+from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -36,6 +37,14 @@ class Input(Parameters):
     The file path to the geometry file that defines the region of interest
     for constructing a FIAT model.
     """
+
+    config: FilePath = CFG_DIR / "fiat_build.yml"
+    """The path to the configuration file (.yml) that defines the settings
+    to build a FIAT model. In this file the different model components
+    that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
+    Every component defines the setting for each hydromt_fiat setup methods.
+    For more information see hydromt_fiat method
+    `documentation <https://deltares.github.io/hydromt_fiat/latest/user_guide/user_guide_overview.html>`_."""
 
     ground_elevation: Optional[Path] = None
     """Path to the DEM file with to set ground elevation data."""
@@ -67,20 +76,9 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: ListOfPath | ListOfStr = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
-
-    config: Path = Path(HYDROMT_CONFIG_DIR, "fiat_build.yml")
-    """The path to the configuration file (.yml) that defines the settings
-    to build a FIAT model. In this file the different model components
-    that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
-    Every component defines the setting for each hydromt_fiat setup methods.
-    For more information see hydromt_fiat method
-    `documentation <https://deltares.github.io/hydromt_fiat/latest/user_guide/user_guide_overview.html>`_."""
-
-    continent: str = "South America"
-    """Continent of the region of interest."""
 
 
 class FIATBuild(Method):
@@ -90,11 +88,13 @@ class FIATBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": Path("hydroflows/cfg/fiat_build.yml"),
     }
 
     def __init__(
         self,
         region: Path,
+        config: Path,
         fiat_root: Path = "models/fiat",
         ground_elevation: Optional[Path] = None,
         **params,
@@ -122,13 +122,15 @@ class FIATBuild(Method):
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
         self.params: Params = Params(fiat_root=fiat_root, **params)
-        self.input: Input = Input(region=region, ground_elevation=ground_elevation)
+        self.input: Input = Input(
+            region=region, config=config, ground_elevation=ground_elevation
+        )
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
         """Run the FIATBuild method."""
         # Read template config
-        opt = configread(self.params.config)
+        opt = configread(self.input.config)
         # add optional ground elevation
         if self.input.ground_elevation is not None:
             if "setup_exposure_buildings" not in opt:

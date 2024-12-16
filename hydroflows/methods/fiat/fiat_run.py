@@ -58,6 +58,7 @@ class Params(Parameters):
         """Check the FIAT binary path."""
         if self.run_method == "exe" and self.fiat_exe is None:
             raise ValueError("FIAT binary path is required when run_method is 'exe'.")
+        return self
 
 
 class FIATRun(Method):

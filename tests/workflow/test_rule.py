@@ -15,11 +15,6 @@ from tests.workflow.conftest import (
 )
 
 
-@pytest.fixture()
-def rule(test_method, workflow):
-    return Rule(method=test_method, workflow=workflow, rule_id="test_rule")
-
-
 def test_rule_init(rule: Rule, workflow: Workflow):
     assert rule.rule_id == "test_rule"
     assert isinstance(rule._workflow_ref, ReferenceType)
@@ -36,10 +31,10 @@ def test_rule_to_dict(rule: Rule):
     rule_dict = rule.to_dict()
     assert rule_dict["method"] == "test_method"
     assert rule_dict["kwargs"] == {
-        "input_file1": "test_file1",
-        "input_file2": "test_file2",
-        "out_root": ".",
-        "param": "param",
+        "input_file1": "$config.test_rule_input_file1",
+        "input_file2": "$config.test_rule_input_file2",
+        "out_root": "$config.test_rule_out_root",
+        "param": "$config.test_rule_param",
     }
     assert rule_dict["rule_id"] == "test_rule"
 
@@ -238,6 +233,46 @@ def test_wildcard_product():
         {"region": "region1", "event": ["1", "b"]},
         {"region": "xx", "event": ["1", "b"]},
     ]
+
+
+def test_create_references_for_method_inputs(workflow: Workflow):
+    method1 = TestMethod(input_file1="test.file", input_file2="test2.file")
+    workflow.add_rule(method=method1, rule_id="method1")
+    method2 = TestMethod(
+        input_file1="$rules.method1.output.output_file1",
+        input_file2="$rules.method1.output.output_file2",
+        out_root="root",
+    )
+    workflow.add_rule(method=method2, rule_id="method2")
+    # Assert that refs of inputs of first rule are pointing to config
+    assert workflow.rules[0].method.input._refs == {
+        "input_file1": "$config.method1_input_file1",
+        "input_file2": "$config.method1_input_file2",
+    }
+    # Assert that workflow config contains the input values of the first rule
+    assert workflow.config.method1_input_file1 == "test.file"
+    assert workflow.config.method1_input_file2 == "test2.file"
+    # Assert that refs of second rule point to output of first rule
+    assert workflow.rules[1].method.input._refs == {
+        "input_file1": "$rules.method1.output.output_file1",
+        "input_file2": "$rules.method1.output.output_file2",
+    }
+
+
+def test_add_method_params_to_config(workflow: Workflow):
+    method = TestMethod(
+        input_file1="test.file", input_file2="test2.file", param="test_param"
+    )
+    workflow.add_rule(method=method)
+    # Assert the non-default test_param has been moved to config
+    assert workflow.config.test_method_param == "test_param"
+    assert workflow.rules[0].method.params._refs == {
+        "param": "$config.test_method_param",
+        "out_root": "$config.test_method_out_root",
+    }
+    # default_param should not be included in workflow.config
+    assert "default_param" not in workflow.config.to_dict().values()
+    assert "default_param2" not in workflow.config.to_dict().values()
 
 
 def test_run(caplog, mocker):

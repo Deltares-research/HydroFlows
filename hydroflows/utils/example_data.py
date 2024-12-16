@@ -11,9 +11,10 @@ logger = logging.getLogger(__name__)
 
 # update the base URL and registry with new versions of the data
 # use create_artifact.py script in the p-drive hydroflows-test-data folder to update the registry
-BASE_URL = "doi:10.5281/zenodo.14280572"
 with open(Path(__file__).parent / "registry.json", "r") as f:
-    REGISTRY = json.load(f)
+    DATABASE = json.load(f)
+    BASE_URL = DATABASE["url"]
+    REGISTRY = DATABASE["data"]
 CACHE_DIR = Path("~", ".cache", "hydroflows").expanduser()
 PROCESSORS = {
     "tar.gz": pooch.Untar,
@@ -23,11 +24,12 @@ PROCESSORS = {
 
 def unpack_processor(
     suffix: str,
+    extract_dir: str = "./",
 ):
     """Select the right processor for unpacking."""
     if suffix not in PROCESSORS:
         return None
-    processor = PROCESSORS[suffix](members=None, extract_dir="./")
+    processor = PROCESSORS[suffix](members=None, extract_dir=extract_dir)
     return processor
 
 
@@ -51,7 +53,7 @@ def fetch_data(
         The output directory where the data is stored
     """
     if output_dir is None:
-        output_dir = CACHE_DIR / data
+        output_dir = CACHE_DIR
 
     # Quick check whether the data can be found
     choices_raw = list(REGISTRY.keys())
@@ -73,8 +75,8 @@ def fetch_data(
 
     # Set the way of unpacking it
     suffix = choices_raw[idx].split(".", 1)[1]
-    processor = unpack_processor(suffix)
+    processor = unpack_processor(suffix, extract_dir=f"./{data}")
     # Retrieve the data
     retriever.fetch(choices_raw[idx], processor=processor)
 
-    return output_dir
+    return output_dir / data
