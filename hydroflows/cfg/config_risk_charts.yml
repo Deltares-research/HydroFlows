@@ -1,0 +1,42 @@
+Charts:
+  "2Y":
+    Name: "2Y"
+  "5Y":
+    Name: "5Y"
+  "10Y":
+    Name: "10Y"
+  "25Y":
+    Name: "25Y"
+  "50Y":
+    Name: "50Y"
+  "100Y":
+    Name: "100Y"
+
+Other:
+  Expected_Damages:
+    title: "Expected annual damages"
+    image_scale: 1.3
+    title_font_size: 25
+    numbers_font_size: 20
+    height: 300
+
+  Flooded:
+    title: "Number of homes with a high chance of being flooded in a 30-year period"
+    image_scale: 0.7
+    title_font_size: 25
+    numbers_font_size: 20
+    height: 300
+
+  Return_Periods:
+    font_size: 25
+    image_scale: 0.2
+    numbers_font: 15
+    subtitle_font: 22
+    legend_font: 20
+    plot_height: 300
+
+  Info:
+    text: |
+      Thresholds:<br>
+      Impacted: >= 0.25 feet<br>
+    scale: 0.1

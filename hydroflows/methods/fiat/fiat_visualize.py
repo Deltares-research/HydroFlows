@@ -2,20 +2,17 @@
 
 from pathlib import Path
 
-import hydromt_fiat
 import pandas as pd
-from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
-from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 
+# from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
+# from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
+from pydantic import FilePath
+
+from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["FIATVisualize"]
-
-FIAT_DATA_PATH = Path(
-    Path(hydromt_fiat.__file__).parent,
-    "data",
-).as_posix()
 
 
 class Input(Parameters):
@@ -30,10 +27,10 @@ class Input(Parameters):
     The file path to the output of the FIAT model.
     """
 
-    infographic_template: Path
+    infographics_template: FilePath = CFG_DIR / "config_charts.yml"
     """Path to the infographics template file."""
 
-    infometrics_template: Path
+    infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
     """Path to the infometrics template file."""
 
     event_name: Path
@@ -77,10 +74,9 @@ class FIATVisualize(Method):
 
     def __init__(
         self,
-        fiat_root: Path,
         fiat_cfg: Path,
-        infographic_template: Path,
-        infometrics_template: Path,
+        event_name: Path,
+        fiat_root: Path = Path("models/fiat"),
         **params,
     ) -> None:
         """Create and validate a FIATVisualize instance.
@@ -91,10 +87,6 @@ class FIATVisualize(Method):
             The path to the root directory where the FIAT model will be created, by default "models/fiat".
         fiat_cfg: Path
             The file path to the output of the FIAT model.
-        infographic_template: Path
-            Path to the infographics template file.
-        infometrics_template: Path
-            Path to the infometrics template file.
         **params
             Additional parameters to pass to the FIATVisualize instance.
             See :py:class:`fiat_build Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
@@ -109,8 +101,8 @@ class FIATVisualize(Method):
         self.params: Params = Params(fiat_root=fiat_root, **params)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
-            infographic_template=infographic_template,
-            infometrics_template=infometrics_template,
+            infographics_template=self.input.infographics_template,
+            infometrics_template=self.input.infographics_template,
         )
         self.output: Output = Output(
             fiat_infometrics=self.params.fiat_root / "infometrics.txt",
@@ -127,7 +119,7 @@ class FIATVisualize(Method):
         else:
             mode = "single_event"
 
-        scenario_name = self.input.event_name.load_toml()["name"]
+        scenario_name = self.input.event_name.stem
         # Get the infographic
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
@@ -135,10 +127,8 @@ class FIATVisualize(Method):
             metrics_full_path=self.output.metrics.joinpath(
                 scenario_name
             ),  # Users/rautenba/repos/Database/charleston_test/output/scenarios/current_test_set_no_measures/Infometrics_current_test_set_no_measures.csv')
-            config_base_path=self.input.infographics_template.parent,  #'C:\\Users\\rautenba\\repos\\Database\\charleston_test\\static\\templates\\Infographics'
-            output_base_path=self.output.joinpath(
-                self.input.event_name.load_toml()["name"]
-            ),
+            config_base_path=self.input.infographics_template.parent,
+            output_base_path=self.output.joinpath(self.input.event_name.stem),
         ).write_infographics_to_file()
 
         # Write the metrics to file
