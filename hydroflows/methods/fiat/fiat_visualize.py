@@ -3,9 +3,8 @@
 from pathlib import Path
 
 import pandas as pd
-
-# from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
-# from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
+from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
+from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 from hydromt.config import configread
 from pydantic import FilePath
 
@@ -58,7 +57,7 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    output_dir: Path = ("fiat_metrics",)
+    output_dir: Path = ("models/fiat/fiat_metrics",)
 
 
 class FIATVisualize(Method):
@@ -70,7 +69,7 @@ class FIATVisualize(Method):
         self,
         fiat_cfg: Path,
         event_name: Path,
-        output_dir: Path = "fiat_metrics",
+        output_dir: Path = "models/fiat/fiat_metrics",
         infographics_template: FilePath = CFG_DIR / "config_charts.yml",
         infometrics_template: FilePath = CFG_DIR / "metrics_config.yml",
     ) -> None:
@@ -78,10 +77,12 @@ class FIATVisualize(Method):
 
         Parameters
         ----------
-        fiat_root : Path
-            The path to the root directory where the FIAT model will be created, by default "models/fiat".
         fiat_cfg: Path
             The file path to the output of the FIAT model.
+        event_name: Path
+            The file path to the event set output of the hydromt SFINCS model.
+        output_dir: Path = "models/fiat/fiat_metrics"
+            The file path to the output of the FIAT infometrics and infographics.
         infographics_template: FilePath = CFG_DIR / "config_charts.yml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
