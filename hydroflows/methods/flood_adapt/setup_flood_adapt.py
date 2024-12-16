@@ -3,7 +3,9 @@ import os
 import shutil
 from pathlib import Path
 
+import geopandas as gpd
 import toml
+from hydromt.config import configread
 
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
@@ -110,7 +112,7 @@ class SetupFloodAdapt(Method):
                 self.params.output_dir, "probabilistic_set", "probabilistic_set.toml"
             )
 
-    def run(self, sfincs_bnd: list = None, sfincs_bzs: list = None):
+    def run(self):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(
@@ -124,14 +126,20 @@ class SetupFloodAdapt(Method):
             Path(self.params.output_dir, "sfincs"),
             dirs_exist_ok=True,
         )
-        if "sfincs.bnd" not in Path(self.params.output_dir, "sfincs"):
+        if not Path(self.params.output_dir, "sfincs", "sfincs.bnd").exists():
+            region = self.input.fiat_cfg.parent / "geoms" / "region.geojson"
+            sfincs_bnd_region = gpd.read_file(region)
+            sfincs_bnd = []
+            sfincs_bnd_x = sfincs_bnd_region.centroid[0].x
+            sfincs_bnd_y = sfincs_bnd_region.centroid[0].y
+            sfincs_bnd = [sfincs_bnd_x, sfincs_bnd_y]
             with open(
                 Path(self.params.output_dir, "sfincs", "sfincs.bnd"), "w"
             ) as output:
                 for row in sfincs_bnd:
                     output.write(str(row) + " ")
 
-        if "sfincs.bzs" not in Path(self.params.output_dir, "sfincs"):
+        if not Path(self.params.output_dir, "sfincs", "sfincs.bzs").exists():
             sfincs_bzs = [0, 0]
             with open(
                 Path(self.params.output_dir, "sfincs", "sfincs.bzs"), "w"
@@ -147,7 +155,7 @@ class SetupFloodAdapt(Method):
             )
 
             # Create FloodAdapt Database Builder config
-            fa_db_config(probabilistic_set="probabilistic_set")
+            fa_db_config(probabilistic_set=self.output.probabilistic_set)
 
         else:
             # Create FloodAdapt Database Builder config
@@ -169,9 +177,9 @@ def fa_db_config(
     probabilistic_set : Path, optional
         The file path to the HydroFlows event set yaml file.
     """
-    config = toml.load(config)
+    config = configread(config)
     if probabilistic_set is not None:
-        config["probabilistic_set"] = probabilistic_set
+        config["probabilistic_set"] = probabilistic_set.as_posix()
 
     with open(Path("flood_adapt_builder", "fa_build.toml"), "w") as toml_file:
         toml.dump(config, toml_file)
