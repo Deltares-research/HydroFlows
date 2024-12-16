@@ -27,12 +27,6 @@ class Input(Parameters):
     The file path to the output of the FIAT model.
     """
 
-    infographics_template: FilePath = CFG_DIR / "config_charts.yml"
-    """Path to the infographics template file."""
-
-    infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
-    """Path to the infometrics template file."""
-
     event_name: Path
     """Path to the eventset cfg file."""
 
@@ -63,8 +57,7 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    fiat_root: Path
-    """The path to the root directory where the FIAT model will be created."""
+    output_dir: Path = Path("fiat_metrics")
 
 
 class FIATVisualize(Method):
@@ -76,7 +69,9 @@ class FIATVisualize(Method):
         self,
         fiat_cfg: Path,
         event_name: Path,
-        fiat_root: Path = Path("models/fiat"),
+        output_dir: Path = "fiat_metrics",
+        infographics_template: FilePath = CFG_DIR / "config_charts.yml",
+        infometrics_template: FilePath = CFG_DIR / "metrics_config.yml",
         **params,
     ) -> None:
         """Create and validate a FIATVisualize instance.
@@ -87,6 +82,10 @@ class FIATVisualize(Method):
             The path to the root directory where the FIAT model will be created, by default "models/fiat".
         fiat_cfg: Path
             The file path to the output of the FIAT model.
+        infographics_template: FilePath = CFG_DIR / "config_charts.yml"
+            Path to the infographics template file.
+        infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
+            Path to the infometrics template file.
         **params
             Additional parameters to pass to the FIATVisualize instance.
             See :py:class:`fiat_build Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
@@ -98,15 +97,14 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(fiat_root=fiat_root, **params)
+        self.params: Params = Params(output_dir=self.params.output_dir, **params)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
-            infographics_template=self.input.infographics_template,
-            infometrics_template=self.input.infographics_template,
+            event_name=event_name,
         )
         self.output: Output = Output(
-            fiat_infometrics=self.params.fiat_root / "infometrics.txt",
-            fiat_infographics=self.params.fiat_root / "infographics.html",
+            fiat_infometrics=self.params.fiat_output / "infometrics.txt",
+            fiat_infographics=self.params.fiat_output / "infographics.html",
         )
 
     def run(self):
