@@ -2,7 +2,11 @@
 
 from pathlib import Path
 
+import geopandas as gpd
+from hydromt import DataCatalog
+
 from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows.methods.climate.util import monthly_factors
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -44,9 +48,24 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
+    precip: str
+    """
+    Name of the precipitation datasert that is present in the supplied data catalog(s).
+    """
+
     meteo: str
     """
     Name of the meteological dataset that is present in the supplied data catalog(s).
+    """
+
+    scenario: str
+    """
+    The specific climate scenario. Chose from ... # TODO
+    """
+
+    horizon: str
+    """
+    The horizon of the future scenario.
     """
 
     output_dir: Path
@@ -62,7 +81,11 @@ class Rainfall(Method):
 
     _test_kwargs = {}
 
-    def __init__(self, region: Path, **params) -> None:
+    def __init__(
+        self,
+        region: Path,
+        **params,
+    ) -> None:
         """_summary_.
 
         Parameters
@@ -76,3 +99,24 @@ class Rainfall(Method):
 
     def run(self) -> None:
         """Run the Rainfall method."""
+        # Load the region in memory
+        geom = gpd.read_file(self.input.region)
+
+        # Get the data from the catalog
+        dc = DataCatalog(data_libs=self.params.data_libs)
+        precip_ds = dc.get_rasterdataset(
+            self.params.precip,
+            geom=geom,
+        )
+        meteo_ds = dc.get_rasterdataset(
+            self.params.meteo,
+            geom=geom,
+        )
+
+        # Calculate the factors
+        fact_ds = monthly_factors(
+            precip_ds["precip"],
+            meteo_ds["temp"],
+        )
+
+        fact_ds.to_netcdf()
