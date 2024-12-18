@@ -14,18 +14,18 @@ authors = [
 dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
-  "geopandas",                # Reading vector data
-  "hatyan",                   # harmonic tidal analysis and prediction
-  "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@61754590c00a758a7c5cc5a0e9bc3e6459237544", # hydromt plugin for FIAT models
-  "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
-  "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
+  "geopandas>=1.0, <2.0",     # Reading vector data
+  "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
+  "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
+  "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
   "pooch",                    # test data fetching
-  "pydantic",                 # data validation
+  "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
   "requests",                 # data fetching
   "shapely",                  # geometry
@@ -165,15 +165,13 @@ hydroflows = { path = ".", editable = true }
 # conda dependencies
 [tool.pixi.dependencies]
 hydromt = ">=0.9.4,<1.0"
-hydromt_sfincs = ">=1.1.0,<1.2"
-hydromt_wflow = ">=0.6,<0.7"
+hydromt_sfincs = ">=1.1.0,<2.0"
+hydromt_wflow = ">=0.6,<1.0"
+snakemake = "*"
 
 [tool.pixi.feature.models.dependencies]  # pixi only
 delft_fiat = "0.2.1"  # Delft fiat
 juliaup = "*"         # julia package manager to install julia & wflow
-
-[tool.pixi.feature.extra.dependencies]
-snakemake = { version= ">=8.20,<9.0", channel= "bioconda" }
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
