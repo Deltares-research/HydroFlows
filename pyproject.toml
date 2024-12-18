@@ -170,7 +170,12 @@ hydroflows = { path = ".", editable = true }
 # conda dependencies
 [tool.pixi.dependencies]
 hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
+
+[tool.pixi.feature.extra.dependencies]
 snakemake = {version="*", channel= "bioconda" }
+
+[tool.pixi.feature.model.dependencies]
+delft_fiat = ">=0.2.1"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
