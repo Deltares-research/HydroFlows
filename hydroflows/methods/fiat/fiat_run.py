@@ -2,6 +2,9 @@
 
 import subprocess
 from pathlib import Path
+from typing import Literal, Optional
+
+from pydantic import model_validator
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -40,11 +43,22 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    fiat_bin: Path
+    run_method: Literal["exe", "python"] = "exe"
+    """How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
+    'python' for running the model in a Python environment."""
+
+    fiat_exe: Optional[Path] = None
     """The path to the FIAT executable."""
 
     threads: int = 1
     """The number of the threads to be used."""
+
+    @model_validator(mode="after")
+    def check_fiat_exe(self):
+        """Check the FIAT binary path."""
+        if self.run_method == "exe" and self.fiat_exe is None:
+            raise ValueError("FIAT binary path is required when run_method is 'exe'.")
+        return self
 
 
 class FIATRun(Method):
@@ -60,17 +74,26 @@ class FIATRun(Method):
 
     _test_kwargs = {
         "fiat_cfg": Path("fiat.toml"),
-        "fiat_bin": Path("fiat.exe"),
+        "fiat_exe": Path("fiat.exe"),
     }
 
-    def __init__(self, fiat_cfg: Path, fiat_bin: Path, **params):
+    def __init__(
+        self,
+        fiat_cfg: Path,
+        run_method: Literal["exe", "python"] = "exe",
+        fiat_exe: Optional[Path] = None,
+        **params,
+    ):
         """Create and validate a fiat_run instance.
 
         Parameters
         ----------
         fiat_cfg : Path
             Path to the FIAT config file.
-        fiat_bin : Path
+        run_method : Literal["exe", "python"]
+            How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
+            'python' for running the model in a Python environment.
+        fiat_exe : Path
             Path to the FIAT executable
         **params
             Additional parameters to pass to the FIATRun instance.
@@ -82,7 +105,7 @@ class FIATRun(Method):
         :py:class:`fiat_run Output <hydroflows.methods.fiat.fiat_run.Output>`
         :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`
         """
-        self.params: Params = Params(fiat_bin=fiat_bin, **params)
+        self.params: Params = Params(fiat_exe=fiat_exe, run_method=run_method, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
             fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg"
@@ -91,12 +114,23 @@ class FIATRun(Method):
     def run(self):
         """Run the FIATRun method."""
         # Get basic info
-        fiat_bin_path = self.params.fiat_bin.as_posix()
-        fiat_cfg_path = self.input.fiat_cfg.as_posix()
-        threads = self.params.threads
+        cwd = self.input.fiat_cfg.parent
+        fiat_cfg_path = self.input.fiat_cfg.name
+
+        entrypoint = (
+            "fiat"
+            if self.params.run_method == "python"
+            else self.params.fiat_exe.as_posix()
+        )
 
         # Setup the cli command
-        command = [fiat_bin_path, "run", fiat_cfg_path, "-t", str(threads)]
+        command = [
+            entrypoint,
+            "run",
+            fiat_cfg_path,
+            "-t",
+            str(self.params.threads),
+        ]
 
         # Execute the rule
-        subprocess.run(command)
+        subprocess.run(command, check=True, cwd=cwd)

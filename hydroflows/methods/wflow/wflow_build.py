@@ -6,9 +6,10 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
+from pydantic import FilePath
 
-from hydroflows._typing import ListOfPath, ListOfStr
-from hydroflows.config import HYDROMT_CONFIG_DIR
+from hydroflows._typing import DataCatalogPath
+from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -24,6 +25,22 @@ class Input(Parameters):
     The file path to the geometry file that defines the region of interest
     for constructing a Wflow model for the upstream area draining into
     the specified region. An example of such a file could be the Sfincs region GeoJSON.
+    """
+
+    config: FilePath = CFG_DIR / "wflow_build.yml"
+    """The path to the configuration file (.yml) that defines the settings
+    to build a Wflow model. In this file the different model components
+    that are required by the :py:class:`hydromt_wflow.WflowModel` are listed.
+    Every component defines the setting for each hydromt_wflow setup methods.
+    For more information see hydromt_wflow method
+    `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
+    """
+
+    gauges: Optional[Path] = None
+    """Gauges vector file including the locations of interest to get Wflow simulation outputs.
+    The vector file must include a column named 'index' that contains the gauge numbers.
+    An example of this vector file is the Sfincs source points GeoJSON, which is necessary
+    for coupling Wflow with Sfincs to run, for example, a fluvial flood risk assessment workflow.
     """
 
 
@@ -48,31 +65,9 @@ class Params(Parameters):
     wflow_root: Path
     """The path to the root directory where the wflow model will be created."""
 
-    default_config: Path = Path(HYDROMT_CONFIG_DIR, "wflow_build.yml")
-    """The path to the configuration file (.yml) that defines the settings
-    to build a Wflow model. In this file the different model components
-    that are required by the :py:class:`hydromt_wflow.WflowModel` are listed.
-    Every component defines the setting for each hydromt_wflow setup methods.
-    For more information see hydromt_wflow method
-    `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
-    """
-
-    data_libs: ListOfPath | ListOfStr | Path = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file.
-    """
-
-    gauges: Optional[Path] = None
-    """Gauges vector file including the locations of interest to get Wflow simulation outputs.
-    The vector file must include a column named 'index' that contains the gauge numbers.
-    An example of this vector file is the Sfincs source points GeoJSON, which is necessary
-    for coupling Wflow with Sfincs to run, for example, a fluvial flood risk assessment workflow.
-    """
-
-    upstream_area: int = 30
-    """
-    Subbasin filter to define rivers based on streams with
-    a minimum drainage area in km$^2$.
     """
 
     plot_fig: bool = True
@@ -88,11 +83,14 @@ class WflowBuild(Method):
 
     _test_kwargs = {
         "region": Path("region.geojson"),
+        "config": CFG_DIR / "wflow_build.yml",
     }
 
     def __init__(
         self,
         region: Path,
+        config: Path,
+        gauges: Path = None,
         wflow_root: Path = "models/wflow",
         **params,
     ) -> None:
@@ -117,7 +115,7 @@ class WflowBuild(Method):
         :py:class:`hydromt_wflow.WflowModel`
         """
         self.params: Params = Params(wflow_root=wflow_root, **params)
-        self.input: Input = Input(region=region)
+        self.input: Input = Input(region=region, config=config, gauges=gauges)
         self.output: Output = Output(
             wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )
@@ -139,15 +137,13 @@ class WflowBuild(Method):
         # specify region
         region = {
             "subbasin": str(self.input.region),
-            "uparea": self.params.upstream_area,
         }
 
         # read the configuration
-        opt = configread(self.params.default_config)
+        opt = configread(self.input.config)
 
         # update placeholders in the config
         opt["setup_basemaps"].update(region=region)
-        opt["setup_rivers"].update(river_upa=self.params.upstream_area)
 
         # for reservoirs, lakes and glaciers: check if data is available
         for key in [
@@ -159,10 +155,10 @@ class WflowBuild(Method):
                 opt.pop(f"setup_{key}")
 
         # check whether the sfincs src file was generated
-        gauges = self.params.gauges
+        gauges = self.input.gauges
         if gauges is None or not gauges.is_file():  # remove placeholder
-            opt.pop("setup_gauges")
-            opt.pop("setup_config_output_timeseries")
+            for item in ["setup_gauges", "setup_config_output_timeseries"]:
+                opt.pop(item, None)
         else:  # replace placeholder with actual file
             opt["setup_gauges"]["gauges_fn"] = str(gauges)
 

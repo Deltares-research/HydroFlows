@@ -61,6 +61,8 @@ class Rule:
         # add weak reference to workflow to avoid circular references
         self._workflow_ref = weakref.ref(workflow)
 
+        # move method inputs to config
+
         # placeholders for wildcards detection
         self._wildcard_fields: List[str] = []
         self._wildcards: Dict[str, List] = {}
@@ -73,6 +75,8 @@ class Rule:
         # detect and validate wildcards
         self._detect_wildcards()
         self._validate_wildcards()
+        self._create_references_for_method_inputs()
+        self._add_method_params_to_config()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -279,8 +283,45 @@ class Rule:
 
         return wc_product
 
-    ## RUN METHODS
+    def _create_references_for_method_inputs(self):
+        for key, value in self.method.input:
+            # Skip if key is already present in input refs
+            if key in self.method.input._refs or value is None:
+                continue
+            if isinstance(value, Path):
+                value = value.as_posix()
+            if value in self.workflow._output_path_refs.values():
+                self.method.input._refs.update({key: value})
+            else:
+                config_key = f"{self.rule_id}_{key}"
+                logger.debug("Adding %s to config", config_key)
+                # Add input to config
+                self.workflow.config = self.workflow.config.model_copy(
+                    update={config_key: value}
+                )
+                # Replace methond input with reference to config
+                config_ref = "$config." + config_key
+                self.method.input._refs.update({key: config_ref})
 
+    def _add_method_params_to_config(self) -> None:
+        for p in self.method.params:
+            key, value = p
+            # Check if key can be found in method Params class
+            if key in self.method.params.model_fields:
+                default_value = self.method.params.model_fields.get(key).default
+            else:
+                default_value = None
+
+            if value != default_value:
+                config_key = f"{self.rule_id}_{key}"
+                self.workflow.config = self.workflow.config.model_copy(
+                    update={config_key: value}
+                )
+                config_ref = "$config." + config_key
+                logging.debug("Adding %s to config", config_key)
+                self.method.params._refs.update({key: config_ref})
+
+    ## RUN METHODS
     def run(self, max_workers=1) -> None:
         """Run the rule.
 

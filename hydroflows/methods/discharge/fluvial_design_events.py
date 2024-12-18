@@ -132,6 +132,7 @@ class Params(Parameters):
         # create a reference to the event wildcard
         if "event_names" not in self._refs:
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+        return self
 
 
 class FluvialDesignEvents(ExpandMethod):
@@ -250,7 +251,7 @@ class FluvialDesignEvents(ExpandMethod):
         elif self.params.ev_type == "BM":
             # sample size per year
             min_sample_size = (
-                pd.Timedelta(1, "A") / dt * (self.params.min_sample_perc / 100)
+                pd.Timedelta(365.25, "d") / dt * (self.params.min_sample_perc / 100)
             )
             kwargs = dict(
                 min_dist=min_dist, period="year", min_sample_size=min_sample_size

@@ -116,14 +116,11 @@ bin/
 # vscode
 .vscode
 
-# large test data
-tests/_large_data/data
-tests/_large_data/registry.txt
-tests/_bin
-tests/_data
-
 # ignore example outputs
 examples/cases
+examples/bin
+examples/data
+
 # pixi environments
 .pixi
 *.egg-info

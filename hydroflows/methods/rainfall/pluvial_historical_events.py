@@ -1,6 +1,6 @@
 """Pluvial historical events method."""
 
-import warnings
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -12,6 +12,8 @@ from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["PluvialHistoricalEvents"]
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -153,7 +155,7 @@ class PluvialHistoricalEvents(ExpandMethod):
             event_da = da.sel(time=slice(start_time_event, end_time_event))
 
             if event_da.size == 0:
-                warnings.warn(
+                logger.warning(
                     f"Time slice for event '{event_name}' (from {start_time_event} to {end_time_event}) "
                     "returns no data.",
                     stacklevel=2,
@@ -163,7 +165,7 @@ class PluvialHistoricalEvents(ExpandMethod):
                 last_date = pd.to_datetime(event_da[time_dim][-1].values)
 
                 if first_date > start_time_event:
-                    warnings.warn(
+                    logger.warning(
                         f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified start time "
                         f"of {start_time_event} is not included in the provided time series. "
                         f"The event will start from {first_date}, which is the earliest available date in the time series.",
@@ -171,7 +173,7 @@ class PluvialHistoricalEvents(ExpandMethod):
                     )
 
                 if last_date < end_time_event:
-                    warnings.warn(
+                    logger.warning(
                         f"The selected series for the event '{event_name}' is shorter than anticipated, as the specified end time "
                         f"of {end_time_event} is not included in the provided time series. "
                         f"The event will end at {last_date}, which is the latest available date in the time series.",

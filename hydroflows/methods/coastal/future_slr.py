@@ -1,79 +1,78 @@
-"""Future climate rainfall method."""
+"""Future climate sea level method."""
 
 from logging import getLogger
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Literal, Optional
 
-import pandas as pd
 from pydantic import Field, model_validator
 
 from hydroflows._typing import ListOfStr
 from hydroflows.events import Event, EventSet
+from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 logger = getLogger(__name__)
 
+__all__ = ["FutureSLR"]
+
 
 class Input(Parameters):
-    """Input parameters for the :py:class:`FutureClimateRainfall` method."""
+    """Input parameters for the :py:class:`FutureSLR` method."""
 
     event_set_yaml: Path
-    """The file path to the event set YAML file, which includes the events to be scaled
+    """The file path to the event set YAML file, which includes the events to be offset
     for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
 
 
 class Output(Parameters):
-    """Output parameters for the :py:class:`FutureClimateRainfall` method."""
+    """Output parameters for the :py:class:`FutureSLR` method."""
 
     future_event_yaml: Path
-    """The path to the scaled event description file,
+    """The path to the offset event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
     future_event_csv: Path
-    """The path to the scaled event csv timeseries file."""
+    """The path to the offset event csv timeseries file."""
 
     future_event_set_yaml: Path
-    """The path to the scaled event set yml file,
+    """The path to the offset event set yml file,
     see also :py:class:`hydroflows.events.EventSet`.
     """
 
 
 class Params(Parameters):
-    """Parameters for :py:class:`FutureClimateRainfall` method."""
+    """Parameters for :py:class:`FutureSLR` method."""
 
     scenario_name: str
-    """Future scenario name for which CC scaling is applied."""
+    """Future scenario name for which sea level rise offset is applied."""
 
-    dT: float
-    """Temperature change corresponding to the future climate scenario `scenario_name`
-    Note that this value indicates the temperature difference between the year of the event
-    to be scaled and the future climate period of interest.
+    slr_value: float
+    """Sea level rise (SLR) change value. This value is added to the input event
+    (water level) time series and represents the change in sea level for the specified
+    climate scenario.
 
-    This parameter also represents the projected temperature increase, with an emphasis on hot
-    days, rather than a simple average temperature change. To accurately capture extreme
-    temperature shifts, it is recommended that users consider high quantiles
-    (e.g., the 95th percentile) in their analyses.
+    Sea level rise change for different periods and emission scenarios
+    for different climate models can be taken via:
+    `IPCC WGI Interactive Atlas <https://interactive-atlas.ipcc.ch/>`_"""
 
-    Temperature changes for different periods and emission scenarios
-    for CMIP5 and CMIP6 models can be taken via:
-    `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_"""
-
-    alpha: float = 0.07
-    """The rate of change of precipitation with respect to temperature (per degree)
-    used in Clausius-Clapeyron (CC) scaling"""
+    slr_unit: Literal["m", "cm", "mm", "ft", "in"] = "m"
+    """The unit (length) of the sea level rise value (`slr_value`),
+    Valid options are 'm' for meters, 'cm' for centimeters,
+    "mm" for milimeters, "ft" for feet and "in" for inches.
+    Default is 'm'."""
 
     event_root: Path
-    """Root folder to save the derived scaled events."""
+    """Root folder to save the derived offset events."""
 
     wildcard: str = "future_event"
-    """The wildcard key for expansion over the scaled events."""
+    """The wildcard key for expansion over the offset events."""
 
     event_names_input: Optional[ListOfStr] = None
-    """List of event names to be scaled for future climate projections."""
+    """List of event names to be offset for future climate projections."""
 
     event_names_output: Optional[ListOfStr] = None
-    """List of event names for the scaled future climate events."""
+    """List of event names for the offset future climate events."""
 
     input: Input = Field(exclude=True)
     """Internal variable to link input."""
@@ -105,63 +104,64 @@ class Params(Parameters):
         return self
 
 
-class FutureClimateRainfall(ExpandMethod):
-    """Rule for deriving future climate rainfall by scaling an event using Clausius-Clapeyron (CC)."""
+class FutureSLR(ExpandMethod):
+    """Rule for deriving future (climate) sea level (rise) by applying a user-specified offset to an event."""
 
-    name: str = "future_climate_rainfall"
+    name: str = "future_slr"
 
     _test_kwargs = {
         "scenario_name": "RCP85",
-        "dT": 1.8,
+        "slr_value": 0.12,
         "event_set_yaml": Path("event_set.yaml"),
-        "event_names_input": ["p_event1", "p_event2"],
+        "event_names_input": ["wl_event1", "wl_event2"],
     }
 
     def __init__(
         self,
         scenario_name: str,
-        dT: int,
+        slr_value: float,
         event_set_yaml: Path,
-        event_root: Path = Path("data/events/future_rainfall"),
+        event_root: Path = Path("data/events/future_climate_sea_level"),
         wildcard: str = "future_event",
         event_names_input: Optional[List[str]] = None,
         event_names_output: Optional[List[str]] = None,
         **params,
     ) -> None:
-        """Create and validate a FutureClimateRainfall instance.
+        """Create and validate a FutureSLR instance.
 
         Parameters
         ----------
         event_set_yaml : Path
-            The file path to the event set YAML file, which includes the events to be scaled
+            The file path to the event set YAML file, which includes the events to be offset
             for a future climate projection.
         scenario_name: str
-            Future scenario name for which CC scaling is applied.
-        dT: float
-            Temperature change corresponding to the future climate scenario `scenario_name`,
-            indicating the temperature difference between the year of the event
-            to be scaled and the future climate period of interest.
+            Future scenario name for which the Sea Level Rise offset is applied.
+        slr_value: float
+            Sea level rise (SLR) change value corresponding to the future climate scenario `scenario_name`.
+            This value is added to the input event (water level) time series specified in `event_set_yaml`.
+            The unit of the SLR value can be determined in the `slr_unit` parameter. As default the value
+            is expected in meters.
         event_root: Path, optional
-            Root folder to save the derived scaled events, by default "data/events/future_rainfall".
+            Root folder to save the derived scaled events, by default "data/events/future_climate_sea_level".
         wildcard: str
             The wildcard key for expansion over the scaled events, default is "future_event".
         event_names_input, event_names_output: Optional[List[str]]
             List of input event names in event_set_yaml and matching output event names for the scaled events.
             If not provided, event_set_yaml must exist and all events will be scaled.
         **params
-            Additional parameters to pass to the FutureClimateRainfall Params instance.
+            Additional parameters to pass to the FutureSLR Params instance.
 
         See Also
         --------
-        :py:class:`FutureClimateRainfall Input <hydroflows.methods.rainfall.future_climate_rainfall.Input>`
-        :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
-        :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
+        :py:class:`FutureSLR Input <hydroflows.methods.coastal.future_slr.Input>`
+        :py:class:`FutureSLR Output <hydroflows.methods.coastal.future_slr.Output>`
+        :py:class:`FutureSLR Params <hydroflows.methods.coastal.future_slr.Params>`
         """
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         self.params: Params = Params(
             scenario_name=scenario_name,
-            dT=dT,
+            slr_value=slr_value,
             event_root=event_root,
             wildcard=wildcard,
             event_names_input=event_names_input,
@@ -176,38 +176,39 @@ class FutureClimateRainfall(ExpandMethod):
             future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
             future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
             future_event_set_yaml=Path(self.params.event_root)
-            / f"future_pluvial_events_{self.params.scenario_name}.yml",
+            / f"future_coastal_events_{self.params.scenario_name}.yml",
         )
 
         self.set_expand_wildcard(wildcard, self.params.event_names_output)
 
     def run(self):
-        """Run the FutureClimateRainfall method."""
+        """Run the FutureClimateSLR method."""
         event_set = EventSet.from_yaml(self.input.event_set_yaml)
 
-        # List to save the scaled events
+        # List to save the offset events
         future_events_list = []
 
         for name in self.params.event_names_input:
             # Load the event
             event: Event = event_set.get_event(name)
 
-            # get precip event
+            # get water level event
             if len(event.forcings) > 1:
                 logger.warning(
-                    f"Event {name} has more than one forcing. The first rainfall forcing is used."
+                    f"Event {name} has more than one forcing. The first water level forcing is used."
                 )
-                rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
+                water_level = [f for f in event.forcings if f["type"] == "water_level"][
+                    0
+                ]
             else:
-                rainfall = event.forcings[0]
+                water_level = event.forcings[0]
 
-            event_df = rainfall.data.copy()
+            event_df = water_level.data.copy()
 
-            # Apply CC scaling
-            scaled_ts = event_df.values * (1 + self.params.alpha) ** (self.params.dT)
-
-            # Create a new df to include the time and scaled values
-            future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
+            # Apply the offset
+            future_event_df = event_df + convert_to_meters(
+                self.params.slr_value, self.params.slr_unit
+            )
 
             filename = f"{event.name}_{self.params.scenario_name}"
 
@@ -223,9 +224,10 @@ class FutureClimateRainfall(ExpandMethod):
             future_event_file = Path(
                 self.output.future_event_yaml.as_posix().format(**fmt_dict)
             )
+            water_level.path = forcing_file
             future_event = Event(
                 name=filename,
-                forcings=[{"type": "rainfall", "path": forcing_file}],
+                forcings=[water_level],
             )
             future_event.set_time_range_from_forcings()
             future_event.to_yaml(future_event_file)

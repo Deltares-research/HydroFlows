@@ -1,6 +1,8 @@
+import logging
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import xarray as xr
 
 from hydroflows.events import EventSet
@@ -47,13 +49,12 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
     assert df.max().max() == 1.0
 
 
-def test_pluvial_design_hyeto_gpex(
-    sfincs_region_path: Path, gpex_data: Path, tmp_path: Path
-):
+@pytest.mark.requires_test_data()
+def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
         gpex_nc=str(gpex_data),
-        region=str(sfincs_region_path),
+        region=str(region),
         event_root=Path(tmp_path, "events"),
         rps=rps,
         duration=120,
@@ -64,9 +65,9 @@ def test_pluvial_design_hyeto_gpex(
     p_events.run_with_checks()
 
 
-def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
+def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
     get_era5 = GetERA5Rainfall(
-        region=str(sfincs_region_path),
+        region=str(region),
         data_root=str(tmp_path / "data"),
         filename="era5.nc",
         start_date="2023-11-01",
@@ -79,7 +80,10 @@ def test_get_ERA5_rainfall(sfincs_region_path: Path, tmp_path: Path):
     assert da["time"].min() == pd.Timestamp("2023-11-01")
 
 
-def test_pluvial_historical_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
+def test_pluvial_historical_events(
+    tmp_precip_time_series_nc: Path, tmp_path: Path, caplog
+):
+    caplog.set_level(logging.WARNING)
     events_dates = {
         # The first event is outside the available time series to test warning coverage.
         "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
@@ -96,12 +100,21 @@ def test_pluvial_historical_events(tmp_precip_time_series_nc: Path, tmp_path: Pa
 
     p_events.run_with_checks()
 
+    assert (
+        "Time slice for event 'p_event01' (from 1995-03-04 12:00:00 to 1995-03-05 14:00:00) returns no data."
+        in caplog.text
+    )
+    assert (
+        "The selected series for the event 'p_event03' is shorter than anticipated"
+        in caplog.text
+    )
+
 
 def test_future_climate_rainfall(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "events.yml"
+    event_set_yaml = test_data_dir / "rainfall_events" / "events.yml"
 
     out_root = Path(tmp_path / "CC_scaling")
 
@@ -110,7 +123,6 @@ def test_future_climate_rainfall(
         scenario_name="RCP85",
         dT=2.5,
         event_root=out_root,
-        time_col="date",
     )
 
     rule.run_with_checks()

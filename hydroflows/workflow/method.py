@@ -15,6 +15,7 @@ from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
 from hydroflows.utils.parsers import get_wildcards
+from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
@@ -193,8 +194,6 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
-        from hydroflows.methods import METHODS  # avoid circular import
-
         name = name.lower()
         for subclass in cls._get_subclasses():
             if subclass.name.lower() == name or subclass.__name__.lower() == name:

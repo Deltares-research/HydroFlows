@@ -5,6 +5,15 @@ SFINCS related methods
 
 Several methods are available to build, run and postprocessing SFINCS inundation models.
 
+Get Sfincs region
+-----------------
+.. autosummary::
+   :toctree: ../_generated
+
+   sfincs_region.SfincsRegion
+   sfincs_region.Input
+   sfincs_region.Output
+
 Build Sfincs model
 ------------------
 
