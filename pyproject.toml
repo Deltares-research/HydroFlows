@@ -196,9 +196,7 @@ test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missin
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and not slow", "-vv"] }
 test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
-examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
-
 
 docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
 docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}

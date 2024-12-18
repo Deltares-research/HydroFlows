@@ -70,18 +70,21 @@ def test_get_subclass():
 
 
 def test_dryrun(tmp_path):
-    test_method = create_test_method(root=tmp_path)
-    output_files = test_method.dryrun(
-        input_files=[test_method.input.input_file1, test_method.input.input_file2]
-    )
+    test_method: Method = create_test_method(root=tmp_path)
+    output_files = test_method.dryrun(input_files=[])
     assert output_files == [
         test_method.output.output_file1,
         test_method.output.output_file2,
     ]
 
-    # TODO either unlink or new function
+
+def test_dryrun_missing_file_error(tmp_path, caplog):
+    test_method: Method = create_test_method(root=tmp_path, write_inputs=False)
     with pytest.raises(FileNotFoundError):
         test_method.dryrun(input_files=[], missing_file_error=True)
+
+    test_method.dryrun(input_files=[], missing_file_error=False)
+    assert "input_file1" in caplog.text
 
 
 def test_run_with_checks(tmp_path):
