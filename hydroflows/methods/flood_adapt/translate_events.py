@@ -164,7 +164,6 @@ class ForcingSources:
 def translate_events(
     root: Union[str, Path] = None,
     fa_events: Union[str, Path] = None,
-    test_set_name: str = "probabilistic_set",
     description: str = "This is a hydroflows event set",
 ):
     """
@@ -176,12 +175,12 @@ def translate_events(
         Path to the root folder of the events, by default None
     fa_events : Union[str, Path]
         Folder to write the floodadapt events to, by default None
-    test_set_name : str
-        Name of the test set. Default is set to "probabilistic_set"
-
     """
     # Create output directory
-    fn_floodadapt = Path.joinpath(fa_events)
+    # fn_floodadapt = Path.joinpath(fa_events)
+    # if not os.path.exists(fn_floodadapt):
+    #    os.makedirs(fn_floodadapt)
+    fn_floodadapt = Path.joinpath(fa_events, root.stem)
     if not os.path.exists(fn_floodadapt):
         os.makedirs(fn_floodadapt)
 
@@ -350,11 +349,11 @@ def translate_events(
 
     # Create dictionary for floodadapt for test set
     if len(event_set.events) > 1:
-        name_test_set = test_set_name
+        name_test_set = root.stem
 
         floodadapt_config = {
             "name": name_test_set,
-            "description": "test_set",
+            "description": description,
             "mode": "risk",
             "subevent_name": subevent_name,
             "frequency": rp,

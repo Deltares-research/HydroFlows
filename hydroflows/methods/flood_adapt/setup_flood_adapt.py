@@ -109,7 +109,9 @@ class SetupFloodAdapt(Method):
         )
         if self.input.event_set_yaml is not None:
             self.output.probabilistic_set = Path(
-                self.params.output_dir, "probabilistic_set", "probabilistic_set.toml"
+                self.params.output_dir,
+                self.input.event_set_yaml.stem,
+                f"{self.input.event_set_yaml.stem}.toml",
             )
 
     def run(self):
@@ -154,7 +156,7 @@ class SetupFloodAdapt(Method):
         if self.input.event_set_yaml is not None:
             translate_events(
                 self.input.event_set_yaml,
-                Path(self.params.output_dir, "probabilistic_set"),
+                Path(self.params.output_dir),
             )
 
             # Create FloodAdapt Database Builder config
