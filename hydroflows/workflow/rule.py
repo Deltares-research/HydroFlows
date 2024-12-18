@@ -3,7 +3,7 @@
 import logging
 import warnings
 import weakref
-from itertools import product
+from itertools import chain, product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
@@ -340,18 +340,37 @@ class Rule:
                         parameters[name][key] = []
                     parameters[name][key].append(value)
 
+        # Also evaluate expand wildcards
+        if self.wildcards["expand"]:
+            wc_dict = self.method.expand_wildcards
+            wc_values = list(product(*wc_dict.values()))
+            for key, value in parameters["output"].items():
+                if any("{" in entry.as_posix() for entry in value):
+                    parameters["output"][key] = [
+                        str(*value).format(**dict(zip(self.wildcards["expand"], wc)))
+                        for wc in wc_values
+                    ]
+
         self.parameter_list = parameters
 
     def _detect_dependency(self):
-        # Fetch name of reference iff the reference is to a rule
-        input_refs = list(self.method.input._refs.values())
-        refs = [
-            item.split(".")[1] for item in input_refs if item.split(".")[0] == "$rules"
-        ]
+        """Find last occuring dependency of self by matching input values to output values of prev rules."""
+        # Make list of inputs, convert to set of strings for quick matching
+        inputs = self.parameter_list["input"]
+        inputs = list(chain(*inputs.values()))
+        inputs = set([str(item) for item in inputs])
+
+        # Init dependency as None
         self.dependency = None
-        for name in reversed(self.workflow.rules.names):
-            if any([name == ref for ref in refs]):
-                self.dependency = name
+        for rule in reversed(self.workflow.rules):
+            # Make list of outputs as strings, outputs always paths anyways
+            outputs = rule.parameter_list["output"]
+            outputs = list(chain(*outputs.values()))
+            outputs = [str(item) for item in inputs]
+
+            # Find if inputs, outputs share any element
+            if not inputs.isdisjoint(outputs):
+                self.dependency = rule.rule_id
                 break
 
     ## RUN METHODS
@@ -452,8 +471,7 @@ class Rules:
         # If rule input does not depend on others, put at beginning after other rules with no input dependencies.
         else:
             ind = len([rule for rule in self if rule.dependency is None])
-        # self.names.insert(ind,key)
-        self.names.append(key)
+        self.names.insert(ind, key)
 
     def __iter__(self) -> Iterator[Rule]:
         return iter([self[rule_id] for rule_id in self.names])
