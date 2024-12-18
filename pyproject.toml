@@ -24,6 +24,7 @@ dependencies = [
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pandas",                   # data handling
   "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
@@ -76,8 +77,12 @@ test = [
   "pytest-timeout", # darn hanging tests
   "hydroflows[extra]",      # needed for testing snake file
 ]
+models = [
+  "delft_fiat>=0.2.1",  # Delft fiat
+  "juliaup"             # julia package manager to install julia & wflow
+]
 
-full = ["hydroflows[dev, doc, test, extra]"]
+full = ["hydroflows[dev, doc, test, extra, models]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
@@ -164,14 +169,13 @@ hydroflows = { path = ".", editable = true }
 
 # conda dependencies
 [tool.pixi.dependencies]
-hydromt = ">=0.9.4,<1.0"
-hydromt_sfincs = ">=1.1.0,<2.0"
-hydromt_wflow = ">=0.6,<1.0"
-snakemake = "*"
+hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
 
-[tool.pixi.feature.models.dependencies]  # pixi only
-delft_fiat = "0.2.1"  # Delft fiat
-juliaup = "*"         # julia package manager to install julia & wflow
+[tool.pixi.feature.extra.dependencies]
+snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
+
+[tool.pixi.feature.models.dependencies]
+delft_fiat = ">=0.2.1"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
