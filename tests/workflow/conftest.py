@@ -7,6 +7,7 @@ import yaml
 from hydroflows._typing import WildcardPath
 from hydroflows.workflow import Method, Parameters, Workflow
 from hydroflows.workflow.method import ExpandMethod, ReduceMethod
+from hydroflows.workflow.rule import Rule
 
 
 class TestMethodInput(Parameters):
@@ -163,3 +164,43 @@ def workflow() -> Workflow:
 @pytest.fixture()
 def mock_expand_method():
     return MockExpandMethod(input_file="test.yml", root="", events=["1", "2"])
+
+
+@pytest.fixture()
+def rule(test_method, workflow):
+    return Rule(method=test_method, workflow=workflow, rule_id="test_rule")
+
+
+@pytest.fixture()
+def w() -> Workflow:
+    config = {"rps": [2, 50, 100]}
+    wildcards = {"region": ["region1", "region2"]}
+    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
+
+
+@pytest.fixture()
+def workflow_yaml_dict():
+    return {
+        "config": {
+            "input_file": "tests/_data/region.geojson",
+            "events": ["1", "2", "3"],
+            "root": "root",
+        },
+        "rules": [
+            {
+                "method": "mock_expand_method",
+                "kwargs": {
+                    "input_file": "$config.input_file",
+                    "events": "$config.events",
+                    "root": "$config.root",
+                },
+            },
+            {
+                "method": "mock_reduce_method",
+                "kwargs": {
+                    "files": "$rules.mock_expand_method.output.output_file",
+                    "root": "$config.root",
+                },
+            },
+        ],
+    }

@@ -109,6 +109,7 @@ class Params(Parameters):
         # create a reference to the event wildcard
         if "event_names" not in self._refs:
             self._refs["event_names"] = f"$wildcards.{self.wildcard}"
+        return self
 
 
 class PluvialDesignEventsGPEX(ExpandMethod):
@@ -191,9 +192,9 @@ class PluvialDesignEventsGPEX(ExpandMethod):
     def run(self):
         """Run the PluvialDesignEventsGPEX method."""
         # read the region polygon file
-        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region).to_crs("EPSG:4326")
+        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region)
         # calculate the centroid of the polygon
-        centroid = gdf.geometry.centroid
+        centroid = gdf.geometry.centroid.to_crs("EPSG:4326")
         # read the GPEX nc file
         ds = xr.open_dataset(self.input.gpex_nc)[f"{self.params.eva_method}_estimate"]
         # get the coordinates for the pixel with values closest to the centroid

@@ -14,18 +14,19 @@ authors = [
 dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
-  "geopandas",                # Reading vector data
-  "hatyan",                   # harmonic tidal analysis and prediction
-  "hydromt>=0.9.4, <1.0",           # hydromt core for setting up models
-  "hydromt_fiat@git+https://github.com/Deltares/hydromt_fiat.git@9a053e073fdc635069261333fe8f789240d1118a", # hydromt plugin for FIAT models
-  "hydromt_sfincs>=1.1.0, <1.2",           # hydromt plugin for sfincs models
-  "hydromt_wflow>=0.6, <0.7",            # hydromt plugin for wflow models
+  "geopandas>=1.0, <2.0",     # Reading vector data
+  "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
+  "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
+  "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
   "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "pandas",                   # data handling
   "pooch",                    # test data fetching
-  "pydantic",                 # data validation
+  "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
   "requests",                 # data fetching
   "shapely",                  # geometry
@@ -76,8 +77,12 @@ test = [
   "pytest-timeout", # darn hanging tests
   "hydroflows[extra]",      # needed for testing snake file
 ]
+models = [
+  "delft_fiat>=0.2.1",  # Delft fiat
+  "juliaup"             # julia package manager to install julia & wflow
+]
 
-full = ["hydroflows[dev, doc, test, extra]"]
+full = ["hydroflows[dev, doc, test, extra, models]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
@@ -87,7 +92,15 @@ hydroflows = "hydroflows.cli.main:cli"
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
-markers = ["requires_data", "slow"]
+markers = ["requires_test_data", "slow"]
+filterwarnings = [
+  "ignore::FutureWarning",
+  "ignore::DeprecationWarning:pyproj",
+  "ignore::RuntimeWarning:pyogrio",
+  "ignore::DeprecationWarning:scipy.ndimage.measurement",
+  "ignore::DeprecationWarning:hydromt",
+  "ignore::UserWarning:hydromt",
+]
 
 [tool.coverage.run]
 branch = true
@@ -156,22 +169,19 @@ hydroflows = { path = ".", editable = true }
 
 # conda dependencies
 [tool.pixi.dependencies]
-hydromt = ">=0.9.4,<1.0"
-hydromt_sfincs = ">=1.1.0,<1.2"
-hydromt_wflow = ">=0.6,<0.7"
-
-[tool.pixi.feature.models.dependencies]  # pixi only
-delft_fiat = "0.2.0"  # Delft fiat
-juliaup = "*"         # julia package manager to install julia & wflow
+hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
 
 [tool.pixi.feature.extra.dependencies]
-snakemake = { version= ">=8.20,<9.0", channel= "bioconda" }
+snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
+
+[tool.pixi.feature.models.dependencies]
+delft_fiat = ">=0.2.1"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "doc", "test", "extra", "py311", "models"], solve-group = "py311" }
+default = { features = ["dev", "doc", "test", "extra", "py311", "models", "full"], solve-group = "py311" }
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
@@ -183,7 +193,8 @@ install-pre-commit = "pre-commit install"
 lint = { cmd = ["pre-commit", "run", "--all"] }
 
 test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missing"] }
-test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_data and not slow", "-vv"] }
+test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and not slow", "-vv"] }
+test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
 examples-pluvial = { cmd = ["python", "pluvial_hazard.py"], outputs = ["examples/cases/pluvial_hazard/Snakefile"], inputs = ["examples/pluvial_hazard.py"], cwd = "examples" }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }

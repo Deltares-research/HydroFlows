@@ -15,11 +15,6 @@ from tests.workflow.conftest import (
 )
 
 
-@pytest.fixture()
-def rule(test_method, workflow):
-    return Rule(method=test_method, workflow=workflow, rule_id="test_rule")
-
-
 def test_rule_init(rule: Rule, workflow: Workflow):
     assert rule.rule_id == "test_rule"
     assert isinstance(rule._workflow_ref, ReferenceType)

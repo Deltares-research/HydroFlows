@@ -1,8 +1,8 @@
 import pytest
 from importlib_metadata import EntryPoint
 
-from hydroflows.methods import METHODS, MethodEPS
 from hydroflows.workflow.method import Method
+from hydroflows.workflow.method_entrypoints import METHODS, MethodEPS
 
 
 def test_methods():

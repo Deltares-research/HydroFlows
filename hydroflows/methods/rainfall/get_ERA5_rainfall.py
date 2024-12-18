@@ -86,9 +86,9 @@ class GetERA5Rainfall(Method):
     def run(self):
         """Run the GetERA5Rainfall method."""
         # read the region polygon file
-        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region).to_crs("EPSG:4326")
+        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region)
         # Calculate the centroid of each polygon
-        centroid = gdf.geometry.centroid
+        centroid = gdf.geometry.centroid.to_crs("EPSG:4326")
 
         # get the data as df
         df = get_era5_open_meteo(
