@@ -26,7 +26,7 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          pixi-version: "v0.30.0"
+          pixi-version: "v0.39.2"
           environments: doc
           locked: false
           cache: true
