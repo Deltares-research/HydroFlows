@@ -313,6 +313,9 @@ class ExpandMethod(Method, ABC):
         """Return a list of output key-path tuples."""
         paths = []
         for key, value in self.output.model_dump().items():
+            if isinstance(value, list) and all([isinstance(p, Path) for p in value]):
+                for item in value:
+                    paths.append((key, item))
             if not isinstance(value, Path):
                 continue
             for wc, vlist in self.expand_wildcards.items():
@@ -323,6 +326,24 @@ class ExpandMethod(Method, ABC):
                 else:
                     paths.append((key, value))
         return paths
+
+    def expand_output_paths(self):
+        """Reinitialize Output object with wildcards in output path evaluated."""
+        # Fetch keys, values from output_paths
+        output_paths = self._output_paths
+        keys = [tup[0] for tup in output_paths]
+        vals = [tup[1] for tup in output_paths]
+
+        # dict for storing outputs as {key: [list of values]}
+        out_dict = {}
+
+        # Fill out_dict
+        for key in set(keys):
+            idxs = [idx for (idx, item) in enumerate(keys) if item == key]
+            out_dict[key] = [vals[i] for i in idxs]
+
+        # Reinitialize output object
+        self.output = self.output.model_copy(update=out_dict)
 
 
 class ReduceMethod(Method):

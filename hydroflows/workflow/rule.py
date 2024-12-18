@@ -3,6 +3,7 @@
 import logging
 import warnings
 import weakref
+from copy import deepcopy
 from itertools import chain, product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
@@ -224,8 +225,12 @@ class Rule:
             The reduce and explode wildcards to replace in the method.
             Expand wildcards are only on the output and are set in the method.
         """
+        # TODO: Deal with expand wildcards more cleanly (after Method,Rule refactor)
         if not wildcards:
-            return self.method
+            method = deepcopy(self.method)
+            if isinstance(method, ExpandMethod):
+                method.expand_output_paths()
+            return method
         # explode kwargs should always be a single value;
         for wc in self.wildcards["explode"]:
             assert not isinstance(
@@ -266,7 +271,10 @@ class Rule:
                 # explode method
                 # wildcards = {wc: v, ...}
                 kwargs[key] = str(kwargs[key]).format(**wildcards)
-        return self.method.from_kwargs(**kwargs)
+        method = self.method.from_kwargs(**kwargs)
+        if isinstance(method, ExpandMethod):
+            method.expand_output_paths()
+        return method
 
     def wildcard_product(self) -> List[Dict[str, str]]:
         """Return the values of wildcards per run."""
@@ -331,25 +339,23 @@ class Rule:
             "output": {},
             "params": {},
         }
-
+        self._method_list = []
         for wildcard in self.wildcard_product():
             method = self._method_wildcard_instance(wildcard)
+            self._method_list.append(method)
             for name in parameters:
                 for key, value in getattr(method, name):
                     if key not in parameters[name]:
                         parameters[name][key] = []
-                    parameters[name][key].append(value)
-
-        # Also evaluate expand wildcards
-        if self.wildcards["expand"]:
-            wc_dict = self.method.expand_wildcards
-            wc_values = list(product(*wc_dict.values()))
-            for key, value in parameters["output"].items():
-                if any("{" in entry.as_posix() for entry in value):
-                    parameters["output"][key] = [
-                        str(*value).format(**dict(zip(self.wildcards["expand"], wc)))
-                        for wc in wc_values
-                    ]
+                    if name in ["input", "output"]:
+                        if not isinstance(value, list):
+                            value = [value]
+                        if not isinstance(value[0], Path):
+                            continue
+                        # Removes duplicates
+                        parameters[name][key] = list(set(parameters[name][key] + value))
+                    else:
+                        parameters[name][key].append(value)
 
         self.parameter_list = parameters
 
@@ -366,7 +372,7 @@ class Rule:
             # Make list of outputs as strings, outputs always paths anyways
             outputs = rule.parameter_list["output"]
             outputs = list(chain(*outputs.values()))
-            outputs = [str(item) for item in inputs]
+            outputs = [str(item) for item in outputs]
 
             # Find if inputs, outputs share any element
             if not inputs.isdisjoint(outputs):
