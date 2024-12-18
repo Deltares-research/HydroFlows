@@ -21,41 +21,6 @@ from tests.workflow.conftest import (
 )
 
 
-@pytest.fixture()
-def w() -> Workflow:
-    config = {"rps": [2, 50, 100]}
-    wildcards = {"region": ["region1", "region2"]}
-    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
-
-
-@pytest.fixture()
-def workflow_yaml_dict():
-    return {
-        "config": {
-            "input_file": "tests/_data/region.geojson",
-            "events": ["1", "2", "3"],
-            "root": "root",
-        },
-        "rules": [
-            {
-                "method": "mock_expand_method",
-                "kwargs": {
-                    "input_file": "$config.input_file",
-                    "events": "$config.events",
-                    "root": "$config.root",
-                },
-            },
-            {
-                "method": "mock_reduce_method",
-                "kwargs": {
-                    "files": "$rules.mock_expand_method.output.output_file",
-                    "root": "$config.root",
-                },
-            },
-        ],
-    }
-
-
 def create_workflow_with_mock_methods(
     w: Workflow, root: Path | None = None, input_file="test.yml"
 ):

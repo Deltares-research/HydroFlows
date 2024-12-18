@@ -1,5 +1,4 @@
 import platform
-import shutil
 from pathlib import Path
 
 import pytest
@@ -8,7 +7,8 @@ from hydromt_wflow import WflowModel
 from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
 
 
-@pytest.mark.requires_data()
+@pytest.mark.requires_test_data()
+@pytest.mark.slow()
 def test_wflow_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
@@ -37,15 +37,10 @@ def test_wflow_build(
     # assert fn_geoms.exists()
 
 
-@pytest.mark.requires_data()
-def test_wflow_update_forcing(
-    wflow_tmp_model: Path, global_catalog: Path, tmp_path: Path
-):
-    # copy the wflow model to the tmp_path
-    root = tmp_path / "model"
-    shutil.copytree(wflow_tmp_model, root)
+@pytest.mark.requires_test_data()
+def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
     # required inputs
-    wflow_toml = Path(root, "wflow_sbm.toml")
+    wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
     start_time = "2020-02-01"
     end_time = "2020-02-10"
 
@@ -62,7 +57,8 @@ def test_wflow_update_forcing(
     rule.run_with_checks()
 
 
-@pytest.mark.requires_data()
+@pytest.mark.slow()
+@pytest.mark.requires_test_data()
 @pytest.mark.parametrize("method", ["docker", "exe", "julia", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,

@@ -59,6 +59,7 @@ class Params(Parameters):
         """Check if sfincs_exe is specified if run_method == 'exe'."""
         if self.run_method == "exe" and self.sfincs_exe is None:
             raise ValueError("sfincs_exe should be specified when run_method is 'exe'")
+        return self
 
 
 class SfincsRun(Method):

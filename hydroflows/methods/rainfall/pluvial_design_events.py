@@ -137,6 +137,7 @@ class Params(Parameters):
                 f"Duration {self.duration} exceeds the maximum specified value {max(self.timesteps)} "
                 f"from the list of timesteps: {self.timesteps}."
             )
+        return self
 
 
 class PluvialDesignEvents(ExpandMethod):
@@ -226,7 +227,7 @@ class PluvialDesignEvents(ExpandMethod):
 
         # sample size per year
         min_sample_size = (
-            pd.Timedelta(1, "A") / dt * (self.params.min_sample_perc / 100)
+            pd.Timedelta(365.25, "d") / dt * (self.params.min_sample_perc / 100)
         )
 
         # fit distribution per duration
