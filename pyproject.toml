@@ -172,16 +172,16 @@ hydroflows = { path = ".", editable = true }
 hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
 
 [tool.pixi.feature.extra.dependencies]
-snakemake = {version="*", channel= "bioconda" }
+snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
 
-[tool.pixi.feature.model.dependencies]
+[tool.pixi.feature.models.dependencies]
 delft_fiat = ">=0.2.1"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "doc", "test", "extra", "py311", "model", "full"], solve-group = "py311" }
+default = { features = ["dev", "doc", "test", "extra", "py311", "models", "full"], solve-group = "py311" }
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
