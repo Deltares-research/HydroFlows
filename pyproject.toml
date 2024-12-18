@@ -17,7 +17,7 @@ dependencies = [
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt_fiat>=0.4.0, <1.0", # hydromt plugin for FIAT models
+  "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
@@ -161,7 +161,6 @@ platforms = ["win-64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 hydroflows = { path = ".", editable = true }
-hydromt_fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", rev = "7e8e8f48d41a3703c16ebd0f8d8824702b597651"}
 
 # conda dependencies
 [tool.pixi.dependencies]
