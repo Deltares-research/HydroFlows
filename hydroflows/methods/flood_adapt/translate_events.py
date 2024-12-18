@@ -165,6 +165,7 @@ def translate_events(
     root: Union[str, Path] = None,
     fa_events: Union[str, Path] = None,
     test_set_name: str = "probabilistic_set",
+    description: str = "This is a hydroflows event set",
 ):
     """
     Translate HydroFlows events to floodAdapt events.
@@ -195,8 +196,9 @@ def translate_events(
 
     forcing_sources = ForcingSources()
 
-    for event_dict in events.events:
+    for event_yml, event_dict in zip(event_set.events, events.events):
         name = event_dict["name"]
+        file_name = event_yml["path"].stem
         event = event_set.get_event(name)
         event.read_forcing_data()
         tstart = event.tstart
@@ -205,8 +207,8 @@ def translate_events(
 
         # Create dictionary for floodadapt individual event
         fa_event = FloodAdaptEvent(
-            name=name,
-            description="j",
+            name=file_name,
+            description=description,
         )
 
         # Time
@@ -290,11 +292,11 @@ def translate_events(
         fa_event.wind["source"] = "none"
 
         # Write final toml or dict.
-        event_fn = pathlib.Path.joinpath(fn_floodadapt, name)
+        event_fn = pathlib.Path.joinpath(fn_floodadapt, file_name)
         if not os.path.exists(event_fn):
             os.makedirs(event_fn)
 
-        with open(os.path.join(event_fn, f"{name}.toml"), "wb") as f:
+        with open(os.path.join(event_fn, f"{file_name}.toml"), "wb") as f:
             tomli_w.dump(fa_event.attrs, f)
 
         # Copy dataset into folder
@@ -339,7 +341,7 @@ def translate_events(
         # Save return period for test set toml
         if len(event_set.events) > 1:
             rp.append(return_period)
-            subevent_name.append(name)
+            subevent_name.append(file_name)
 
             # reset everything to None
             forcing_sources.rainfall = None

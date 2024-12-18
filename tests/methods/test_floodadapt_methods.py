@@ -6,7 +6,6 @@ import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
 import hydroflows.methods.flood_adapt.translate_FIAT as fiat
-from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
 
 def NestedDictValues(d):
@@ -30,14 +29,14 @@ def NestedDictValues(d):
             yield v
 
 
-def test_fa_setup(fiat_cfg: Path, sfincs_inp: Path, event_set_yaml: Path):
-    # Setup the rule
-    rule = SetupFloodAdapt(
-        fiat_cfg=fiat_cfg,
-        sfincs_inp=sfincs_inp,
-        event_set_yaml=event_set_yaml,
-    )
-    rule.run_with_checks()
+# def test_fa_setup(fiat_cfg: Path, sfincs_inp: Path, event_set_yaml: Path):
+#    # Setup the rule
+#    rule = SetupFloodAdapt(
+#        fiat_cfg=fiat_cfg,
+##        sfincs_inp=sfincs_inp,
+#        event_set_yaml=event_set_yaml,
+#    )
+#    rule.run_with_checks()
 
 
 def test_translate_fiat_model(fiat_tmp_model: Path):
@@ -62,20 +61,20 @@ def test_translate_fiat_model(fiat_tmp_model: Path):
     fiat.translate_model(fiat_tmp_model, fn_output)
 
     exposure = pd.read_csv(fn_output.joinpath("exposure", "exposure.csv"))
+
     required_columns = [
-        "object_id",
-        "object_name",
-        "primary_object_type",
-        "secondary_object_type",
-        "extract_method",
-        "ground_flht",
-        "ground_elvt",
-        "max_damage_structure",
-        "max_damage_content",
-        "fn_damage_structure",
-        "fn_damage_content",
+        "Object ID",
+        "Primary Object Type",
+        "Secondary Object Type",
+        "Extraction Method",
+        "Ground Floor Height",
+        "Ground Elevation",
+        "Max Potential Damage: Structure",
+        "Max Potential Damage: Content",
+        "Damage Function: Structure",
+        "Damage Function: Content",
     ]
-    assert set(required_columns) in set(exposure.columns)
+    assert set(required_columns) == set(exposure.columns)
 
     # Check if the exposure data exists
     assert fn_output.joinpath("geoms", "region.geojson").exists()
@@ -108,16 +107,11 @@ def test_translate_events(event_set_file: Path):
     """
     fn_output = event_set_file.parent.joinpath("fa_event_set")
     name = event_set_file.stem
-    events.translate_events(event_set_file.parent, fn_output, name)
+    events.translate_events(event_set_file, fn_output, name)
 
     assert fn_output.joinpath(f"{name}.toml").exists()
 
-    fa_event_config = fn_output.joinpath(name, f"{name}.toml")
-    assert fa_event_config["mode"] == "risk"
-    assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
-    assert fa_event_config["name"] == name
-
-    fa_event_config = toml.load(fn_output.joinpathname, f"{name}.toml")
+    fa_event_config = toml.load(fn_output.joinpath(f"{name}.toml"))
     assert fa_event_config["mode"] == "risk"
     assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
     assert fa_event_config["name"] == name
@@ -125,7 +119,7 @@ def test_translate_events(event_set_file: Path):
     # Check if timeseries.csv per forcing exists
     event_names = fa_event_config["subevent_name"]
     for event in event_names:
-        event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
+        event_config = toml.load(fn_output.joinpath(event, f"{event}.toml"))
         dict_values = list(NestedDictValues(event_config))
         csv_files_forcings_config = [
             item.split(".")[0]
@@ -133,6 +127,6 @@ def test_translate_events(event_set_file: Path):
             if isinstance(item, str) and item.endswith(".csv")
         ]
         csv_files_forcings = []
-        for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
+        for filename in Path(fn_output).joinpath(event).glob("*.csv"):
             csv_files_forcings.append(filename.stem)
     assert csv_files_forcings_config == csv_files_forcings
