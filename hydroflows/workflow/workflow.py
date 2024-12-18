@@ -149,8 +149,6 @@ class Workflow:
             snake_path.parent,
             snake_path.stem,
         ).with_suffix(".config.yml")
-        # create references for the rules
-        self.create_references()
         # render the snakefile template
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
@@ -158,10 +156,11 @@ class Workflow:
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
+        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=config_path.name,
+            configfile=configfile.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,

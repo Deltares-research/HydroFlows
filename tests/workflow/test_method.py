@@ -78,6 +78,8 @@ def test_dryrun(tmp_path):
         test_method.output.output_file1,
         test_method.output.output_file2,
     ]
+
+    # TODO either unlink or new function
     with pytest.raises(FileNotFoundError):
         test_method.dryrun(input_files=[], missing_file_error=True)
 
