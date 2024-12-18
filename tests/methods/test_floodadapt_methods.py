@@ -40,7 +40,7 @@ def test_fa_setup(fiat_cfg: Path, sfincs_inp: Path, event_set_yaml: Path):
     rule.run_with_checks()
 
 
-def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
+def test_translate_fiat_model(fiat_tmp_model: Path):
     """
     Test the translate_fiat_model function.
 
@@ -53,14 +53,15 @@ def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
 
     Parameters
     ----------
-    tmp_base_model : Path
+    fiat_tmp_model : Path
         The path to the temporary FIAT model.
     tmp_output_model : Path
         The path to the temporary translated model.
     """
-    fiat.translate_model(tmp_base_model, tmp_output_model)
+    fn_output = fiat_tmp_model.joinpath("translated_fiat_model")
+    fiat.translate_model(fiat_tmp_model, fn_output)
 
-    exposure = pd.read_csv(tmp_output_model.joinpath("exposure", "exposure.csv"))
+    exposure = pd.read_csv(fn_output.joinpath("exposure", "exposure.csv"))
     required_columns = [
         "object_id",
         "object_name",
@@ -77,21 +78,19 @@ def test_translate_fiat_model(tmp_base_model: Path, tmp_output_model: Path):
     assert set(required_columns) in set(exposure.columns)
 
     # Check if the exposure data exists
-    assert tmp_output_model.joinpath("geoms", "region.geojson").exists()
+    assert fn_output.joinpath("geoms", "region.geojson").exists()
 
     # Check if the exposure data exists
-    assert tmp_output_model.joinpath("exposure", "exposure.csv").exists()
+    assert fn_output.joinpath("exposure", "exposure.csv").exists()
 
     # Check if the vulnerability data exists
-    assert tmp_output_model.joinpath(
-        "vulnerability", "vulnerability_curves.csv"
-    ).exists()
+    assert fn_output.joinpath("vulnerability", "vulnerability_curves.csv").exists()
 
     # Check if the output data folder exists
-    assert tmp_output_model.joinpath("output").exists()
+    assert fn_output.joinpath("output").exists()
 
 
-def test_translate_events(tmp_event: Path, tmp_output_event: Path):
+def test_translate_events(event_set_file: Path):
     """
     Test the translate_events function.
 
@@ -104,38 +103,29 @@ def test_translate_events(tmp_event: Path, tmp_output_event: Path):
 
     Parameters
     ----------
-    tmp_event : Path
+    event_set_file : Path
         The path to the temporary event set.
-    tmp_output_event : Path
-        The path to the temporary translated event set.
     """
-    events.translate_events(tmp_event, tmp_output_event)
+    fn_output = event_set_file.parent.joinpath("fa_event_set")
+    name = event_set_file.stem
+    events.translate_events(event_set_file.parent, fn_output, name)
 
-    assert tmp_output_event.joinpath("probalistic_event.toml").exists()
+    assert fn_output.joinpath(f"{name}.toml").exists()
 
-    fa_event_config = tmp_output_event.joinpath(
-        "probabilistic_event", "probalistic_event.toml"
-    )
+    fa_event_config = fn_output.joinpath(name, f"{name}.toml")
     assert fa_event_config["mode"] == "risk"
     assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
-    assert fa_event_config["name"] == tmp_output_event.stem
+    assert fa_event_config["name"] == name
 
-    tmp_output_event = Path(
-        r"C:\Users\rautenba\repos\HydroFlows\examples\cases\pluvial_risk\flood_adapt_builder"
-    )
-    fa_event_config = toml.load(
-        tmp_output_event.joinpath("probabilistic_set", "probabilistic_set.toml")
-    )
+    fa_event_config = toml.load(fn_output.joinpathname, f"{name}.toml")
     assert fa_event_config["mode"] == "risk"
     assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
-    assert fa_event_config["name"] == "probabilistic_set"
+    assert fa_event_config["name"] == name
 
     # Check if timeseries.csv per forcing exists
     event_names = fa_event_config["subevent_name"]
     for event in event_names:
-        event_config = toml.load(
-            tmp_output_event.joinpath("probabilistic_set", event, f"{event}.toml")
-        )
+        event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
         dict_values = list(NestedDictValues(event_config))
         csv_files_forcings_config = [
             item.split(".")[0]
@@ -143,8 +133,6 @@ def test_translate_events(tmp_event: Path, tmp_output_event: Path):
             if isinstance(item, str) and item.endswith(".csv")
         ]
         csv_files_forcings = []
-        for filename in (
-            Path(tmp_output_event).joinpath("probabilistic_set", event).glob("*.csv")
-        ):
+        for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
             csv_files_forcings.append(filename.stem)
     assert csv_files_forcings_config == csv_files_forcings
