@@ -147,7 +147,7 @@ if __name__ == "__main__":
     w.to_snakemake(Path(case_root, "Snakefile"))
 
     # %% subprocess to run snakemake
-    #subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
+    subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
     # uncomment to run the workflow
     #subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
     #
