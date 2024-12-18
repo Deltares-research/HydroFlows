@@ -61,11 +61,14 @@ class Rule:
         # add weak reference to workflow to avoid circular references
         self._workflow_ref = weakref.ref(workflow)
 
-        # move method inputs to config
-
         # placeholders for wildcards detection
         self._wildcard_fields: List[str] = []
         self._wildcards: Dict[str, List] = {}
+        self._parameter_list: Dict[
+            str, Dict
+        ] = {}  # lists with all inputs and outputs for method instances
+        self.dependency: str | None = None  # rule id of last occuring dependency
+        self._method_list: List[Method] = []  # List of method instances
 
         # add expand wildcards to workflow wildcards
         if isinstance(self.method, ExpandMethod):
@@ -77,7 +80,8 @@ class Rule:
         self._validate_wildcards()
         self._create_references_for_method_inputs()
         self._add_method_params_to_config()
-        self._parameter_lists()
+        self._set_method_list()
+        self._set_parameter_lists()
         self._detect_dependency()
 
         self.loop_depth = len(self.wildcards["explode"])
@@ -103,7 +107,7 @@ class Rule:
     @property
     def n_runs(self) -> int:
         """Return the number of required method runs."""
-        return len(self.wildcard_product())
+        return len(self._method_list)
 
     @property
     def wildcards(self) -> Dict[str, List]:
@@ -296,6 +300,16 @@ class Rule:
 
     def _create_references_for_method_inputs(self):
         output_path_refs = self.workflow._output_path_refs
+        # Check on duplicate output values
+        for key, value in self.method.output:
+            if not isinstance(value, Path):
+                continue
+            value = value.as_posix()
+            if value in output_path_refs:
+                duplicate_field = output_path_refs[value].replace("$rules.", "")
+                raise ValueError(
+                    f"All output file paths must be unique, {self.rule_id}.output.{key} ({value}) is already an output of {duplicate_field}"
+                )
         for key, value in self.method.input:
             # Skip if key is already present in input refs
             if key in self.method.input._refs or value is None:
@@ -333,16 +347,19 @@ class Rule:
                 logging.debug("Adding %s to config", config_key)
                 self.method.params._refs.update({key: config_ref})
 
-    def _parameter_lists(self):
+    def _set_method_list(self):
+        self._method_list = []
+        for wildcard in self.wildcard_product():
+            method = self._method_wildcard_instance(wildcard)
+            self._method_list.append(method)
+
+    def _set_parameter_lists(self):
         parameters = {
             "input": {},
             "output": {},
             "params": {},
         }
-        self._method_list = []
-        for wildcard in self.wildcard_product():
-            method = self._method_wildcard_instance(wildcard)
-            self._method_list.append(method)
+        for method in self._method_list:
             for name in parameters:
                 for key, value in getattr(method, name):
                     if key not in parameters[name]:
@@ -357,12 +374,12 @@ class Rule:
                     else:
                         parameters[name][key].append(value)
 
-        self.parameter_list = parameters
+        self._parameter_list = parameters
 
     def _detect_dependency(self):
         """Find last occuring dependency of self by matching input values to output values of prev rules."""
         # Make list of inputs, convert to set of strings for quick matching
-        inputs = self.parameter_list["input"]
+        inputs = self._parameter_list["input"]
         inputs = list(chain(*inputs.values()))
         inputs = set([str(item) for item in inputs])
 
@@ -370,7 +387,7 @@ class Rule:
         self.dependency = None
         for rule in reversed(self.workflow.rules):
             # Make list of outputs as strings, outputs always paths anyways
-            outputs = rule.parameter_list["output"]
+            outputs = rule._parameter_list["output"]
             outputs = list(chain(*outputs.values()))
             outputs = [str(item) for item in outputs]
 
@@ -397,30 +414,28 @@ class Rule:
         missing_file_error : bool, optional
             Whether to raise an error if a file is missing, by default False
         """
-        wildcard_product = self.wildcard_product()
-        nruns = len(wildcard_product)
+        nruns = self.n_runs
         if dryrun or nruns == 1 or max_workers == 1:
-            for i, wildcards in enumerate(wildcard_product):
-                msg = f"Running {self.rule_id} {i+1}/{nruns}: {wildcards}"
+            for i, method in enumerate(self._method_list):
+                msg = f"Running {self.rule_id} {i+1}/{nruns}"
                 logger.info(msg)
                 self._run_method_instance(
-                    wildcards, dryrun=dryrun, missing_file_error=missing_file_error
+                    method=method, dryrun=dryrun, missing_file_error=missing_file_error
                 )
         else:
             tqdm_kwargs = {}
             if max_workers is not None:
                 tqdm_kwargs.update(max_workers=max_workers)
-            thread_map(self._run_method_instance, wildcard_product, **tqdm_kwargs)
+            thread_map(self._run_method_instance, self._method_list, **tqdm_kwargs)
 
     def _run_method_instance(
-        self, wildcards: Dict, dryrun: bool = False, missing_file_error: bool = False
+        self, method: Method, dryrun: bool = False, missing_file_error: bool = False
     ) -> None:
         """Run a method instance with the given kwargs."""
-        m = self._method_wildcard_instance(wildcards)
         if dryrun:
-            m.dryrun(missing_file_error=missing_file_error)
+            method.dryrun(missing_file_error=missing_file_error)
         else:
-            m.run_with_checks()
+            method.run_with_checks()
 
 
 class Rules:

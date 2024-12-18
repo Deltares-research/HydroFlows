@@ -227,11 +227,6 @@ class Workflow:
                         f"{rule.rule_id}.output.{key} is not a Path object (but {type(value)})"
                     )
                     continue
-                if value in output_paths:
-                    duplicate_field = output_paths[value].replace("$rules.", "")
-                    raise ValueError(
-                        f"All output file paths must be unique, {rule.rule_id}.output.{key} ({value}) is already an output of {duplicate_field}"
-                    )
                 output_paths[value] = f"$rules.{rule.rule_id}.output.{key}"
         return output_paths
 

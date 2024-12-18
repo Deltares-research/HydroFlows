@@ -6,7 +6,6 @@ from pathlib import Path
 from hydroflows.methods.rainfall import GetERA5Rainfall, PluvialDesignEvents
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    # SfincsPostprocess,
     SfincsDownscale,
     SfincsRun,
     SfincsUpdateForcing,
@@ -88,11 +87,6 @@ if __name__ == "__main__":
     w.add_rule(sfincs_run, rule_id="sfincs_run")
 
     # Post process the results from pluvial events
-    # sfincs_post = SfincsPostprocess(
-    #     sfincs_map=sfincs_run.output.sfincs_map,
-    #     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
-    #     hazard_root=Path(output_dir, "{region}"),
-    # )
     sfincs_post = SfincsDownscale(
         sfincs_map=sfincs_run.output.sfincs_map,
         sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,

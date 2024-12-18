@@ -291,17 +291,17 @@ def test_run(caplog, mocker):
     rule = Rule(method=test_method, workflow=workflow)
     mocker.patch.object(Rule, "_run_method_instance")
     rule.run(dryrun=True)
-    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
-    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
 
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
     mock_thread_map.assert_called_with(
-        rule._run_method_instance, rule.wildcard_product(), max_workers=2
+        rule._run_method_instance, rule._method_list, max_workers=2
     )
     rule.run(dryrun=True)
-    assert "Running test_method 1/2: {'region': 'region1'}" in caplog.text
-    assert "Running test_method 2/2: {'region': 'region2'}" in caplog.text
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
 
 
 def test_run_method_instance(mocker):
@@ -311,13 +311,13 @@ def test_run_method_instance(mocker):
 
     mocker.patch.object(TestMethod, "dryrun")
     rule._run_method_instance(
-        wildcards={"region": "region1"},
+        method=rule._method_list[0],
         dryrun=True,
         missing_file_error=True,
     )
     test_method.dryrun.assert_called_with(missing_file_error=True)
     mocker.patch.object(TestMethod, "run_with_checks")
-    rule._run_method_instance(wildcards={"region": "region1"})
+    rule._run_method_instance(method=rule._method_list[0])
     test_method.run_with_checks.assert_called()
 
 
