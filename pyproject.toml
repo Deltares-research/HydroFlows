@@ -181,7 +181,7 @@ delft_fiat = ">=0.2.1"
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "doc", "test", "extra", "py311", "models", "full"], solve-group = "py311" }
+default = { features = ["dev", "doc", "test", "extra", "py311", "model", "full"], solve-group = "py311" }
 doc = { features = ["doc"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
