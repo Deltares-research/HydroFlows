@@ -2,13 +2,6 @@ aggregateBy = [
     "Neighbourhood",
 ]
 
-[[queries]]
-name = "FloodedHomes"
-description = "Homes likely to flood (Inundation Depth > 0.05) in 30 year period"
-select = "COUNT(*)"
-filter = "`Exceedance Probability` > 50 AND `Primary Object Type` = 'residential'"
-long_name = "Homes likely to flood in 30-year period (#)"
-show_in_metrics_table = "False"
 
 [[queries]]
 name = "ImpactedHomes2Y"
@@ -57,14 +50,6 @@ select = "COUNT(*)"
 filter = "`Inundation Depth (100Y)` >= 0.1 AND `Primary Object Type` = 'residential'"
 long_name = "Flooded homes RP100"
 show_in_metrics_table = "True"
-
-[[queries]]
-name = "FloodedCommercial"
-description = "Commercial buildings likely to flood (Inundation Depth > 0.05) in 30 year period"
-select = "COUNT(*)"
-filter = "`Exceedance Probability` > 50 AND `Primary Object Type` = 'commercial'"
-long_name = "Commercial buildings likely to flood in 30-year period (#)"
-show_in_metrics_table = "False"
 
 [[queries]]
 name = "ImpactedCommercial2Y"
