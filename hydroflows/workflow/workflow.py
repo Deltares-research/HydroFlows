@@ -219,7 +219,7 @@ class Workflow:
         for rule in self.rules:
             if not rule:
                 continue
-            for key, value in rule.output:
+            for key, value in rule.method.output:
                 if isinstance(value, Path):
                     value = value.as_posix()
                 else:

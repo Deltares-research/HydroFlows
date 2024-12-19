@@ -154,7 +154,7 @@ def test_method_wildcard_instance(workflow: Workflow):
     method = rule._method_wildcard_instance(wildcards={"region": "xxx"})
     assert method.input.input_file1.as_posix() == "xxx/test1"
     with pytest.raises(
-        AssertionError, match="Explode wildcard 'region' should be a single value."
+        ValueError, match="Explode wildcard 'region' should be a string."
     ):
         rule._method_wildcard_instance(wildcards={"region": ["1"]})
 
@@ -163,9 +163,7 @@ def test_method_wildcard_instance(workflow: Workflow):
     rule = Rule(method=reduce_method, workflow=workflow)
     method = rule._method_wildcard_instance(wildcards={"region": ["1", "2"]})
     assert [file.as_posix() for file in method.input.files] == ["test1", "test2"]
-    with pytest.raises(
-        AssertionError, match="Reduce wildcard 'region' should be a list."
-    ):
+    with pytest.raises(ValueError, match="Reduce wildcard 'region' should be a list."):
         rule._method_wildcard_instance(wildcards={"region": "1"})
 
     # test expand method (creates 'w' wildcard on outputs)
@@ -183,7 +181,7 @@ def test_method_wildcard_instance(workflow: Workflow):
         "3/file.yml",
     ]
     with pytest.raises(
-        AssertionError, match="Expand wildcard 'w' should not be in wildcards."
+        ValueError, match="Expand wildcard 'w' should not be in wildcards."
     ):
         rule._method_wildcard_instance(wildcards={"w": [1, 2, 3]})
 
@@ -297,7 +295,7 @@ def test_run(caplog, mocker):
     mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
     rule.run(max_workers=2)
     mock_thread_map.assert_called_with(
-        rule._run_method_instance, rule._method_list, max_workers=2
+        rule._run_method_instance, rule._method_instances, max_workers=2
     )
     rule.run(dryrun=True)
     assert "Running test_method 1/2" in caplog.text
@@ -311,13 +309,13 @@ def test_run_method_instance(mocker):
 
     mocker.patch.object(TestMethod, "dryrun")
     rule._run_method_instance(
-        method=rule._method_list[0],
+        method=rule._method_instances[0],
         dryrun=True,
         missing_file_error=True,
     )
     test_method.dryrun.assert_called_with(missing_file_error=True)
     mocker.patch.object(TestMethod, "run_with_checks")
-    rule._run_method_instance(method=rule._method_list[0])
+    rule._run_method_instance(method=rule._method_instances[0])
     test_method.run_with_checks.assert_called()
 
 
