@@ -110,9 +110,9 @@ def test_translate_events(event_set_file: Path):
     name = event_set_file.stem
     events.translate_events(event_set_file, fn_output, name)
 
-    assert fn_output.joinpath(f"{name}.toml").exists()
+    assert fn_output.joinpath(name, f"{name}.toml").exists()
 
-    fa_event_config = toml.load(fn_output.joinpath(f"{name}.toml"))
+    fa_event_config = toml.load(fn_output.joinpath(name, f"{name}.toml"))
     assert fa_event_config["mode"] == "risk"
     assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
     assert fa_event_config["name"] == name
@@ -120,7 +120,7 @@ def test_translate_events(event_set_file: Path):
     # Check if timeseries.csv per forcing exists
     event_names = fa_event_config["subevent_name"]
     for event in event_names:
-        event_config = toml.load(fn_output.joinpath(event, f"{event}.toml"))
+        event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
         dict_values = list(nested_dict_values(event_config))
         csv_files_forcings_config = [
             item.split(".")[0]
@@ -128,6 +128,6 @@ def test_translate_events(event_set_file: Path):
             if isinstance(item, str) and item.endswith(".csv")
         ]
         csv_files_forcings = []
-        for filename in Path(fn_output).joinpath(event).glob("*.csv"):
+        for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
             csv_files_forcings.append(filename.stem)
     assert csv_files_forcings_config == csv_files_forcings
