@@ -57,3 +57,59 @@ select = "COUNT(*)"
 filter = "`Inundation Depth (100Y)` >= 0.1 AND `Primary Object Type` = 'residential'"
 long_name = "Flooded homes RP100"
 show_in_metrics_table = "True"
+
+[[queries]]
+name = "FloodedCommercial"
+description = "Commercial buildings likely to flood (Inundation Depth > 0.05) in 30 year period"
+select = "COUNT(*)"
+filter = "`Exceedance Probability` > 50 AND `Primary Object Type` = 'commercial'"
+long_name = "Commercial buildings likely to flood in 30-year period (#)"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "ImpactedCommercial2Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 2-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (2Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP2"
+show_in_metrics_table = "True"
+
+[[queries]]
+name = "ImpactedCommercial5Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 5-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (5Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP5"
+show_in_metrics_table = "True"
+
+[[queries]]
+name = "ImpactedCommercial10Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 10-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (10Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP10"
+show_in_metrics_table = "True"
+
+[[queries]]
+name = "ImpactedCommercial25Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 25-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (25Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP25"
+show_in_metrics_table = "True"
+
+[[queries]]
+name = "ImpactedCommercial50Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 50-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (50Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP50"
+show_in_metrics_table = "True"
+
+[[queries]]
+name = "ImpactedCommercial100Y"
+description = "Commercial buildings impacted (Inundation Depth > 0.25) in the 100-year event"
+select = "COUNT(*)"
+filter = "`Inundation Depth (100Y)` >= 0.1 AND `Primary Object Type` = 'commercial'"
+long_name = "Flooded Commercial buildings RP100"
+show_in_metrics_table = "True"

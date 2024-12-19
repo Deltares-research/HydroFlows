@@ -17,3 +17,72 @@
 	[Charts.100Y]
         Name = "100Y"
         Image = "https://openclipart.org/image/800px/217511"
+[Categories]
+    [Categories.Residential]
+        Name = "Residential"
+        Color = "#D5DEE1"
+    [Categories.Commercial]
+        Name = "Commercial"
+        Color = "#88A2AA"
+
+[Slices]
+    [Slices.Homes_2Y]
+        Name = "2Y Homes"
+        Query = "ImpactedHomes2Y"
+        Chart = "2Y"
+        Category = "Residential"
+    [Slices.Commercial_2Y]
+        Name = "2Y Commercial Buildings"
+        Query = "ImpactedBusinesses2Y"
+        Chart = "2Y"
+        Category = "Commercial"
+    [Slices.Homes_5Y]
+        Name = "5Y Homes"
+        Query = "ImpactedHomes5Y"
+        Chart = "5Y"
+        Category = "Residential"
+    [Slices.Commercial_5Y]
+        Name = "5Y Commercial Buildings"
+        Query = "ImpactedBusinesses5Y"
+        Chart = "5Y"
+        Category = "Commercial"
+    [Slices.Homes_10Y]
+        Name = "10Y Homes"
+        Query = "ImpactedHomes10Y"
+        Chart = "10Y"
+        Category = "Residential"
+    [Slices.Commercial_10Y]
+        Name = "10Y Commercial Buildings"
+        Query = "ImpactedBusinesses10Y"
+        Chart = "10Y"
+        Category = "Commercial"
+    [Slices.Homes_25Y]
+        Name = "25Y Homes"
+        Query = "ImpactedHomes25Y"
+        Chart = "25Y"
+        Category = "Residential"
+    [Slices.Commercial_25Y]
+        Name = "25Y Commercial Buildings"
+        Query = "ImpactedBusinesses25Y"
+        Chart = "25Y"
+        Category = "Commercial"
+    [Slices.Homes_50Y]
+        Name = "50Y Homes"
+        Query = "ImpactedHomes50Y"
+        Chart = "50Y"
+        Category = "Residential"
+    [Slices.Commercial_50Y]
+        Name = "50Y Commercial Buildings"
+        Query = "ImpactedBusinesses50Y"
+        Chart = "50Y"
+        Category = "Commercial"
+    [Slices.Homes_100Y]
+        Name = "100Y Homes"
+        Query = "ImpactedHomes100Y"
+        Chart = "100Y"
+        Category = "Residential"
+    [Slices.Commercial_100Y]
+        Name = "100Y Commercial Buildings"
+        Query = "ImpactedBusinesses100Y"
+        Chart = "100Y"
+        Category = "Commercial"
