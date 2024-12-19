@@ -364,7 +364,10 @@ class Rule:
                         if not isinstance(value[0], Path):
                             continue
                         # Removes duplicates
-                        parameters[name][key] = list(set(parameters[name][key] + value))
+                        # Using set() does not preserve insertion order, this does and also filters uniques
+                        parameters[name][key] = list(
+                            dict.fromkeys(parameters[name][key] + value)
+                        )
                     else:
                         parameters[name][key].append(value)
 
@@ -375,6 +378,7 @@ class Rule:
         # Make list of inputs, convert to set of strings for quick matching
         inputs = self._parameters["input"]
         inputs = list(chain(*inputs.values()))
+        # order of inputs doesn't matter here so set() is fine
         inputs = set([str(item) for item in inputs])
 
         # Init dependency as None
