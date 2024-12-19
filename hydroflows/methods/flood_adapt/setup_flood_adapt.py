@@ -143,6 +143,10 @@ class SetupFloodAdapt(Method):
             ) as output:
                 for row in sfincs_bnd:
                     output.write(str(row) + " ")
+            with open(
+                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
+            ) as sfincs_cfg:
+                sfincs_cfg.write("bndfile = sfincs.bnd\n")
 
         if not Path(self.params.output_dir, "sfincs", "sfincs.bzs").exists():
             sfincs_bzs = [0, 0]
@@ -151,6 +155,10 @@ class SetupFloodAdapt(Method):
             ) as output:
                 for row in sfincs_bzs:
                     output.write(str(row) + " ")
+            with open(
+                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
+            ) as sfincs_cfg:
+                sfincs_cfg.write("bzsfile = sfincs.bzs\n")
 
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
@@ -160,7 +168,7 @@ class SetupFloodAdapt(Method):
             )
 
             # Create FloodAdapt Database Builder config
-            fa_db_config(probabilistic_set=self.output.probabilistic_set)
+            fa_db_config(probabilistic_set=self.input.event_set_yaml.stem)
 
         else:
             # Create FloodAdapt Database Builder config
@@ -184,7 +192,6 @@ def fa_db_config(
     """
     config = configread(config)
     if probabilistic_set is not None:
-        config["probabilistic_set"] = probabilistic_set.as_posix()
-
+        config["probabilistic_set"] = probabilistic_set
     with open(Path("flood_adapt_builder", "fa_build.toml"), "w") as toml_file:
         toml.dump(config, toml_file)
