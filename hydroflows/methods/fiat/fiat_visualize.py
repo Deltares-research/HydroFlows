@@ -70,8 +70,8 @@ class FIATVisualize(Method):
         fiat_cfg: Path,
         event_name: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
-        infographics_template: FilePath = CFG_DIR / "config_charts.yml",
-        infometrics_template: FilePath = CFG_DIR / "metrics_config.yml",
+        infographics_template: FilePath = CFG_DIR / "config_charts.toml",
+        infometrics_template: FilePath = CFG_DIR / "metrics_config.toml",
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
@@ -83,9 +83,9 @@ class FIATVisualize(Method):
             The file path to the event set output of the hydromt SFINCS model.
         output_dir: Path = "models/fiat/fiat_metrics"
             The file path to the output of the FIAT infometrics and infographics.
-        infographics_template: FilePath = CFG_DIR / "config_charts.yml"
+        infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
-        infometrics_template: FilePath = CFG_DIR / "metrics_config.yml"
+        infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
             Path to the infometrics template file.
 
         See Also
@@ -121,37 +121,26 @@ class FIATVisualize(Method):
         # Write the metrics to file
         if mode == "risk":
             metrics_config = (
-                self.infometrics_template.parent / "metrics_config_risk.yml"
+                self.infometrics_template.parent / "metrics_config_risk.toml"
             )
         else:
             metrics_config = self.infometrics_template
 
         metrics_writer = MetricsFileWriter(metrics_config)
-        metrics_writer.parse_metrics_to_file(
+        infometrics_name = f"Infometrics_{(scenario_name)}.csv"
+        metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
-                self.input.fiat_cfg.parent / "exposure" / "exposure.csv"
+                self.input.fiat_cfg.parent / "output" / "output.csv"
             ),
-            metrics_path=self.output.fiat_infometrics.joinpath(scenario_name),
+            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
-        )
-
-        metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(
-                self.input.fiat_cfg.parent / "exposure" / "exposure.csv"
-            ),
-            metrics_path=self.output.fiat_infometrics.joinpath(
-                self.input.event_name.load_toml()["name"]
-            ),
-            write_aggregate="all",
         )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
             scenario_name=scenario_name,
-            metrics_full_path=self.output.metrics.joinpath(
-                scenario_name
-            ),  # Users/rautenba/repos/Database/charleston_test/output/scenarios/current_test_set_no_measures/Infometrics_current_test_set_no_measures.csv')
-            config_base_path=self.input.infographics_template.parent,
-            output_base_path=self.output.joinpath(self.input.event_name.stem),
+            metrics_full_path=metrics_full_path,
+            config_base_path=self.infographics_template.parent,
+            output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()

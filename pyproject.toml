@@ -20,6 +20,7 @@ dependencies = [
   "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
+  "fiat_toolbox@git+https://github.com/Deltares/fiat_toolbox", # fiat toolbox
   "jinja2",                   # templating
   "matplotlib",               # plotting
   "netcdf4",                  # data handling

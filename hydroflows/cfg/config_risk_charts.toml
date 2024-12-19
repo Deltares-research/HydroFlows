@@ -1,0 +1,19 @@
+[Charts]
+    [Charts.2Y]
+        Name = "2Y"
+        Image = "https://openclipart.org/image/800px/217511"
+    [Charts.5Y]
+        Name = "5Y"
+        Image = "https://openclipart.org/image/800px/217511"
+    [Charts.10Y]
+        Name = "10Y"
+        Image = "https://openclipart.org/image/800px/217511"
+    [Charts.25Y]
+        Name = "25Y"
+        Image = "https://openclipart.org/image/800px/217511"
+	[Charts.50Y]
+        Name = "50Y"
+        Image = "https://openclipart.org/image/800px/217511"
+	[Charts.100Y]
+        Name = "100Y"
+        Image = "https://openclipart.org/image/800px/217511"

@@ -54,7 +54,7 @@ if __name__ == "__main__":
     # Run FIAT
     fiat_visualize = FIATVisualize(
         fiat_cfg="models/fiat/settings.toml",
-        event_name="C:/Users/rautenba/repos/HydroFlows/examples/cases/pluvial_risk copy/data/events/pluvial_events.yml",
+        event_name="data/events/pluvial_events.yml",
     )
     w.add_rule(fiat_visualize, rule_id="fiat_visualize")
 
