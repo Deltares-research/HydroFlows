@@ -130,4 +130,4 @@ def test_translate_events(event_set_file: Path):
         csv_files_forcings = []
         for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
             csv_files_forcings.append(filename.stem)
-    assert csv_files_forcings_config == csv_files_forcings
+    assert sorted(csv_files_forcings_config) == sorted(csv_files_forcings)
