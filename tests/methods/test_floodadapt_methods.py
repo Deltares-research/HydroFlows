@@ -6,9 +6,10 @@ import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
 import hydroflows.methods.flood_adapt.translate_FIAT as fiat
+from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
 
-def NestedDictValues(d):
+def nested_dict_values(d):
     """
     Recursively yields all values from a nested dictionary.
 
@@ -24,19 +25,19 @@ def NestedDictValues(d):
     """
     for v in d.values():
         if isinstance(v, dict):
-            yield from NestedDictValues(v)
+            yield from nested_dict_values(v)
         else:
             yield v
 
 
-# def test_fa_setup(fiat_cfg: Path, sfincs_inp: Path, event_set_yaml: Path):
-#    # Setup the rule
-#    rule = SetupFloodAdapt(
-#        fiat_cfg=fiat_cfg,
-##        sfincs_inp=sfincs_inp,
-#        event_set_yaml=event_set_yaml,
-#    )
-#    rule.run_with_checks()
+def test_fa_setup(fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path):
+    # Setup the rule
+    rule = SetupFloodAdapt(
+        fiat_cfg=Path(fiat_tmp_model, "settings.toml"),
+        sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
+        event_set_yaml=event_set_file,
+    )
+    rule.run_with_checks()
 
 
 def test_translate_fiat_model(fiat_tmp_model: Path):
@@ -120,7 +121,7 @@ def test_translate_events(event_set_file: Path):
     event_names = fa_event_config["subevent_name"]
     for event in event_names:
         event_config = toml.load(fn_output.joinpath(event, f"{event}.toml"))
-        dict_values = list(NestedDictValues(event_config))
+        dict_values = list(nested_dict_values(event_config))
         csv_files_forcings_config = [
             item.split(".")[0]
             for item in dict_values
