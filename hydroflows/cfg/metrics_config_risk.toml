@@ -71,7 +71,7 @@ name = "ImpactedHomes2Y"
 description = "Number of residential buildings with return period of 2 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (2Y)` > 0"
-long_name = "Flooded homes (2Y)"
+long_name = "Impacted homes (2Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -79,7 +79,7 @@ name = "ImpactedHomes5Y"
 description = "Number of residential buildings with return period of 5 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (5Y)` > 0"
-long_name = "Flooded homes (5Y)"
+long_name = "Impacted homes (5Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -87,7 +87,7 @@ name = "ImpactedHomes10Y"
 description = "Number of residential buildings with return period of 10 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (10Y)` > 0"
-long_name = "Flooded homes (10Y)"
+long_name = "Impacted homes (10Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -95,7 +95,7 @@ name = "ImpactedHomes25Y"
 description = "Number of residential buildings with return period of 25 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (25Y)` > 0"
-long_name = "Flooded homes (25Y)"
+long_name = "Impacted homes (25Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -103,7 +103,7 @@ name = "ImpactedHomes50Y"
 description = "Number of residential buildings with return period of 50 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (50Y)` > 0"
-long_name = "Flooded homes (50Y)"
+long_name = "Impacted homes (50Y)"
 show_in_metrics_table = "True"
 
 
@@ -112,7 +112,7 @@ name = "ImpactedHomes100Y"
 description = "Number of residential buildings with return period of 100 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Total Damage (100Y)` > 0"
-long_name = "Flooded homes (100Y)"
+long_name = "Impacted homes (100Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -120,7 +120,7 @@ name = "ImpactedBusinesses2Y"
 description = "Number of commercial buildings with return period of 2 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (2Y)` > 0"
-long_name = "Flooded businesses (2Y)"
+long_name = "Impacted businesses (2Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -128,7 +128,7 @@ name = "ImpactedBusinesses5Y"
 description = "Number of commercial buildings with return period of 5 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (5Y)` > 0"
-long_name = "Flooded businesses (5Y)"
+long_name = "Impacted businesses (5Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -136,7 +136,7 @@ name = "ImpactedBusinesses10Y"
 description = "Number of commercial buildings with return period of 10 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (10Y)` > 0"
-long_name = "Flooded businesses (10Y)"
+long_name = "Impacted businesses (10Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -144,7 +144,7 @@ name = "ImpactedBusinesses25Y"
 description = "Number of commercial buildings with return period of 25 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (25Y)` > 0"
-long_name = "Flooded businesses (25Y)"
+long_name = "Impacted businesses (25Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -152,7 +152,7 @@ name = "ImpactedBusinesses50Y"
 description = "Number of commercial buildings with return period of 50 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (50Y)` > 0"
-long_name = "Flooded businesses (50Y)"
+long_name = "Impacted businesses (50Y)"
 show_in_metrics_table = "True"
 
 [[queries]]
@@ -160,5 +160,5 @@ name = "ImpactedBusinesses100Y"
 description = "Number of commercial buildings with return period of 100 years"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('commercial')  AND `Total Damage (100Y)` > 0"
-long_name = "Flooded businesses (100Y)"
+long_name = "Impacted businesses (100Y)"
 show_in_metrics_table = "True"
