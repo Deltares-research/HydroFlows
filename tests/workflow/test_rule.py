@@ -283,6 +283,40 @@ def test_add_method_params_to_config(workflow: Workflow):
     assert "default_param2" not in workflow.config.to_dict().values()
 
 
+def test_rule_dependency(workflow: Workflow):
+    # Test for rule with no dependencies
+    method1 = TestMethod(input_file1="file1", input_file2="file2")
+    workflow.add_rule(method=method1, rule_id="method1")
+    assert workflow.rules["method1"]._dependency is None
+
+    # Test for rule with single dependency
+    method2 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
+        out_root="root",
+    )
+    workflow.add_rule(method=method2, rule_id="method2")
+    assert workflow.rules["method2"]._dependency == "method1"
+
+    # Test for rule with multiple different dependencies
+    method3 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method2.output.output_file2,
+        out_root="root3",
+    )
+    workflow.add_rule(method=method3, rule_id="method3")
+    assert workflow.rules["method3"]._dependency == "method2"
+
+    # Test for rule with single dependency not being the last in workflow.rules
+    method4 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method1.output.output_file2,
+        out_root="root4",
+    )
+    workflow.add_rule(method=method4, rule_id="method4")
+    assert workflow.rules["method4"]._dependency == "method1"
+
+
 def test_parameters(workflow: Workflow):
     # Test for rule with no wildcard
     test_method = TestMethod(input_file1="test1", input_file2="test2")
