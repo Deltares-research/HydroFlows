@@ -1,7 +1,7 @@
 name: floodadapt_db
 database_path: Database
-sfincs: sfincs_config
-fiat: fiat_config
+sfincs: sfincs
+fiat: fiat
 unit_system: metric
 gui:
   max_flood_depth: 2
