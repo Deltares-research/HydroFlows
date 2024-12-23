@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Union
 
 import geopandas as gpd
 import pandas as pd
@@ -9,6 +10,7 @@ import toml
 from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
 from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 from hydromt.config import configread
+from hydromt.raster import full_from_transform
 from pydantic import FilePath
 
 from hydroflows.cfg import CFG_DIR
@@ -77,7 +79,7 @@ class FIATVisualize(Method):
         fiat_cfg: Path,
         event_name: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
-        aggregation: bool = None,
+        aggregation: bool = False,
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -171,7 +173,7 @@ class FIATVisualize(Method):
                 infometrics_cfg["aggregateBy"] = "vector_grid"
                 with open(file, "w") as f:
                     toml.dump(infometrics_cfg, f)
-            aggregation_areas = create_vector_grid()
+            aggregation_areas = create_vector_grid(self.input.fiat_cfg.parent)
 
         # Write metrics
         metrics_writer.parse_metrics_to_file(
@@ -247,8 +249,24 @@ def get_aggregation_areas(fiat_model):
     return aggregation_areas
 
 
-def create_vector_grid():
-    print("create a vector grid file")
+def create_vector_grid(
+    fiat_model: Path, res_x: Union[int, float] = 0.05, res_y: Union[int, float] = 0.05
+):
+    rotation = 0
+    region = gpd.read_file(Path(fiat_model / "geoms" / "region.geojson"))
+    bounds = region.bounds
+    columns = (bounds["maxx"] - bounds["minx"]) / res_y
+    rows = (bounds["maxy"] - bounds["miny"]) / res_y
+    transform_affine = (
+        res_x,
+        rotation,
+        bounds["minx"],
+        rotation,
+        res_y,
+        bounds["miny"],
+    )
+    shape = (columns, rows)
+
     # aggregation_areas is the vector file of the grid.
-    # hydromt.gis.DataArray.raster.vector
+    aggregation_areas = full_from_transform(transform_affine, shape)
     return aggregation_areas

@@ -1,4 +1,4 @@
-aggregateBy = [ "Neighbourhood",]
+aggregateBy = "vector_grid"
 [[queries]]
 name = "TotalDamageEvent"
 description = "Total building damage"
