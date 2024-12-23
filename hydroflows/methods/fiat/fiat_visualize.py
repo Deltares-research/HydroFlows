@@ -1,8 +1,11 @@
 """Module/ Rule for building FIAT models."""
 
+import os
 from pathlib import Path
 
+import geopandas as gpd
 import pandas as pd
+import toml
 from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
 from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 from hydromt.config import configread
@@ -159,6 +162,14 @@ class FIATVisualize(Method):
                 ),
                 write_aggregate="all",
             )
+            create_output_map(
+                self.input.fiat_cfg.parent,
+                self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+                self.input.event_name.stem,
+                self.params.output_dir,
+            )
+        else:
+            create_output_map(self.input.fiat_cfg.parent)
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
@@ -168,3 +179,44 @@ class FIATVisualize(Method):
             config_base_path=Path(self.infographics_template.parent),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
+
+
+def create_output_map(
+    fiat_model: Path,
+    aggregation_metrics_fn: Path,
+    event_name: str,
+    fn_aggregated_metrics: Path = None,
+):
+    if not fn_aggregated_metrics:
+        print("not implemented")
+    else:
+        spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
+        aggregation_areas = spatial_joins["aggregation_areas"]
+        for aggregation_area in aggregation_areas:
+            name = aggregation_area["name"]
+            fn = aggregation_area["file"]
+            field_name = aggregation_area["field_name"]
+            gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
+            metrics = pd.read_csv(
+                Path(
+                    fn_aggregated_metrics
+                    / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
+                )
+            ).iloc[3:, 0:]
+            metrics = metrics.sort_values(metrics.columns[0])
+            metrics.reset_index(inplace=True, drop=True)
+            gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
+            gdf_new_aggr.reset_index(inplace=True, drop=True)
+            gdf_new_aggr["aggregation"] = metrics.iloc[0:, 0]
+            assert gdf_new_aggr[field_name].equals(gdf_new_aggr["aggregation"])
+
+            for column in metrics.columns:
+                if "TotalDamage" in column:
+                    metrics_float = pd.to_numeric(metrics[column], errors="coerce")
+                    gdf_new_aggr[column] = metrics_float
+
+            gdf_new_aggr.to_file(
+                Path(
+                    fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson"
+                )
+            )
