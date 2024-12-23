@@ -141,6 +141,15 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
+        # Write aggregated metrics
+        infometrics_name_orig = infometrics_name.split(".csv")[0]
+        metrics_full_path_aggr = metrics_writer.parse_metrics_to_file(
+            df_results=pd.read_csv(
+                self.input.fiat_cfg.parent / "output" / "output.csv"
+            ),
+            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+            write_aggregate="all",
+        )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
