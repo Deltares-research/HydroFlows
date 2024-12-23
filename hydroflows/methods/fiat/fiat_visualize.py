@@ -153,6 +153,17 @@ class FIATVisualize(Method):
         )
         # Write aggregated metrics
         if self.params.aggregation:
+            for file in self.infometrics_template.parent.iterdir():
+                with open(file, "r") as f:
+                    infometrics_cfg = toml.load(f)
+                aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+                aggr_names = []
+                for aggregation_area in aggregation_areas:
+                    name = aggregation_area["name"]
+                    aggr_names.append(name)
+                infometrics_cfg["aggregateBy"] = aggr_names
+                with open(file, "w") as f:
+                    toml.dump(infometrics_cfg, f)
             metrics_writer.parse_metrics_to_file(
                 df_results=pd.read_csv(
                     self.input.fiat_cfg.parent / "output" / "output.csv"
@@ -163,8 +174,9 @@ class FIATVisualize(Method):
                 write_aggregate="all",
             )
             create_output_map(
-                self.input.fiat_cfg.parent,
+                aggregation_areas,
                 self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+                self.input.fiat_cfg.parent,
                 self.input.event_name.stem,
                 self.params.output_dir,
             )
@@ -182,16 +194,16 @@ class FIATVisualize(Method):
 
 
 def create_output_map(
-    fiat_model: Path,
+    aggregation_areas: list,
     aggregation_metrics_fn: Path,
+    fiat_model: Path,
     event_name: str,
     fn_aggregated_metrics: Path = None,
 ):
     if not fn_aggregated_metrics:
         print("not implemented")
+        # Create vector map and aggregate by user resolution.
     else:
-        spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
-        aggregation_areas = spatial_joins["aggregation_areas"]
         for aggregation_area in aggregation_areas:
             name = aggregation_area["name"]
             fn = aggregation_area["file"]
@@ -211,12 +223,19 @@ def create_output_map(
             assert gdf_new_aggr[field_name].equals(gdf_new_aggr["aggregation"])
 
             for column in metrics.columns:
-                if "TotalDamage" in column:
+                if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
                     metrics_float = pd.to_numeric(metrics[column], errors="coerce")
                     gdf_new_aggr[column] = metrics_float
 
+            del gdf_new_aggr["aggregation"]
             gdf_new_aggr.to_file(
                 Path(
                     fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson"
                 )
             )
+
+
+def get_aggregation_areas(fiat_model):
+    spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
+    aggregation_areas = spatial_joins["aggregation_areas"]
+    return aggregation_areas

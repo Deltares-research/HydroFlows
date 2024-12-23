@@ -1,7 +1,4 @@
-aggregateBy = [
-    "Neighbourhood",
-]
-
+aggregateBy = [ "Neighbourhood",]
 [[queries]]
 name = "ExpectedAnnualDamages"
 description = "Expected annual damages"
@@ -114,7 +111,6 @@ filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth (50Y)` 
 long_name = "Flooded  homes (50Y)"
 show_in_metrics_table = "True"
 
-
 [[queries]]
 name = "FloodedHomes100Y"
 description = "Number of flooded residential buildings with return period of 100 years"
@@ -210,7 +206,6 @@ select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('industrial') AND `Inundation Depth (50Y)` > 0.2"
 long_name = "Flooded  industry (50Y)"
 show_in_metrics_table = "True"
-
 
 [[queries]]
 name = "FloodedIndustry100Y"

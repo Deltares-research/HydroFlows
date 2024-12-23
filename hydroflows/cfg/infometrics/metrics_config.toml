@@ -1,7 +1,4 @@
-aggregateBy = [
-    "Neighbourhood",
-]
-
+aggregateBy = [ "Neighbourhood",]
 [[queries]]
 name = "TotalDamageEvent"
 description = "Total building damage"
