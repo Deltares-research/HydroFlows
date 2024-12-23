@@ -28,62 +28,62 @@
 [Slices]
     [Slices.Homes_2Y]
         Name = "2Y Homes"
-        Query = "ImpactedHomes2Y"
+        Query = "FloodedHomes2Y"
         Chart = "2Y"
         Category = "Residential"
     [Slices.Commercial_2Y]
         Name = "2Y Commercial Buildings"
-        Query = "ImpactedBusinesses2Y"
+        Query = "FloodedBusinesses2Y"
         Chart = "2Y"
         Category = "Commercial"
     [Slices.Homes_5Y]
         Name = "5Y Homes"
-        Query = "ImpactedHomes5Y"
+        Query = "FloodedHomes5Y"
         Chart = "5Y"
         Category = "Residential"
     [Slices.Commercial_5Y]
         Name = "5Y Commercial Buildings"
-        Query = "ImpactedBusinesses5Y"
+        Query = "FloodedBusinesses5Y"
         Chart = "5Y"
         Category = "Commercial"
     [Slices.Homes_10Y]
         Name = "10Y Homes"
-        Query = "ImpactedHomes10Y"
+        Query = "FloodedHomes10Y"
         Chart = "10Y"
         Category = "Residential"
     [Slices.Commercial_10Y]
         Name = "10Y Commercial Buildings"
-        Query = "ImpactedBusinesses10Y"
+        Query = "FloodedBusinesses10Y"
         Chart = "10Y"
         Category = "Commercial"
     [Slices.Homes_25Y]
         Name = "25Y Homes"
-        Query = "ImpactedHomes25Y"
+        Query = "FloodedHomes25Y"
         Chart = "25Y"
         Category = "Residential"
     [Slices.Commercial_25Y]
         Name = "25Y Commercial Buildings"
-        Query = "ImpactedBusinesses25Y"
+        Query = "FloodedBusinesses25Y"
         Chart = "25Y"
         Category = "Commercial"
     [Slices.Homes_50Y]
         Name = "50Y Homes"
-        Query = "ImpactedHomes50Y"
+        Query = "FloodedHomes50Y"
         Chart = "50Y"
         Category = "Residential"
     [Slices.Commercial_50Y]
         Name = "50Y Commercial Buildings"
-        Query = "ImpactedBusinesses50Y"
+        Query = "FloodedBusinesses50Y"
         Chart = "50Y"
         Category = "Commercial"
     [Slices.Homes_100Y]
         Name = "100Y Homes"
-        Query = "ImpactedHomes100Y"
+        Query = "FloodedHomes100Y"
         Chart = "100Y"
         Category = "Residential"
     [Slices.Commercial_100Y]
         Name = "100Y Commercial Buildings"
-        Query = "ImpactedBusinesses100Y"
+        Query = "FloodedBusinesses100Y"
         Chart = "100Y"
         Category = "Commercial"
 [Other]
@@ -91,6 +91,14 @@
         title = "Expected annual damages"
         image = "{image_path}/money.png"
         image_scale = 1.3
+        title_font_size = 25
+        numbers_font_size = 20
+        height = 300
+
+    [Other.Flooded]
+        title = "Number of homes with a high chance of being flooded in a 30-year period"
+        image = "{image_path}/house.png"
+        image_scale = 0.7
         title_font_size = 25
         numbers_font_size = 20
         height = 300

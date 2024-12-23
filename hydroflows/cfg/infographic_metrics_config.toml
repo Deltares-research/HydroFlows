@@ -8,7 +8,7 @@ description = "Number of residences with minor damage"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth` <= 0.25 AND `Total Damage` > 0"
 long_name = "Res buildings w/ minor flooding (#)"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "ResidentialMajorCount"
@@ -16,7 +16,7 @@ description = "Number of residences with major damage"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth` <= 1.5 AND `Inundation Depth` > 0.25 AND `Total Damage` > 0"
 long_name = "Res buildings w/ major flooding (#)"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "ResidentialDestroyedCount"
@@ -24,7 +24,7 @@ description = "Number of destroyed residences"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth` > 1.5 AND `Total Damage` > 0"
 long_name = "Res buildings destroyed (#)"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "CommercialMinorCount"
@@ -32,7 +32,7 @@ description = "Number of commercial buildings with minor flooding"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('commercial')  AND `Inundation Depth` <= 0.25 AND `Total Damage` > 0"
 long_name = "Minor Damaged Commercial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "CommercialMajorCount"
@@ -40,7 +40,7 @@ description = "Number of commercial buildings with major flooding"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('commercial')  AND `Inundation Depth` <= 1.5 AND `Inundation Depth` > 0.25 AND `Total Damage` > 0"
 long_name = "Major Damaged Commercial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "CommercialDestroyedCount"
@@ -48,7 +48,7 @@ description = "Number of destroyed commercial buildings"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('commercial')  AND `Inundation Depth` > 1.5 AND `Total Damage` > 0"
 long_name = "Destroyed Commercial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "IndustrialMinorCount"
@@ -56,7 +56,7 @@ description = "Number of industrial buildings with minor flooding"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('industrial')  AND `Inundation Depth` <= 0.25 AND `Total Damage` > 0"
 long_name = "Minor Damaged Industrial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "IndustrialMajorCount"
@@ -64,7 +64,7 @@ description = "Number of industrial buildings with major flooding"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('industrial')  AND `Inundation Depth` <= 1.5 AND `Inundation Depth` > 0.25 AND `Total Damage` > 0"
 long_name = "Major Damaged Industrial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "IndustrialDestroyedCount"
@@ -72,7 +72,7 @@ description = "Number of destroyed industrial buildings"
 select = "COUNT(*)"
 filter = "`Secondary Object Type` IN ('industrial')  AND `Inundation Depth` > 1.5 AND `Total Damage` > 0"
 long_name = "Destroyed Industrial Buildings"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "FloodedHomes"
@@ -80,7 +80,7 @@ description = "Number of flooded homes "
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth` <= 1.5 AND `Total Damage` > 0"
 long_name = "Flooded Homes"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"
 
 [[queries]]
 name = "DisplacedHomes"
@@ -88,4 +88,4 @@ description = "Number of homes with displaced people"
 select = "COUNT(*)"
 filter = "`Primary Object Type` IN ('residential') AND `Inundation Depth` > 1.5 AND `Total Damage` > 0"
 long_name = "Homes with Displaced People"
-show_in_metrics_table = "False"
+show_in_metrics_table = "True"

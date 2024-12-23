@@ -101,8 +101,10 @@ class FIATVisualize(Method):
             event_name=event_name,
         )
         self.output: Output = Output(
-            fiat_infometrics=self.params.output_dir / "infometrics.txt",
-            fiat_infographics=self.params.output_dir / "infographics.html",
+            fiat_infometrics=self.params.output_dir
+            / f"Infometrics_{self.input.event_name.stem}.csv",
+            fiat_infographics=self.params.output_dir
+            / f"{self.input.event_name.stem}_metrics.html",
         )
 
         self.infographics_template = infographics_template
@@ -141,6 +143,6 @@ class FIATVisualize(Method):
             infographic_mode=mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=self.infographics_template.parent,
+            config_base_path=Path(self.infographics_template.parent, "Infographics"),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
