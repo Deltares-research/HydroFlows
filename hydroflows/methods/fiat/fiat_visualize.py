@@ -70,8 +70,12 @@ class FIATVisualize(Method):
         fiat_cfg: Path,
         event_name: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
-        infographics_template: FilePath = CFG_DIR / "config_charts.toml",
-        infometrics_template: FilePath = CFG_DIR / "metrics_config.toml",
+        infographics_template: FilePath = CFG_DIR
+        / "infographics"
+        / "config_charts.toml",
+        infometrics_template: FilePath = CFG_DIR
+        / "infometrics"
+        / "metrics_config.toml",
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
@@ -143,6 +147,6 @@ class FIATVisualize(Method):
             infographic_mode=mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=Path(self.infographics_template.parent, "Infographics"),
+            config_base_path=Path(self.infographics_template.parent),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()

@@ -24,6 +24,9 @@
     [Categories.Commercial]
         Name = "Commercial"
         Color = "#88A2AA"
+    [Categories.Industrial]
+        Name = "Industrial"
+        Color = "#2F4343"
 
 [Slices]
     [Slices.Homes_2Y]
@@ -36,6 +39,11 @@
         Query = "FloodedBusinesses2Y"
         Chart = "2Y"
         Category = "Commercial"
+    [Slices.Industrial_2Y]
+        Name = "2Y Industrial Buildings"
+        Query = "FloodedIndustry2Y"
+        Chart = "2Y"
+        Category = "Industrial"
     [Slices.Homes_5Y]
         Name = "5Y Homes"
         Query = "FloodedHomes5Y"
@@ -46,6 +54,11 @@
         Query = "FloodedBusinesses5Y"
         Chart = "5Y"
         Category = "Commercial"
+    [Slices.Industrial_5Y]
+        Name = "5Y Industrial Buildings"
+        Query = "FloodedIndustry5Y"
+        Chart = "5Y"
+        Category = "Industrial"
     [Slices.Homes_10Y]
         Name = "10Y Homes"
         Query = "FloodedHomes10Y"
@@ -56,6 +69,11 @@
         Query = "FloodedBusinesses10Y"
         Chart = "10Y"
         Category = "Commercial"
+    [Slices.Industrial_10Y]
+        Name = "10Y Industrial Buildings"
+        Query = "FloodedIndustry10Y"
+        Chart = "10Y"
+        Category = "Industrial"
     [Slices.Homes_25Y]
         Name = "25Y Homes"
         Query = "FloodedHomes25Y"
@@ -66,6 +84,11 @@
         Query = "FloodedBusinesses25Y"
         Chart = "25Y"
         Category = "Commercial"
+    [Slices.Industrial_25Y]
+        Name = "25Y Industrial Buildings"
+        Query = "FloodedIndustry25Y"
+        Chart = "25Y"
+        Category = "Industrial"
     [Slices.Homes_50Y]
         Name = "50Y Homes"
         Query = "FloodedHomes50Y"
@@ -76,6 +99,11 @@
         Query = "FloodedBusinesses50Y"
         Chart = "50Y"
         Category = "Commercial"
+    [Slices.Industrial_50Y]
+        Name = "50Y Industrial Buildings"
+        Query = "FloodedIndustry50Y"
+        Chart = "50Y"
+        Category = "Industrial"
     [Slices.Homes_100Y]
         Name = "100Y Homes"
         Query = "FloodedHomes100Y"
@@ -86,6 +114,12 @@
         Query = "FloodedBusinesses100Y"
         Chart = "100Y"
         Category = "Commercial"
+    [Slices.Industrial_100Y]
+        Name = "100Y Industrial Buildings"
+        Query = "FloodedIndustry100Y"
+        Chart = "100Y"
+        Category = "Industrial"
+
 [Other]
     [Other.Expected_Damages]
         title = "Expected annual damages"
@@ -104,7 +138,7 @@
         height = 300
 
     [Other.Return_Periods]
-        title = "Building damages"
+        title = "Number of buildings inundated by more than 0.2 m"
         font_size = 25
         image_scale = 0.2
         numbers_font = 15

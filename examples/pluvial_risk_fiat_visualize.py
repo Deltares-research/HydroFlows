@@ -17,7 +17,7 @@ if __name__ == "__main__":
 
     # %% General setup of workflow
     # Define variables
-    name = "pluvial_risk copy"
+    name = "pluvial_risk_fiat_visualize"
     case_root = Path(pwd, "cases", name)
     setuplog(path=case_root / "hydroflows.log", level="DEBUG")
 
