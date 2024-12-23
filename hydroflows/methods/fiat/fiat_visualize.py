@@ -265,7 +265,7 @@ def create_vector_grid(
         res_y,
         bounds["miny"],
     )
-    shape = (columns, rows)
+    shape = ((int(columns.values[0].round()) - 1), (int(rows.values[0].round()) - 1))
 
     # aggregation_areas is the vector file of the grid.
     aggregation_areas = full_from_transform(transform_affine, shape)
