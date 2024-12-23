@@ -55,6 +55,7 @@ if __name__ == "__main__":
     fiat_visualize = FIATVisualize(
         fiat_cfg="models/fiat/settings.toml",
         event_name="data/events/pluvial_events.yml",
+        aggregation=True,
     )
     w.add_rule(fiat_visualize, rule_id="fiat_visualize")
 

@@ -58,6 +58,10 @@ class Params(Parameters):
     """
 
     output_dir: Path = ("models/fiat/fiat_metrics",)
+    """The file path to the FIAT infometrics output."""
+
+    aggregation: bool = False
+    """Boolean to default aggregate or by aggregation area."""
 
 
 class FIATVisualize(Method):
@@ -70,6 +74,7 @@ class FIATVisualize(Method):
         fiat_cfg: Path,
         event_name: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
+        aggregation: bool = None,
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -87,6 +92,8 @@ class FIATVisualize(Method):
             The file path to the event set output of the hydromt SFINCS model.
         output_dir: Path = "models/fiat/fiat_metrics"
             The file path to the output of the FIAT infometrics and infographics.
+        aggregation: bool = None
+            Boolean to default aggregate or by aggregation area.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
@@ -99,7 +106,7 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(output_dir=output_dir)
+        self.params: Params = Params(output_dir=output_dir, aggregation=aggregation)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
             event_name=event_name,
@@ -142,14 +149,16 @@ class FIATVisualize(Method):
             write_aggregate=None,
         )
         # Write aggregated metrics
-        infometrics_name_orig = infometrics_name.split(".csv")[0]
-        metrics_full_path_aggr = metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(
-                self.input.fiat_cfg.parent / "output" / "output.csv"
-            ),
-            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
-            write_aggregate="all",
-        )
+        if self.params.aggregation:
+            metrics_writer.parse_metrics_to_file(
+                df_results=pd.read_csv(
+                    self.input.fiat_cfg.parent / "output" / "output.csv"
+                ),
+                metrics_path=self.output.fiat_infometrics.parent.joinpath(
+                    infometrics_name
+                ),
+                write_aggregate="all",
+            )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
