@@ -151,7 +151,7 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
-        # Write aggregated metrics
+        # Write aggregated metrics config files
         if self.params.aggregation:
             for file in self.infometrics_template.parent.iterdir():
                 with open(file, "r") as f:
@@ -164,24 +164,30 @@ class FIATVisualize(Method):
                 infometrics_cfg["aggregateBy"] = aggr_names
                 with open(file, "w") as f:
                     toml.dump(infometrics_cfg, f)
-            metrics_writer.parse_metrics_to_file(
-                df_results=pd.read_csv(
-                    self.input.fiat_cfg.parent / "output" / "output.csv"
-                ),
-                metrics_path=self.output.fiat_infometrics.parent.joinpath(
-                    infometrics_name
-                ),
-                write_aggregate="all",
-            )
-            create_output_map(
-                aggregation_areas,
-                self.output.fiat_infometrics.parent.joinpath(infometrics_name),
-                self.input.fiat_cfg.parent,
-                self.input.event_name.stem,
-                self.params.output_dir,
-            )
         else:
-            create_output_map(self.input.fiat_cfg.parent)
+            for file in self.infometrics_template.parent.iterdir():
+                with open(file, "r") as f:
+                    infometrics_cfg = toml.load(f)
+                infometrics_cfg["aggregateBy"] = "vector_grid"
+                with open(file, "w") as f:
+                    toml.dump(infometrics_cfg, f)
+            aggregation_areas = create_vector_grid()
+
+        # Write metrics
+        metrics_writer.parse_metrics_to_file(
+            df_results=pd.read_csv(
+                self.input.fiat_cfg.parent / "output" / "output.csv"
+            ),
+            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+            write_aggregate="all",
+        )
+        create_output_map(
+            aggregation_areas,
+            self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+            self.input.fiat_cfg.parent,
+            self.input.event_name.stem,
+            self.params.output_dir,
+        )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
@@ -238,4 +244,11 @@ def create_output_map(
 def get_aggregation_areas(fiat_model):
     spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
     aggregation_areas = spatial_joins["aggregation_areas"]
+    return aggregation_areas
+
+
+def create_vector_grid():
+    print("create a vector grid file")
+    # aggregation_areas is the vector file of the grid.
+    # hydromt.gis.DataArray.raster.vector
     return aggregation_areas
