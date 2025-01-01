@@ -156,7 +156,7 @@ class FIATBuild(Method):
             -res_y[0],
             bounds["maxy"][0],
         )
-        shape = (width, height)
+        shape = (height, width)
 
         # aggregation_areas is the vector file of the grid.
         aggregation_areas = full_from_transform(transform_affine, shape)
