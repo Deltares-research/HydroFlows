@@ -1,14 +1,16 @@
 """Module/ Rule for building FIAT models."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import geopandas as gpd
 import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
+from hydromt.raster import full_from_transform
 from hydromt_fiat.fiat import FiatModel
 from pydantic import FilePath
+from shapely.geometry import box
 
 from hydroflows._typing import DataCatalogPath
 from hydroflows.cfg import CFG_DIR
@@ -127,6 +129,61 @@ class FIATBuild(Method):
         )
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
+    def create_default_aggregation(
+        self,
+        region: gpd.GeoDataFrame,
+        res_x: Union[int, float] = 0.05,
+        res_y: Union[int, float] = 0.05,
+    ):
+        rotation = 0
+        bounds = region.bounds
+        width = int((bounds["maxx"] - bounds["minx"]) / res_x)
+        height = int((bounds["maxy"] - bounds["miny"]) / res_y)
+
+        # chatgbt
+        length_x = bounds["maxx"] - bounds["minx"]
+        length_y = bounds["maxy"] - bounds["miny"]
+
+        # Adjust resolution or length to ensure alignment
+        res_x = length_x / int(length_x / res_x)
+        res_y = length_y / int(length_y / res_y)
+
+        transform_affine = (
+            res_x[0],
+            rotation,
+            bounds["minx"][0],
+            rotation,
+            -res_y[0],
+            bounds["maxy"][0],
+        )
+        shape = (width, height)
+
+        # aggregation_areas is the vector file of the grid.
+        aggregation_areas = full_from_transform(transform_affine, shape)
+
+        # Create vector file
+        geometries = []
+        for j, y in enumerate(aggregation_areas["y"]):
+            for i, x in enumerate(aggregation_areas["x"]):
+                cell_geom = box(
+                    x.values - res_x / 2,
+                    y.values - res_y / 2,
+                    x.values + res_x / 2,
+                    y.values + res_y / 2,
+                )
+                geometries.append(
+                    {"geometry": cell_geom, "value": aggregation_areas[j, i].item()}
+                )
+
+        # Create a GeoDataFrame from the geometries
+        crs = region.crs
+        gdf = gpd.GeoDataFrame(geometries, crs=crs)
+
+        # Save to a vector file (e.g., GeoJSON or Shapefile)
+        aggregation_areas_fn = r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\grid_vector.geojson"
+        gdf.to_file(aggregation_areas_fn)
+        return aggregation_areas_fn
+
     def run(self):
         """Run the FIATBuild method."""
         # Read template config
@@ -147,6 +204,13 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
+        # If aggregation areas is None, create aggregation vector layer
+        if "setup_aggregation_areas" not in opt:
+            fn_aggregation = self.create_default_aggregation(region_gdf)
+            opt["setup_aggregation_areas"]["aggregation_area_fn"] = fn_aggregation
+            opt["setup_aggregation_areas"]["attribute_names"] = "vector_grid"
+            opt["setup_aggregation_areas"]["label_names"] = "default_aggregation"
+            opt["setup_aggregation_areas"]["file_names"] = "default_aggregation"
         # Setup the model
         root = self.params.fiat_root
         #

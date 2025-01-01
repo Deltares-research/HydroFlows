@@ -12,6 +12,7 @@ from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWrite
 from hydromt.config import configread
 from hydromt.raster import full_from_transform
 from pydantic import FilePath
+from shapely.geometry import box
 
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
@@ -250,23 +251,54 @@ def get_aggregation_areas(fiat_model):
 
 
 def create_vector_grid(
-    fiat_model: Path, res_x: Union[int, float] = 0.05, res_y: Union[int, float] = 0.05
+    fiat_model: Path, res_x: Union[int, float] = 0.01, res_y: Union[int, float] = 0.01
 ):
     rotation = 0
     region = gpd.read_file(Path(fiat_model / "geoms" / "region.geojson"))
     bounds = region.bounds
-    columns = (bounds["maxx"] - bounds["minx"]) / res_y
-    rows = (bounds["maxy"] - bounds["miny"]) / res_y
+    width = int((bounds["maxx"] - bounds["minx"]) / res_x)
+    height = int((bounds["maxy"] - bounds["miny"]) / res_y)
+
+    # chatgbt
+    length_x = bounds["maxx"] - bounds["minx"]
+    length_y = bounds["maxy"] - bounds["miny"]
+
+    # Adjust resolution or length to ensure alignment
+    res_x = length_x / int(length_x / res_x)
+    res_y = length_y / int(length_y / res_y)
+
     transform_affine = (
-        res_x,
+        res_x[0],
         rotation,
-        bounds["minx"],
+        bounds["minx"][0],
         rotation,
-        res_y,
-        bounds["miny"],
+        -res_y[0],
+        bounds["maxy"][0],
     )
-    shape = ((int(columns.values[0].round()) - 1), (int(rows.values[0].round()) - 1))
+    shape = (width, height)
 
     # aggregation_areas is the vector file of the grid.
     aggregation_areas = full_from_transform(transform_affine, shape)
-    return aggregation_areas
+
+    # Create vector file
+    geometries = []
+    for j, y in enumerate(aggregation_areas["y"]):
+        for i, x in enumerate(aggregation_areas["x"]):
+            cell_geom = box(
+                x.values - res_x / 2,
+                y.values - res_y / 2,
+                x.values + res_x / 2,
+                y.values + res_y / 2,
+            )
+            geometries.append(
+                {"geometry": cell_geom, "value": aggregation_areas[j, i].item()}
+            )
+
+    # Create a GeoDataFrame from the geometries
+    crs = region.crs
+    gdf = gpd.GeoDataFrame(geometries, crs=crs)
+
+    # Save to a vector file (e.g., GeoJSON or Shapefile)
+    aggregation_areas_fn = r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\grid_vector.geojson"
+    gdf.to_file(aggregation_areas_fn)
+    return aggregation_areas_fn
