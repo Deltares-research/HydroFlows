@@ -2,7 +2,6 @@
 
 import os
 from pathlib import Path
-from typing import Union
 
 import geopandas as gpd
 import pandas as pd
@@ -10,9 +9,7 @@ import toml
 from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
 from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 from hydromt.config import configread
-from hydromt.raster import full_from_transform
 from pydantic import FilePath
-from shapely.geometry import box
 
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
@@ -171,10 +168,9 @@ class FIATVisualize(Method):
             for file in self.infometrics_template.parent.iterdir():
                 with open(file, "r") as f:
                     infometrics_cfg = toml.load(f)
-                infometrics_cfg["aggregateBy"] = "vector_grid"
+                infometrics_cfg["aggregateBy"] = "default_aggregation"
                 with open(file, "w") as f:
                     toml.dump(infometrics_cfg, f)
-            aggregation_areas = create_vector_grid(self.input.fiat_cfg.parent)
 
         # Write metrics
         metrics_writer.parse_metrics_to_file(
@@ -248,61 +244,3 @@ def get_aggregation_areas(fiat_model):
     spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
     aggregation_areas = spatial_joins["aggregation_areas"]
     return aggregation_areas
-
-
-def create_vector_grid(
-    fiat_model: Path, res_x: Union[int, float] = 0.01, res_y: Union[int, float] = 0.01
-):
-    rotation = 0
-    region = gpd.read_file(Path(fiat_model / "geoms" / "region.geojson"))
-    bounds = region.bounds
-    width = int((bounds["maxx"] - bounds["minx"]) / res_x)
-    height = int((bounds["maxy"] - bounds["miny"]) / res_y)
-
-    # chatgbt
-    length_x = bounds["maxx"] - bounds["minx"]
-    length_y = bounds["maxy"] - bounds["miny"]
-
-    # Adjust resolution or length to ensure alignment
-    res_x = length_x / int(length_x / res_x)
-    res_y = length_y / int(length_y / res_y)
-
-    transform_affine = (
-        res_x[0],
-        rotation,
-        bounds["minx"][0],
-        rotation,
-        -res_y[0],
-        bounds["maxy"][0],
-    )
-    shape = (height, width)
-
-    # aggregation_areas is the vector file of the grid.
-    aggregation_areas = full_from_transform(transform_affine, shape)
-
-    # Create vector file
-    geometries = []
-    for j, y in enumerate(aggregation_areas["y"]):
-        for i, x in enumerate(aggregation_areas["x"]):
-            cell_geom = box(
-                x.values - res_x / 2,
-                y.values - res_y / 2,
-                x.values + res_x / 2,
-                y.values + res_y / 2,
-            )
-            geometries.append(
-                {"geometry": cell_geom, "value": aggregation_areas[j, i].item()}
-            )
-
-    # Create a GeoDataFrame from the geometries
-    crs = region.crs
-    gdf = gpd.GeoDataFrame(geometries, crs=crs)
-    # cells need values 1-range
-    gdf["value"] = range(1, len(gdf["geometry"]) + 1, 1)
-    gdf["value"] = gdf["value"].astype(str)
-    gdf.rename(columns={"value": "default_aggregation"}, inplace=True)
-
-    # Save to a vector file (e.g., GeoJSON or Shapefile)
-    aggregation_areas_fn = r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\grid_vector.geojson"
-    gdf.to_file(aggregation_areas_fn)
-    return aggregation_areas_fn

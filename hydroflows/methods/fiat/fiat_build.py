@@ -184,8 +184,11 @@ class FIATBuild(Method):
         gdf.rename(columns={"value": "default_aggregation"}, inplace=True)
 
         # Save to a vector file (e.g., GeoJSON or Shapefile)
-        aggregation_areas_fn = r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\grid_vector.geojson"
+        aggregation_areas_fn = Path(
+            self.input.config.parent / "default_aggregation_grid.geojson"
+        )
         gdf.to_file(aggregation_areas_fn)
+
         return aggregation_areas_fn
 
     def run(self):
@@ -212,7 +215,9 @@ class FIATBuild(Method):
         if "setup_aggregation_areas" not in opt:
             fn_aggregation = self.create_default_aggregation(region_gdf)
             opt["setup_aggregation_areas"]["aggregation_area_fn"] = fn_aggregation
-            opt["setup_aggregation_areas"]["attribute_names"] = "vector_grid"
+            opt["setup_aggregation_areas"][
+                "attribute_names"
+            ] = "default_aggregation_grid"
             opt["setup_aggregation_areas"]["label_names"] = "default_aggregation"
             opt["setup_aggregation_areas"]["file_names"] = "default_aggregation"
         # Setup the model
