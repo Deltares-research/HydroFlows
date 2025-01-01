@@ -297,6 +297,10 @@ def create_vector_grid(
     # Create a GeoDataFrame from the geometries
     crs = region.crs
     gdf = gpd.GeoDataFrame(geometries, crs=crs)
+    # cells need values 1-range
+    gdf["value"] = range(1, len(gdf["geometry"]) + 1, 1)
+    gdf["value"] = gdf["value"].astype(str)
+    gdf.rename(columns={"value": "default_aggregation"}, inplace=True)
 
     # Save to a vector file (e.g., GeoJSON or Shapefile)
     aggregation_areas_fn = r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\grid_vector.geojson"
