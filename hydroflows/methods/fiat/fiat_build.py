@@ -1,7 +1,7 @@
 """Module/ Rule for building FIAT models."""
 
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import geopandas as gpd
 import hydromt_fiat
@@ -80,6 +80,12 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
+    res_x: Union[int, float]
+    """The x-resolution to aggregate the model region into a default grid."""
+
+    res_y: Union[int, float]
+    """The y-resolution to aggregate the model region into a default grid."""
+
 
 class FIATBuild(Method):
     """Rule for building FIAT."""
@@ -147,6 +153,11 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
+        # If aggregation areas is None, create aggregation vector layer
+        if "setup_aggregation_areas" not in opt:
+            opt["setup_aggregation_areas"]["aggregation_area_fn"] = "default"
+            opt["setup_aggregation_areas"]["res_x"] = self.params.res_x
+            opt["setup_aggregation_areas"]["res_y"] = self.params.res_y
         # Setup the model
         root = self.params.fiat_root
         #

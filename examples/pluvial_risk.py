@@ -82,6 +82,8 @@ if __name__ == "__main__":
         data_libs=w.get_ref("$config.data_libs"),
         config=w.get_ref("$config.hydromt_fiat_config"),
         continent=w.get_ref("$config.continent"),
+        res_x=0.1,
+        res_y=0.1,
     )
     w.add_rule(fiat_build, rule_id="fiat_build")
 
