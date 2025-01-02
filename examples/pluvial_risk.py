@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 
 from hydroflows.log import setuplog
-from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
+from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard, FIATVisualize
 from hydroflows.methods.rainfall import (
     PluvialDesignEventsGPEX,
 )
@@ -132,6 +132,13 @@ if __name__ == "__main__":
         fiat_exe=w.get_ref("$config.fiat_exe"),
     )
     w.add_rule(fiat_run, rule_id="fiat_run")
+
+    # Run FIAT
+    fiat_visualize = FIATVisualize(
+        fiat_cfg="models/fiat/settings.toml",
+        event_name="data/events/pluvial_events.yml",
+    )
+    w.add_rule(fiat_visualize, rule_id="fiat_visualize")
 
     # %% run workflow
     w.run(dryrun=True)
