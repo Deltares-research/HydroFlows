@@ -77,7 +77,6 @@ class FIATVisualize(Method):
         fiat_cfg: Path,
         event_name: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
-        aggregation: bool = False,
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -95,8 +94,6 @@ class FIATVisualize(Method):
             The file path to the event set output of the hydromt SFINCS model.
         output_dir: Path = "models/fiat/fiat_metrics"
             The file path to the output of the FIAT infometrics and infographics.
-        aggregation: bool = None
-            Boolean to default aggregate or by aggregation area.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
@@ -109,7 +106,7 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(output_dir=output_dir, aggregation=aggregation)
+        self.params: Params = Params(output_dir=output_dir)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
             event_name=event_name,
@@ -152,25 +149,17 @@ class FIATVisualize(Method):
             write_aggregate=None,
         )
         # Write aggregated metrics config files
-        if self.params.aggregation:
-            for file in self.infometrics_template.parent.iterdir():
-                with open(file, "r") as f:
-                    infometrics_cfg = toml.load(f)
-                aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
-                aggr_names = []
-                for aggregation_area in aggregation_areas:
-                    name = aggregation_area["name"]
-                    aggr_names.append(name)
-                infometrics_cfg["aggregateBy"] = aggr_names
-                with open(file, "w") as f:
-                    toml.dump(infometrics_cfg, f)
-        else:
-            for file in self.infometrics_template.parent.iterdir():
-                with open(file, "r") as f:
-                    infometrics_cfg = toml.load(f)
-                infometrics_cfg["aggregateBy"] = "default_aggregation"
-                with open(file, "w") as f:
-                    toml.dump(infometrics_cfg, f)
+        for file in self.infometrics_template.parent.iterdir():
+            with open(file, "r") as f:
+                infometrics_cfg = toml.load(f)
+            aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+            aggr_names = []
+            for aggregation_area in aggregation_areas:
+                name = aggregation_area["name"]
+                aggr_names.append(name)
+            infometrics_cfg["aggregateBy"] = aggr_names
+            with open(file, "w") as f:
+                toml.dump(infometrics_cfg, f)
 
         # Write metrics
         metrics_writer.parse_metrics_to_file(
@@ -182,7 +171,6 @@ class FIATVisualize(Method):
         )
         create_output_map(
             aggregation_areas,
-            self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             self.input.fiat_cfg.parent,
             self.input.event_name.stem,
             self.params.output_dir,
@@ -200,44 +188,37 @@ class FIATVisualize(Method):
 
 def create_output_map(
     aggregation_areas: list,
-    aggregation_metrics_fn: Path,
     fiat_model: Path,
     event_name: str,
     fn_aggregated_metrics: Path = None,
 ):
-    if not fn_aggregated_metrics:
-        print("not implemented")
-        # Create vector map and aggregate by user resolution.
-    else:
-        for aggregation_area in aggregation_areas:
-            name = aggregation_area["name"]
-            fn = aggregation_area["file"]
-            field_name = aggregation_area["field_name"]
-            gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
-            metrics = pd.read_csv(
-                Path(
-                    fn_aggregated_metrics
-                    / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
-                )
-            ).iloc[3:, 0:]
-            metrics = metrics.sort_values(metrics.columns[0])
-            metrics.reset_index(inplace=True, drop=True)
-            gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
-            gdf_new_aggr.reset_index(inplace=True, drop=True)
-            gdf_new_aggr["aggregation"] = metrics.iloc[0:, 0]
-            assert gdf_new_aggr[field_name].equals(gdf_new_aggr["aggregation"])
-
-            for column in metrics.columns:
-                if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
-                    metrics_float = pd.to_numeric(metrics[column], errors="coerce")
-                    gdf_new_aggr[column] = metrics_float
-
-            del gdf_new_aggr["aggregation"]
-            gdf_new_aggr.to_file(
-                Path(
-                    fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson"
-                )
+    for aggregation_area in aggregation_areas:
+        name = aggregation_area["name"]
+        fn = aggregation_area["file"]
+        field_name = aggregation_area["field_name"]
+        gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
+        metrics = pd.read_csv(
+            Path(
+                fn_aggregated_metrics
+                / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
             )
+        ).iloc[3:, 0:]
+        metrics = metrics.sort_values(metrics.columns[0])
+        metrics.reset_index(inplace=True, drop=True)
+        gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
+        gdf_new_aggr.reset_index(inplace=True, drop=True)
+        gdf_new_aggr["aggregation"] = metrics.iloc[0:, 0]
+        assert gdf_new_aggr[field_name].equals(gdf_new_aggr["aggregation"])
+
+        for column in metrics.columns:
+            if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
+                metrics_float = pd.to_numeric(metrics[column], errors="coerce")
+                gdf_new_aggr[column] = metrics_float
+
+        del gdf_new_aggr["aggregation"]
+        gdf_new_aggr.to_file(
+            Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
+        )
 
 
 def get_aggregation_areas(fiat_model):
