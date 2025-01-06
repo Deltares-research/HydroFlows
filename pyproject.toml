@@ -68,7 +68,7 @@ extra = [
   "jupyter",
   "snakemake>=8.20, <9.0",      # Workflow manager
   "graphviz",
-  "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
+  "osmnx>1,<3",     # OpenStreetMap data temporarly pinned
 ]
 test = [
   "pytest>=2.7.3",  # testing framework
