@@ -74,10 +74,10 @@ class Params(Parameters):
     """
 
 
-class Rainfall(Method):
+class Meteo(Method):
     """Rule for meteo climate factors."""
 
-    name: str = "rainfall"
+    name: str = "meteo"
 
     _test_kwargs = {}
 
@@ -98,7 +98,7 @@ class Rainfall(Method):
         self.output: Output = Output(factors_ds=self.params.output_dir / "data.nc")
 
     def run(self) -> None:
-        """Run the Rainfall method."""
+        """Run the meteo method."""
         # Load the region in memory
         geom = gpd.read_file(self.input.region)
 

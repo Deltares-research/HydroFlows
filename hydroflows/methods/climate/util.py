@@ -1,6 +1,5 @@
 """Climate utility functions."""
 
-
 import xarray as xr
 
 
