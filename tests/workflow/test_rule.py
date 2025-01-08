@@ -40,7 +40,7 @@ def test_rule_to_dict(rule: Rule):
     assert rule_dict["rule_id"] == "test_rule"
 
 
-def test_detect_wildcards(workflow: Workflow):
+def test_detect_wildcards_explode_expand(workflow: Workflow):
     # test expand method with explode and expand wildcards
     expand_method = MockExpandMethod(
         input_file="{region}/test_file",
@@ -55,15 +55,19 @@ def test_detect_wildcards(workflow: Workflow):
         "w": ["output_file", "output_file2"],
     }
 
+
+def test_detect_wildcards_reduce(workflow: Workflow):
     # test reduce method with reduce wildcards
     reduce_method = MockReduceMethod(
-        files="test_{w}",
+        files="test_{region}",
         root="/",
     )
     rule = Rule(method=reduce_method, workflow=workflow, rule_id="rule_id")
-    assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["w"]}
-    assert rule._wildcard_fields == {"w": ["files"]}
+    assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["region"]}
+    assert rule._wildcard_fields == {"region": ["files"]}
 
+
+def test_detect_wildcards_explode(workflow: Workflow):
     # test normal method with explode wildcards
     test_method = TestMethod(
         input_file1="{region}/test_file1", input_file2="{region}/test_file2"
@@ -80,10 +84,36 @@ def test_detect_wildcards(workflow: Workflow):
         ]
     }
 
+
+def test_detect_wildcards_none(workflow: Workflow):
     # test normal method with no wildcards
     test_method = TestMethod(input_file1="testfile1", input_file2="testfile2")
     rule = Rule(method=test_method, workflow=workflow)
     assert rule._wildcards == {"explode": [], "expand": [], "reduce": []}
+
+
+def test_detect_wildcards_params_explode(workflow: Workflow):
+    # test normal method with expand wildcards on a param field
+    test_method = TestMethod(
+        input_file1="testfile1", input_file2="testfile2", out_root="{region}"
+    )
+    rule = Rule(method=test_method, workflow=workflow)
+    assert rule._wildcards == {"explode": ["region"], "expand": [], "reduce": []}
+    assert rule._wildcard_fields == {
+        "region": ["output_file1", "output_file2", "out_root"]
+    }
+
+
+def test_detect_wildcards_params_explode_expand(workflow: Workflow):
+    # test expand method with explode on a param field
+    expand_method = MockExpandMethod(
+        input_file="test_file",
+        root="{region}",  # param field
+        events=["1", "2", "3"],
+        wildcard="w",
+    )
+    rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
+    assert rule._wildcards == {"explode": ["region"], "expand": ["w"], "reduce": []}
 
 
 def test_validate_wildcards(workflow: Workflow):
@@ -130,8 +160,9 @@ def test_validate_wildcards(workflow: Workflow):
         Rule(method=test_method, workflow=workflow)
 
     # test normal method with missing wildcard on input
-    test_method = TestMethod(
-        input_file1="test1", input_file2="test2", out_root="{region}"
+    test_method = TestMethod(input_file1="test1", input_file2="test2")
+    test_method.output = test_method.output.model_copy(
+        update=dict(output_file1="{region}/test1")
     )
     err_msg = f"Wildcard(s) ['region'] missing on input or method {name} should be an ExpandMethod (Rule {name})."
     with pytest.raises(ValueError, match=re.escape(err_msg)):
