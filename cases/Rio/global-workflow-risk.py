@@ -1,4 +1,4 @@
-"""Script to generate workflow files for the Rio case using global data."""
+"""Script to generate workflow files for the Rio case flood risk assessment using global data."""
 
 # %%
 # Import packages
@@ -18,6 +18,7 @@ from hydroflows.methods.rainfall import (
 )
 from hydroflows.methods.sfincs import (
     SfincsBuild,
+    SfincsDownscale,
     SfincsPostprocess,
     SfincsRun,
     SfincsUpdateForcing,
@@ -45,8 +46,6 @@ config = WorkflowConfig(
     region=Path(pwd, "data/region.geojson"),
     data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
     plot_fig=True,
-    start_date="1990-01-01",
-    end_date="2023-12-31",
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
@@ -60,6 +59,8 @@ config = WorkflowConfig(
     risk=True,
     # design events settings
     rps=[5, 10, 25],
+    start_date="1990-01-01",
+    end_date="2023-12-31",
 )
 
 # %%
@@ -107,7 +108,7 @@ pluvial_events = PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
     wildcard="pluvial_events",
-    event_root="events",
+    event_root="events/rainfall/current",
 )
 w.add_rule(pluvial_events, rule_id="pluvial_events")
 
@@ -128,7 +129,16 @@ sfincs_run = SfincsRun(
 w.add_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
-# Postprocesses SFINCS results
+# Downscale Sfincs output to inundation maps.
+sfincs_down = SfincsDownscale(
+    sfincs_map=sfincs_run.output.sfincs_map,
+    sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
+    depth_min=w.get_ref("$config.depth_min"),
+    output_root="output",
+)
+
+# %%
+# Postprocesses SFINCS results (zsmax variable to the global zsmax on a regular grid for FIAT)
 sfincs_post = SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
