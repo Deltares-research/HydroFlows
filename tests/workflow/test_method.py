@@ -154,3 +154,15 @@ def test_expand_output_paths(tmp_path):
     )
     output_paths = mock_expand_method._output_paths
     assert len(output_paths) == 8
+
+
+def test_expand_output_paths_outputs(tmp_path):
+    input_file = tmp_path / "test"
+    mock_expand = MockExpandMethod(
+        input_file=input_file, root=tmp_path, events=["1", "2"]
+    )
+    mock_expand.expand_output_paths()
+    assert mock_expand.output.to_dict() == {
+        "output_file": [tmp_path / "1" / "file.yml", tmp_path / "2" / "file.yml"],
+        "output_file2": [tmp_path / "1" / "file2.yml", tmp_path / "2" / "file2.yml"],
+    }
