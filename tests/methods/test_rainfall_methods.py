@@ -120,7 +120,6 @@ def test_future_climate_rainfall(
 
     rule = FutureClimateRainfall(
         event_set_yaml=event_set_yaml,
-        scenario_name="RCP85",
         dT=2.5,
         event_root=out_root,
     )

@@ -42,7 +42,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`FutureClimateRainfall` method."""
 
-    scenario_name: str
+    scenario_name: Optional[str] = None
     """Future scenario name for which CC scaling is applied."""
 
     dT: float
@@ -80,6 +80,8 @@ class Params(Parameters):
 
     @model_validator(mode="after")
     def _validate_model(self):
+        if self.scenario_name is None:
+            self.scenario_name = f"dt{self.dT:.1f}".replace(".", "_")
         # Check if the input event set yaml file exists and check / set event names
         if self.input.event_set_yaml.is_file():
             input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
@@ -119,7 +121,6 @@ class FutureClimateRainfall(ExpandMethod):
 
     def __init__(
         self,
-        scenario_name: str,
         dT: int,
         event_set_yaml: Path,
         event_root: Path = Path("data/events/future_rainfall"),
@@ -135,8 +136,6 @@ class FutureClimateRainfall(ExpandMethod):
         event_set_yaml : Path
             The file path to the event set YAML file, which includes the events to be scaled
             for a future climate projection.
-        scenario_name: str
-            Future scenario name for which CC scaling is applied.
         dT: float
             Temperature change corresponding to the future climate scenario `scenario_name`,
             indicating the temperature difference between the year of the event
@@ -160,7 +159,7 @@ class FutureClimateRainfall(ExpandMethod):
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         self.params: Params = Params(
-            scenario_name=scenario_name,
+            # scenario_name=scenario_name,
             dT=dT,
             event_root=event_root,
             wildcard=wildcard,
