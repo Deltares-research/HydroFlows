@@ -10,8 +10,9 @@ import hydromt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from dask.diagnostics import ProgressBar
-from hydromt.workflows import forcing
+
+from hydroflows.methods.climate.meteo import derive_pet, derive_tdew, derive_wind
+from hydroflows.methods.climate.utils import CLIMATE_VARS, intersection
 
 # Time tuple for timeseries
 CLIM_PROJECT_TIME_TUPLE = {
@@ -30,167 +31,6 @@ CLIM_PROJECT_TIME_TUPLE = {
 }
 
 
-def derive_pet(
-    ds: xr.Dataset,
-    pet_method: str,
-    timestep: np.ndarray,
-    drop_vars: Union[List, None] = None,
-):
-    """
-    Compute potential evapotranspiration using different methods.
-
-    Parameters
-    ----------
-    ds : xr.Dataset
-        Dataset with temperature, pressure, and radiation data.
-    pet_method : str
-        Method to compute potential evapotranspiration. Available methods are 'makkink',
-        'debruin'.
-    timestep : np.ndarray
-        Timestep in seconds for each month.
-    drop_vars : list
-        List of variables to drop after computing pet. Default is None.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with added potential evapotranspiration data.
-    """
-    if "press_msl" in ds:
-        # todo downscale with orography
-        ds = ds.rename({"press_msl": "press"})
-    if pet_method == "makkink":
-        ds["pet"] = forcing.pet_makkink(
-            temp=ds["temp"],
-            press=ds["press"],
-            k_in=ds["kin"],
-            timestep=timestep,
-        )
-    elif pet_method == "debruin":
-        ds["pet"] = forcing.pet_debruin(
-            temp=ds["temp"],
-            press=ds["press"],
-            k_in=ds["kin"],
-            k_ext=ds["kout"],
-            timestep=timestep,
-        )
-    # Drop variables
-    if drop_vars is None:
-        drop_vars = []
-    for var in drop_vars:
-        if var in ds:
-            ds = ds.drop_vars(var)
-
-    return ds
-
-
-def derive_wind(
-    ds: xr.Dataset,
-    altitude: float = 10,
-    drop_vars: Union[List, None] = None,
-):
-    """
-    Compute wind speed from u and v wind components.
-
-    Adjust wind speed data obtained from instruments placed at elevations other
-    than the standard height of 2 m, using a logarithmic wind speed
-    profile (Allen et al., 1998)
-
-    Parameters
-    ----------
-    ds : xr.Dataset
-        Dataset with either wind or u and v wind components data.
-    altitude : float
-        Altitude to correct wind speed from 10m to 2m. Default is 10m.
-    drop_vars : list
-        Drop u and v wind components after computing wind speed.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with added wind speed data.
-    """
-    if "wind10_u" in ds and "wind10_v" in ds:
-        ds["wind"] = np.sqrt(np.power(ds["wind10_u"], 2) + np.power(ds["wind10_v"], 2))
-    else:
-        print("u and v wind components not found, wind speed not computed")
-    # Correct altitude from 10m to 2m wind
-    ds["wind"] = ds["wind"] * (4.87 / np.log((67.8 * altitude) - 5.42))
-    # Drop variables
-    if drop_vars is None:
-        drop_vars = []
-    for var in drop_vars:
-        if var in ds:
-            ds = ds.drop_vars(var)
-
-    return ds
-
-
-def derive_tdew(
-    ds: xr.Dataset,
-    drop_vars: Union[List, None] = None,
-):
-    """
-    Compute dew point temperature.
-
-    Dewpoint temperature can either be computed from:
-
-    * temperature [Celsius] and relative humidity [%] using Magnus formula and constant
-      from NOAA (Bolton 1980).
-    * temperature [Celsius], pressure [hPa] and specific humidity [kg/kg] using mixing ratio
-      and actual vapor pressure (WMO, 2020).
-
-    Bolton, D., 1980: The computation of equivalent potential temperature. \
-Mon. Wea. Rev., 108, 1046-1053, doi:10.1175/1520-0493(1980)108%3C1046:TCOEPT%3E2.0.CO;2.
-    WMO, 2020: Guide to Meteorological Instruments and Methods of \
-Observation, Volume 1: Measurement of Meteorological Variables. WMO No.8.
-
-    Parameters
-    ----------
-    ds : xr.Dataset
-        Dataset with climate data.
-        Required variable using relative humidity: 'temp' [Celsius], 'rh' [%].
-        Required variable using specific humidity: 'temp' [Celsius], 'sh' [kg/kg],
-        'press' [hPa].
-    drop_vars : List
-        Drop humidity, pressure and/or temperature after computing dewpoint temperature.
-
-    Returns
-    -------
-    xr.Dataset
-        Dataset with added dew point temperature data.
-    """
-    if "temp" not in ds:
-        print("temp not found, dew point temperature not computed")
-        return ds
-    if "rh" in ds:
-        # Compute saturation vapor pressure in hPa
-        es = 6.112 * np.exp((17.67 * ds["temp"]) / (ds["temp"] + 243.5))
-        # Compute actual vapor pressure in hPa
-        e = (ds["rh"] / 100) * es
-    elif "sh" in ds and "press" in ds:
-        # Compute mixing ratio from specific humidity (sh) in kg/kg
-        m = (ds["sh"]) / (1 - ds["sh"])
-        # Compute actual vapor pressure from specific humidity in hPa
-        # 0.622 is epsilon: the ratio of the molecular weight of water vapor to dry air
-        e = (m * ds["press"]) / (0.622 + (1 - 0.622) * m)
-    else:
-        print("rh or sh not found, dew point temperature not computed")
-        return ds
-
-    # Compute dew point temperature in Celsius
-    ds["temp_dew"] = (243.5 * np.log(e / 6.112)) / (17.67 - np.log(e / 6.112))
-
-    # Drop variables
-    if drop_vars is None:
-        drop_vars = []
-    for var in drop_vars:
-        if var in ds:
-            ds = ds.drop_vars(var)
-
-    return ds
-
-
 def get_stats_clim_projections(
     data: xr.Dataset,
     geom: gpd.GeoDataFrame,
@@ -202,7 +42,6 @@ def get_stats_clim_projections(
     compute_wind: bool = False,
     compute_tdew: bool = False,
     pet_method: Optional[str] = "makkink",
-    save_grids: bool = False,
     time_horizon: Optional[str] = None,
     drop_vars_pet: Union[List[str], None] = None,
     drop_vars_wind: Union[List[str], None] = None,
@@ -256,8 +95,6 @@ def get_stats_clim_projections(
     pet_method : str
         method to compute potential evapotranspiration if compute_pet is True.
         available methods are 'makkink' (default), 'debruin'.
-    save_grids : bool
-        save gridded stats as well as scalar stats. False by default.
     time_horizon : dict
         dictionary with time horizons to select before computing monthly regime.
         several periods can be supplied if needed. the dictionary should have the
@@ -322,21 +159,20 @@ def get_stats_clim_projections(
         var_m_scalar = var_m_masked.raster.mask_nodata().mean([x_dim, y_dim])
         ds_scalar.append(var_m_scalar.to_dataset())
 
-        # get grid average over time for each month
-        if save_grids:
-            if time_horizon is not None:
-                for period_name, time_tuple in time_horizon.items():
-                    var_mm = var_m.sel(time=slice(*time_tuple))
-                    var_mm = var_mm.groupby("time.month").mean("time")
-                    # Add a new horizon dimension
-                    var_mm = var_mm.expand_dims(horizon=[period_name])
-                    var_mm = var_mm.transpose(..., "horizon")
-                    ds.append(var_mm.to_dataset())
-
-            # else compute stats over the whole period
-            else:
-                var_mm = var_m.groupby("time.month").mean("time")
+        # In a gridded manner, averaged over time
+        if time_horizon is not None:
+            for period_name, time_tuple in time_horizon.items():
+                var_mm = var_m.sel(time=slice(*time_tuple))
+                var_mm = var_mm.groupby("time.month").mean("time")
+                # Add a new horizon dimension
+                var_mm = var_mm.expand_dims(horizon=[period_name])
+                var_mm = var_mm.transpose(..., "horizon")
                 ds.append(var_mm.to_dataset())
+
+        # else compute stats over the whole period
+        else:
+            var_mm = var_m.groupby("time.month").mean("time")
+            ds.append(var_mm.to_dataset())
 
     # mean stats over grid and time
     mean_stats_time = xr.merge(ds_scalar)
@@ -374,44 +210,40 @@ def get_stats_clim_projections(
         .expand_dims(["clim_project", "model", "scenario", "member"])
     )
 
-    if save_grids:
-        mean_stats = xr.merge(ds)
-        # todo: convert press_msl to press for pet and tdew computation - need orography
-        # if needed compute pet
-        if compute_pet:
-            timestep = xr.DataArray(
-                np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]) * 86400,
-                dims=["month"],
-                coords={"month": mean_stats["month"]},
-            )
-            if compute_tdew and "sh" in mean_stats.data_vars:
-                drop_vars_pet = [var for var in drop_vars_pet if var != "press"]
-            mean_stats = derive_pet(
-                mean_stats, pet_method, timestep, drop_vars=drop_vars_pet
-            )
-        # compute wind
-        if compute_wind:
-            mean_stats = derive_wind(mean_stats, altitude=10, drop_vars=drop_vars_wind)
-        # compute dew point temperature
-        if compute_tdew:
-            mean_stats = derive_tdew(mean_stats, drop_vars=drop_vars_dew)
-
-        # add coordinate on project, model, scenario, member to later merge all files
-        mean_stats = (
-            mean_stats.round(decimals=2)
-            .assign_coords(
-                {
-                    "clim_project": f"{clim_source}",
-                    "model": f"{model}",
-                    "scenario": f"{scenario}",
-                    "member": f"{member}",
-                }
-            )
-            .expand_dims(["clim_project", "model", "scenario", "member"])
+    mean_stats = xr.merge(ds)
+    # todo: convert press_msl to press for pet and tdew computation - need orography
+    # if needed compute pet
+    if compute_pet:
+        timestep = xr.DataArray(
+            np.array([31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]) * 86400,
+            dims=["month"],
+            coords={"month": mean_stats["month"]},
         )
+        if compute_tdew and "sh" in mean_stats.data_vars:
+            drop_vars_pet = [var for var in drop_vars_pet if var != "press"]
+        mean_stats = derive_pet(
+            mean_stats, pet_method, timestep, drop_vars=drop_vars_pet
+        )
+    # compute wind
+    if compute_wind:
+        mean_stats = derive_wind(mean_stats, altitude=10, drop_vars=drop_vars_wind)
+    # compute dew point temperature
+    if compute_tdew:
+        mean_stats = derive_tdew(mean_stats, drop_vars=drop_vars_dew)
 
-    else:
-        mean_stats = xr.Dataset()
+    # add coordinate on project, model, scenario, member to later merge all files
+    mean_stats = (
+        mean_stats.round(decimals=2)
+        .assign_coords(
+            {
+                "clim_project": f"{clim_source}",
+                "model": f"{model}",
+                "scenario": f"{scenario}",
+                "member": f"{member}",
+            }
+        )
+        .expand_dims(["clim_project", "model", "scenario", "member"])
+    )
 
     return mean_stats, mean_stats_time
 
@@ -419,7 +251,6 @@ def get_stats_clim_projections(
 def extract_climate_projections_statistics(
     region_fn: Union[str, Path],
     data_catalog: Union[str, Path],
-    path_output: Union[str, Path],
     clim_source: str,
     scenario: str,
     members: List[str],
@@ -428,7 +259,6 @@ def extract_climate_projections_statistics(
     pet_method: Optional[str] = "makkink",
     tdew_method: Optional[str] = "rh",
     compute_wind: bool = False,
-    save_grids: bool = False,
     time_horizon: Optional[Dict[str, Tuple[str, str]]] = None,
 ):
     """
@@ -437,8 +267,6 @@ def extract_climate_projections_statistics(
     Output is a netcdf file with mean monthly climate (e.g precipitation and
     temperature) timeseries averaged over the geom.
 
-    If save_grids is True, also writes a netcdf file with mean monthly regime of climate
-    variables (e.g. precipitation and temperature) statistics (12 maps) over the geom.
     The regimes can be computed for specific time horizons instead of the entire period
     if needed.
 
@@ -495,8 +323,6 @@ def extract_climate_projections_statistics(
     compute_wind : bool
         Compute wind speed from u and v wind components (wind10_u and wind10_v). False
         by default.
-    save_grids : bool
-        Save gridded stats as well as scalar stats. False by default.
     time_horizon : dict
         Dictionary with time horizons to select before computing monthly regime. Several
         periods can be supplied if needed. The dictionary should have the following
@@ -652,7 +478,6 @@ def extract_climate_projections_statistics(
                 compute_wind=compute_wind,
                 compute_tdew=compute_tdew,
                 pet_method=pet_method,
-                save_grids=save_grids,
                 time_horizon=time_horizon,
                 drop_vars_pet=drop_vars_pet,
                 drop_vars_wind=["wind10_u", "wind10_v"],
@@ -667,52 +492,243 @@ def extract_climate_projections_statistics(
         ds_members_mean_stats.append(mean_stats)
         ds_members_mean_stats_time.append(mean_stats_time)
 
-    if save_grids:
-        nc_mean_stats = xr.merge(ds_members_mean_stats)
-    else:
-        nc_mean_stats = xr.Dataset()
-    nc_mean_stats_time = xr.merge(ds_members_mean_stats_time)
+    nc_mean_stats = xr.merge(ds_members_mean_stats)
+    # nc_mean_stats_time = xr.merge(ds_members_mean_stats_time)
 
     # write netcdf
     # use hydromt function instead to write to netcdf?
-    dvars = nc_mean_stats_time.data_vars
-
-    if scenario == "historical":
-        name_nc_out = f"historical_stats_{model}.nc"
-        name_nc_out_time = f"historical_stats_time_{model}.nc"
-    else:
-        name_nc_out = f"stats-{model}_{scenario}.nc"
-        name_nc_out_time = f"stats_time-{model}_{scenario}.nc"
+    # dvars = nc_mean_stats_time.data_vars
 
     # Create output dir (model name can contain subfolders)
-    dir_output = dirname(join(path_output, name_nc_out_time))
+    # dir_output = dirname(join(path_output, name_nc_out_time))
+    # if not os.path.exists(dir_output):
+    #     os.makedirs(dir_output)
+
+    # print("writing stats over time to nc")
+    # delayed_obj = nc_mean_stats_time.to_netcdf(
+    #     join(path_output, name_nc_out_time),
+    #     encoding={k: {"zlib": True} for k in dvars},
+    #     compute=False,
+    # )
+    # with ProgressBar():
+    #     delayed_obj.compute()
+
+    # print("writing stats over grid to nc")
+
+    # Create output dir (model name can contain subfolders)
+    # dir_output = dirname(join(path_output, name_nc_out))
+    # if not os.path.exists(dir_output):
+    #     os.makedirs(dir_output)
+
+    # delayed_obj = nc_mean_stats.to_netcdf(
+    #     join(path_output, name_nc_out),
+    #     encoding={k: {"zlib": True} for k in dvars},
+    #     compute=False,
+    # )
+    # with ProgressBar():
+    #     delayed_obj.compute()
+
+    return nc_mean_stats
+
+
+def get_change_clim_projections(
+    ds_hist: xr.Dataset,
+    ds_clim: xr.Dataset,
+    name_horizon: str = "future",
+    drymonth_threshold: float = 3.0,
+    drymonth_maxchange: float = 50.0,
+):
+    """
+    Calculate grid changes between future and historical climate for several statistics.
+
+    Supported variables:
+    * precip: precipitation [mm/month] or [mm/day]
+    * temp: temperature [°C]
+    * pet: potential evapotranspiration [mm/month] - can be computed using several
+      methods and variables (see pet_method)
+    * temp_dew: dew point temperature [°C] - can be computed using relative or specific
+      humidity (see tdew_method)
+    * wind: wind speed [m/s] - can be computed from u and v wind components
+    * kin: incoming shortwave radiation [W/m2]
+    * tcc: total cloud cover [-]
+
+    Expected change is absolute [°C] for temperature and dew point temperature, and
+    relative [%] for all others.
+
+    Parameters
+    ----------
+    ds_hist : xarray dataset
+        Mean monthly values of variables (precip and temp) over the grid (12 maps) for
+        historical climate simulation.
+    ds_clim : xarray dataset
+        Mean monthly values of variables (precip and temp) over the grid (12 maps) for
+        projected climate data.
+    name_horizon : str, optional
+        Name of the horizon to select in ds_clim in case several are available.
+        The default is "future".
+    drymonth_threshold : float, optional
+        Threshold for dry month definition in mm/month. For too dry months, the change
+        factors will be limited to ``drymonth_maxchange`` is avoid to avoid too large
+        change factors. The default is 3.0 mm/month.
+    drymonth_maxchange : float, optional
+        Maximum change factor for dry months (% change). The default is +-50.0%.
+
+    Returns
+    -------
+    Writes netcdf files with mean monthly (12 maps) change for the grid.
+    Also writes scalar mean monthly values averaged over the grid.
+
+    Returns
+    -------
+    monthly_change_mean_grid : xarray dataset
+        mean monthly change over the grid.
+
+    """
+    ds = []
+    # Select the horizons
+    if "horizon" in ds_hist.dims:
+        ds_hist = ds_hist.sel(horizon="historical")
+    if "horizon" in ds_clim.dims:
+        ds_clim = ds_clim.sel(horizon=name_horizon)
+    for var in intersection(ds_hist.data_vars, ds_clim.data_vars):
+        if var in CLIMATE_VARS and CLIMATE_VARS[var]["multiplier"]:
+            ds_hist_var = ds_hist[var].sel(scenario=ds_hist.scenario.values[0])
+            # multiplicative for precip and pet
+            change = (ds_clim[var] - ds_hist_var) / ds_hist_var * 100
+            # Dry month
+            if var == "precip":
+                # Add a min limit
+                change = change.where(
+                    np.invert(
+                        np.logical_and(
+                            ds_hist_var <= drymonth_threshold,
+                            change <= -drymonth_maxchange,
+                        )
+                    ),
+                    -drymonth_maxchange,
+                )
+                # Add a max limit
+                change = change.where(
+                    np.invert(
+                        np.logical_and(
+                            ds_hist_var <= drymonth_threshold,
+                            change >= drymonth_maxchange,
+                        )
+                    ),
+                    drymonth_maxchange,
+                )
+        elif var in CLIMATE_VARS and not CLIMATE_VARS[var]["multiplier"]:  # for temp
+            # additive for temp
+            change = ds_clim[var] - ds_hist[var].sel(
+                scenario=ds_hist.scenario.values[0]
+            )
+        else:
+            print(f"Variable {var} not supported.")
+            continue
+
+        ds.append(change.to_dataset())
+
+    monthly_change_mean_grid = xr.merge(ds)
+
+    return monthly_change_mean_grid
+
+
+def get_expected_change_grid(
+    nc_historical: Union[str, Path],
+    nc_future: Union[str, Path],
+    path_output: Union[str, Path],
+    name_horizon: str = "future",
+    name_model: str = "model",
+    name_scenario: str = "scenario",
+    drymonth_threshold: float = 3.0,
+    drymonth_maxchange: float = 50.0,
+):
+    """
+    Compute the expected change in climate variables from gridded timeseries.
+
+    Output is a netcdf file with the expected gridded change in monthly statistics.
+
+    Supported variables:
+    * precip: precipitation [mm/month] or [mm/day]
+    * temp: temperature [°C]
+    * pet: potential evapotranspiration [mm/month] - can be computed using several
+      methods and variables (see pet_method)
+    * temp_dew: dew point temperature [°C] - can be computed using relative or specific
+      humidity (see tdew_method)
+    * wind: wind speed [m/s] - can be computed from u and v wind components
+    * kin: incoming shortwave radiation [W/m2]
+    * tcc: total cloud cover [-]
+
+    Expected change is absolute [°C] for temperature and dew point temperature, and
+    relative [%] for all others.
+
+    Parameters
+    ----------
+    nc_historical : Union[str, Path]
+        Path to the historical timeseries netcdf file. Contains monthly timeseries.
+        Supported variables: precip, temp, pet, temp_dew, wind, kin, tcc.
+        Required dimensions: lat, lon, time, model, scenario, member.
+    nc_future : Union[str, Path]
+        Path to the future timeseries netcdf file. Contains monthly timeseries.
+        Supported variables: precip, temp.
+        Required dimensions: lat, lon, time, model, scenario, member.
+    path_output : Union[str, Path]
+        Path to the output directory.
+    name_horizon : str, optional
+        Name of the horizon. The default is "future". Will be added as an extra
+        dimension in the output netcdf file.
+    name_model : str, optional
+        Name of the model for the output filename. The default is "model".
+    name_scenario : str, optional
+        Name of the scenario for the output filename. The default is "scenario".
+    drymonth_threshold : float, optional
+        Threshold for dry month definition in mm/month. For too dry months, the change
+        factors will be limited to ``drymonth_maxchange`` is avoid to avoid too large
+        change factors. The default is 3.0 mm/month.
+    drymonth_maxchange : float, optional
+        Maximum change factor for dry months (% change). The default is +-50.0%.
+    """
+    # Prepare the output filename and directory
+    name_nc_out = f"{name_model}_{name_scenario}_{name_horizon}.nc"
+    # Create output dir (model name can contain subfolders)
+    dir_output = dirname(join(path_output, "monthly_change_grid", name_nc_out))
     if not os.path.exists(dir_output):
         os.makedirs(dir_output)
 
-    print("writing stats over time to nc")
-    delayed_obj = nc_mean_stats_time.to_netcdf(
-        join(path_output, name_nc_out_time),
-        encoding={k: {"zlib": True} for k in dvars},
-        compute=False,
-    )
-    with ProgressBar():
-        delayed_obj.compute()
+    # open datasets
+    ds_hist = xr.open_dataset(nc_historical, lock=False)
+    ds_fut = xr.open_dataset(nc_future, lock=False)
 
-    if save_grids:
-        print("writing stats over grid to nc")
-
-        # Create output dir (model name can contain subfolders)
-        dir_output = dirname(join(path_output, name_nc_out))
-        if not os.path.exists(dir_output):
-            os.makedirs(dir_output)
-
-        delayed_obj = nc_mean_stats.to_netcdf(
-            join(path_output, name_nc_out),
-            encoding={k: {"zlib": True} for k in dvars},
-            compute=False,
+    # Check if the future file is a dummy file
+    if len(ds_fut) > 0:
+        # calculate change
+        monthly_change_mean_grid = get_change_clim_projections(
+            ds_hist,
+            ds_fut,
+            name_horizon,
+            drymonth_threshold=drymonth_threshold,
+            drymonth_maxchange=drymonth_maxchange,
         )
-        with ProgressBar():
-            delayed_obj.compute()
+        # add time horizon coords
+        monthly_change_mean_grid = monthly_change_mean_grid.assign_coords(
+            {
+                "horizon": f"{name_horizon}",
+            }
+        ).expand_dims(["horizon"])
+        # Reorder dims
+        monthly_change_mean_grid = monthly_change_mean_grid.transpose(
+            ..., "clim_project", "model", "scenario", "horizon", "member"
+        )
+
+        # write to netcdf files
+        print("writing netcdf files monthly_change_grid")
+        monthly_change_mean_grid.to_netcdf(
+            join(path_output, "monthly_change_grid", name_nc_out),
+            encoding={k: {"zlib": True} for k in monthly_change_mean_grid.data_vars},
+        )
+    else:  # create a dummy netcdf
+        ds_dummy = xr.Dataset()
+        ds_dummy.to_netcdf(join(path_output, "monthly_change_grid", name_nc_out))
 
 
 if __name__ == "__main__":

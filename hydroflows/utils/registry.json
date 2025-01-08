@@ -1,10 +1,11 @@
 {
     "data": {
+        "cmip6-data.tar.gz": "09f7b44f22988a1897fe06bdd0de875e59d220b1f7153f616f7ed51e7be2bf43",
         "fiat-model.tar.gz": "ba9ad369b260ad2ebc6bec8a15f5abfe339d8f21d72675c99d926233f6bab2a3",
-        "global-data.tar.gz": "6ff2498c9bbb900f1ad750ed8054a69352bbd7a50b4c4d4c108145ea88245c8e",
+        "global-data.tar.gz": "b3f1b7de64bf5757abd591cd6b733c51a8b11f126be7d027d740e271ccd1f375",
         "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
         "wflow-model.tar.gz": "d64eb186f034fca32d88ee9a834eea4b5d518c848485c3a586772eb2ead8b0ef"
     },
-    "url": "doi:10.5281/zenodo.14409552",
-    "version": "v0.1.5"
+    "url": "http://localhost:8001",
+    "version": "v0.1.6"
 }
