@@ -346,7 +346,7 @@ class Rule:
         """Set the parameters of the rule.
 
         The parameters are a dictionary with input, output and params as keys.
-        Each key contains a dictionary with field names as keys and values as lists.
+        Each key contains a dictionary with field names as keys and unique values as lists.
         """
         parameters = {
             "input": {},
@@ -364,8 +364,11 @@ class Rule:
                         if not isinstance(value[0], Path):
                             continue
                         # Removes duplicates
-                        parameters[name][key] = list(set(parameters[name][key] + value))
-                    else:
+                        # Using set() does not preserve insertion order, this does and also filters uniques
+                        for val in value:
+                            if val not in parameters[name][key]:
+                                parameters[name][key].append(val)
+                    elif value not in parameters[name][key]:
                         parameters[name][key].append(value)
 
         self._parameters = parameters
@@ -375,6 +378,7 @@ class Rule:
         # Make list of inputs, convert to set of strings for quick matching
         inputs = self._parameters["input"]
         inputs = list(chain(*inputs.values()))
+        # order of inputs doesn't matter here so set() is fine
         inputs = set([str(item) for item in inputs])
 
         # Init dependency as None
