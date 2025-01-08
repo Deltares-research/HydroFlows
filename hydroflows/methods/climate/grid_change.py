@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from hydroflows.workflow.method import ReduceMethod
+from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 
@@ -48,7 +48,7 @@ class Params(Parameters):
     The specific climate scenario. Chose from ... # TODO
     """
 
-    horizon: tuple
+    horizon: tuple | str
     """
     The horizon of the future scenario.
     """
@@ -59,13 +59,19 @@ class Params(Parameters):
     """
 
 
-class ClimateFactorsGridded(ReduceMethod):
+class ClimateFactorsGridded(Method):
     """Method for climate model change factors."""
+
+    name: str = "climate_factors_gridded"
+
+    _test_kwargs = {}
 
     def __init__(self, hist_stats: Path, fut_stats: Path, **params):
         self.params: Params = Params(**params)
         self.input: Input = Input(hist_stats=hist_stats, fut_stats=fut_stats)
-        name = "-".join(self.params.horizon)
+        name = self.params.horizon
+        if isinstance(self.params.horizon, tuple):
+            name = "-".join(self.params.horizon)
         self.output: Output = Output(
             change_factors=self.params.data_root
             / f"change_{self.params.model}_{self.params.scenario}_{name}.nc"

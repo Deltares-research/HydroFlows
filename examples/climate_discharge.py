@@ -38,7 +38,7 @@ if __name__ == "__main__":
         ],
         cmip6_scenarios=["ssp245", "ssp585"],
         historical=("2000", "2010"),
-        future_horizon=[("2050", "2060"), ("2090", "2100")],
+        future_horizon=["aap", "beer"],
         plot_fig=True,
     )
 
@@ -54,7 +54,6 @@ if __name__ == "__main__":
         region=w.get_ref("$config.region"),
         data_libs=w.get_ref("$config.data_libs"),
         model="{models}",
-        scenario="{scenarios}",
         horizon=w.get_ref("$config.historical"),
         data_root=input_dir,
     )
@@ -88,6 +87,8 @@ if __name__ == "__main__":
     w.to_snakemake(Path(pwd, f"cases/{name}/snakefile.smk"))
 
     # %%
-    subprocess.run(["snakemake", "--unlock"], cwd=Path(pwd, f"cases/{name}"))
+    subprocess.run(
+        ["snakemake", "--unlock", "-s", "snakefile.smk"], cwd=Path(pwd, f"cases/{name}")
+    )
     # uncomment to run the workflow
     # subprocess.run(["snakemake", "-c 2", "--rerun-incomplete"], cwd=f"cases/{name}")
