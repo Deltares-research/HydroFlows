@@ -110,16 +110,17 @@ bin/
 # temporary snakemake files
 */.snakemake/*
 
+# ruff
+.ruff_cache
+
 # vscode
 .vscode
 
-# large test data
-tests/_large_data/data
-tests/_large_data/registry.txt
-tests/_bin
-
 # only force add
-examples/
+examples/cases
+examples/bin
+examples/data
+
 # pixi environments
 .pixi
 *.egg-info

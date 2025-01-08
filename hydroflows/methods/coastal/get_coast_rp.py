@@ -39,6 +39,9 @@ class Params(Parameters):
     catalog_key: str = "coast-rp"
     """Data catalog key for COAST-RP data."""
 
+    buffer: float = 2000
+    """Buffer around region to look for GTSM stations, [m]"""
+
 
 class GetCoastRP(Method):
     """Method for fetching and processing COAST-RP dataset."""
@@ -71,9 +74,9 @@ class GetCoastRP(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.get_coast_rp.Params>`
+        :py:class:`GetCoastRP Input <hydroflows.methods.coastal.get_coast_rp.Input>`
+        :py:class:`GetCoastRP Output <hydroflows.methods.coastal.get_coast_rp.Output>`
+        :py:class:`GetCoastRP Params <hydroflows.methods.coastal.get_coast_rp.Params>`
         """
         self.input: Input = Input(region=region, coastrp_catalog=coastrp_catalog)
         self.params: Params = Params(data_root=data_root, **params)
@@ -85,7 +88,9 @@ class GetCoastRP(Method):
         """Run GetCoastRP Method."""
         region = gpd.read_file(self.input.region)
         dc = DataCatalog(data_libs=self.input.coastrp_catalog)
-        coast_rp = dc.get_geodataset(self.params.catalog_key, geom=region)
+        coast_rp = dc.get_geodataset(
+            self.params.catalog_key, geom=region, buffer=self.params.buffer
+        )
         coast_rp = xr.concat(
             [coast_rp[var] for var in coast_rp.data_vars if var != "station_id"],
             dim=pd.Index([1, 2, 5, 10, 25, 50, 100, 250, 500, 1000], name="rps"),

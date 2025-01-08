@@ -1,5 +1,6 @@
 """Get ERA5 rainfall method."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 
@@ -10,6 +11,8 @@ import xarray as xr
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -83,9 +86,9 @@ class GetERA5Rainfall(Method):
     def run(self):
         """Run the GetERA5Rainfall method."""
         # read the region polygon file
-        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region).to_crs("EPSG:4326")
+        gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region)
         # Calculate the centroid of each polygon
-        centroid = gdf.geometry.centroid
+        centroid = gdf.geometry.centroid.to_crs("EPSG:4326")
 
         # get the data as df
         df = get_era5_open_meteo(
@@ -140,5 +143,5 @@ def get_era5_open_meteo(lat, lon, start_date: datetime, end_date: datetime, vari
         return df
     else:
         # If request failed, return None
-        print(f"Request failed with status code {response.status_code}")
+        logging.info("Request failed with status code %s", response.status_code)
         return None

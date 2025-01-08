@@ -26,9 +26,9 @@ jobs:
 
       - uses: prefix-dev/setup-pixi@v0.8.1
         with:
-          pixi-version: "v0.30.0"
+          pixi-version: "v0.39.2"
           environments: doc
-          locked: true
+          locked: false
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
@@ -36,14 +36,14 @@ jobs:
       - name: Generate dummy docs
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          pixi run --locked -e doc docs-dummy
+          pixi run -e doc docs-dummy
 
       # build docs and save to html
       - name: Build docs
         if : ${{ github.event_name != 'pull_request' }}
         run: |
-          pixi run --locked -e doc docs-html
-        # echo "DOC_VERSION=$(pixi run --locked -e doc get-version)" >> $GITHUB_ENV
+          pixi run -e doc docs-html
+        # echo "DOC_VERSION=$(pixi run -e doc get-version)" >> $GITHUB_ENV
 
       # Upload the html docs as an artifact
       - name: Upload artifact

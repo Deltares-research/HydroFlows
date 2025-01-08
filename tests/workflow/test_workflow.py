@@ -1,5 +1,5 @@
 import glob
-import io
+import logging
 import os
 import platform
 import subprocess
@@ -19,43 +19,7 @@ from tests.workflow.conftest import (
     MockExpandMethod,
     MockReduceMethod,
     TestMethod,
-    TestMethodOutput,
 )
-
-
-@pytest.fixture()
-def w() -> Workflow:
-    config = {"rps": [2, 50, 100]}
-    wildcards = {"region": ["region1", "region2"]}
-    return Workflow(name="wf_instance", config=config, wildcards=wildcards)
-
-
-@pytest.fixture()
-def workflow_yaml_dict():
-    return {
-        "config": {
-            "input_file": "tests/_data/rio_region.geojson",
-            "events": ["1", "2", "3"],
-            "root": "root",
-        },
-        "rules": [
-            {
-                "method": "mock_expand_method",
-                "kwargs": {
-                    "input_file": "$config.input_file",
-                    "events": "$config.events",
-                    "root": "$config.root",
-                },
-            },
-            {
-                "method": "mock_reduce_method",
-                "kwargs": {
-                    "files": "$rules.mock_expand_method.output.output_file",
-                    "root": "$config.root",
-                },
-            },
-        ],
-    }
 
 
 def create_workflow_with_mock_methods(
@@ -139,27 +103,6 @@ def test_workflow_get_ref(workflow: Workflow, tmp_path):
     assert ref.value.as_posix() == "{region}/{event}/file.yml"
 
 
-def test_workflow_create_references(w: Workflow, caplog):
-    method1 = TestMethod(input_file1="test1", input_file2="test2")
-    w.add_rule(method=method1, rule_id="method1")
-    method2 = TestMethod(input_file1="output1", input_file2="output2")
-    # Change the output of method2, otherwise output files are not unique among two of the same methods
-    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
-    w.add_rule(method=method2, rule_id="method2")
-    w.create_references()
-    assert w.rules[1].input._refs == {
-        "input_file1": "$rules.method1.output.output_file1",
-        "input_file2": "$rules.method1.output.output_file2",
-    }
-    # catch logger.debug messages
-    with caplog.at_level("DEBUG"):
-        w.create_references()
-    assert (
-        "method1.input.input_file1 (test1) is not an output of another rule"
-        in caplog.text
-    )
-
-
 def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     test_yml = tmp_path / "test.yml"
     with open(test_yml, "w") as f:
@@ -170,7 +113,7 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     assert w.rules[0].rule_id == "mock_expand_method"
     assert w.rules[1].rule_id == "mock_reduce_method"
     assert isinstance(w.config, WorkflowConfig)
-    assert w.config.input_file == "tests/_data/rio_region.geojson"
+    assert w.config.input_file == "tests/_data/region.geojson"
 
     test_yml = {
         "config": {"region": "data/test_region.geojson", "rps": [5, 10, 50]},
@@ -270,13 +213,14 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(mocker, workflow: Workflow, tmp_path):
+def test_workflow_run(workflow: Workflow, tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     w = create_workflow_with_mock_methods(workflow, root=tmp_path)
-    mock_stdout = mocker.patch("sys.stdout", new_callable=io.StringIO)
+
     w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
-    captured_stdout = mock_stdout.getvalue()
+
     for rule in w.rules:
-        assert rule.rule_id in captured_stdout
+        assert rule.rule_id in caplog.text
 
     # Run workflow without region wildcard
     w = Workflow(name="test_workflow")
@@ -304,14 +248,6 @@ def test_workflow_run(mocker, workflow: Workflow, tmp_path):
 def test_output_path_refs(w: Workflow):
     method1 = TestMethod(input_file1="test1", input_file2="test2")
     w.add_rule(method=method1, rule_id="method1")
-    method2 = TestMethod(input_file1="output1", input_file2="output2")
-    w.add_rule(method=method2, rule_id="method2")
-
-    with pytest.raises(ValueError, match="All output file paths must be unique"):
-        w._output_path_refs  # noqa: B018
-
-    # Change the output of method2, otherwise output files are not unique among two of the same methods
-    method2.output = TestMethodOutput(output_file1="output3", output_file2="output4")
 
     output_path_refs = w._output_path_refs
-    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 5)]
+    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 3)]

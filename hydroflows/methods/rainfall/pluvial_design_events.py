@@ -62,7 +62,10 @@ class Params(Parameters):
     event_names: Optional[ListOfStr] = None
     """List of event names associated with return periods."""
 
-    durations: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
+    duration: int = 48
+    """Duration of the produced design event."""
+
+    timesteps: ListOfInt = [1, 2, 3, 6, 12, 24, 36, 48]
     """Intensity Duration Frequencies provided as multiply of the data time step."""
 
     min_dist_days: int = 0
@@ -92,6 +95,12 @@ class Params(Parameters):
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
+
+    fig_name_hyeto: str = "rainfall_hyetographs"
+    """Name of the design hyetographs figure."""
+
+    fig_name_idf: str = "rainfall_idf_curves"
+    """Name of the idf figure."""
 
     save_idf_csv: bool = True
     """Determines whether to save the calculated IDF curve values
@@ -123,6 +132,12 @@ class Params(Parameters):
                 raise ValueError(
                     f"For ev_type '{self.ev_type}', distribution must be one of {valid_distributions}."
                 )
+        if self.duration > max(self.timesteps):
+            raise ValueError(
+                f"Duration {self.duration} exceeds the maximum specified value {max(self.timesteps)} "
+                f"from the list of timesteps: {self.timesteps}."
+            )
+        return self
 
 
 class PluvialDesignEvents(ExpandMethod):
@@ -143,6 +158,7 @@ class PluvialDesignEvents(ExpandMethod):
         ev_type: Literal["BM", "POT"] = "BM",
         distribution: Optional[str] = None,
         wildcard: str = "event",
+        duration: int = 48,
         **params,
     ) -> None:
         """Create and validate a PluvialDesignEvents instance.
@@ -166,6 +182,8 @@ class PluvialDesignEvents(ExpandMethod):
             If None (default) is used, "gumb" is selected for BM and "exp" for POT.
         wildcard : str, optional
             The wildcard key for expansion over the design events, by default "event".
+        duration : int
+            Duration of the produced design event, by default 48 hours.
         **params
             Additional parameters to pass to the PluvialDesignEvents Params instance.
 
@@ -184,6 +202,7 @@ class PluvialDesignEvents(ExpandMethod):
             ev_type=ev_type,
             distribution=distribution,
             wildcard=wildcard,
+            duration=duration,
             **params,
         )
         self.input: Input = Input(precip_nc=precip_nc)
@@ -208,22 +227,22 @@ class PluvialDesignEvents(ExpandMethod):
 
         # sample size per year
         min_sample_size = (
-            pd.Timedelta(1, "A") / dt * (self.params.min_sample_perc / 100)
+            pd.Timedelta(365.25, "d") / dt * (self.params.min_sample_perc / 100)
         )
-
-        # specify the max event duration
-        event_duration = self.params.durations[-1]
 
         # fit distribution per duration
         ds_idf = eva_idf(
             da,
             ev_type=self.params.ev_type,
             distribution=self.params.distribution,
-            durations=self.params.durations,
+            durations=self.params.timesteps,
             rps=np.maximum(1.001, self.params.rps),
             qthresh=self.params.qthresh,
             min_sample_size=min_sample_size,
         )
+
+        # keep durations up to the max user defined duration
+        ds_idf = ds_idf.sel(duration=slice(None, self.params.duration))
 
         ds_idf = ds_idf.assign_coords(rps=self.params.rps)
         # make sure there are no negative values
@@ -240,9 +259,7 @@ class PluvialDesignEvents(ExpandMethod):
             df_idf.to_csv(Path(self.output.event_csv.parent, "idf.csv"), index=True)
 
         # Get design events hyetograph for each return period
-        p_hyetograph: xr.DataArray = get_hyetograph(
-            ds_idf["return_values"], dt=1, length=event_duration
-        )
+        p_hyetograph: xr.DataArray = get_hyetograph(ds_idf["return_values"])
 
         # make sure there are no negative values
         p_hyetograph = xr.where(p_hyetograph < 0, 0, p_hyetograph)
@@ -255,8 +272,13 @@ class PluvialDesignEvents(ExpandMethod):
             plot_dir = Path(root, "figs")
             plot_dir.mkdir(exist_ok=True)
 
-            _plot_hyetograph(p_hyetograph, Path(plot_dir, "rainfall_hyetograph.png"))
-            _plot_idf_curves(ds_idf, Path(plot_dir, "rainfall_idf_curves.png"))
+            _plot_hyetograph(
+                p_hyetograph, Path(plot_dir, f"{self.params.fig_name_hyeto}.png")
+            )
+            _plot_idf_curves(
+                ds_idf["return_values"],
+                Path(plot_dir, f"{self.params.fig_name_idf}.png"),
+            )
 
         # random starting time
         dt0 = pd.to_datetime(self.params.t0)
@@ -286,10 +308,10 @@ class PluvialDesignEvents(ExpandMethod):
         event_set.to_yaml(self.output.event_set_yaml)
 
 
-def _plot_hyetograph(p_hyetograph, path: Path) -> None:
+def _plot_hyetograph(p_hyetograph, path: Path, rp_dim="rps") -> None:
     """Plot hyetographs."""
     fig, ax = plt.subplots(1, 1, figsize=(8, 4), sharex=True)
-    p_hyetograph.rename({"rps": "Return period\n[year]"}).plot.step(
+    p_hyetograph.rename({rp_dim: "Return period\n[year]"}).plot.step(
         x="time", where="mid", ax=ax
     )
     ax.set_ylabel("rainfall intensity [mm/hour]")
@@ -300,10 +322,10 @@ def _plot_hyetograph(p_hyetograph, path: Path) -> None:
     fig.savefig(path, dpi=150, bbox_inches="tight")
 
 
-def _plot_idf_curves(ds_idf, path: Path) -> None:
+def _plot_idf_curves(da_idf, path: Path, rp_dim="rps") -> None:
     """Plot IDF curves."""
     fig, ax = plt.subplots(1, 1, figsize=(8, 4), sharex=True)
-    df = ds_idf["return_values"].rename({"rps": "Return period\n[year]"}).to_pandas()
+    df = da_idf.rename({rp_dim: "Return period\n[year]"}).to_pandas()
     df.plot(ax=ax)
     ax.set_ylabel("rainfall intensity [mm/hour]")
     ax.set_xlabel("event duration [hour]")
@@ -362,7 +384,7 @@ def eva_idf(
     return eva(da1, ev_type=ev_type, distribution=distribution, rps=rps, **kwargs)
 
 
-def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray:
+def get_hyetograph(da_idf: xr.DataArray, intensity_dim="duration") -> xr.DataArray:
     """Return hyetograph.
 
     Return design storm hyetograph based on intensity-frequency-duration (IDF)
@@ -375,11 +397,9 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     Parameters
     ----------
     da_idf : xr.DataArray
-        IDF data, must contain a 'duration' dimension
-    dt : float
-        Time-step for output hyetograph, same time step unit as IDF duration.
-    length : int
-        Number of time-step intervals in design storms.
+        IDF data, with a duration dimension
+    intensity_dim : str
+        Intensity dimension of the input da_idf.
 
     Returns
     -------
@@ -391,9 +411,15 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
         If using :py:meth:`eva_idf` to obtain the IDF curves, the output is stored in
         variable `return_values`.
     """
-    durations = da_idf["duration"]
+    assert (
+        intensity_dim in da_idf.dims
+    ), f"{intensity_dim} not a dimension in the input IDF data"
+    durations = da_idf[intensity_dim]
+    dt = durations.values[0]
+    length = int(durations.values[-1] / dt)
     assert np.all(np.diff(durations) > 0)
-    assert dt >= durations[0]
+    if da_idf.ndim == 1:
+        da_idf = da_idf.expand_dims("event", -1)
 
     t = np.arange(0, durations[-1] + dt, dt)
     alt_order = np.append(np.arange(1, length, 2)[::-1], np.arange(0, length, 2))
@@ -402,7 +428,9 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     if "time" in list(da_idf.dims):
         da_idf = da_idf.drop_dims("time")
     # get cummulative precip depth
-    pdepth = (da_idf * durations).reset_coords(drop=True).rename({"duration": "time"})
+    pdepth = (
+        (da_idf * durations).reset_coords(drop=True).rename({intensity_dim: "time"})
+    )
     # interpolate to dt temporal resolution
     # load required for argsort on next line
     pstep = (pdepth.interp(time=t).fillna(0).diff("time") / dt).load()
@@ -413,7 +441,6 @@ def get_hyetograph(da_idf: xr.DataArray, dt: float, length: int) -> xr.DataArray
     # reorder using alternating blocks method
     pevent = pstep.isel(time=slice(0, length)).isel(time=alt_order)
     # set time coordinate
-    t0 = int(np.ceil((length + 1) / 2))
-    pevent["time"] = xr.IndexVariable("time", (t[1 : length + 1] - t0))
+    pevent["time"] = xr.IndexVariable("time", (t[1 : length + 1] - t[-1] / 2 - dt))
     pevent.attrs.update(**da_idf.attrs)
     return pevent

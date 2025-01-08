@@ -23,11 +23,11 @@ These are combined into `snakemake <https://snakemake.readthedocs.io>`_ workflow
 How to install
 ==============
 
-To install HydroFlows, you can use either pixi (recommended for developers), pip or conda/mamba.
+To install HydroFlows, you can use either pixi or mamba.
 The package is not yet available on PyPi or conda-forge, so you need to install it from the GitHub repository.
 
-Using pixi
-----------
+Using pixi (for developers)
+---------------------------
 
 Pixi offers a project-centric approach for python environments and run commands.
 Using the pixi.lock file the environment is reproducible and can be shared with others.
@@ -53,8 +53,8 @@ To update the lock file and your environment after changes to the dependencies, 
 
    pixi update
 
-Using conda
------------
+Using conda (for users)
+-----------------------
 
 To install HydroFlows using conda, you first need to clone the repository,
 then create a conda environment file from the pyproject.toml and install all dependencies, and finally install HydroFlows:
@@ -64,39 +64,47 @@ then create a conda environment file from the pyproject.toml and install all dep
    git clone git@github.com:Deltares-research/HydroFlows.git
    cd HydroFlows
    python make_env.py
-   conda env create -f environment.yml
+   mamba env create -f environment.yml
    conda activate hydroflows
-   pip install .
+   pip install -e .
+   pre-commit install
 
-Using pip
----------
-
-Using pip you can install HydroFlows and its dependencies directly from GitHub.
-We recommend you also create a virtual/conda environment (not shown below) in which you install the package.
-
-.. code-block:: bash
-
-   pip install git+https://github.com/Deltares-research/HydroFlows.git
 
 How to use
 ==========
 
-HydroFlows can be used via the command line interface (CLI) or via the Python API.
-The CLI is the recommended way to start a new project and run workflows, while the Python API is more flexible and can be used to create custom workflows.
+HydroFlows is designed to create workflows using python scripts and parse these to a workflow engine like snakemake.
+Example scripts can be found in the `examples` folder.
+Below we run the `pluvial_risk` example, but you can also pick another example or create your own.
 
-To create a new project directory, run:
-
-.. code-block:: bash
-
-   hydroflows init <project_dir> --region <region_file> --config <config_file>
-
-This will create a new project directory with a default configuration file and a directory structure for input and output data.
-To run a workflow in the project directory with snakemake, run:
+To create an example workflow, you can use the following command.
+This will create a new folder `cases/pluvial_risk` with the example workflow `Snakefile`:
 
 .. code-block:: bash
 
-   cd <project_dir>
-   snakemake -s workflow/<workflow_name>.smk -c 1 --verbose
+   python examples/pluvial_risk.py
 
-.. note::
-   The workflows will be created from command line methods that are currently being established.
+To run the snakemake workflow, you can use the following command. Note that this requires executables for the models used in the workflow.
+See the `snakemake documentation <https://snakemake.readthedocs.io/en/stable/executing/cli.html>`_ for more options.
+
+.. code-block:: bash
+
+   cd examples/cases/pluvial_risk
+   snakemake -n  # dry-run
+   snakemake -c 1  # run with 1 core
+
+
+With pixi the commands are combined in a single command, this will create and run the snakemake in one go.
+Note that this only works for the examples provided in the `examples` folder.
+
+On Windows with powershell you can use the following command:
+
+.. code-block:: bash
+
+   $env:EXAMPLE='pluvial_risk'; pixi run examples-run
+
+In Linux you can use the following command:
+
+.. code-block:: bash
+
+   EXAMPLE='pluvial_risk' pixi run examples-run

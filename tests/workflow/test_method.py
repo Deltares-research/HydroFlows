@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 
@@ -35,12 +36,13 @@ def test_method_to_kwargs(test_method: TestMethod):
     expected_kwargs = {
         "input_file1": "test_file1",
         "input_file2": "test_file2",
-        "out_root": ".",
         "param": "param",
+        "out_root": ".",
     }
     assert kwargs == expected_kwargs
     kwargs = test_method.to_kwargs(exclude_defaults=False)
     expected_kwargs["default_param"] = "default_param"
+    expected_kwargs["default_param2"] = "default_param2"
     assert kwargs == expected_kwargs
 
 
@@ -51,17 +53,6 @@ def test_method_to_dict(test_method: TestMethod):
         "output": {"output_file1": "output1", "output_file2": "output2"},
         "params": {"out_root": ".", "param": "param"},
     }
-
-
-def test_method_from_dict(test_method: TestMethod):
-    method_dict = test_method.to_dict()
-    new_test_method = TestMethod.from_dict(
-        input=method_dict["input"],
-        output=method_dict["output"],
-        params=method_dict["params"],
-        name=test_method.name,
-    )
-    assert new_test_method == test_method
 
 
 def test_method_from_kwargs():
@@ -96,7 +87,8 @@ def test_run_with_checks(tmp_path):
     test_method.run_with_checks()
 
 
-def test_check_input_output_paths(tmp_path, capsys):
+def test_check_input_output_paths(tmp_path, caplog):
+    caplog.set_level(logging.INFO)
     test_method: TestMethod = create_test_method(root=tmp_path, write_inputs=False)
     with pytest.raises(
         FileNotFoundError,
@@ -106,11 +98,11 @@ def test_check_input_output_paths(tmp_path, capsys):
     ):
         test_method.check_input_output_paths()
     test_method.check_input_output_paths(missing_file_error=False)
-    captured = capsys.readouterr()
-    assert "input_file1" in captured.out
-    assert "test_file1" in captured.out
-    assert "input_file2" in captured.out
-    assert "test_file2" in captured.out
+
+    assert "input_file1" in caplog.text
+    assert "test_file1" in caplog.text
+    assert "input_file2" in caplog.text
+    assert "test_file2" in caplog.text
     # check if files are written
     assert "test_file1" in os.listdir(tmp_path)
     assert "test_file2" in os.listdir(tmp_path)

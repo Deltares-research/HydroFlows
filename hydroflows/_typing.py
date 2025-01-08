@@ -6,7 +6,7 @@ from typing import Dict, List, Tuple, Union
 from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated, TypedDict
 
-from hydroflows.utils.parsers import get_wildcards, str_to_list, str_to_tuple
+from hydroflows.utils.parsers import has_wildcards, str_to_list, str_to_tuple
 
 ListOfStr = Annotated[
     list[str],
@@ -44,7 +44,7 @@ JsonDict = Union[Dict, Json]
 
 def _check_path_has_wildcard(path: Union[Path, List[Path]]) -> Path:
     """Check if a path contains a wildcard."""
-    if isinstance(path, Path) and not any(get_wildcards(path)):
+    if isinstance(path, Path) and not has_wildcards(path):
         raise ValueError(f"Path {path} does not contain any wildcards")
     return path
 
@@ -62,6 +62,8 @@ EventDatesDict = Annotated[
         lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
     ),
 ]
+
+DataCatalogPath = Union[ListOfStr, ListOfPath, Path]
 
 
 class folderpath(Path):

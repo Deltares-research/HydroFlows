@@ -52,18 +52,15 @@ class Params(Parameters):
     end_time: datetime = datetime(2018, 12, 31)
     """End date for the fetched timeseries"""
 
-    catalog_key: str = "gtsm_codec_reanalysis_10min_v1"
+    catalog_key: str = "gtsm_codec_reanalysis"
     """Data catalog key for GTSM data."""
+
+    buffer: float = 2000
+    """Buffer around region to look for GTSM stations, [m]"""
 
 
 class GetGTSMData(Method):
-    """Method for getting GTSM waterlevel and surge timeseries at centroid of a region.
-
-    See Also
-    --------
-    :py:function:`hydroflows.methods.coastal.get_gtsm_data.get_gtsm_station`
-    :py:function:`hydroflows.methods.coastal.get_gtsm_data.export_gtsm_data`
-    """
+    """Method for getting GTSM waterlevel and surge timeseries at centroid of a region."""
 
     name: str = "get_gtsm_data"
 
@@ -91,9 +88,9 @@ class GetGTSMData(Method):
 
         See Also
         --------
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Output>`
-        :py:class:`Input <hydroflows.methods.coastal.get_gtsm_data.Params>`
+        :py:class:`GetGTSMData Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
+        :py:class:`GetGTSMData Output <hydroflows.methods.coastal.get_gtsm_data.Output>`
+        :py:class:`GetGTSMData Params <hydroflows.methods.coastal.get_gtsm_data.Params>`
         """
         self.input: Input = Input(region=region, gtsm_catalog=gtsm_catalog)
         self.params: Params = Params(data_root=data_root, **params)
@@ -117,6 +114,7 @@ class GetGTSMData(Method):
             self.params.catalog_key,
             geom=region,
             time_tuple=(self.params.start_time, self.params.end_time),
+            buffer=self.params.buffer,
         )
 
         s = gtsm["surge"]

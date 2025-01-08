@@ -1,8 +1,6 @@
 import datetime
 import platform
-import shutil
 from pathlib import Path
-from typing import Optional
 
 import pytest
 from hydromt_sfincs import SfincsModel
@@ -10,113 +8,120 @@ from hydromt_sfincs import SfincsModel
 from hydroflows.events import Event
 from hydroflows.methods.sfincs import (
     SfincsBuild,
-    SfincsPostprocess,
+    SfincsDownscale,
+    SfincsRegion,
     SfincsRun,
     SfincsUpdateForcing,
 )
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 
-SFINCS_EXE = Path(__file__).parent.parent / "_bin" / "sfincs" / "sfincs.exe"
 
-
-def copy_tree(
-    src: Path,
-    dst: Path,
-    ignore: Optional[list] = None,
-    level: int = 0,
-    max_level: int = 10,
+@pytest.mark.requires_test_data()
+def test_sfincs_region(
+    sfincs_test_region: Path, merit_hydro_basins: Path, tmp_path: Path
 ):
-    ignore = [] if ignore is None else ignore
-    dst.mkdir(parents=True, exist_ok=True)
-    for path in src.iterdir():
-        if path.name in ignore:
-            continue
-        if path.is_file():
-            shutil.copy2(path, dst / path.name)
-        elif path.is_dir() and level < max_level:
-            copy_tree(path, dst / path.name, ignore, level + 1, max_level)
+    sfincs_region = SfincsRegion(
+        aoi=str(sfincs_test_region),
+        subbasins=str(merit_hydro_basins),
+        sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
+    )
+
+    sfincs_region.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_build(rio_region: Path, rio_test_data: Path, tmp_path: Path):
+@pytest.mark.requires_test_data()
+def test_sfincs_build(
+    region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
+):
     sfincs_root = Path(tmp_path, "model")
     sfincs_build = SfincsBuild(
-        region=str(rio_region),
+        region=str(region),
+        config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
-        res=100.0,
-        river_upa=10.0,
-        data_libs=str(rio_test_data),
+        data_libs=str(global_catalog),
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
-    assert sfincs_build.params.river_upa == 10.0
 
     sfincs_build.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_update(rio_sfincs_model: Path, test_data_dir: Path, tmp_path: Path):
-    tmp_root = Path(tmp_path, "model")
-    copy_tree(rio_sfincs_model.parent, tmp_root, max_level=0)
-    event_yaml = test_data_dir / "event_rp010.yml"
-
+@pytest.mark.requires_test_data()
+def test_sfincs_update(sfincs_tmp_model: Path, test_data_dir: Path):
     sf = SfincsUpdateForcing(
-        sfincs_inp=str(tmp_root / "sfincs.inp"),
-        event_yaml=str(event_yaml),
+        sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
+        event_yaml=str(test_data_dir / "rainfall_events" / "event_rp010.yml"),
         event_name="rp010",
         sim_subfolder="sim",
     )
-    assert sf.output.sfincs_out_inp == tmp_root / "sim" / "rp010" / "sfincs.inp"
+    assert sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / "rp010" / "sfincs.inp"
     sf.run_with_checks()
 
 
-@pytest.mark.requires_data()
-@pytest.mark.skipif(not SFINCS_EXE.exists(), reason="sfincs executable not found")
-@pytest.mark.skipif(platform.system() != "Windows", reason="only supported on Windows")
-def test_sfincs_run(rio_sfincs_model: Path, tmp_path: Path):
-    tmp_root = Path(tmp_path, "model")
-    copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis", "subgrid"])
-    sfincs_inp = Path(tmp_root, "sfincs.inp")
+@pytest.mark.requires_test_data()
+@pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_model", "sfincs_sim_model"])
+@pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
+def test_sfincs_run(
+    sfincs_root: Path,
+    method: str,
+    has_docker: bool,
+    has_apptainer: bool,
+    sfincs_exe: Path,
+    request,
+):
+    if method == "docker" and not has_docker:
+        pytest.skip("Docker not available")
+    elif method == "apptainer" and not has_apptainer:
+        pytest.skip("Apptainer not available")
+    elif method == "exe" and not sfincs_exe.is_file():
+        pytest.skip(f"SFINCS executable not found at {sfincs_exe}")
+    elif method == "exe" and platform.system() != "Windows":
+        pytest.skip("SFINCS exe only supported on Windows")
+    # load fixture
+    sfincs_root: Path = request.getfixturevalue(sfincs_root)
+
+    sfincs_inp = Path(sfincs_root, "sfincs.inp")
     sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
+    sfincs_log = Path(sfincs_inp.parent, "sfincs.log")
+    if sfincs_map.is_file():
+        sfincs_map.unlink()
+    if sfincs_log.is_file():
+        sfincs_log.unlink()
 
     # modify the tstop to a short time
-    sf = SfincsModel(root=tmp_root, mode="r+")
+    sf = SfincsModel(root=sfincs_root, mode="r+")
     sf.set_config("tref", "20191231 000000")
     sf.set_config("tstart", "20191231 000000")
     sf.set_config("tstop", "20191231 010000")
     sf.write_config()
 
     assert sfincs_inp.is_file()
-    sf_run = SfincsRun(sfincs_inp=str(sfincs_inp), sfincs_exe=SFINCS_EXE)
+    sf_run = SfincsRun(
+        sfincs_inp=str(sfincs_inp), run_method=method, sfincs_exe=sfincs_exe
+    )
     assert sf_run.output.sfincs_map == sfincs_map
     sf_run.run_with_checks()
 
 
-@pytest.mark.requires_data()
-def test_sfincs_postprocess(rio_sfincs_model: Path, tmp_path: Path):
-    tmp_root = Path(tmp_path, "model")
-    copy_tree(rio_sfincs_model.parent, tmp_root, ignore=["gis"])
-    tmp_hazard_root = Path(tmp_path, "hazard")
+@pytest.mark.requires_test_data()
+def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
+    tmp_hazard_root = Path(sfincs_tmp_model, "hazard")
 
-    sf_post = SfincsPostprocess(
-        sfincs_map=str(tmp_root / "sfincs_map.nc"),
-        sfincs_subgrid_dep=str(tmp_root / "subgrid" / "dep_subgrid.tif"),
-        hazard_root=str(tmp_hazard_root),
+    sf_post = SfincsDownscale(
+        sfincs_map=str(sfincs_sim_model / "sfincs_map.nc"),
+        sfincs_subgrid_dep=str(sfincs_tmp_model / "subgrid" / "dep_subgrid.tif"),
+        output_root=str(tmp_hazard_root),
         event_name="test",
     )
-    assert sf_post.output.hazard_tif == tmp_hazard_root / "test.tif"
+    assert sf_post.output.hazard_tif == tmp_hazard_root / "hmax_test.tif"
 
     sf_post.run_with_checks()
 
 
-def test_parse_event_sfincs(test_data_dir: Path, tmp_path: Path):
-    # copy the sf model to a temporary directory
-    sfincs_root = test_data_dir / "sfincs_model"
-    tmp_root = Path(tmp_path, "model")
-    copy_tree(sfincs_root, tmp_root)
-
+@pytest.mark.requires_test_data()
+def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     # get dummy location within the model domain
     # read gis/region.geojson
-    sf = SfincsModel(root=tmp_root, mode="r")
+    sf = SfincsModel(root=sfincs_tmp_model, mode="r")
     sf.read()
     # create dummy bnd points
     sf.setup_waterlevel_bnd_from_mask(merge=False)
@@ -161,9 +166,11 @@ def test_parse_event_sfincs(test_data_dir: Path, tmp_path: Path):
         ],
     )
 
-    parse_event_sfincs(root=tmp_root, event=event, out_root=tmp_root / "sim" / "test")
+    parse_event_sfincs(
+        root=sfincs_tmp_model, event=event, out_root=sfincs_tmp_model / "sim" / "test"
+    )
 
-    sf = SfincsModel(root=tmp_root / "sim" / "test", mode="r")
+    sf = SfincsModel(root=sfincs_tmp_model / "sim" / "test", mode="r")
     sf.read()
     assert sf.config["tstart"] == datetime.datetime(2020, 1, 1, 0, 0)
     assert (sf.forcing["bzs"].index.values == 1).all()

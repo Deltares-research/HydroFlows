@@ -3,87 +3,32 @@ from pathlib import Path
 from typing import Tuple
 
 import geopandas as gpd
-import numpy as np
-import pandas as pd
 import pytest
 import xarray as xr
-from shapely.geometry import Point
 
+from hydroflows.events import EventSet
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
 from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
     CoastalDesignEventFromRPData,
 )
 from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
+from hydroflows.methods.coastal.future_slr import FutureSLR
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
 
-catalog_path = Path(r"p:\11209169-003-up2030\data\WATER_LEVEL\data_catalog.yml")
 
-
-@pytest.fixture()
-def waterlevel_timeseries() -> xr.DataArray:
-    dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
-
-    np.random.seed(1234)
-    data = np.random.rand(len(dates))
-
-    da = xr.DataArray(
-        data=data,
-        dims=("time"),
-        coords={"time": dates},
-        name="h",
-    )
-    da = da.expand_dims(dim={"stations": 1})
-    return da
-
-
-@pytest.fixture()
-def tide_surge_timeseries() -> Tuple[xr.DataArray, xr.DataArray]:
-    dates = pd.date_range(start="2000-01-01", end="2005-12-31", freq="10min")
-
-    np.random.seed(1234)
-    data1 = np.random.rand(len(dates))
-    np.random.seed(5678)
-    data2 = np.random.rand(len(dates))
-
-    t = xr.DataArray(data=data1, dims=("time"), coords={"time": dates}, name="t")
-    s = xr.DataArray(data=data2, dims=("time"), coords={"time": dates}, name="s")
-    t = t.expand_dims(dim={"stations": 1})
-    s = s.expand_dims(dim={"stations": 1})
-    return t, s
-
-
-@pytest.fixture()
-def waterlevel_rps() -> xr.Dataset:
-    rps = xr.Dataset(
-        coords=dict(rps=("rps", [1, 10, 100])),
-        data_vars=dict(return_values=(["rps"], np.array([0.5, 1, 1.5]))),
-    )
-    rps = rps.expand_dims(dim={"stations": 1})
-    return rps
-
-
-@pytest.fixture()
-def bnd_locations() -> gpd.GeoDataFrame:
-    bnds = gpd.GeoDataFrame(data={"stations": [1]}, geometry=[Point(1, 1)], crs=4326)
-    return bnds
-
-
-@pytest.mark.requires_data()
-@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
-def test_get_gtsm_data(
-    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
-):
+@pytest.mark.requires_test_data()
+def test_get_gtsm_data(region: Path, tmp_path: Path, global_catalog: Path):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
 
     params = {"start_time": start_time, "end_time": end_time}
 
-    region = rio_region.as_posix()
+    region = region.as_posix()
     data_dir = Path(tmp_path, "gtsm_data")
 
     rule = GetGTSMData(
-        region=region, gtsm_catalog=catalog_path, data_root=data_dir, **params
+        region=region, gtsm_catalog=global_catalog, data_root=data_dir, **params
     )
 
     rule.run_with_checks()
@@ -106,16 +51,11 @@ def test_create_tide_surge_timeseries(
     rule.run_with_checks()
 
 
-@pytest.mark.requires_data()
-@pytest.mark.skipif(not catalog_path.exists(), reason="No access to Data Catalog")
-def test_get_coast_rp(
-    rio_region: Path, tmp_path: Path, catalog_path: Path = catalog_path
-):
+@pytest.mark.requires_test_data()
+def test_get_coast_rp(region: Path, tmp_path: Path, global_catalog):
     data_dir = Path(tmp_path, "coast_rp")
 
-    rule = GetCoastRP(
-        region=rio_region, coastrp_catalog=catalog_path, data_root=data_dir
-    )
+    rule = GetCoastRP(region=region, coastrp_catalog=global_catalog, data_root=data_dir)
 
     rule.run_with_checks()
 
@@ -170,3 +110,30 @@ def test_coastal_event_from_rp_data(
     )
 
     rule.run_with_checks()
+
+
+def test_future_climate_sea_level(
+    test_data_dir: Path,
+    tmp_path: Path,
+):
+    event_set_yaml = test_data_dir / "coastal_events" / "coastal_events.yml"
+
+    out_root = Path(tmp_path / "future_climate_sea_level")
+
+    rule = FutureSLR(
+        event_set_yaml=event_set_yaml,
+        scenario_name="RCP85",
+        slr_value=50,
+        slr_unit="cm",
+        event_root=out_root,
+    )
+
+    rule.run_with_checks()
+
+    fn_scaled_event_set = rule.output.future_event_set_yaml
+    scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)
+    assert isinstance(scaled_event_set.events, list)
+
+    # are all paths absolute
+    assert all([Path(event["path"]).is_absolute() for event in scaled_event_set.events])
+    assert all([Path(event["path"]).exists() for event in scaled_event_set.events])

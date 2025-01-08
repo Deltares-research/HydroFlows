@@ -7,7 +7,7 @@ from pathlib import Path
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import DataCatalogPath
 from hydroflows.methods.wflow.wflow_utils import shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -51,7 +51,7 @@ class Params(Parameters):
     timestep: int = 86400  # in seconds
     """The timestep for generated forcing in seconds."""
 
-    data_libs: ListOfStr = ["artifact_data"]
+    data_libs: DataCatalogPath = ["artifact_data"]
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources for precipitation,
     temperature, elevation grid of the climate data (optionally) and
@@ -203,4 +203,11 @@ class WflowUpdateForcing(Method):
                 units="seconds",
             ),
         )
+
+        # Make sure files paths as posix, write_forcing() doesn't do this correctly.
+        posix_paths = {
+            "input.path_forcing": Path(w.config["input"]["path_forcing"]).as_posix(),
+            "input.path_static": Path(w.config["input"]["path_static"]).as_posix(),
+        }
+        w.setup_config(**posix_paths)
         w.write_config(config_name=self.output.wflow_out_toml.name)

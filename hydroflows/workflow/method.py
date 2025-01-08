@@ -8,15 +8,19 @@ validators and a run method.
 """
 
 import inspect
+import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
 from hydroflows.utils.parsers import get_wildcards
+from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["Method"]
+
+logger = logging.getLogger(__name__)
 
 
 class Method(ABC):
@@ -105,11 +109,11 @@ class Method(ABC):
     def __repr__(self) -> str:
         return f"Method(name={self.name}; parameters={pformat(self.dict)})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Method") -> bool:
         return (
-            self.__dict__ == other.__dict__
-            and self.__class__ == other.__class__
+            self.__class__ == other.__class__
             and self.name == other.name
+            and self.to_dict() == other.to_dict()
         )
 
     ## SERIALIZATION METHODS
@@ -126,11 +130,26 @@ class Method(ABC):
         kwargs = dict(
             mode=mode, posix_path=posix_path, return_refs=return_refs, **kwargs
         )
-        par = inspect.signature(self.__init__).parameters
-        in_kw = {k: v for k, v in self.input.to_dict(**kwargs).items() if k in par}
-        out_kw = {k: v for k, v in self.output.to_dict(**kwargs).items() if k in par}
+        # get all input, output which are in the __init__ signature
+        par = list(inspect.signature(self.__init__).parameters.keys())
+        in_kw = self.input.to_dict(filter_keys=par, **kwargs)
+        out_kw = self.output.to_dict(filter_keys=par, **kwargs)
+        # get all non-default params
         params_kw = self.params.to_dict(exclude_defaults=exclude_defaults, **kwargs)
         return {**in_kw, **out_kw, **params_kw}
+
+    def _kwargs_to_key_mapping(self) -> Dict[str, str]:
+        """Return kwarg-key to input/output/params-key mapping."""
+        # check if key is in input, output or params
+        mapping = {}
+        for key in self.to_kwargs().keys():
+            for c in ["input", "output", "params"]:
+                if key in self.dict.get(c, {}):
+                    mapping[key] = f"{c}.{key}"
+                    break
+            if key not in mapping:
+                raise ValueError(f"Key {key} not found in {self.name}.")
+        return mapping
 
     @property
     def dict(self) -> Dict[str, Dict]:
@@ -149,46 +168,10 @@ class Method(ABC):
             "params": {},
         }
         if hasattr(self, "_params"):  # params are optional
-            out_dict["params"] = self.params.model_dump(**dump_kwargs)
+            out_dict["params"] = self.params.to_dict(**dump_kwargs)
         return out_dict
 
     ## SERIALIZATION METHODS
-
-    @classmethod
-    def from_dict(
-        cls,
-        input: Dict,
-        output: Dict,
-        params: Optional[Dict] = None,
-        name: Optional[str] = None,
-    ) -> "Method":
-        """Create a new instance from input, output and params dictionaries.
-
-        Parameters
-        ----------
-        input, output : Dict
-            Dictionary with input, and output parameters.
-        params : Dict, optional
-            Dictionary with additional parameters, by default None.
-        name : str, optional
-            Name of the method, by default None.
-            This is required if called from the parent Method class.
-        """
-        # if called from the parent class, get the subclass by name
-        if cls.name == "abstract_method":
-            if name is None:
-                raise ValueError("Cannot initiate from Method without a method name")
-            cls = cls._get_subclass(name)
-
-        # get keyword arguments of __init__ method based on its signature
-        init_kw = inspect.signature(cls.__init__).parameters
-        input_kwargs = {k: v for k, v in input.items() if k in init_kw}
-        output_kwargs = {k: v for k, v in output.items() if k in init_kw}
-        kwargs = {**input_kwargs, **output_kwargs}
-        if params is not None:
-            kwargs.update(params)  # always include params
-
-        return cls(**kwargs)
 
     @classmethod
     def from_kwargs(cls, name: Optional[str] = None, **kwargs) -> "Method":
@@ -211,8 +194,6 @@ class Method(ABC):
     @classmethod
     def _get_subclass(cls, name: str) -> type["Method"]:
         """Get a subclass by name."""
-        from hydroflows.methods import METHODS  # avoid circular import
-
         name = name.lower()
         for subclass in cls._get_subclasses():
             if subclass.name.lower() == name or subclass.__name__.lower() == name:
@@ -220,7 +201,7 @@ class Method(ABC):
         # if not found, try to import the module using entry points
         return METHODS.load(name)
 
-    ## TESTING METHODS
+    ## TESTING METHODS (we keep these here such that external implementations can use them)
 
     def _test_roundtrip(self) -> None:
         """Test if the method can be serialized and deserialized."""
@@ -228,7 +209,8 @@ class Method(ABC):
         kw = self.to_kwargs(exclude_defaults=False, posix_path=True)
         kw = {k: str(v) for k, v in kw.items()}
         m = self.from_kwargs(self.name, **kw)
-        assert m.dict == self.dict
+        if m.dict != self.dict:
+            raise ValueError("Method serialization failed")
 
     def _test_unique_keys(self) -> None:
         """Check if the method input, output and params keys are unique."""
@@ -240,26 +222,6 @@ class Method(ABC):
         # check for unique keys
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
-
-    def _test_method_kwargs(self) -> None:
-        """Test if all method __init__ arguments are in input, output or params."""
-        init_kw = inspect.signature(self.__init__).parameters
-        # skip
-        in_kw = self.input.model_fields.keys()
-        out_kw = self.output.model_fields.keys()
-        params_kw = self.params.model_fields.keys()
-        all_kw = list(in_kw) + list(out_kw) + list(params_kw)
-        for k in init_kw:
-            # skip self, *args, **kwargs
-            if k == "self" or init_kw[k].kind in (
-                inspect.Parameter.VAR_KEYWORD,
-                inspect.Parameter.VAR_POSITIONAL,
-            ):
-                continue
-            if k not in all_kw:
-                raise ValueError(
-                    f"Method __init__ argument {k} not in input, output or params"
-                )
 
     ## RUN METHODS
 
@@ -286,7 +248,7 @@ class Method(ABC):
                 msg = f"Input file {self.name}.input.{key} not found: {value}"
                 if not value.is_file():
                     if not missing_file_error:  # create dummy file
-                        print(f"WARNING: {msg}")
+                        logger.warning(msg)
                         value.parent.mkdir(parents=True, exist_ok=True)
                         with open(value, "w") as f:
                             f.write("")
@@ -351,6 +313,9 @@ class ExpandMethod(Method, ABC):
         """Return a list of output key-path tuples."""
         paths = []
         for key, value in self.output.model_dump().items():
+            if isinstance(value, list) and all([isinstance(p, Path) for p in value]):
+                for item in value:
+                    paths.append((key, item))
             if not isinstance(value, Path):
                 continue
             for wc, vlist in self.expand_wildcards.items():
@@ -361,6 +326,24 @@ class ExpandMethod(Method, ABC):
                 else:
                     paths.append((key, value))
         return paths
+
+    def expand_output_paths(self) -> None:
+        """Reinitialize Output object with wildcards in output path evaluated."""
+        # Fetch keys, values from output_paths
+        output_paths = self._output_paths
+        keys = [tup[0] for tup in output_paths]
+        vals = [tup[1] for tup in output_paths]
+
+        # dict for storing outputs as {key: [list of values]}
+        out_dict = {}
+
+        # Fill out_dict
+        for key in set(keys):
+            idxs = [idx for (idx, item) in enumerate(keys) if item == key]
+            out_dict[key] = [vals[i] for i in idxs]
+
+        # Reinitialize output object
+        self.output = self.output.model_copy(update=out_dict)
 
 
 class ReduceMethod(Method):

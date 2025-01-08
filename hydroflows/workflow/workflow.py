@@ -23,7 +23,7 @@ from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
-logger = logging.getLogger("hydroflows")
+logger = logging.getLogger(__name__)
 
 
 class Workflow:
@@ -90,27 +90,6 @@ class Workflow:
         m = Method.from_kwargs(name=str(method), **kwargs)
         self.add_rule(m, rule_id)
 
-    def create_references(self, overwrite=False) -> None:
-        """Set references to the input of rules that use the output of other rules in the workflow."""
-        output_path_refs = self._output_path_refs
-        for rule in self.rules:
-            for key, value in rule.input:
-                if not overwrite and key in rule.input._refs:
-                    continue
-                if isinstance(value, Path):
-                    value = value.as_posix()
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.input.{key} is not a Path object (but {type(value)})"
-                    )
-                    continue
-                if value in output_path_refs:
-                    rule.input._refs.update({key: output_path_refs.get(value)})
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.input.{key} ({value}) is not an output of another rule"
-                    )
-
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
         return Ref(ref, self)
@@ -168,10 +147,13 @@ class Workflow:
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
+        # Small check for the parent directory
+        snakefile.parent.mkdir(parents=True, exist_ok=True)
+        # After that write
         with open(snakefile, "w") as f:
             f.write(_str)
         with open(snakefile.parent / configfile, "w") as f:
-            yaml.dump(self.config.to_dict(mode="json"), f)
+            yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
 
     def to_cwl(
         self,
@@ -282,11 +264,11 @@ class Workflow:
                 tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
             Path(tmpdir).mkdir(parents=True, exist_ok=True)
             os.chdir(tmpdir)
-            print(f"Running dryrun in {tmpdir}")
+            logger.info("Running dryrun in %s", tmpdir)
 
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            print(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
             rule.run(
                 dryrun=dryrun,
                 max_workers=max_workers,
@@ -309,7 +291,7 @@ class Workflow:
         for rule in self.rules:
             if not rule:
                 continue
-            for key, value in rule.output:
+            for key, value in rule.method.output:
                 if isinstance(value, Path):
                     value = value.as_posix()
                 else:
@@ -317,11 +299,6 @@ class Workflow:
                         f"{rule.rule_id}.output.{key} is not a Path object (but {type(value)})"
                     )
                     continue
-                if value in output_paths:
-                    duplicate_field = output_paths[value].replace("$rules.", "")
-                    raise ValueError(
-                        f"All output file paths must be unique, {rule.rule_id}.output.{key} ({value}) is already an output of {duplicate_field}"
-                    )
                 output_paths[value] = f"$rules.{rule.rule_id}.output.{key}"
         return output_paths
 

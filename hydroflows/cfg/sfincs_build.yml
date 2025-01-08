@@ -1,0 +1,48 @@
+setup_grid_from_region:
+  res: 100.0  # model resolution [m]
+  crs: utm  # model CRS (must be UTM zone)
+  rotated: False  # allow a rotated grid
+  region:
+    geom: <region>  # placeholder for region vector file
+
+setup_dep:
+  datasets_dep:
+    - elevtn: fabdem
+      mask: osm_landareas
+
+setup_mask_active:
+  mask: <region>  # placeholder for region vector file
+  exclude_mask: osm_coastlines
+  drop_area: 10  # drop small areas [km2]
+
+setup_mask_bounds:
+  btype: waterlevel
+  include_mask: osm_coastlines  # add buffer on the fly
+  include_mask_buffer: 200 # buffer distance [m]
+
+setup_subgrid:
+  datasets_dep:
+    - elevtn: fabdem
+      mask: osm_landareas
+    - elevtn: gebco  # add bathymetry; used to avoid extrapolation
+  datasets_rgh:
+    - lulc: esa_worldcover
+  # TODO prepare river bathymetry dasaset based on grit
+  # datasets_riv:
+  #   - centerlines: grit
+  #     manning': 0.035
+  write_dep_tif: True
+  nr_subgrid_pixels: 5  # 20m resolution
+  nbins: 8
+
+setup_river_inflow:
+  # Uncomment when hydromt_sfincs is next released
+  # hydrography: merit_hydro
+  # river_upa: 10.0  # river upstream area threshold [km2]
+  # river_len: 1000
+  # keep_rivers_geom: True
+  # Delete when hydromt_sfincs is next released
+  rivers: rivers_lin2019_v1
+  river_len: 1000
+  keep_rivers_geom: True
+  reverse_river_geom: True # Remove when switching to hydrography

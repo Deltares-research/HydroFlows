@@ -25,6 +25,17 @@ Pluvial design events
    pluvial_design_events.Params
    pluvial_design_events.Output
 
+Pluvial design events GPEX
+--------------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   pluvial_design_events_GPEX.PluvialDesignEventsGPEX
+   pluvial_design_events_GPEX.Input
+   pluvial_design_events_GPEX.Params
+   pluvial_design_events_GPEX.Output
+
 
 Pluvial historical events
 -------------------------
@@ -36,3 +47,15 @@ Pluvial historical events
    pluvial_historical_events.Input
    pluvial_historical_events.Params
    pluvial_historical_events.Output
+
+
+Future climate rainfall
+-----------------------
+
+.. autosummary::
+   :toctree: ../_generated
+
+   future_climate_rainfall.FutureClimateRainfall
+   future_climate_rainfall.Input
+   future_climate_rainfall.Params
+   future_climate_rainfall.Output
