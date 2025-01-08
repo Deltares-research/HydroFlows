@@ -184,7 +184,7 @@ class Rule:
                     logger.warning(f"Wildcard {wc} not found in workflow wildcards.")
 
         # organize wildcards in expand, reduce and explode
-        wc_in = set(wildcards["input"])
+        wc_in = set(wildcards["input"] + wildcards["params"])
         wc_out = set(wildcards["output"])
         wildcards_dict = {
             "explode": list(wc_in & wc_out),
