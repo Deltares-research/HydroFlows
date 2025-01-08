@@ -94,7 +94,7 @@ class ClimateStatistics(ExpandMethod):
         if not self.params.historical:
             name = "future"
         self.output: Output = Output(
-            factors_ds=self.params.data_root
+            stats=self.params.data_root
             / f"stats_{self.params.model}_{self.params.scenario}_{name}.nc",
         )
 

@@ -37,8 +37,8 @@ if __name__ == "__main__":
             "CSIRO-ARCCSS_ACCESS-CM2",
         ],
         cmip6_scenarios=["ssp245", "ssp585"],
-        historical=(2000, 2010),
-        future_horizon=[(2050, 2060), (2090, 2100)],
+        historical=("2000", "2010"),
+        future_horizon=[("2050", "2060"), ("2090", "2100")],
         plot_fig=True,
     )
 
@@ -77,6 +77,7 @@ if __name__ == "__main__":
         model="{models}",
         scenario="{scenarios}",
         horizon="{horizons}",
+        data_root=output_dir,
     )
     w.add_rule(change_factors, rule_id="change_factors")
 
