@@ -25,15 +25,14 @@ def create_workflow_with_mock_methods(
 ):
     # create initial input file for workflow
     if root:
-        for wild_card in w.wildcards.get("region"):
-            (root / wild_card).mkdir()
-            with open(root / wild_card / input_file, "w") as f:
-                yaml.dump(dict(test="test"), f)
+        root.mkdir(parents=True, exist_ok=True)
+        with open(root / input_file, "w") as f:
+            yaml.dump(dict(test="test"), f)
     else:
         root = Path("./")
 
     mock_expand_method = MockExpandMethod(
-        input_file=Path("{region}") / input_file,
+        input_file=input_file,
         root="{region}",
         events=["1", "2"],
         wildcard="event",
@@ -42,14 +41,14 @@ def create_workflow_with_mock_methods(
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
 
     mock_method = TestMethod(
-        input_file1=w.get_ref("$rules.mock_expand_rule.output.output_file"),
-        input_file2=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+        input_file1=mock_expand_method.output.output_file,
+        input_file2=mock_expand_method.output.output_file2,
     )
 
     w.add_rule(mock_method, rule_id="mock_rule")
 
     mock_reduce_method = MockReduceMethod(
-        files=w.get_ref("$rules.mock_rule.output.output_file1"),
+        files=mock_method.output.output_file1,
         root="out_{region}",
     )
 
