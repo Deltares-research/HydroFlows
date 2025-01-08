@@ -354,10 +354,12 @@ def test_parameters(workflow: Workflow):
             "output_file2": [method.output.output_file2 for method in methods],
         },
         "params": {
-            "param": [method.params.param for method in methods],
-            "out_root": [method.params.out_root for method in methods],
-            "default_param": [method.params.default_param for method in methods],
-            "default_param2": [method.params.default_param2 for method in methods],
+            "param": [methods[0].params.param],
+            "out_root": [
+                method.params.out_root for method in methods
+            ],  # has region wildcard
+            "default_param": [methods[0].params.default_param],
+            "default_param2": [methods[0].params.default_param2],
         },
     }
 
@@ -397,8 +399,8 @@ def test_parameters(workflow: Workflow):
         },
         "params": {
             "root": [method.params.root for method in methods],
-            "events": [method.params.events for method in methods],
-            "wildcard": [method.params.wildcard for method in methods],
+            "events": [methods[0].params.events],
+            "wildcard": [methods[0].params.wildcard],
         },
     }
 

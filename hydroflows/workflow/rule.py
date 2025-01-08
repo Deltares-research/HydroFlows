@@ -346,7 +346,7 @@ class Rule:
         """Set the parameters of the rule.
 
         The parameters are a dictionary with input, output and params as keys.
-        Each key contains a dictionary with field names as keys and values as lists.
+        Each key contains a dictionary with field names as keys and unique values as lists.
         """
         parameters = {
             "input": {},
@@ -365,10 +365,10 @@ class Rule:
                             continue
                         # Removes duplicates
                         # Using set() does not preserve insertion order, this does and also filters uniques
-                        parameters[name][key] = list(
-                            dict.fromkeys(parameters[name][key] + value)
-                        )
-                    else:
+                        for val in value:
+                            if val not in parameters[name][key]:
+                                parameters[name][key].append(val)
+                    elif value not in parameters[name][key]:
                         parameters[name][key].append(value)
 
         self._parameters = parameters
