@@ -50,7 +50,7 @@ class Params(Parameters):
     The specific climate model to be used. Chose e.g. ... # TODO
     """
 
-    scenario: str
+    scenario: str = None
     """
     The specific climate scenario. Chose from ... # TODO
     """
@@ -93,9 +93,12 @@ class ClimateStatistics(Method):
         name = "historical"
         if not self.params.historical:
             name = "future"
+        elements = ["stats", self.params.model, name]
+        if self.params.scenario is not None:
+            elements.insert(2, self.params.scenario)
+        out_file = "_".join(elements)
         self.output: Output = Output(
-            stats=self.params.data_root
-            / f"stats_{self.params.model}_{self.params.scenario}_{name}.nc",
+            stats=self.params.data_root / f"{out_file}.nc",
         )
 
     def run(self) -> None:
