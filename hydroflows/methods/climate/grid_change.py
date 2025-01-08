@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from hydroflows.workflow.method import Method
+from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 
@@ -59,7 +59,7 @@ class Params(Parameters):
     """
 
 
-class ClimateFactorsGridded(Method):
+class ClimateFactorsGridded(ReduceMethod):
     """Method for climate model change factors."""
 
     def __init__(self, hist_stats: Path, fut_stats: Path, **params):

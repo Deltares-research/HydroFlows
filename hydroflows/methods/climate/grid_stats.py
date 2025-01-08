@@ -4,7 +4,7 @@ from pathlib import Path
 
 from hydroflows._typing import ListOfPath, ListOfStr
 from hydroflows.methods.climate.grid_utils import extract_climate_projections_statistics
-from hydroflows.workflow.method import ExpandMethod
+from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 
@@ -69,7 +69,7 @@ class Params(Parameters):
     """Whether it is a historical period or not."""
 
 
-class ClimateStatistics(ExpandMethod):
+class ClimateStatistics(Method):
     """Method for gridded statistics of the climate model."""
 
     name: str = "climate_statistics"
