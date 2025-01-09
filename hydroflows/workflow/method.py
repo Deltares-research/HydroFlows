@@ -109,11 +109,11 @@ class Method(ABC):
     def __repr__(self) -> str:
         return f"Method(name={self.name}; parameters={pformat(self.dict)})"
 
-    def __eq__(self, other):
+    def __eq__(self, other: "Method") -> bool:
         return (
-            self.__dict__ == other.__dict__
-            and self.__class__ == other.__class__
+            self.__class__ == other.__class__
             and self.name == other.name
+            and self.to_dict() == other.to_dict()
         )
 
     ## SERIALIZATION METHODS
@@ -209,7 +209,8 @@ class Method(ABC):
         kw = self.to_kwargs(exclude_defaults=False, posix_path=True)
         kw = {k: str(v) for k, v in kw.items()}
         m = self.from_kwargs(self.name, **kw)
-        assert m.dict == self.dict
+        if m.dict != self.dict:
+            raise ValueError("Method serialization failed")
 
     def _test_unique_keys(self) -> None:
         """Check if the method input, output and params keys are unique."""
@@ -343,6 +344,9 @@ class ExpandMethod(Method, ABC):
         """Return a list of output key-path tuples."""
         paths = []
         for key, value in self.output.model_dump().items():
+            if isinstance(value, list) and all([isinstance(p, Path) for p in value]):
+                for item in value:
+                    paths.append((key, item))
             if not isinstance(value, Path):
                 continue
             for wc, vlist in self.expand_wildcards.items():
@@ -353,6 +357,24 @@ class ExpandMethod(Method, ABC):
                 else:
                     paths.append((key, value))
         return paths
+
+    def expand_output_paths(self) -> None:
+        """Reinitialize Output object with wildcards in output path evaluated."""
+        # Fetch keys, values from output_paths
+        output_paths = self._output_paths
+        keys = [tup[0] for tup in output_paths]
+        vals = [tup[1] for tup in output_paths]
+
+        # dict for storing outputs as {key: [list of values]}
+        out_dict = {}
+
+        # Fill out_dict
+        for key in set(keys):
+            idxs = [idx for (idx, item) in enumerate(keys) if item == key]
+            out_dict[key] = [vals[i] for i in idxs]
+
+        # Reinitialize output object
+        self.output = self.output.model_copy(update=out_dict)
 
 
 class ReduceMethod(Method):

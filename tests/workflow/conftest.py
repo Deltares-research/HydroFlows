@@ -4,6 +4,7 @@ from typing import List, Union
 import pytest
 import yaml
 
+from hydroflows._typing import WildcardPath
 from hydroflows.workflow import Method, Parameters, Workflow
 from hydroflows.workflow.method import ExpandMethod, ReduceMethod
 from hydroflows.workflow.rule import Rule
@@ -107,7 +108,7 @@ class MockExpandMethod(ExpandMethod):
 
 
 class ReduceInput(Parameters):
-    files: Union[Path, List]
+    files: Union[WildcardPath, List[Path]]
 
 
 class ReduceParams(Parameters):
