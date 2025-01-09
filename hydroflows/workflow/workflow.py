@@ -137,18 +137,13 @@ class Workflow:
         Parameters
         ----------
         snakefile : Path
-            The path to the snakefile.
+            The snakefile filename, by default "Snakefile".
         dryrun : bool, optional
             Run the workflow in dryrun mode, by default False.
-        run_env : Literal["shell", "script"], optional
-            The environment in which to run the methods, by default "shell".
         """
         # set paths and creat directory
         snake_path = Path(self.root, snakefile).resolve()
-        config_path = Path(
-            snake_path.parent,
-            snake_path.stem,
-        ).with_suffix(".config.yml")
+        config_path = Path(self.root, f"{snakefile}.config.yml").resolve()
         # render the snakefile template
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
@@ -156,11 +151,10 @@ class Workflow:
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile.name,
+            configfile=config_path.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
