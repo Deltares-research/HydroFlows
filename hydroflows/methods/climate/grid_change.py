@@ -72,7 +72,14 @@ class ClimateFactorsGridded(ExpandMethod):
 
     name: str = "climate_factors_gridded"
 
-    _test_kwargs = {}
+    _test_kwargs = {
+        "hist_stats": Path("hist_stats.nc"),
+        "fut_stats": Path("fut_stats.nc"),
+        "model": "NOAA-GFDL_GFDL-ESM4",
+        "scenario": "ssp585",
+        "horizon": [[2090, 2100]],
+        "data_root": Path("data", "input", "stats"),
+    }
 
     def __init__(self, hist_stats: Path, fut_stats: Path, **params):
         self.params: Params = Params(**params)

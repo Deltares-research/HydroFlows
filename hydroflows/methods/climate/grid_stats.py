@@ -72,7 +72,14 @@ class ClimateStatistics(Method):
 
     name: str = "climate_statistics"
 
-    _test_kwargs = {}
+    _test_kwargs = {
+        "region": Path("region.geojson"),
+        "data_libs": ["data_catalog.yml"],
+        "model": "NOAA-GFDL_GFDL-ESM4",
+        "scenario": "ssp585",
+        "horizon": [[2090, 2100]],
+        "data_root": Path("data", "input", "stats"),
+    }
 
     def __init__(
         self,

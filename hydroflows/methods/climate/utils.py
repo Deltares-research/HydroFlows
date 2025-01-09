@@ -3,6 +3,7 @@
 from pathlib import Path
 
 import xarray as xr
+from dask.diagnostics import ProgressBar
 
 CLIMATE_VARS = {
     "precip": {
@@ -48,8 +49,11 @@ def to_netcdf(
 ):
     """Write xarray to netcdf."""
     dvars = obj.data_vars
-    _ = obj.to_netcdf(
+    obj_compute = obj.to_netcdf(
         Path(output_dir, file_name),
         encoding={k: {"zlib": True} for k in dvars},
-        compute=True,
+        compute=False,
     )
+
+    with ProgressBar():
+        obj_compute.compute()

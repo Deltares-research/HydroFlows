@@ -62,7 +62,12 @@ class MergeDatasets(ReduceMethod):
 
     name: str = "merge_datasets"
 
-    _test_kwargs = {}
+    _test_kwargs = {
+        "datasets": [Path("change1.nc"), Path("change2.nc")],
+        "scenario": "ssp585",
+        "horizon": "2090-2100",
+        "data_root": Path("data"),
+    }
 
     def __init__(
         self,

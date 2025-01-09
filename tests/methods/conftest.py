@@ -78,9 +78,9 @@ def build_cfgs() -> dict:
 
 
 @pytest.fixture(scope="session")
-def region(test_data_dir):
+def region(global_data):
     """Path to the region vector file."""
-    path = test_data_dir / "region.geojson"
+    path = global_data / "region.geojson"
     assert path.is_file()
     return path
 
@@ -97,6 +97,20 @@ def global_data() -> Path:
 def global_catalog(global_data: Path) -> Path:
     """Return path to data catalog of global data."""
     return global_data / "data_catalog.yml"
+
+
+@pytest.fixture(scope="session")
+def cmip6_data() -> Path:
+    """Return the path to the cmip6 data directory."""
+    path = fetch_data("cmip6-data")
+    assert Path(path, "data_catalog.yml").is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def cmip6_catalog(cmip6_data: Path):
+    """Return path to data catalog of cmip6 data."""
+    return cmip6_data / "data_catalog.yml"
 
 
 @pytest.fixture(scope="session")
