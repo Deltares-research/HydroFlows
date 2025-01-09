@@ -6,7 +6,12 @@ from typing import Dict, List, Tuple, Union
 from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated, TypedDict
 
-from hydroflows.utils.parsers import has_wildcards, str_to_list, str_to_tuple
+from hydroflows.utils.parsers import (
+    has_wildcards,
+    str_to_list,
+    str_to_list_nested,
+    str_to_tuple,
+)
 
 ListOfStr = Annotated[
     list[str],
@@ -21,6 +26,11 @@ ListOfInt = Annotated[
 ListOfFloat = Annotated[
     list[float],
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
+]
+
+ListOfListOfInt = Annotated[
+    list[list[int]],
+    BeforeValidator(lambda x: str_to_list_nested(x) if isinstance(x, str) else x),
 ]
 
 TupleOfInt = Annotated[

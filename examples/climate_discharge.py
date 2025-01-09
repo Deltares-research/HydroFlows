@@ -7,6 +7,7 @@ from hydroflows import Workflow
 from hydroflows.methods.climate import (
     ClimateFactorsGridded,
     ClimateStatistics,
+    MergeDatasets,
 )
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow.workflow_config import WorkflowConfig
@@ -23,8 +24,9 @@ if __name__ == "__main__":
     name = "climate_discharge"  # for now
     model_dir = "models"
     data_dir = "data"
-    input_dir = "data/input"
-    output_dir = "data/output"
+    input_dir = f"{data_dir}/input"
+    stats_dir = f"{input_dir}/stats"
+    output_dir = f"{data_dir}/output"
     simu_dir = "simulations"
 
     # Setup the config file
@@ -37,8 +39,8 @@ if __name__ == "__main__":
             "CSIRO-ARCCSS_ACCESS-CM2",
         ],
         cmip6_scenarios=["ssp245", "ssp585"],
-        historical=("2000", "2010"),
-        future_horizon=["aap", "beer"],
+        historical=[[2000, 2010]],
+        future_horizons=[[2050, 2060], [2090, 2100]],
         plot_fig=True,
     )
 
@@ -46,7 +48,6 @@ if __name__ == "__main__":
     w = Workflow(config=conf)
     w.wildcards.set("models", w.get_ref("$config.cmip6_models").value)
     w.wildcards.set("scenarios", w.get_ref("$config.cmip6_scenarios").value)
-    w.wildcards.set("horizons", w.get_ref("$config.future_horizon").value)
 
     ## Add the rules
     # %% Add meteo future climate factors workflow rule
@@ -55,7 +56,7 @@ if __name__ == "__main__":
         data_libs=w.get_ref("$config.data_libs"),
         model="{models}",
         horizon=w.get_ref("$config.historical"),
-        data_root=input_dir,
+        data_root=stats_dir,
     )
     w.add_rule(hist_stats, rule_id="hist_stats")
 
@@ -64,9 +65,8 @@ if __name__ == "__main__":
         data_libs=w.get_ref("$config.data_libs"),
         model="{models}",
         scenario="{scenarios}",
-        horizon=w.get_ref("$config.future_horizon"),
-        data_root=input_dir,
-        historical=False,
+        horizon=w.get_ref("$config.future_horizons"),
+        data_root=stats_dir,
     )
     w.add_rule(fut_stats, rule_id="fut_stats")
 
@@ -75,10 +75,19 @@ if __name__ == "__main__":
         fut_stats.output.stats,
         model="{models}",
         scenario="{scenarios}",
+        horizon=w.get_ref("$config.future_horizons"),
+        wildcard="horizons",
+        data_root=input_dir,
+    )
+    w.add_rule(change_factors, rule_id="change_factors")
+
+    assemble = MergeDatasets(
+        change_factors.output.change_factors,
+        scenario="{scenarios}",
         horizon="{horizons}",
         data_root=output_dir,
     )
-    w.add_rule(change_factors, rule_id="change_factors")
+    w.add_rule(assemble, rule_id="assemble")
 
     # %% Test the workflow
     w.run(dryrun=True)

@@ -2,7 +2,10 @@
 
 from pathlib import Path
 
-from hydroflows.workflow.method import Method
+from hydroflows._typing import ListOfListOfInt
+from hydroflows.methods.climate.grid_utils import get_expected_change_grid
+from hydroflows.methods.climate.utils import to_netcdf
+from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 
@@ -48,9 +51,14 @@ class Params(Parameters):
     The specific climate scenario. Chose from ... # TODO
     """
 
-    horizon: tuple | str
+    horizon: ListOfListOfInt
     """
     The horizon of the future scenario.
+    """
+
+    wildcard: str = "horizons"
+    """
+    Name of the wildcard... # TODO
     """
 
     data_root: Path
@@ -59,7 +67,7 @@ class Params(Parameters):
     """
 
 
-class ClimateFactorsGridded(Method):
+class ClimateFactorsGridded(ExpandMethod):
     """Method for climate model change factors."""
 
     name: str = "climate_factors_gridded"
@@ -69,14 +77,30 @@ class ClimateFactorsGridded(Method):
     def __init__(self, hist_stats: Path, fut_stats: Path, **params):
         self.params: Params = Params(**params)
         self.input: Input = Input(hist_stats=hist_stats, fut_stats=fut_stats)
-        name = self.params.horizon
-        if isinstance(self.params.horizon, tuple):
-            name = "-".join(self.params.horizon)
+        wc = f"{{{self.params.wildcard}}}"
         self.output: Output = Output(
             change_factors=self.params.data_root
-            / f"change_{self.params.model}_{self.params.scenario}_{name}.nc"
+            / f"change_{self.params.model}_{self.params.scenario}_{wc}.nc"
+        )
+        self.formatted_wildcards = [
+            "-".join([str(i) for i in item]) for item in self.params.horizon
+        ]
+        self.set_expand_wildcard(
+            self.params.wildcard,
+            values=self.formatted_wildcards,
         )
 
     def run(self):
         """Run the climate factors gridded method."""
-        pass
+        for wc in self.formatted_wildcards:
+            change_ds = get_expected_change_grid(
+                nc_historical=self.input.hist_stats,
+                nc_future=self.input.fut_stats,
+                name_horizon=wc,
+            )
+
+            to_netcdf(
+                change_ds,
+                file_name=f"change_{self.params.model}_{self.params.scenario}_{wc}.nc",
+                output_dir=self.params.data_root,
+            )

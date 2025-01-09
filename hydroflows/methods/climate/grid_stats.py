@@ -2,8 +2,9 @@
 
 from pathlib import Path
 
-from hydroflows._typing import ListOfPath, ListOfStr
+from hydroflows._typing import ListOfListOfInt, ListOfPath, ListOfStr
 from hydroflows.methods.climate.grid_utils import extract_climate_projections_statistics
+from hydroflows.methods.climate.utils import to_netcdf
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -55,7 +56,7 @@ class Params(Parameters):
     The specific climate scenario. Chose from ... # TODO
     """
 
-    horizon: tuple
+    horizon: ListOfListOfInt
     """
     The horizon of the future scenario.
     """
@@ -64,9 +65,6 @@ class Params(Parameters):
     """
     The output directory of the dataset.
     """
-
-    historical: bool = (True,)
-    """Whether it is a historical period or not."""
 
 
 class ClimateStatistics(Method):
@@ -91,22 +89,46 @@ class ClimateStatistics(Method):
         self.params: Params = Params(**params)
         self.input: Input = Input(region=region)
         name = "historical"
-        if not self.params.historical:
-            name = "future"
-        elements = ["stats", self.params.model, name]
+        self.scenario = name
+        elements = ["stats", self.params.model]
         if self.params.scenario is not None:
-            elements.insert(2, self.params.scenario)
-        out_file = "_".join(elements)
+            name = "future"
+            self.scenario = self.params.scenario
+            elements.append(self.params.scenario)
+        elements.append(name)
+        self.out_file = "_".join(elements) + ".nc"
         self.output: Output = Output(
-            stats=self.params.data_root / f"{out_file}.nc",
+            stats=self.params.data_root / self.out_file,
         )
 
     def run(self) -> None:
         """Run the gridded climate statistics method."""
-        # Directly call the worker function
+        # Prepare the time horizon dictionary
+        horizons = [[str(i) for i in item] for item in self.params.horizon]
+        if self.params.scenario is None:
+            time_horizon = {self.scenario: horizons[0]}
+        else:
+            horizon_fmt = ["-".join(item) for item in horizons]
+            time_horizon = dict(zip(horizon_fmt, horizons))
+
+        # Execute the function
         stats_ds = extract_climate_projections_statistics(
-            region=self.input.region,
+            self.input.region,
             data_catalog=self.params.data_libs,
+            scenario=self.scenario,
+            clim_source="cmip6",
+            members=["r1i1p1f1"],
+            model=self.params.model,
+            variables=["precip", "temp", "pet"],
+            pet_method="makkink",
+            tdew_method="sh",
+            compute_wind=False,
+            time_horizon=time_horizon,
         )
 
-        stats_ds.to_netcdf()
+        # Save to drive
+        to_netcdf(
+            stats_ds,
+            file_name=self.out_file,
+            output_dir=self.params.data_root,
+        )

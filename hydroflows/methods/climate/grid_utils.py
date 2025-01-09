@@ -1,7 +1,7 @@
 """Functions for determining climate delta's."""
 
-import os
-from os.path import dirname, join
+from logging import getLogger
+from os.path import join
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -13,6 +13,8 @@ import xarray as xr
 
 from hydroflows.methods.climate.meteo import derive_pet, derive_tdew, derive_wind
 from hydroflows.methods.climate.utils import CLIMATE_VARS, intersection
+
+logger = getLogger(__name__)
 
 # Time tuple for timeseries
 CLIM_PROJECT_TIME_TUPLE = {
@@ -410,7 +412,7 @@ def extract_climate_projections_statistics(
     ds_members_mean_stats_time = []
 
     for member in members:
-        print(member)
+        # print(member)
         # For cmip6, replace _ in model by \ to match the data catalog entry
         if clim_source == "cmip6":
             model_entry = model.replace("_", "/")
@@ -636,10 +638,7 @@ def get_change_clim_projections(
 def get_expected_change_grid(
     nc_historical: Union[str, Path],
     nc_future: Union[str, Path],
-    path_output: Union[str, Path],
     name_horizon: str = "future",
-    name_model: str = "model",
-    name_scenario: str = "scenario",
     drymonth_threshold: float = 3.0,
     drymonth_maxchange: float = 50.0,
 ):
@@ -672,15 +671,9 @@ def get_expected_change_grid(
         Path to the future timeseries netcdf file. Contains monthly timeseries.
         Supported variables: precip, temp.
         Required dimensions: lat, lon, time, model, scenario, member.
-    path_output : Union[str, Path]
-        Path to the output directory.
     name_horizon : str, optional
         Name of the horizon. The default is "future". Will be added as an extra
         dimension in the output netcdf file.
-    name_model : str, optional
-        Name of the model for the output filename. The default is "model".
-    name_scenario : str, optional
-        Name of the scenario for the output filename. The default is "scenario".
     drymonth_threshold : float, optional
         Threshold for dry month definition in mm/month. For too dry months, the change
         factors will be limited to ``drymonth_maxchange`` is avoid to avoid too large
@@ -689,11 +682,11 @@ def get_expected_change_grid(
         Maximum change factor for dry months (% change). The default is +-50.0%.
     """
     # Prepare the output filename and directory
-    name_nc_out = f"{name_model}_{name_scenario}_{name_horizon}.nc"
+    # name_nc_out = f"{name_model}_{name_scenario}_{name_horizon}.nc"
     # Create output dir (model name can contain subfolders)
-    dir_output = dirname(join(path_output, "monthly_change_grid", name_nc_out))
-    if not os.path.exists(dir_output):
-        os.makedirs(dir_output)
+    # dir_output = dirname(join(path_output, "monthly_change_grid", name_nc_out))
+    # if not os.path.exists(dir_output):
+    #     os.makedirs(dir_output)
 
     # open datasets
     ds_hist = xr.open_dataset(nc_historical, lock=False)
@@ -721,14 +714,14 @@ def get_expected_change_grid(
         )
 
         # write to netcdf files
-        print("writing netcdf files monthly_change_grid")
-        monthly_change_mean_grid.to_netcdf(
-            join(path_output, "monthly_change_grid", name_nc_out),
-            encoding={k: {"zlib": True} for k in monthly_change_mean_grid.data_vars},
-        )
+        # print("writing netcdf files monthly_change_grid")
+        # monthly_change_mean_grid.to_netcdf(
+        #     join(path_output, "monthly_change_grid", name_nc_out),
+        #     encoding={k: {"zlib": True} for k in monthly_change_mean_grid.data_vars},
+        # )
+        return monthly_change_mean_grid
     else:  # create a dummy netcdf
-        ds_dummy = xr.Dataset()
-        ds_dummy.to_netcdf(join(path_output, "monthly_change_grid", name_nc_out))
+        return xr.Dataset()
 
 
 if __name__ == "__main__":
