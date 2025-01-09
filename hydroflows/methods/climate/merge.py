@@ -82,6 +82,7 @@ class MergeDatasets(ReduceMethod):
         """Run the merge datasets method."""
         merged_ds = merge_climate_datasets(
             self.input.datasets,
+            self.params.res,
         )
 
         to_netcdf(

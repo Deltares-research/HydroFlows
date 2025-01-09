@@ -87,7 +87,7 @@ scenario-horizon combination.
         xmax = max(xmax, np.max(lons)) if xmax is not None else np.max(lons)
         ds.close()
 
-    ds_grid = create_regular_grid(bbox=[xmin, ymin, xmax, ymax], res=0.25, align=True)
+    ds_grid = create_regular_grid(bbox=[xmin, ymin, xmax, ymax], res=res, align=True)
 
     ds_list = []
     for fname in change_ds:
