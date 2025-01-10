@@ -1,6 +1,7 @@
+from copy import deepcopy
 from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING, Dict, List, Union
 
 from hydroflows._typing import folderpath
 from hydroflows.utils.cwl_utils import map_cwl_types
@@ -27,9 +28,14 @@ class JinjaCWLRule:
         return self.rule.method.name
 
     @property
+    def loop_depth(self) -> int:
+        """Get loop depth of rule."""
+        return self.rule._loop_depth
+
+    @property
     def input(self) -> Dict[str, str]:
         """Get input dict for CWL step."""
-        refs = self.rule.input.to_dict(filter_types=Path, return_refs=True)
+        refs = self.rule.method.input.to_dict(filter_types=Path, return_refs=True)
         inputs = {}
         # Reduce wildcards determines type File[] vs type File
         reduce_wc = None
@@ -58,7 +64,7 @@ class JinjaCWLRule:
         params = self.rule.method.params.to_dict(return_refs=True)
         for key, val in params.items():
             if isinstance(val, str) and "$" in val:
-                inputs[key] = map_cwl_types(self.rule.params.to_dict()[key])
+                inputs[key] = map_cwl_types(self.rule.method.params.to_dict()[key])
                 inputs[key]["source"] = val.split(".")[-1]
             else:
                 inputs[key] = map_cwl_types(val)
@@ -82,8 +88,8 @@ class JinjaCWLRule:
         """Get inputs for CWL step that are scattered over."""
         if self.rule.wildcards["reduce"]:
             return []
-        ins = self.rule.input.to_dict()
-        params = self.rule.params.to_dict()
+        ins = self.rule.method.input.to_dict()
+        params = self.rule.method.params.to_dict()
         scatters = [key for key in ins.keys() if "{" in ins[key].as_posix()]
         scatters.extend([key for key in params.keys() if "{" in str(params[key])])
         if self.input_wildcards:
@@ -93,7 +99,7 @@ class JinjaCWLRule:
     @property
     def output(self) -> Dict[str, str]:
         """Get outputs of CWL step."""
-        results = self.rule.output.to_dict(mode="python", filter_types=Path)
+        results = self.rule.method.output.to_dict(mode="python", filter_types=Path)
         outputs = {}
         wc_expand = self.rule.wildcards["expand"]
         for key, val in results.items():
@@ -129,3 +135,57 @@ class JinjaCWLRule:
             if value is not None:
                 results[key] = map_cwl_types(value)
         return results
+
+
+class JinjaCWLWorkflow:
+    """Class for exporting workflow to CWL."""
+
+    def __init__(self, rules: List[JinjaCWLRule], start_loop_depth: int = 0):
+        self.rules = rules
+        self.workflow = rules[0].rule.workflow
+        self.start_loop = start_loop_depth
+
+    @property
+    def input(self) -> Dict[str, str]:
+        """Set CWL workflow inputs to be workflog.config + wildcards."""
+        input_dict = {}
+
+        for key, value in self.workflow.config:
+            input_dict[key] = map_cwl_types(value)
+        for wc in self.workflow.wildcards.names:
+            input_dict[wc] = {
+                "type": "string[]",
+                "value": self.workflow.wildcards.get(wc),
+            }
+
+        return input_dict
+
+    @property
+    def output(self) -> Dict[str, str]:
+        """Set CWL workflow outputs to be outputs of all rules."""
+        output_dict = {}
+
+        for rule in self.rules:
+            for id, info in rule.output.items():
+                output_dict[id] = {
+                    "type": f"{info['type']}[]"
+                    if rule.input_scatter
+                    else f"{info['type']}",
+                    "outputSource": f"{rule.rule_id}/{id}",
+                }
+
+        return output_dict
+
+    @property
+    def steps(self) -> List[Union[JinjaCWLRule, "JinjaCWLWorkflow"]]:
+        """Set list of steps and subworkflows."""
+        step_list = deepcopy(self.rules)
+
+        sub_wf = [rule for rule in step_list if rule.loop_depth > self.start_loop]
+        indices = [i for i, x in enumerate(step_list) if x in sub_wf]
+
+        step_list[indices[0] : indices[-1] + 1] = [
+            JinjaCWLWorkflow(rules=sub_wf, start_loop_depth=self.start_loop + 1)
+        ]
+
+        return step_list
