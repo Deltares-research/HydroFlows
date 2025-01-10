@@ -6,8 +6,12 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 import toml
+import tomli
 from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
 from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
+from fiat_toolbox.metrics_writer.fiat_write_return_period_threshold import (
+    ExceedanceProbabilityCalculator,
+)
 from hydromt.config import configread
 from pydantic import FilePath
 
@@ -136,6 +140,9 @@ class FIATVisualize(Method):
             metrics_config = (
                 self.infometrics_template.parent / "metrics_config_risk.toml"
             )
+            self._add_exeedance_probability(
+                self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
+            )
         else:
             metrics_config = self.infometrics_template
 
@@ -185,6 +192,37 @@ class FIATVisualize(Method):
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
 
+    def _add_exeedance_probability(self, fiat_results_path, config_path):
+        """Add exceedance probability to the fiat results dataframe.
+
+        Parameters
+        ----------
+        fiat_results_path : str
+            Path to the fiat results csv file
+
+        Returns
+        -------
+        pandas.DataFrame
+        FIAT results dataframe with exceedance probability added
+        """
+        # Get config path
+
+        with open(config_path, mode="rb") as fp:
+            config = tomli.load(fp)["flood_exceedance"]
+
+        # Check whether all configs are present
+        if not all(key in config for key in ["column", "threshold", "period"]):
+            raise ValueError("Not all required keys are present in the config file.")
+
+        # Get the exceedance probability
+        fiat_results_df = ExceedanceProbabilityCalculator(
+            config["column"]
+        ).append_to_file(
+            fiat_results_path, fiat_results_path, config["threshold"], config["period"]
+        )
+
+        return fiat_results_df
+
 
 def create_output_map(
     aggregation_areas: list,
@@ -206,15 +244,13 @@ def create_output_map(
         metrics.reset_index(inplace=True, drop=True)
         gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
         gdf_new_aggr.reset_index(inplace=True, drop=True)
-        gdf_new_aggr["default_aggregation"] = metrics.iloc[0:, 0]
-        assert gdf_new_aggr[field_name].equals(gdf_new_aggr["default_aggregation"])
+        gdf_new_aggr[field_name] = metrics.iloc[0:, 0]
 
         for column in metrics.columns:
             if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
                 metrics_float = pd.to_numeric(metrics[column], errors="coerce")
                 gdf_new_aggr[column] = metrics_float
 
-        del gdf_new_aggr["default_aggregation"]
         gdf_new_aggr.to_file(
             Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
         )

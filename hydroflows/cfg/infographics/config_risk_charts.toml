@@ -147,6 +147,7 @@
         plot_height = 300
 
     [Other.Info]
-        text="Hi im the info for the charts plot"
+        text="""Thresholds:<br>
+                Impacted: >= 0.25 feet<br>"""
         image="https://openclipart.org/image/800px/302413"
         scale=0.1
