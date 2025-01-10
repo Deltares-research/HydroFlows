@@ -312,7 +312,7 @@ class Rule:
             # Check if value already exists in conf and update ref if so
             elif value in conf_values:
                 conf_key = conf_keys[conf_values.index(value)]
-                self.method.input._refs.update({key: conf_key})
+                self.method.input._refs.update({key: "$config." + conf_key})
             else:
                 config_key = f"{self.rule_id}_{key}"
                 logger.debug("Adding %s to config", config_key)
@@ -347,7 +347,7 @@ class Rule:
             # Check if value already exists in conf and update ref if so
             elif value in conf_values:
                 conf_key = conf_keys[conf_values.index(value)]
-                self.method.params._refs.update({key: conf_key})
+                self.method.params._refs.update({key: "$config." + conf_key})
 
             elif value != default_value:
                 config_key = f"{self.rule_id}_{key}"
