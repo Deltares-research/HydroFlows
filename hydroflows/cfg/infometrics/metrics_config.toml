@@ -1,4 +1,4 @@
-aggregateBy = "default"
+aggregateBy = [ "default_aggregation",]
 [[queries]]
 name = "TotalDamageEvent"
 description = "Total building damage"
@@ -24,9 +24,73 @@ long_name = "Flooded Homes (#)"
 show_in_metrics_table = "True"
 
 [[queries]]
-name = "CommercialCount"
-description = "Number of commercial buildings with flooding"
+name = "ResidentialMinorCount"
+description = "Number of residences with minor damage"
 select = "COUNT(*)"
-filter = "`secondary_object_type` IN ('COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM8', 'COM9')  AND `total_damage` > 0"
-long_name = "Flooded businesses (#)"
-show_in_metrics_table = "True"
+filter = "`primary_object_type` IN ('RES') AND `inun_depth` <= 1 AND `total_damage` > 0"
+long_name = "Res buildings w/ minor flooding (#)"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "ResidentialMajorCount"
+description = "Number of residences with major damage"
+select = "COUNT(*)"
+filter = "`primary_object_type` IN ('RES') AND `inun_depth` <= 6 AND `inun_depth` > 1 AND `total_damage` > 0"
+long_name = "Res buildings w/ major flooding (#)"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "ResidentialDestroyedCount"
+description = "Number of destroyed residences"
+select = "COUNT(*)"
+filter = "`primary_object_type` IN ('RES') AND `inun_depth` > 6 AND `total_damage` > 0"
+long_name = "Res buildings destroyed (#)"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "CommercialMinorCount"
+description = "Number of commercial buildings with minor flooding"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM8', 'COM9')  AND `inun_depth` <= 1 AND `total_damage` > 0"
+long_name = "Minor Damaged Commercial Buildings"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "CommercialMajorCount"
+description = "Number of commercial buildings with major flooding"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM8', 'COM9')  AND `inun_depth` <= 6 AND `inun_depth` > 1 AND `total_damage` > 0"
+long_name = "Major Damaged Commercial Buildings"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "CommercialDestroyedCount"
+description = "Number of destroyed commercial buildings"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM8', 'COM9')  AND `inun_depth` > 6 AND `total_damage` > 0"
+long_name = "Destroyed Commercial Buildings"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "IndustrialMinorCount"
+description = "Number of industrial buildings with minor flooding"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('industrial')  AND `inun_depth` <= 0.25 AND `total_damage` > 0"
+long_name = "Minor Damaged Industrial Buildings"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "IndustrialMajorCount"
+description = "Number of industrial buildings with major flooding"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('industrial')  AND `inun_depth` <= 1.5 AND `inun_depth` > 0.25 AND `total_damage` > 0"
+long_name = "Major Damaged Industrial Buildings"
+show_in_metrics_table = "False"
+
+[[queries]]
+name = "IndustrialDestroyedCount"
+description = "Number of destroyed industrial buildings"
+select = "COUNT(*)"
+filter = "`secondary_object_type` IN ('industrial')  AND `inun_depth` > 1.5 AND `total_damage` > 0"
+long_name = "Destroyed Industrial Buildings"
+show_in_metrics_table = "False"

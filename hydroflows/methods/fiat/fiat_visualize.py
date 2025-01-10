@@ -197,25 +197,24 @@ def create_output_map(
         fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
         gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
-        metrics = pd.read_csv(
-            Path(
-                fn_aggregated_metrics
-                / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
-            )
-        ).iloc[3:, 0:]
+        metrics_fn = Path(
+            fn_aggregated_metrics
+            / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
+        )
+        metrics = pd.read_csv(metrics_fn, index_col=0).iloc[4:, 0:]
         metrics = metrics.sort_values(metrics.columns[0])
         metrics.reset_index(inplace=True, drop=True)
         gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
         gdf_new_aggr.reset_index(inplace=True, drop=True)
-        gdf_new_aggr["aggregation"] = metrics.iloc[0:, 0]
-        assert gdf_new_aggr[field_name].equals(gdf_new_aggr["aggregation"])
+        gdf_new_aggr["default_aggregation"] = metrics.iloc[0:, 0]
+        assert gdf_new_aggr[field_name].equals(gdf_new_aggr["default_aggregation"])
 
         for column in metrics.columns:
             if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
                 metrics_float = pd.to_numeric(metrics[column], errors="coerce")
                 gdf_new_aggr[column] = metrics_float
 
-        del gdf_new_aggr["aggregation"]
+        del gdf_new_aggr["default_aggregation"]
         gdf_new_aggr.to_file(
             Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
         )
