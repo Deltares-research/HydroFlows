@@ -129,7 +129,7 @@ class FIATVisualize(Method):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
         rp = []
-        event_set = EventSet(root=root, events=events.events)
+        event_set = EventSet(root=self.input.event_set_file, events=events.events)
         for event in event_set:
             return_period = 1 / event.return_period
         rp.append(return_period)
