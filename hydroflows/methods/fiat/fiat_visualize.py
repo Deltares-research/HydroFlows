@@ -133,7 +133,7 @@ class FIATVisualize(Method):
         for event in event_set:
             return_period = 1 / event.return_period
         rp.append(return_period)
-        scenario_name = events.stem
+        scenario_name = self.input.event_set_file.stem
 
         # Write the metrics to file
         if events.mode == "risk":
