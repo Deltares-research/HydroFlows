@@ -34,7 +34,7 @@ class Input(Parameters):
     The file path to the output of the FIAT model.
     """
 
-    event_name: Path
+    event_set_file: Path
     """Path to the eventset cfg file."""
 
 
@@ -79,7 +79,7 @@ class FIATVisualize(Method):
     def __init__(
         self,
         fiat_cfg: Path,
-        event_name: Path,
+        event_set_file: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
         infographics_template: FilePath = CFG_DIR
         / "infographics"
@@ -94,7 +94,7 @@ class FIATVisualize(Method):
         ----------
         fiat_cfg: Path
             The file path to the output of the FIAT model.
-        event_name: Path
+        event_set_file: Path
             The file path to the event set output of the hydromt SFINCS model.
         output_dir: Path = "models/fiat/fiat_metrics"
             The file path to the output of the FIAT infometrics and infographics.
@@ -113,13 +113,13 @@ class FIATVisualize(Method):
         self.params: Params = Params(output_dir=output_dir)
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
-            event_name=event_name,
+            event_set_file=event_set_file,
         )
         self.output: Output = Output(
             fiat_infometrics=self.params.output_dir
-            / f"Infometrics_{self.input.event_name.stem}.csv",
+            / f"Infometrics_{self.input.event_set_file.stem}.csv",
             fiat_infographics=self.params.output_dir
-            / f"{self.input.event_name.stem}_metrics.html",
+            / f"{self.input.event_set_file.stem}_metrics.html",
         )
 
         self.infographics_template = infographics_template
@@ -127,13 +127,13 @@ class FIATVisualize(Method):
 
     def run(self):
         """Run the FIATVisualize method."""
-        events = configread(self.input.event_name)["events"]
+        events = configread(self.input.event_set_file)["events"]
         if len(events) > 1:
             mode = "risk"
         else:
             mode = "single_event"
 
-        scenario_name = self.input.event_name.stem
+        scenario_name = self.input.event_set_file.stem
 
         # Write the metrics to file
         if mode == "risk":
@@ -179,7 +179,7 @@ class FIATVisualize(Method):
         create_output_map(
             aggregation_areas,
             self.input.fiat_cfg.parent,
-            self.input.event_name.stem,
+            self.input.event_set_file.stem,
             self.params.output_dir,
         )
 
@@ -227,7 +227,7 @@ class FIATVisualize(Method):
 def create_output_map(
     aggregation_areas: list,
     fiat_model: Path,
-    event_name: str,
+    event_set_file: str,
     fn_aggregated_metrics: Path = None,
 ):
     for aggregation_area in aggregation_areas:
@@ -252,7 +252,9 @@ def create_output_map(
                 gdf_new_aggr[column] = metrics_float
 
         gdf_new_aggr.to_file(
-            Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
+            Path(
+                fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.geojson"
+            )
         )
 
 
