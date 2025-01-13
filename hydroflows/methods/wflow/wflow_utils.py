@@ -33,6 +33,41 @@ _ATTRS = {
 }
 
 
+def set_config(obj, *args):
+    """Update the config dictionary at key(s) with values.
+
+    Parameters
+    ----------
+    obj : dict
+        The config dictionary
+    args : key(s), value tuple, with minimal length of two
+        keys can given by multiple args: ('key1', 'key2', 'value')
+        or a string with '.' indicating a new level: ('key1.key2', 'value')
+
+    Examples
+    --------
+    >> # self.config = {'a': 1, 'b': {'c': {'d': 2}}}
+
+    >> set_config('a', 99)
+    >> {'a': 99, 'b': {'c': {'d': 2}}}
+
+    >> set_config('b', 'c', 'd', 99) # identical to set_config('b.d.e', 99)
+    >> {'a': 1, 'b': {'c': {'d': 99}}}
+    """
+    if len(args) < 2:
+        raise TypeError("set_config() requires a least one key and one value.")
+    args = list(args)
+    value = args.pop(-1)
+    if len(args) == 1 and "." in args[0]:
+        args = args[0].split(".") + args[1:]
+    branch = obj
+    for key in args[:-1]:
+        if key not in branch or not isinstance(branch[key], dict):
+            branch[key] = {}
+        branch = branch[key]
+    branch[args[-1]] = value
+
+
 def shift_time(
     time: str,
     delta: int | float,

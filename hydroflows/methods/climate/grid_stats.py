@@ -38,7 +38,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`ClimateStatistics`.
 
-    Instances of this class are used in the :py:class:`Rainfall`
+    Instances of this class are used in the :py:class:`ClimateStatistics`
     method to define the required settings.
     """
 
@@ -86,12 +86,21 @@ class ClimateStatistics(Method):
         region: Path,
         **params,
     ) -> None:
-        """_summary_.
+        """Create statistics from climate data.
 
         Parameters
         ----------
         region : Path
-            _description_
+           Path to the region vector file.
+        **params
+            Additional parameters to pass to the ClimateStatistics instance.
+            See :py:class:`grid_stats Params <hydroflows.methods.climate.grid_stats.Params>`.
+
+        See Also
+        --------
+        :py:class:`grid_stats Input <~hydroflows.methods.climate.grid_stats.Input>`
+        :py:class:`grid_stats Output <~hydroflows.methods.climate.grid_stats.Output>`
+        :py:class:`grid_stats Params <~hydroflows.methods.climate.grid_stats.Params>`
         """
         self.params: Params = Params(**params)
         self.input: Input = Input(region=region)

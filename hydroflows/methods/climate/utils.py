@@ -1,9 +1,12 @@
 """Climate utility functions."""
 
+from logging import getLogger
 from pathlib import Path
 
 import xarray as xr
 from dask.diagnostics import ProgressBar
+
+logger = getLogger(__name__)
 
 CLIMATE_VARS = {
     "precip": {
@@ -55,5 +58,6 @@ def to_netcdf(
         compute=False,
     )
 
+    logger.info(f"Writing {file_name}")
     with ProgressBar():
         obj_compute.compute()

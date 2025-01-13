@@ -38,12 +38,15 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`WflowRun`."""
 
-    run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe"
+    run_method: Literal["exe", "docker", "julia", "script", "apptainer"] = "exe"
     """How to run wflow. Options are 'exe' for running the executable directly (only on Windows),
     'docker' or 'apptainer' for running the model in a container."""
 
     wflow_bin: Optional[Path] = None
     """The path to the wflow executable."""
+
+    wflow_run_script: Optional[Path] = None
+    """Path to a script in which wflow is called."""
 
     julia_num_threads: int = 4
     """The number of the threads to be used from Julia."""
@@ -130,6 +133,14 @@ class WflowRun(Method):
                 nthreads,
                 "-e",
                 "using Wflow; Wflow.run()",
+                wflow_toml,
+            ]
+        elif self.params.method == "script":
+            command = [
+                "julia",
+                "-t",
+                nthreads,
+                self.params.wflow_run_script.as_posix(),
                 wflow_toml,
             ]
         elif self.params.run_method == "docker":

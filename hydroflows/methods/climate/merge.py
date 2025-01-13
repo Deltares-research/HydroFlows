@@ -34,7 +34,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`MergeDatasets`.
 
-    Instances of this class are used in the :py:class:`Rainfall`
+    Instances of this class are used in the :py:class:`MergeDatasets`
     method to define the required settings.
     """
 
@@ -73,15 +73,29 @@ class MergeDatasets(ReduceMethod):
         self,
         datasets: list,
         **params,
-    ):
+    ) -> None:
+        """Merge mulitple gridded climate factor datasets.
+
+        Parameters
+        ----------
+        datasets : list
+            List of paths of the datasets for merging.
+        **params
+            Additional parameters to pass to the MergeDatasets instance.
+            See :py:class:`merge Params <hydroflows.methods.climate.merge.Params>`.
+
+        See Also
+        --------
+        :py:class:`merge Input <~hydroflows.methods.climate.merge.Input>`
+        :py:class:`merge Output <~hydroflows.methods.climate.merge.Output>`
+        :py:class:`merge Params <~hydroflows.methods.climate.merge.Params>`
+        """
         self.params: Params = Params(**params)
         self.input: Input = Input(datasets=datasets)
         self.output: Output = Output(
             merged=self.params.data_root
             / f"assemble_{self.params.scenario}_{self.params.horizon}.nc"
         )
-
-        pass
 
     def run(self):
         """Run the merge datasets method."""

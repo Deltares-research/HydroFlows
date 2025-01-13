@@ -1,7 +1,6 @@
 """Functions for determining climate delta's."""
 
 from logging import getLogger
-from os.path import join
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -412,7 +411,6 @@ def extract_climate_projections_statistics(
     ds_members_mean_stats_time = []
 
     for member in members:
-        # print(member)
         # For cmip6, replace _ in model by \ to match the data catalog entry
         if clim_source == "cmip6":
             model_entry = model.replace("_", "/")
@@ -456,7 +454,9 @@ def extract_climate_projections_statistics(
                         data_ = data_.drop_duplicates(dim="time", keep="first")
                         ds_list.append(data_)
                     except BaseException:
-                        print(f"{scenario}", f"{model_entry}", f"{var} not found")
+                        logger.warning(
+                            f"{scenario}", f"{model_entry}", f"{var} not found"
+                        )
                 # merge all variables back to data
                 data = xr.merge(ds_list)
 
@@ -496,39 +496,6 @@ def extract_climate_projections_statistics(
 
     nc_mean_stats = xr.merge(ds_members_mean_stats)
     # nc_mean_stats_time = xr.merge(ds_members_mean_stats_time)
-
-    # write netcdf
-    # use hydromt function instead to write to netcdf?
-    # dvars = nc_mean_stats_time.data_vars
-
-    # Create output dir (model name can contain subfolders)
-    # dir_output = dirname(join(path_output, name_nc_out_time))
-    # if not os.path.exists(dir_output):
-    #     os.makedirs(dir_output)
-
-    # print("writing stats over time to nc")
-    # delayed_obj = nc_mean_stats_time.to_netcdf(
-    #     join(path_output, name_nc_out_time),
-    #     encoding={k: {"zlib": True} for k in dvars},
-    #     compute=False,
-    # )
-    # with ProgressBar():
-    #     delayed_obj.compute()
-
-    # print("writing stats over grid to nc")
-
-    # Create output dir (model name can contain subfolders)
-    # dir_output = dirname(join(path_output, name_nc_out))
-    # if not os.path.exists(dir_output):
-    #     os.makedirs(dir_output)
-
-    # delayed_obj = nc_mean_stats.to_netcdf(
-    #     join(path_output, name_nc_out),
-    #     encoding={k: {"zlib": True} for k in dvars},
-    #     compute=False,
-    # )
-    # with ProgressBar():
-    #     delayed_obj.compute()
 
     return nc_mean_stats
 
@@ -625,7 +592,7 @@ def get_change_clim_projections(
                 scenario=ds_hist.scenario.values[0]
             )
         else:
-            print(f"Variable {var} not supported.")
+            logger.warning(f"Variable {var} not supported.")
             continue
 
         ds.append(change.to_dataset())
@@ -681,13 +648,6 @@ def get_expected_change_grid(
     drymonth_maxchange : float, optional
         Maximum change factor for dry months (% change). The default is +-50.0%.
     """
-    # Prepare the output filename and directory
-    # name_nc_out = f"{name_model}_{name_scenario}_{name_horizon}.nc"
-    # Create output dir (model name can contain subfolders)
-    # dir_output = dirname(join(path_output, "monthly_change_grid", name_nc_out))
-    # if not os.path.exists(dir_output):
-    #     os.makedirs(dir_output)
-
     # open datasets
     ds_hist = xr.open_dataset(nc_historical, lock=False)
     ds_fut = xr.open_dataset(nc_future, lock=False)
@@ -722,37 +682,3 @@ def get_expected_change_grid(
         return monthly_change_mean_grid
     else:  # create a dummy netcdf
         return xr.Dataset()
-
-
-if __name__ == "__main__":
-    if "snakemake" in globals():
-        sm = globals()["snakemake"]
-
-        # Snakemake options
-        project_dir = sm.params.project_dir
-        name_clim_project = sm.params.name_clim_project
-        path_output = join(project_dir, "climate_projections", name_clim_project)
-
-        # Convert time horizons from string to tuple
-        time_horizon = sm.params.time_horizon
-        for key, value in time_horizon.items():
-            time_horizon[key] = tuple(map(str, value.split(", ")))
-
-        extract_climate_projections_statistics(
-            region_fn=sm.input.region_fid,
-            data_catalog=sm.params.yml_fid,
-            path_output=path_output,
-            clim_source=name_clim_project,
-            scenario=sm.params.name_scenario,
-            members=sm.params.name_members,
-            model=sm.params.name_model,
-            variables=sm.params.variables,
-            pet_method=sm.params.pet_method,
-            tdew_method=sm.params.tdew_method,
-            compute_wind=sm.params.compute_wind,
-            save_grids=sm.params.save_grids,
-            time_horizon=time_horizon,
-        )
-
-    else:
-        print("This script should be run from a snakemake environment")

@@ -37,7 +37,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`ClimateFactorsGridded`.
 
-    Instances of this class are used in the :py:class:`Rainfall`
+    Instances of this class are used in the :py:class:`ClimateFactorsGridded`
     method to define the required settings.
     """
 
@@ -81,7 +81,25 @@ class ClimateFactorsGridded(ExpandMethod):
         "data_root": Path("data", "input", "stats"),
     }
 
-    def __init__(self, hist_stats: Path, fut_stats: Path, **params):
+    def __init__(self, hist_stats: Path, fut_stats: Path, **params) -> None:
+        """Create gridded climate change factors from statistics.
+
+        Parameters
+        ----------
+        hist_stats : Path
+            Path to the file with historical climate statistics.
+        fut_stats : Path
+            Path to the file with future climate statistics.
+        **params
+            Additional parameters to pass to the ClimateFactorsGridded instance.
+            See :py:class:`grid_change Params <hydroflows.methods.climate.grid_change.Params>`.
+
+        See Also
+        --------
+        :py:class:`grid_change Input <~hydroflows.methods.climate.grid_change.Input>`
+        :py:class:`grid_change Output <~hydroflows.methods.climate.grid_change.Output>`
+        :py:class:`grid_change Params <~hydroflows.methods.climate.grid_change.Params>`
+        """
         self.params: Params = Params(**params)
         self.input: Input = Input(hist_stats=hist_stats, fut_stats=fut_stats)
         wc = f"{{{self.params.wildcard}}}"

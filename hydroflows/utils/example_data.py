@@ -36,6 +36,7 @@ def unpack_processor(
 def fetch_data(
     data: str,
     output_dir: Path | str | None = None,
+    sub_dir: bool = True,
 ) -> Path:
     """Fetch data by simply calling the function.
 
@@ -46,6 +47,10 @@ def fetch_data(
     output_dir : Path | str | None
         The output directory to store the data.
         If None, the data will be stored in ~/.cache/hydroflows/<data>
+    sub_dir : bool
+        Whether to place the fetched data in a sub directory of the same name.
+        I.e. if  the (tarred) dataset is named 'custom-data' a directory named
+        'custom-data' is created in which the data are placed. By default True
 
     Returns
     -------
@@ -54,6 +59,7 @@ def fetch_data(
     """
     if output_dir is None:
         output_dir = CACHE_DIR
+    output_dir = Path(output_dir)  # Ensure Path object type
 
     # Quick check whether the data can be found
     choices_raw = list(REGISTRY.keys())
@@ -75,8 +81,11 @@ def fetch_data(
 
     # Set the way of unpacking it
     suffix = choices_raw[idx].split(".", 1)[1]
-    processor = unpack_processor(suffix, extract_dir=f"./{data}")
+    extract_dir = "."
+    if sub_dir:
+        extract_dir += f"/{data}"
+    processor = unpack_processor(suffix, extract_dir=extract_dir)
     # Retrieve the data
     retriever.fetch(choices_raw[idx], processor=processor)
 
-    return output_dir / data
+    return output_dir / extract_dir

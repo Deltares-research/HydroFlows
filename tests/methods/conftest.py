@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Tuple
 
 import geopandas as gpd
+import hydromt  # noqa: F401
 import numpy as np
 import pandas as pd
 import pytest
@@ -397,3 +398,56 @@ def waterlevel_rps() -> xr.Dataset:
 def bnd_locations() -> gpd.GeoDataFrame:
     bnds = gpd.GeoDataFrame(data={"stations": [1]}, geometry=[Point(1, 1)], crs=4326)
     return bnds
+
+
+@pytest.fixture
+def dummy_climate_stats() -> xr.Dataset:
+    coords = {
+        "clim_project": ["a-project"],
+        "model": ["a-model"],
+        "scenario": ["historical"],
+        "member": ["a-member"],
+        "month": range(1, 13),
+        "lat": [-1, 1],
+        "lon": [-1, 1],
+        "horizon": ["historical"],
+    }
+
+    dims = list(coords.keys())
+    dims_size = [len(item) for item in coords.values()]
+
+    ds = xr.Dataset(coords=coords)
+    ds["precip"] = (dims, np.ones(dims_size).astype(np.float64))
+    ds["temp"] = (dims, np.ones(dims_size).astype(np.float32))
+    ds["pet"] = (dims, np.ones(dims_size).astype(np.float32))
+
+    ds.raster.set_crs(4326)
+
+    return ds
+
+
+@pytest.fixture
+def climate_stats(tmp_path: Path, dummy_climate_stats: xr.Dataset) -> list:
+    paths = []
+    for model, factor, period in zip(
+        ["a-model", "a-model", "b-model"],
+        [1, 2.5, 3.5],
+        ["historical", "future", "future"],
+    ):
+        elements = ["stats", model, period]
+        ds = dummy_climate_stats.copy()
+        ds["precip"] *= 2 * factor
+        ds["temp"] *= 4 * factor
+        ds["pet"] *= 0.5 * factor
+        ds["model"] = [model]
+
+        if period == "future":
+            ds["scenario"] = ["a-scenario"]
+            elements.insert(2, "a-scenario")
+            ds["horizon"] = ["2050-2060"]
+
+        p = Path(tmp_path, "_".join(elements) + ".nc")
+        ds.to_netcdf(p)
+        paths.append(p)
+
+    return paths
