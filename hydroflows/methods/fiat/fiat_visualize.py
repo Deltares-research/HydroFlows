@@ -130,9 +130,11 @@ class FIATVisualize(Method):
         events = EventSet.from_yaml(self.input.event_set_file)
         rp = []
         event_set = EventSet(root=self.input.event_set_file, events=events.events)
-        for event in event_set:
-            return_period = 1 / event.return_period
-        rp.append(return_period)
+        for event in events.events:
+            name = event["name"]
+            event = event_set.get_event(name)
+            mode = event["mode"]
+        rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
 
         # Write the metrics to file
