@@ -2,6 +2,7 @@
 from pathlib import Path
 
 import pandas as pd
+import pytest
 import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
@@ -30,8 +31,26 @@ def nested_dict_values(d):
             yield v
 
 
+@pytest.mark.requires_test_data()
 def test_fa_setup(fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path):
     # Setup the rule
+    """
+    Test the SetupFloodAdapt rule.
+
+    This function tests that the SetupFloodAdapt rule can run successfully, given a
+    FIAT model, a SFINCS model, and an event set. It checks that the rule output is
+    as expected, and that the output files can be read successfully.
+
+    Parameters
+    ----------
+    fiat_tmp_model : Path
+        The path to a temporary directory containing a FIAT model.
+    sfincs_tmp_model : Path
+        The path to a temporary directory containing a SFINCS model.
+    event_set_file : Path
+        The path to a file containing an event set, in the format expected by
+        HydroFlows.
+    """
     rule = SetupFloodAdapt(
         fiat_cfg=Path(fiat_tmp_model, "settings.toml"),
         sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
@@ -40,6 +59,7 @@ def test_fa_setup(fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: 
     rule.run_with_checks()
 
 
+@pytest.mark.requires_test_data()
 def test_translate_fiat_model(fiat_tmp_model: Path):
     """
     Test the translate_fiat_model function.
@@ -90,6 +110,7 @@ def test_translate_fiat_model(fiat_tmp_model: Path):
     assert fn_output.joinpath("output").exists()
 
 
+@pytest.mark.requires_test_data()
 def test_translate_events(event_set_file: Path):
     """
     Test the translate_events function.
