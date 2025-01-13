@@ -144,7 +144,20 @@ class FIATVisualize(Method):
             )
         else:
             metrics_config = self.infometrics_template
+            with open(metrics_config, "r") as f:
+                infometrics_cfg = toml.load(f)
+            aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+            aggr_names = []
+            for aggregation_area in aggregation_areas:
+                name = aggregation_area["name"]
+                aggr_names.append(name)
+            infometrics_cfg["aggregateBy"] = aggr_names
+            with open(metrics_config, "w") as f:
+                toml.dump(infometrics_cfg, f)
 
+        # TODO: Add road config if road in exposure 
+        #if "roads.gpkg" in Path(self.input.fiat_cfg.parent / "exposure"):
+        
         metrics_writer = MetricsFileWriter(metrics_config)
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
@@ -154,19 +167,7 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
-        # Write aggregated metrics config files
-        # for file in self.infometrics_template.parent.iterdir():
-        #    with open(file, "r") as f:
-        #        infometrics_cfg = toml.load(f)
-        #    aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
-        #    aggr_names = []
-        #    for aggregation_area in aggregation_areas:
-        #        name = aggregation_area["name"]
-        #        aggr_names.append(name)
-        #    infometrics_cfg["aggregateBy"] = aggr_names
-        #    with open(file, "w") as f:
-        #        toml.dump(infometrics_cfg, f)
-
+        
         # Write metrics
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
@@ -179,7 +180,7 @@ class FIATVisualize(Method):
             self.input.fiat_cfg.parent,
             self.input.event_set_file.stem,
             self.params.output_dir,
-            aggregation_areas=get_aggregation_areas(self.input.fiat_cfg.parent),
+            aggregation_areas= get_aggregation_areas(self.input.fiat_cfg.parent),
         )
 
         # Write the infographic
