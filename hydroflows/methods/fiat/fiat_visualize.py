@@ -133,12 +133,11 @@ class FIATVisualize(Method):
         for event in events.events:
             name = event["name"]
             event = event_set.get_event(name)
-            mode = event["mode"]
         rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
 
         # Write the metrics to file
-        if events.mode == "risk":
+        if len(events.events) > 1:
             metrics_config = self.write_risk_infometrics_config(rp, self.input.fiat_cfg)
             self._add_exeedance_probability(
                 self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
