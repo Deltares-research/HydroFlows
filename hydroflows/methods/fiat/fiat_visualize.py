@@ -128,9 +128,12 @@ class FIATVisualize(Method):
     def run(self):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
-
+        rp = []
+        event_set = EventSet(root=root, events=events.events)
+        for event in event_set:
+            return_period = 1 / event.return_period
+        rp.append(return_period)
         scenario_name = events.stem
-        rp = events.return_period
 
         # Write the metrics to file
         if events.mode == "risk":
