@@ -8,15 +8,14 @@ import pandas as pd
 import toml
 import tomli
 from fiat_toolbox.infographics.infographics_factory import InforgraphicFactory
-from hydroflows.events import EventSet
 from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWriter
 from fiat_toolbox.metrics_writer.fiat_write_return_period_threshold import (
     ExceedanceProbabilityCalculator,
 )
-from hydromt.config import configread
 from pydantic import FilePath
 
 from hydroflows.cfg import CFG_DIR
+from hydroflows.events import EventSet
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -129,20 +128,13 @@ class FIATVisualize(Method):
     def run(self):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
-        #events = configread(self.input.event_set_file)["events"]
-        rp = events.return_periods
-        if len(events) > 1:
-            mode = "risk"
-        else:
-            mode = "single_event"
 
-        scenario_name = self.input.event_set_file.stem
+        scenario_name = events.stem
+        rp = events.return_period
 
         # Write the metrics to file
-        if mode == "risk":
-            metrics_config = self.write_risk_infometrics_config(
-                rp, self.input.fiat_cfg
-            )
+        if events.mode == "risk":
+            metrics_config = self.write_risk_infometrics_config(rp, self.input.fiat_cfg)
             self._add_exeedance_probability(
                 self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
             )
@@ -159,17 +151,17 @@ class FIATVisualize(Method):
             write_aggregate=None,
         )
         # Write aggregated metrics config files
-        for file in self.infometrics_template.parent.iterdir():
-            with open(file, "r") as f:
-                infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
-            aggr_names = []
-            for aggregation_area in aggregation_areas:
-                name = aggregation_area["name"]
-                aggr_names.append(name)
-            infometrics_cfg["aggregateBy"] = aggr_names
-            with open(file, "w") as f:
-                toml.dump(infometrics_cfg, f)
+        # for file in self.infometrics_template.parent.iterdir():
+        #    with open(file, "r") as f:
+        #        infometrics_cfg = toml.load(f)
+        #    aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+        #    aggr_names = []
+        #    for aggregation_area in aggregation_areas:
+        #        name = aggregation_area["name"]
+        #        aggr_names.append(name)
+        #    infometrics_cfg["aggregateBy"] = aggr_names
+        #    with open(file, "w") as f:
+        #        toml.dump(infometrics_cfg, f)
 
         # Write metrics
         metrics_writer.parse_metrics_to_file(
@@ -180,15 +172,15 @@ class FIATVisualize(Method):
             write_aggregate="all",
         )
         create_output_map(
-            aggregation_areas,
             self.input.fiat_cfg.parent,
             self.input.event_set_file.stem,
             self.params.output_dir,
+            aggregation_areas=get_aggregation_areas(self.input.fiat_cfg.parent),
         )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
-            infographic_mode=mode,
+            infographic_mode=events.mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
             config_base_path=Path(self.infographics_template.parent),
@@ -298,7 +290,6 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
     The configuration file is written to the FIAT model folder with the name
     "metrics_config_risk.toml".
     """
-    
     # Get aggregation area
     with open((fiat_model.parent / "spatial_joins.toml"), "r") as f:
         spatial_joins = toml.load(f)
@@ -328,62 +319,63 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         ],
     }
 
-    
     # add return period metrics
     while x < len(rp):
         config = {
-                "name": f"TotalDamageRP{rp[x]}",
-                "description": f"total_damage with return period of {rp[x]} years",
-                "select": f"SUM(`total_damage_{rp[x]}.0y`)",
-                "filter": "",
-                "long_name": f"total_damage (RP {rp[x]})",
-                "show_in_metrics_table": "True"
-        }
-        mandatory_metrics["queries"].append(config)
-        x += 1
-        
-    x = 0
-    while x < len(rp):
-        config = {
-        "name" : f"FloodedHomes{rp[x]}Y",
-        "description": f"Number of flooded residential buildings with return period of {rp[x]} years",
-        "select ": "COUNT(*)",
-        "filter": "`primary_object_type` IN (`residential`) AND `inun_depth_2.0y` > 0.2",
-        "long_name": f"Flooded  homes (RP {rp[x]})",
-        "show_in_metrics_table": "True"
+            "name": f"TotalDamageRP{rp[x]}",
+            "description": f"total_damage with return period of {rp[x]} years",
+            "select": f"SUM(`total_damage_{rp[x]}.0y`)",
+            "filter": "",
+            "long_name": f"total_damage (RP {rp[x]})",
+            "show_in_metrics_table": "True",
         }
         mandatory_metrics["queries"].append(config)
         x += 1
 
     x = 0
     while x < len(rp):
-        config = {"name": f"FloodedBusinesses{rp[x]}Y",
-        "description": f"Number of flooded commercial buildings with return period of {rp[x]} years",
-        "select": "COUNT(*)",
-        "filter": "`primary_object_type` IN (`commercial`)  AND `inun_depth_2.0y` > 0.2",
-        "long_name": f"Flooded  businesses (RP {rp[x]})",
-        "show_in_metrics_table": "True"}
+        config = {
+            "name": f"FloodedHomes{rp[x]}Y",
+            "description": f"Number of flooded residential buildings with return period of {rp[x]} years",
+            "select ": "COUNT(*)",
+            "filter": "`primary_object_type` IN (`residential`) AND `inun_depth_2.0y` > 0.2",
+            "long_name": f"Flooded  homes (RP {rp[x]})",
+            "show_in_metrics_table": "True",
+        }
         mandatory_metrics["queries"].append(config)
         x += 1
 
     x = 0
     while x < len(rp):
         config = {
-        "name" : f":FloodedIndustry{rp[x]}Y",
-        "description": f"Number of flooded industrial buildings with return period of {rp[x]} years",
-        "select": "COUNT(*)",
-        "filter" : "`primary_object_type` IN (`industrial`) AND `inun_depth_2.0y` > 0.2",
-        "long_name": f"Flooded  industry (RP {rp[x]})",
-        "show_in_metrics_table" : "True"}
+            "name": f"FloodedBusinesses{rp[x]}Y",
+            "description": f"Number of flooded commercial buildings with return period of {rp[x]} years",
+            "select": "COUNT(*)",
+            "filter": "`primary_object_type` IN (`commercial`)  AND `inun_depth_2.0y` > 0.2",
+            "long_name": f"Flooded  businesses (RP {rp[x]})",
+            "show_in_metrics_table": "True",
+        }
         mandatory_metrics["queries"].append(config)
         x += 1
 
+    x = 0
+    while x < len(rp):
+        config = {
+            "name": f":FloodedIndustry{rp[x]}Y",
+            "description": f"Number of flooded industrial buildings with return period of {rp[x]} years",
+            "select": "COUNT(*)",
+            "filter": "`primary_object_type` IN (`industrial`) AND `inun_depth_2.0y` > 0.2",
+            "long_name": f"Flooded  industry (RP {rp[x]})",
+            "show_in_metrics_table": "True",
+        }
+        mandatory_metrics["queries"].append(config)
+        x += 1
 
     # Write risk config file
     config_risk_fn = Path(fiat_model.parent / "metrics_config_risk.toml")
-    
+
     with open(config_risk_fn, "w") as f:
         toml.dump(mandatory_metrics, f)
-    
-    return config_risk_fn 
+
+    return config_risk_fn
     print("done")
