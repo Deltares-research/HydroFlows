@@ -1,6 +1,7 @@
 """Testing for FIAT rules."""
 
 import platform
+import shutil
 from os import walk
 from pathlib import Path
 
@@ -51,8 +52,8 @@ def test_fiat_run(
         pytest.skip(f"FIAT executable not found at {fiat_exe}")
     elif method == "exe" and platform.system() != "Windows":
         pytest.skip("FIAT exe only supported on Windows")
-    elif method == "python" and not has_fiat_python:
-        pytest.skip("FIAT python package not found")
+    # elif method == "python" and not has_fiat_python:
+    #    pytest.skip("FIAT python package not found")
     elif method == "python" and platform.system() != "Windows":
         # FIXME: FIAT python does currently not work on Linux
         # when reading the vulnerability curves
@@ -68,14 +69,43 @@ def test_fiat_run(
     rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
     rule.run_with_checks()
 
+    assert fiat_cfg.exists()
 
-def test_fiat_visualize(fiat_cached_model: Path, event_set_file: Path):
-    fiat_cfg = (
-        Path(fiat_cached_model) / "simulations" / "fluvial_events" / "settings.toml"
-    )
+
+@pytest.mark.requires_test_data()
+@pytest.mark.parametrize("method", ["python", "exe"])
+def test_fiat_visualize_single_event(
+    fiat_tmp_model: Path,
+    sfincs_sim_model: Path,
+    event_set_file: Path,
+    fiat_exe: Path,
+    method: str,
+):
+    fiat_cfg = Path(fiat_tmp_model) / "settings.toml"
+    hazard = Path(sfincs_sim_model / "zsmax_p_event01.nc")
+    if not Path(fiat_cfg.parent / "hazard").is_dir():
+        Path(fiat_cfg.parent / "hazard").mkdir(parents=True)
+    shutil.copy2(hazard, Path(fiat_cfg.parent / "hazard"))
+
+    with open(fiat_cfg, "r") as f:
+        settings = toml.load(f)
+    dict_hazard = {
+        "risk": "false",
+        "file": str("hazard/" + hazard.stem + ".nc"),
+        "elevation_reference": "datum",
+    }
+    settings["hazard"] = dict_hazard
+    with open(fiat_cfg, "w") as f:
+        toml.dump(settings, f)
+
+    # Run FIAT to get output to visualize
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
+    rule.run_with_checks()
+
+    # Visualize output
     rule = FIATVisualize(fiat_cfg=fiat_cfg, event_set_file=event_set_file)
     rule.run_with_checks()
-    visual_output_fn = next(walk(Path(fiat_cached_model) / "fiat_metrics"))[-1]
+    visual_output_fn = next(walk(Path(fiat_tmp_model) / "fiat_metrics"))[-1]
 
     # Assert all infometrics and infographic files are in output folder
     assert "geojson" in visual_output_fn
