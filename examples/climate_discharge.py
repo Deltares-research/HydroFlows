@@ -9,7 +9,7 @@ from hydroflows.methods.climate import (
     ClimateStatistics,
     MergeDatasets,
 )
-from hydroflows.methods.wflow import WflowConfig
+from hydroflows.methods.wflow import WflowConfig, WflowRun
 from hydroflows.utils.example_data import fetch_data
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
@@ -102,21 +102,21 @@ if __name__ == "__main__":
 
     adjust_config = WflowConfig(
         wflow_toml=wflow_data_dir / simu_dir / "default" / "wflow_sbm.toml",
-        ri_input__grid_factors=assemble.output.merged,
+        ri_input__path_forcing_scale=assemble.output.merged,
         scenario="{scenarios}",
         horizon="{horizons}",
-        wildcards=["horizon", "scenario"],
-        dir_output="run_default/{scenarios}_{horizons}",
+        endtime="2014-01-31T00:00:00",
+        dir_input=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
         data_root=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
     )
     w.add_rule(adjust_config, rule_id="adjust_config")
 
-    #     wflow_run = WflowRun(
-    # wflow_toml=adjust_config.output.wflow_out_toml,
-    # run_method="script",
-    # wflow_run_script=Path("c:/code/non_pr/hydroflows/hydroflows/methods/wflow/scripts/run_wflow_change_factors.jl"),
-    # )
-    # w.add_rule(wflow_run, rule_id="wflow_run")
+    wflow_run = WflowRun(
+        wflow_toml=adjust_config.output.wflow_out_toml,
+        run_method="script",
+        wflow_run_script="run_wflow_change_factors.jl",
+    )
+    w.add_rule(wflow_run, rule_id="wflow_run")
 
     # %% Test the workflow
     w.run(dryrun=True)
