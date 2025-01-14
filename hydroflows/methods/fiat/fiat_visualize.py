@@ -156,10 +156,14 @@ class FIATVisualize(Method):
             infometrics_cfg["aggregateBy"] = aggr_names
             if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
-            with open(metrics_config, "w") as f:
+            with open(
+                Path(self.input.fiat_cfg.parent / "infometrics_config.toml"), "w"
+            ) as f:
                 toml.dump(infometrics_cfg, f)
 
-        metrics_writer = MetricsFileWriter(metrics_config)
+        metrics_writer = MetricsFileWriter(
+            Path(self.input.fiat_cfg.parent / "infometrics_config.toml")
+        )
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
@@ -406,19 +410,19 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
 def add_road_infometrics(config_metrics: dict) -> dict:
     minor_roads = {
         "name": "MinorFloodedRoads",
-        "description ": "Roads disrupted for cars",
-        "select ": "SUM(`segment_length`)",
+        "description": "Roads disrupted for cars",
+        "select": "SUM(`segment_length`)",
         "filter": "`inun_depth` <= 0.5",
         "long_name": "Minor flooded roads",
-        "show_in_metrics_table ": "False",
+        "show_in_metrics_table": "False",
     }
     major_roads = {
         "name": "MajorFloodedRoads",
-        "description ": "Roads disrupted for trucks",
-        "select ": "SUM(`segment_length`)",
+        "description": "Roads disrupted for trucks",
+        "select": "SUM(`segment_length`)",
         "filter": "`inun_depth` >= 0.5",
         "long_name": "Major flooded roads",
-        "show_in_metrics_table ": "False",
+        "show_in_metrics_table": "False",
     }
     config_metrics["queries"].append(minor_roads)
     config_metrics["queries"].append(major_roads)
