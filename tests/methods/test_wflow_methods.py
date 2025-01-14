@@ -2,9 +2,15 @@ import platform
 from pathlib import Path
 
 import pytest
+from hydromt.config import configread
 from hydromt_wflow import WflowModel
 
-from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
+from hydroflows.methods.wflow import (
+    WflowBuild,
+    WflowConfig,
+    WflowRun,
+    WflowUpdateForcing,
+)
 
 
 @pytest.mark.requires_test_data()
@@ -38,6 +44,36 @@ def test_wflow_build(
 
 
 @pytest.mark.requires_test_data()
+def test_wflow_config(wflow_sim_model: Path):
+    wflow_toml = Path(wflow_sim_model, "wflow_sbm.toml")
+    root = Path(wflow_sim_model, "..", "new")
+
+    # Create instance of the method
+    rule = WflowConfig(
+        wflow_toml=wflow_toml,
+        ri_input__more_forcing=Path(
+            wflow_sim_model, "inmaps", "forcing_20140101.nc"
+        ),  # Because why not
+        data_root=root,
+        some_var="yes",
+    )
+
+    # Assert the settings
+    assert "ri_input__more_forcing" in rule.input.to_dict()
+    assert "some_var" in rule.params.to_dict()
+    assert len(rule.params.wildcards) == 0
+
+    # Run the method
+    rule.run_with_checks()
+
+    # Assert output
+    assert rule.output.wflow_out_toml.is_file()
+    cfg = configread(rule.output.wflow_out_toml)
+    assert cfg["some_var"] == "yes"
+    assert cfg["input"]["more_forcing"] == "../default/inmaps/forcing_20140101.nc"
+
+
+@pytest.mark.requires_test_data()
 def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
     # required inputs
     wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
@@ -59,17 +95,18 @@ def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
 
 @pytest.mark.slow()
 @pytest.mark.requires_test_data()
-@pytest.mark.parametrize("method", ["docker", "exe", "julia", "apptainer"])
+@pytest.mark.parametrize("method", ["docker", "exe", "julia", "script", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,
     method: str,
     has_wflow_julia: bool,
     wflow_exe: Path,
+    wflow_run_script: Path,
     has_docker: bool,
     has_apptainer: bool,
 ):
     # check if wflow julia is installed
-    if method == "julia" and not has_wflow_julia:
+    if (method == "julia" or method == "script") and not has_wflow_julia:
         pytest.skip("Wflow Julia is not installed.")
     elif method == "exe" and wflow_exe.is_file() is False:
         pytest.skip(f"Wflow executable is not available {wflow_exe}")
@@ -98,6 +135,7 @@ def test_wflow_run(
         julia_num_threads=2,
         run_method=method,
         wflow_bin=wflow_exe,
+        wflow_run_script=wflow_run_script,
     )
     assert wf_run.output.wflow_output_timeseries == wflow_scalar
     wf_run.run_with_checks()

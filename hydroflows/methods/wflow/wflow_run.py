@@ -6,6 +6,7 @@ from typing import Literal, Optional
 
 from pydantic import model_validator
 
+from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
 from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -61,6 +62,25 @@ class Params(Parameters):
             raise ValueError(
                 "Path to the Wflow executable is required when running Wflow as an executable."
             )
+        return self
+
+    @model_validator(mode="after")
+    def check_wflow_run_script(self):
+        """Check the Wflow script run path."""
+        method = self.run_method == "script"
+        if not method:
+            return self
+        if self.wflow_run_script is None:
+            raise ValueError("No script provided to run wflow from.")
+        if self.wflow_run_script.is_file():
+            return self
+        prefab = Path(SCRIPTS_DIR, self.wflow_run_script)
+        if not prefab.is_file():
+            raise ValueError(
+                f"Valid path to a julia script is required, \
+when executing via 'script'. {self.wflow_run_script} is not a valid path."
+            )
+        self.wflow_run_script = prefab
         return self
 
 
@@ -135,7 +155,7 @@ class WflowRun(Method):
                 "using Wflow; Wflow.run()",
                 wflow_toml,
             ]
-        elif self.params.method == "script":
+        elif self.params.run_method == "script":
             command = [
                 "julia",
                 "-t",

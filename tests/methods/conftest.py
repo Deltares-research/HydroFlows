@@ -13,6 +13,7 @@ import xarray as xr
 from shapely.geometry import Point
 
 from hydroflows.cfg import CFG_DIR
+from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
 from hydroflows.utils.example_data import fetch_data
 
 EXAMPLE_DIR = Path(Path(__file__).parents[2], "examples")
@@ -215,6 +216,14 @@ def wflow_sim_model(wflow_cached_model: Path, wflow_tmp_model: Path) -> Path:
     shutil.copytree(wflow_cached_model / sim_dir, sim_root, ignore=ignore)
     assert Path(sim_root, "wflow_sbm.toml").is_file()
     return sim_root
+
+
+@pytest.fixture
+def wflow_run_script():
+    """Return path to the julia script."""
+    p = Path(SCRIPTS_DIR, "run_wflow.jl")
+    assert p.is_file()
+    return p
 
 
 @pytest.fixture()

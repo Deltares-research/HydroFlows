@@ -33,6 +33,50 @@ _ATTRS = {
 }
 
 
+def get_config(obj, *args, fallback=None):
+    """Get a config value at key(s).
+
+    Parameters
+    ----------
+    obj : dict
+        The config dictionary
+    args : tuple or string
+        keys can given by multiple args: ('key1', 'key2')
+        or a string with '.' indicating a new level: ('key1.key2')
+    fallback: any, optional
+        fallback value if key(s) not found in config, by default None.
+
+    Returns
+    -------
+    value : any type
+        dictionary value
+
+    Examples
+    --------
+    >> # self.config = {'a': 1, 'b': {'c': {'d': 2}}}
+
+    >> get_config('a')
+    >> 1
+
+    >> get_config('b', 'c', 'd') # identical to get_config('b.c.d')
+    >> 2
+
+    >> get_config('b.c') # # identical to get_config('b','c')
+    >> {'d': 2}
+    """
+    args = list(args)
+    if len(args) == 1 and "." in args[0]:
+        args = args[0].split(".") + args[1:]
+    branch = obj
+    for key in args[:-1]:
+        branch = branch.get(key, {})
+        if not isinstance(branch, dict):
+            branch = dict()
+            break
+    value = branch.get(args[-1], fallback)
+    return value
+
+
 def set_config(obj, *args):
     """Update the config dictionary at key(s) with values.
 

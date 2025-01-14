@@ -96,7 +96,7 @@ if __name__ == "__main__":
         change_factors.output.change_factors,
         scenario="{scenarios}",
         horizon="{horizons}",
-        data_root=Path(wflow_model_dir, simu_dir, "default", "factors"),
+        data_root=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
     )
     w.add_rule(assemble, rule_id="assemble")
 

@@ -1,7 +1,7 @@
 """Config adjust method."""
 
-import os
 import re
+from os.path import relpath
 from pathlib import Path
 from typing import Optional
 
@@ -9,7 +9,7 @@ from hydromt.config import configread, configwrite
 from pydantic import ConfigDict, model_validator
 
 from hydroflows._typing import ListOfStr
-from hydroflows.methods.wflow.wflow_utils import set_config
+from hydroflows.methods.wflow.wflow_utils import get_config, set_config
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -131,6 +131,11 @@ class WflowConfig(Method):
         inputs = self.input.to_dict()
         params = self.params.to_dict()
 
+        # Some other necessary variables
+        old_parent = self.input.wflow_toml.parent
+        new_parent = self.output.wflow_out_toml.parent
+        reset = ["input.path_forcing", "input.path_static"]
+
         # Filter the inputs
         for key in inputs:
             m = re.findall("^ri_(\w+)$", key)
@@ -141,12 +146,19 @@ class WflowConfig(Method):
         for key in self.params.__dict__:
             _ = params.pop(key)
 
+        # Redirect paths to forcing and staticmaps
+        for item in reset:
+            value = get_config(cfg, item)
+            full_path = Path(old_parent, value)
+            new_path = Path(relpath(full_path, new_parent))
+            set_config(cfg, item, new_path.as_posix())
+
         # Set the new entries by looping over the params
         for key, value in params.items():
             key = key.replace("__", ".")
             if isinstance(value, Path):
                 value = Path(
-                    os.path.relpath(value, self.output.wflow_out_toml.parent),
+                    relpath(value, new_parent),
                 ).as_posix()
             set_config(cfg, key, value)
 
