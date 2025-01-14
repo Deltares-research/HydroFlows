@@ -157,7 +157,7 @@ class FIATVisualize(Method):
             if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
-                Path(self.input.fiat_cfg.parent / "infometrics_config.toml"), "w"
+                Path(self.params.output_dir / "infometrics_config.toml"), "w"
             ) as f:
                 toml.dump(infometrics_cfg, f)
 
@@ -325,7 +325,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
     # add mandatory metrics
     mandatory_metrics = mandatory_metrics = {
         "aggregateBy": [aggregation],
-        "flood_exceedance": {"column": "inun_depth", "threshold": 0.2, "period": 30},
+        "flood_exceedance": {"column": "inun_depth", "threshold": 0.5, "period": 30},
         "queries": [
             {
                 "name": "ExpectedAnnualDamages",
@@ -337,7 +337,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             },
             {
                 "name": "FloodedHomes",
-                "description": "Homes likely to flood (inun_depth > 0.2) in 30 year period",
+                "description": "Homes likely to flood (inun_depth > 0.5) in 30 year period",
                 "select": "COUNT(*)",
                 "filter": "`Exceedance Probability` > 50 AND `primary_object_type` IN ('residential')",
                 "long_name": "Homes likely to flood in 30-year period (#)",
@@ -365,7 +365,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             "name": f"FloodedHomes{rp[x]}Y",
             "description": f"Number of flooded residential buildings with return period of {rp[x]} years",
             "select": "COUNT(*)",
-            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'residential'",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.5 AND `primary_object_type` = 'residential'",
             "long_name": f"Flooded  homes (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
@@ -378,7 +378,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             "name": f"FloodedBusinesses{rp[x]}Y",
             "description": f"Number of flooded commercial buildings with return period of {rp[x]} years",
             "select": "COUNT(*)",
-            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'commercial'",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.5 AND `primary_object_type` = 'commercial'",
             "long_name": f"Flooded  businesses (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
@@ -391,7 +391,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             "name": f"FloodedIndustry{rp[x]}Y",
             "description": f"Number of flooded industrial buildings with return period of {rp[x]} years",
             "select": "COUNT(*)",
-            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'industrial'",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.5 AND `primary_object_type` = 'industrial'",
             "long_name": f"Flooded  industry (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
