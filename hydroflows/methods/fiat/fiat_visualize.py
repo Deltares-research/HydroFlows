@@ -152,12 +152,15 @@ class FIATVisualize(Method):
                 name = aggregation_area["name"]
                 aggr_names.append(name)
             infometrics_cfg["aggregateBy"] = aggr_names
+            if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
+                infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(metrics_config, "w") as f:
                 toml.dump(infometrics_cfg, f)
 
-        # TODO: Add road config if road in exposure 
-        #if "roads.gpkg" in Path(self.input.fiat_cfg.parent / "exposure"):
-        
+        # TODO: Add road config if road in exposure
+        if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
+
+
         metrics_writer = MetricsFileWriter(metrics_config)
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
@@ -167,7 +170,7 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
-        
+
         # Write metrics
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
@@ -180,7 +183,7 @@ class FIATVisualize(Method):
             self.input.fiat_cfg.parent,
             self.input.event_set_file.stem,
             self.params.output_dir,
-            aggregation_areas= get_aggregation_areas(self.input.fiat_cfg.parent),
+            aggregation_areas=get_aggregation_areas(self.input.fiat_cfg.parent),
         )
 
         # Write the infographic
@@ -230,6 +233,7 @@ def create_output_map(
     event_set_file: str,
     fn_aggregated_metrics: Path = None,
 ):
+    # Create aggregated output
     for aggregation_area in aggregation_areas:
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
@@ -254,6 +258,20 @@ def create_output_map(
         gdf_new_aggr.to_file(
             Path(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.geojson"
+            )
+        )
+    # Create roads output
+    if Path(fiat_model.parent / "exposure" / "roads.gpkg").exists():
+        gdf_roads = gpd.read_file(Path(fiat_model.parent / "exposure" / "roads.gpkg"))
+        exposure_csv = pd.read_csv(
+            Path(fiat_model.parent / "output" / "output.csv"), index_col=0
+        )
+        inun_depth_roads = exposure_csv.filter(regex='inun_depth').columns
+        road_id = exposure_csv["object_id", "segment_length"]
+        exposure_roads =  list(inun_depth_roads) + road_id
+        roads = exposure_csv[exposure_roads ]
+        roads.to_file(Path(
+                fn_aggregated_metrics / f"Impact_roads_{event_set_file}.geojson"
             )
         )
 
@@ -383,4 +401,23 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         toml.dump(mandatory_metrics, f)
 
     return config_risk_fn
-    print("done")
+
+def add_road_infometrics(config_metrics: dict) -> dict:
+    minor_roads = {"name": "MinorFloodedRoads",
+    "description ":"Roads disrupted for cars",
+    "select ": "SUM(`segment_length`)",
+    "filter" : "`inun_depth` <= 0.5",
+    "long_name" :  "Minor flooded roads",
+    "show_in_metrics_table ": "False"
+    }
+    major_roads = {"name": "MajorFloodedRoads",
+    "description ":"Roads disrupted for trucks",
+    "select ": "SUM(`segment_length`)",
+    "filter" : "`inun_depth` >= 0.5",
+    "long_name" :  "Major flooded roads",
+    "show_in_metrics_table ": "False"
+    }
+    config_metrics["queries"].append(minor_roads)
+    config_metrics["queries"].append(major_roads)
+
+    return config_metrics
