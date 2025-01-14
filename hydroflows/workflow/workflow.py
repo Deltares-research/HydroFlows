@@ -143,7 +143,7 @@ class Workflow:
         """
         # set paths and creat directory
         snake_path = Path(self.root, snakefile).resolve()
-        config_path = Path(self.root, f"{snakefile}.config.yml").resolve()
+        config_path = Path(snake_path.parent, f"{snake_path.stem}.config.yml").resolve()
         # render the snakefile template
         template_env = Environment(
             loader=PackageLoader("hydroflows"),

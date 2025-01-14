@@ -25,6 +25,7 @@ def create_workflow_with_mock_methods(
 ):
     # create initial input file for workflow
     if root:
+        w.root = root
         root.mkdir(parents=True, exist_ok=True)
         with open(root / input_file, "w") as f:
             yaml.dump(dict(test="test"), f)
@@ -170,18 +171,13 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(
         workflow, root=tmp_path, input_file=test_file.name
     )
-    snake_file = tmp_path / "snake_file.smk"
-    w.to_snakemake(snakefile=snake_file)
-    assert "snake_file.config.yml" in os.listdir(tmp_path)
-    assert "snake_file.smk" in os.listdir(tmp_path)
+    w.to_snakemake(snakefile="Snakefile")
+    assert "Snakefile.config.yml" in os.listdir(tmp_path)
+    assert "Snakefile" in os.listdir(tmp_path)
     subprocess.run(
         [
             "snakemake",
-            "-s",
-            str(snake_file),
             "--dry-run",
-            "--configfile",
-            (tmp_path / "snake_file.config.yml").as_posix(),
         ],
         cwd=tmp_path,
     ).check_returncode()
