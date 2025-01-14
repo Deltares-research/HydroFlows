@@ -17,7 +17,7 @@ Wflow build model
    wflow_build.Output
 
 Wflow update config
------------------
+-------------------
 
 .. autosummary::
    :toctree: ../_generated

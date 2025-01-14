@@ -62,6 +62,10 @@ General method
 
 .. include:: rainfall_methods.rst
 
+.. _api_climate:
+
+.. include:: climate_methods.rst
+
 .. _api_coastal:
 
 .. include:: coastal_methods.rst
