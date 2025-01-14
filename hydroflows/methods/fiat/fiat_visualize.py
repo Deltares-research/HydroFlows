@@ -157,10 +157,6 @@ class FIATVisualize(Method):
             with open(metrics_config, "w") as f:
                 toml.dump(infometrics_cfg, f)
 
-        # TODO: Add road config if road in exposure
-        if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
-
-
         metrics_writer = MetricsFileWriter(metrics_config)
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
@@ -266,13 +262,12 @@ def create_output_map(
         exposure_csv = pd.read_csv(
             Path(fiat_model.parent / "output" / "output.csv"), index_col=0
         )
-        inun_depth_roads = exposure_csv.filter(regex='inun_depth').columns
+        inun_depth_roads = exposure_csv.filter(regex="inun_depth").columns
         road_id = exposure_csv["object_id", "segment_length"]
-        exposure_roads =  list(inun_depth_roads) + road_id
-        roads = exposure_csv[exposure_roads ]
-        roads.to_file(Path(
-                fn_aggregated_metrics / f"Impact_roads_{event_set_file}.geojson"
-            )
+        exposure_roads = list(inun_depth_roads) + road_id
+        roads = exposure_csv[exposure_roads]
+        roads.to_file(
+            Path(fn_aggregated_metrics / f"Impact_roads_{event_set_file}.geojson")
         )
 
 
@@ -402,20 +397,23 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
 
     return config_risk_fn
 
+
 def add_road_infometrics(config_metrics: dict) -> dict:
-    minor_roads = {"name": "MinorFloodedRoads",
-    "description ":"Roads disrupted for cars",
-    "select ": "SUM(`segment_length`)",
-    "filter" : "`inun_depth` <= 0.5",
-    "long_name" :  "Minor flooded roads",
-    "show_in_metrics_table ": "False"
+    minor_roads = {
+        "name": "MinorFloodedRoads",
+        "description ": "Roads disrupted for cars",
+        "select ": "SUM(`segment_length`)",
+        "filter": "`inun_depth` <= 0.5",
+        "long_name": "Minor flooded roads",
+        "show_in_metrics_table ": "False",
     }
-    major_roads = {"name": "MajorFloodedRoads",
-    "description ":"Roads disrupted for trucks",
-    "select ": "SUM(`segment_length`)",
-    "filter" : "`inun_depth` >= 0.5",
-    "long_name" :  "Major flooded roads",
-    "show_in_metrics_table ": "False"
+    major_roads = {
+        "name": "MajorFloodedRoads",
+        "description ": "Roads disrupted for trucks",
+        "select ": "SUM(`segment_length`)",
+        "filter": "`inun_depth` >= 0.5",
+        "long_name": "Major flooded roads",
+        "show_in_metrics_table ": "False",
     }
     config_metrics["queries"].append(minor_roads)
     config_metrics["queries"].append(major_roads)
