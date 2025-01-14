@@ -139,7 +139,9 @@ class FIATVisualize(Method):
         # Write the metrics to file
         if len(events.events) > 1:
             mode = "risk"
-            metrics_config = write_risk_infometrics_config(rp, self.input.fiat_cfg)
+            metrics_config = write_risk_infometrics_config(
+                rp, self.input.fiat_cfg, self.params.output_dir
+            )
             self._add_exeedance_probability(
                 self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
             )
@@ -285,7 +287,7 @@ def get_aggregation_areas(fiat_model):
     return aggregation_areas
 
 
-def write_risk_infometrics_config(rp: list, fiat_model: Path):
+def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Path):
     """
     Write risk infometrics configuration file.
 
@@ -295,6 +297,8 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         Path to the event set file
     fiat_model : str
         Path to the FIAT model folder
+    output_folder : str
+        Path to the metrics output
 
     Returns
     -------
@@ -399,7 +403,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         x += 1
 
     # Write risk config file
-    config_risk_fn = Path(fiat_model.parent / "metrics_config_risk.toml")
+    config_risk_fn = Path(output_folder / "metrics_config_risk.toml")
 
     with open(config_risk_fn, "w") as f:
         toml.dump(mandatory_metrics, f)
