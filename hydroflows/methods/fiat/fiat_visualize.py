@@ -145,6 +145,9 @@ class FIATVisualize(Method):
             self._add_exeedance_probability(
                 self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
             )
+            metrics_writer = MetricsFileWriter(
+                Path(self.params.output_dir / "infometrics_config_risk.toml")
+            )
         else:
             mode = "single_event"
             metrics_config = self.infometrics_template
@@ -163,9 +166,9 @@ class FIATVisualize(Method):
             ) as f:
                 toml.dump(infometrics_cfg, f)
 
-        metrics_writer = MetricsFileWriter(
-            Path(self.input.fiat_cfg.parent / "infometrics_config.toml")
-        )
+            metrics_writer = MetricsFileWriter(
+                Path(self.params.output_dir / "infometrics_config.toml")
+            )
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
@@ -318,7 +321,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Pat
       return periods of 2, 5, 10, 25, 50 and 100 years
 
     The configuration file is written to the FIAT model folder with the name
-    "metrics_config_risk.toml".
+    "infometrics_config_risk.toml".
     """
     # Get aggregation area
     with open((fiat_model.parent / "spatial_joins.toml"), "r") as f:
@@ -403,7 +406,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Pat
         x += 1
 
     # Write risk config file
-    config_risk_fn = Path(output_folder / "metrics_config_risk.toml")
+    config_risk_fn = Path(output_folder / "infometrics_config_risk.toml")
 
     with open(config_risk_fn, "w") as f:
         toml.dump(mandatory_metrics, f)
