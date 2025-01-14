@@ -133,16 +133,18 @@ class FIATVisualize(Method):
         for event in events.events:
             name = event["name"]
             event = event_set.get_event(name)
-        rp.append(event.return_period)
+            rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
 
         # Write the metrics to file
         if len(events.events) > 1:
-            metrics_config = self.write_risk_infometrics_config(rp, self.input.fiat_cfg)
+            mode = "risk"
+            metrics_config = write_risk_infometrics_config(rp, self.input.fiat_cfg)
             self._add_exeedance_probability(
                 self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
             )
         else:
+            mode = "single_event"
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
@@ -175,16 +177,17 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
+        aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
         create_output_map(
+            aggregation_areas,
             self.input.fiat_cfg.parent,
             self.input.event_set_file.stem,
             self.params.output_dir,
-            aggregation_areas=get_aggregation_areas(self.input.fiat_cfg.parent),
         )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
-            infographic_mode=events.mode,
+            infographic_mode=mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
             config_base_path=Path(self.infographics_template.parent),
@@ -257,16 +260,17 @@ def create_output_map(
             )
         )
     # Create roads output
-    if Path(fiat_model.parent / "exposure" / "roads.gpkg").exists():
-        gdf_roads = gpd.read_file(Path(fiat_model.parent / "exposure" / "roads.gpkg"))
+    if Path(fiat_model / "exposure" / "roads.gpkg").exists():
+        gdf_roads = gpd.read_file(Path(fiat_model / "exposure" / "roads.gpkg"))
         exposure_csv = pd.read_csv(
-            Path(fiat_model.parent / "output" / "output.csv"), index_col=0
+            Path(fiat_model / "output" / "output.csv"),
         )
         inun_depth_roads = exposure_csv.filter(regex="inun_depth").columns
-        road_id = exposure_csv["object_id", "segment_length"]
-        exposure_roads = list(inun_depth_roads) + road_id
+        road_id = exposure_csv[["object_id", "segment_length"]].columns
+        exposure_roads = list(inun_depth_roads) + list(road_id)
         roads = exposure_csv[exposure_roads]
-        roads.to_file(
+        gdf_roads_output = gdf_roads.merge(roads, how="left", on="object_id")
+        gdf_roads_output.to_file(
             Path(fn_aggregated_metrics / f"Impact_roads_{event_set_file}.geojson")
         )
 
@@ -313,6 +317,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         spatial_joins = toml.load(f)
     aggregation = spatial_joins["aggregation_areas"][0]["name"]
     x = 0
+    rp = [int(i) for i in rp]
     # add mandatory metrics
     mandatory_metrics = mandatory_metrics = {
         "aggregateBy": [aggregation],
@@ -321,7 +326,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             {
                 "name": "ExpectedAnnualDamages",
                 "description": "Expected annual damages",
-                "select": "SUM('ead_damage')",
+                "select": "SUM(`ead_damage`)",
                 "filter": "",
                 "long_name": "Expected Annual Damages",
                 "show_in_metrics_table": "True",
@@ -330,7 +335,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
                 "name": "FloodedHomes",
                 "description": "Homes likely to flood (inun_depth > 0.2) in 30 year period",
                 "select": "COUNT(*)",
-                "filter": "'Exceedance Probability' > 50 AND 'primary_object_type' IN ('residential')",
+                "filter": "`Exceedance Probability` > 50 AND `primary_object_type` IN ('residential')",
                 "long_name": "Homes likely to flood in 30-year period (#)",
                 "show_in_metrics_table": "False",
             },
@@ -355,8 +360,8 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
         config = {
             "name": f"FloodedHomes{rp[x]}Y",
             "description": f"Number of flooded residential buildings with return period of {rp[x]} years",
-            "select ": "COUNT(*)",
-            "filter": "`primary_object_type` IN (`residential`) AND `inun_depth_2.0y` > 0.2",
+            "select": "COUNT(*)",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'residential'",
             "long_name": f"Flooded  homes (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
@@ -369,7 +374,7 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
             "name": f"FloodedBusinesses{rp[x]}Y",
             "description": f"Number of flooded commercial buildings with return period of {rp[x]} years",
             "select": "COUNT(*)",
-            "filter": "`primary_object_type` IN (`commercial`)  AND `inun_depth_2.0y` > 0.2",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'commercial'",
             "long_name": f"Flooded  businesses (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
@@ -379,10 +384,10 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path):
     x = 0
     while x < len(rp):
         config = {
-            "name": f":FloodedIndustry{rp[x]}Y",
+            "name": f"FloodedIndustry{rp[x]}Y",
             "description": f"Number of flooded industrial buildings with return period of {rp[x]} years",
             "select": "COUNT(*)",
-            "filter": "`primary_object_type` IN (`industrial`) AND `inun_depth_2.0y` > 0.2",
+            "filter": f"`inun_depth_{rp[x]}.0y` >= 0.2 AND `primary_object_type` = 'industrial'",
             "long_name": f"Flooded  industry (RP {rp[x]})",
             "show_in_metrics_table": "True",
         }
