@@ -32,12 +32,6 @@ jobs:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
-      # source pixi env
-      # this is required to use snakemake and other installed tools
-      - name: Source pixi env
-        run: |
-          pixi shell-hook --shell bash -e doc > ~/.pixi-doc-env
-          source ~/.pixi-doc-env
 
       # dummy docs (not IO)
       - name: Generate dummy docs

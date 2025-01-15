@@ -198,17 +198,18 @@ test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missin
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and not slow", "-vv"] }
 test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
-examples = { cmd = ["python", "./docs/run_notebooks.py"] }
+shell-hook-doc = { cmd = "eval $(pixi shell-hook --shell bash -e doc)"}
+examples = { cmd = ["python", "./docs/run_notebooks.py"], depends-on = ["shell-hook-doc"] }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples"]}
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples"]}
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends-on = ["examples"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends-on = ["examples"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated", "./docs/_examples"] }
-docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
+docs-html-clean = { depends-on = ["docs-clean", "docs-html"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
 
 # Installation julia and wflow
 install-julia = "juliaup add 1.10.5 && juliaup override unset && juliaup override set 1.10.5"
 update-add-wflow = "julia --eval='using Pkg; Registry.update(); Pkg.add(name=\"Wflow\", version=\"0.8.1\")'"
-install-wflow = { depends_on = ["install-julia", "update-add-wflow"] }
+install-wflow = { depends-on = ["install-julia", "update-add-wflow"] }
