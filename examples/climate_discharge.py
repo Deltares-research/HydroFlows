@@ -7,6 +7,7 @@ from hydroflows import Workflow
 from hydroflows.methods.climate import (
     ClimateFactorsGridded,
     ClimateStatistics,
+    DownscaleClimateDataset,
     MergeDatasets,
 )
 from hydroflows.methods.wflow import WflowConfig, WflowRun
@@ -92,27 +93,33 @@ if __name__ == "__main__":
     )
     w.add_rule(change_factors, rule_id="change_factors")
 
-    assemble = MergeDatasets(
+    ensemble = MergeDatasets(
         change_factors.output.change_factors,
         scenario="{scenarios}",
         horizon="{horizons}",
         data_root=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
     )
-    w.add_rule(assemble, rule_id="assemble")
+    w.add_rule(ensemble, rule_id="ensemble")
 
-    adjust_config = WflowConfig(
+    downscale = DownscaleClimateDataset(
+        dataset=ensemble.output.merged,
+        ds_like=wflow_data_dir / "staticmaps.nc",
+        data_root=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
+    )
+    w.add_rule(downscale, rule_id="downscale")
+
+    set_config = WflowConfig(
         wflow_toml=wflow_data_dir / simu_dir / "default" / "wflow_sbm.toml",
-        ri_input__path_forcing_scale=assemble.output.merged,
+        ri_input__path_forcing_scale=downscale.output.downscaled,
         scenario="{scenarios}",
         horizon="{horizons}",
         endtime="2014-01-31T00:00:00",
-        dir_input=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
         data_root=Path(wflow_model_dir, simu_dir, "{scenarios}_{horizons}"),
     )
-    w.add_rule(adjust_config, rule_id="adjust_config")
+    w.add_rule(set_config, rule_id="set_config")
 
     wflow_run = WflowRun(
-        wflow_toml=adjust_config.output.wflow_out_toml,
+        wflow_toml=set_config.output.wflow_out_toml,
         run_method="script",
         wflow_run_script="run_wflow_change_factors.jl",
     )

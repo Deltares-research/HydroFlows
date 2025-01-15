@@ -55,7 +55,9 @@ def create_regular_grid(
 
 def merge_climate_datasets(
     change_ds: list | tuple,
-    res: float,
+    aligned: bool = False,
+    res: float = 0.25,
+    quantile: float = 0.5,
 ) -> xr.Dataset:
     """Merge climate datasets.
 
@@ -66,8 +68,12 @@ def merge_climate_datasets(
     change_ds : list | tuple
         List of datasets of all climate models for a certain \
 scenario-horizon combination.
+    aligned : bool
+        Whether the datasets are already aligned or not. By default False
     res : float
         The resolution of the resulting dataset in degrees.
+    quantile : float
+        The quantile of the merged data to be returned. Dafault is 0.5 (median)
 
     Returns
     -------
@@ -99,21 +105,24 @@ scenario-horizon combination.
                 ds["time"] = ds.indexes["time"].to_datetimeindex()
         # Reproject to regular grid
         # drop extra dimensions for reprojection
-        ds_reproj = ds.squeeze(drop=True)
-        ds_reproj = ds_reproj.raster.reproject_like(ds_grid, method="nearest")
-        # Re-add the extra dims
-        ds_reproj = ds_reproj.expand_dims(
-            {
-                "clim_project": ds["clim_project"].values,
-                "model": ds["model"].values,
-                "scenario": ds["scenario"].values,
-                "horizon": ds["horizon"].values,
-                "member": ds["member"].values,
-            }
-        )
-        ds_list.append(ds_reproj)
+        if not aligned:
+            ds_reproj = ds.squeeze(drop=True)
+            ds_reproj = ds_reproj.raster.reproject_like(ds_grid, method="nearest")
+            # Re-add the extra dims
+            ds_reproj = ds_reproj.expand_dims(
+                {
+                    "clim_project": ds["clim_project"].values,
+                    "model": ds["model"].values,
+                    "scenario": ds["scenario"].values,
+                    "horizon": ds["horizon"].values,
+                    "member": ds["member"].values,
+                }
+            )
+            ds_list.append(ds_reproj)
+            continue
+        ds_list.append(ds)
 
     ds_out = xr.merge(ds_list)
-    ds_out_stat = ds_out.median(dim="model").squeeze(drop=True)
+    ds_out_stat = ds_out.quantile(quantile, dim="model").squeeze(drop=True)
 
     return ds_out_stat

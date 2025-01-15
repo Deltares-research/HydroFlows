@@ -9,31 +9,42 @@ Climate statistics
 ------------------
 
 .. autosummary::
-   :toctree: ../_generated
+    :toctree: ../_generated
 
-   grid_stats.ClimateStatistics
-   grid_stats.Input
-   grid_stats.Params
-   grid_stats.Output
+    grid_stats.ClimateStatistics
+    grid_stats.Input
+    grid_stats.Params
+    grid_stats.Output
 
 Climate factors gridded
 -----------------------
 
 .. autosummary::
-   :toctree: ../_generated
+    :toctree: ../_generated
 
-   grid_change.ClimateFactorsGridded
-   grid_change.Input
-   grid_change.Params
-   grid_change.Output
+    grid_change.ClimateFactorsGridded
+    grid_change.Input
+    grid_change.Params
+    grid_change.Output
+
+Downscale climate data
+----------------------
+
+.. autosummary::
+    :toctree: ../_generated
+
+    downscale.DownscaleClimateDataset
+    downscale.Input
+    downscale.Params
+    downscale.Output
 
 Merge datasets
 --------------
 
 .. autosummary::
-   :toctree: ../_generated
+    :toctree: ../_generated
 
-   merge.MergeDatasets
-   merge.Input
-   merge.Params
-   merge.Output
+    merge.MergeDatasets
+    merge.Input
+    merge.Params
+    merge.Output

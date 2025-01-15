@@ -12,6 +12,7 @@ __all__ = ["METHODS"]
 __eps__ = {
     "climate_factors_gridded": "hydroflows.methods.climate.grid_change:ClimateFactorsGridded",
     "climate_statistics": "hydroflows.methods.climate.grid_stats:ClimateStatistics",
+    "downscale_climate_datasets": "hydroflows.methods.climate.downscale:DownscaleClimateDataset",
     "merge_datasets": "hydroflows.methods.climate.merge:MergeDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",

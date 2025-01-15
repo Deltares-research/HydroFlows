@@ -43,12 +43,12 @@ class Params(Parameters):
 
     model: str
     """
-    The specific climate model to be used. Chose e.g. ... # TODO
+    The specific climate model to be used.
     """
 
     scenario: str
     """
-    The specific climate scenario. Chose from ... # TODO
+    The specific climate scenario.
     """
 
     horizon: ListOfListOfInt
@@ -58,7 +58,7 @@ class Params(Parameters):
 
     wildcard: str = "horizons"
     """
-    Name of the wildcard... # TODO
+    Name of the wildcard.
     """
 
     data_root: Path

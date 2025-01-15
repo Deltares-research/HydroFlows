@@ -3,12 +3,10 @@
 import re
 from os.path import relpath
 from pathlib import Path
-from typing import Optional
 
 from hydromt.config import configread, configwrite
 from pydantic import ConfigDict, model_validator
 
-from hydroflows._typing import ListOfStr
 from hydroflows.methods.wflow.wflow_utils import get_config, set_config
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -60,8 +58,8 @@ class Params(Parameters):
     data_root: Path
     """Path to the outgoing directory."""
 
-    wildcards: Optional[ListOfStr] = []
-    """Name of the (sole) wildcard parameters."""
+    config_basename: str = "wflow_sbm"
+    """The basename (without the addition of wildcards) of the settings toml."""
 
     @model_validator(mode="after")
     def _typing_params(self):
@@ -105,22 +103,16 @@ class WflowConfig(Method):
         """
         # Filter pathing parameters from other params, as they are input
         input_kwargs = {}
-        wildcards = []
         for key in list(params.keys()):
             if key.startswith("ri_"):
                 input_kwargs[key] = Path(params.pop(key))
                 continue
-            if "wildcards" in params:
-                if key in params["wildcards"]:
-                    wildcards.append(params[key])
 
         self.params: Params = Params(**params)
         self.input: Input = Input(wflow_toml=wflow_toml, **input_kwargs)
-        out_file = "wflow_sbm"
-        #         if len(wildcards) != 0:
-        # out_file += "_" + "_".join(wildcards)
         self.output: Output = Output(
-            wflow_out_toml=self.params.data_root / (out_file + ".toml")
+            wflow_out_toml=self.params.data_root
+            / (self.params.config_basename + ".toml")
         )
 
     def run(self):

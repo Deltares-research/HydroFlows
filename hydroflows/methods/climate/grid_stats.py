@@ -48,12 +48,12 @@ class Params(Parameters):
 
     model: str
     """
-    The specific climate model to be used. Chose e.g. ... # TODO
+    The specific climate model to be used.
     """
 
     scenario: str = None
     """
-    The specific climate scenario. Chose from ... # TODO
+    The specific climate scenario.
     """
 
     horizon: ListOfListOfInt

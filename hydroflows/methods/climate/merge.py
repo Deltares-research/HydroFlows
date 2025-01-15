@@ -1,4 +1,4 @@
-"""Blabla."""
+"""Merge multiple (climate) datasets into one."""
 
 from pathlib import Path
 
@@ -40,12 +40,12 @@ class Params(Parameters):
 
     scenario: str
     """
-    The specific climate scenario. Chose from ... # TODO
+    The specific climate scenario.
     """
 
     horizon: str
     """
-    The specific horizon # TODO ...
+    The specific horizon.
     """
 
     data_root: Path
@@ -53,8 +53,14 @@ class Params(Parameters):
     The output directory of the dataset.
     """
 
+    aligned: bool = False
+    """Whether the datasets are already aligned or not"""
+
     res: float = 0.25
     """Resolution (in degrees) of the resulting dataset. Default is 0.25 degrees."""
+
+    quantile: float = 0.5
+    """The quantile the merged data should be given the input datasets."""
 
 
 class MergeDatasets(ReduceMethod):
@@ -94,14 +100,16 @@ class MergeDatasets(ReduceMethod):
         self.input: Input = Input(datasets=datasets)
         self.output: Output = Output(
             merged=self.params.data_root
-            / f"assemble_{self.params.scenario}_{self.params.horizon}.nc"
+            / f"ensemble_{self.params.scenario}_{self.params.horizon}.nc"
         )
 
     def run(self):
         """Run the merge datasets method."""
         merged_ds = merge_climate_datasets(
             self.input.datasets,
-            self.params.res,
+            aligned=self.params.aligned,
+            res=self.params.res,
+            quantile=self.params.quantile,
         )
 
         to_netcdf(
