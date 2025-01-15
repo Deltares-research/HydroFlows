@@ -15,7 +15,7 @@ from jinja2 import Environment, PackageLoader
 from pydantic import BaseModel
 
 from hydroflows import __version__
-from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule
+from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.utils.cwl_utils import map_cwl_types
 from hydroflows.workflow.method import Method
@@ -204,10 +204,12 @@ class Workflow:
         #     **{name+"_list": [] for name in self.wildcards.names},
         # }
 
+        cwl_workflow = JinjaCWLWorkflow([JinjaCWLRule(r) for r in self.rules])
+
         _str = template_workflow.render(
             version=__version__,
             inputs=input_dict,
-            rules=[JinjaCWLRule(r) for r in self.rules],
+            workflow=cwl_workflow,
             dryrun=dryrun,
         )
         with open(cwlfile, "w") as f:

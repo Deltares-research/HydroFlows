@@ -184,8 +184,14 @@ class JinjaCWLWorkflow:
         sub_wf = [rule for rule in step_list if rule.loop_depth > self.start_loop]
         indices = [i for i, x in enumerate(step_list) if x in sub_wf]
 
-        step_list[indices[0] : indices[-1] + 1] = [
-            JinjaCWLWorkflow(rules=sub_wf, start_loop_depth=self.start_loop + 1)
-        ]
+        if sub_wf:
+            step_list[indices[0] : indices[-1] + 1] = [
+                JinjaCWLWorkflow(rules=sub_wf, start_loop_depth=self.start_loop + 1)
+            ]
 
         return step_list
+
+    @property
+    def input_scatter(self) -> List[str]:
+        """Set inputs which need to be scattered over."""
+        return self.rules[0].input_scatter
