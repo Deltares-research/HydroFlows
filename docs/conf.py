@@ -45,7 +45,7 @@ extensions = [
     # "IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib.autodoc_pydantic",
     "sphinxcontrib.programoutput",
-    "nbsphinx",
+    # "nbsphinx",
 ]
 
 autosummary_generate = True
