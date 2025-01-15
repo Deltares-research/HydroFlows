@@ -32,7 +32,6 @@ jobs:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
-
       # dummy docs (not IO)
       - name: Generate dummy docs
         if: ${{ github.event_name == 'pull_request' }}

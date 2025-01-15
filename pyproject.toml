@@ -175,6 +175,7 @@ hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 p
 
 [tool.pixi.feature.extra.dependencies]
 snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
+graphviz = {version = "*", channel= "conda-forge" }  # conda-forge to get dot executable
 
 [tool.pixi.feature.models.dependencies]
 delft_fiat = ">=0.2.1"
@@ -198,8 +199,7 @@ test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missin
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and not slow", "-vv"] }
 test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
-shell-hook-doc = { cmd = "eval $(pixi shell-hook --shell bash -e doc)"}
-examples = { cmd = ["python", "./docs/run_notebooks.py"], depends-on = ["shell-hook-doc"] }
+examples = { cmd = ["python", "./docs/run_notebooks.py"]}
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends-on = ["examples"]}
