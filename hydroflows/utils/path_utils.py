@@ -1,10 +1,22 @@
 """Utils for model path operations."""
 
 import os
+from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
 
 __all__ = ["make_relative_paths"]
+
+
+@contextmanager
+def cwd(path: Path):
+    """Change the current working directory to the root of the workflow."""
+    oldpwd = os.getcwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(oldpwd)
 
 
 def make_relative_paths(data: Dict, src: Path, dst: Path) -> dict:

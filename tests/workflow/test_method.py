@@ -1,5 +1,4 @@
 import logging
-import os
 import re
 
 import pytest
@@ -71,13 +70,21 @@ def test_get_subclass():
 
 
 def test_dryrun(tmp_path):
-    test_method = create_test_method(root=tmp_path)
-    test_method.dryrun()
-    dir_files = os.listdir(tmp_path)
-    assert "test_file1" in dir_files
-    assert "test_file2" in dir_files
-    assert "output1" in dir_files
-    assert "output2" in dir_files
+    test_method: Method = create_test_method(root=tmp_path)
+    output_files = test_method.dryrun(input_files=[])
+    assert output_files == [
+        test_method.output.output_file1,
+        test_method.output.output_file2,
+    ]
+
+
+def test_dryrun_missing_file_error(tmp_path, caplog):
+    test_method: Method = create_test_method(root=tmp_path, write_inputs=False)
+    with pytest.raises(FileNotFoundError):
+        test_method.dryrun(input_files=[], missing_file_error=True)
+
+    test_method.dryrun(input_files=[], missing_file_error=False)
+    assert "input_file1" in caplog.text
 
 
 def test_run_with_checks(tmp_path):
@@ -103,9 +110,6 @@ def test_check_input_output_paths(tmp_path, caplog):
     assert "test_file1" in caplog.text
     assert "input_file2" in caplog.text
     assert "test_file2" in caplog.text
-    # check if files are written
-    assert "test_file1" in os.listdir(tmp_path)
-    assert "test_file2" in os.listdir(tmp_path)
 
     test_method = create_test_method(root=tmp_path)
     # Check if it runs without errors
