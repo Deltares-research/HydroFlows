@@ -65,7 +65,7 @@ def tmp_geojson(tmp_path: Path) -> Path:
 @pytest.fixture()
 def event_set_file(test_data_dir) -> Path:
     """Return the path to the event set yaml."""
-    return test_data_dir / "rainfall_events" / "events.yml"
+    return test_data_dir / "event-sets" / "pluvial_events.yml"
 
 
 @pytest.fixture()

@@ -1,0 +1,5 @@
+name: p_event02
+forcings:
+- type: rainfall
+  path: p_event02.csv
+return_period: 10.0
