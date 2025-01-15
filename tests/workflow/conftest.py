@@ -101,6 +101,10 @@ class MockExpandMethod(ExpandMethod):
 
     def run(self):
         self.check_input_output_paths(False)
+        for _, output_file in self._output_paths:
+            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+            with open(output_file, "w") as f:
+                f.write("")
 
 
 class ReduceInput(Parameters):

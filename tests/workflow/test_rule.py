@@ -1,5 +1,7 @@
 import logging
 import re
+from itertools import chain
+from pathlib import Path
 from weakref import ReferenceType
 
 import pytest
@@ -39,7 +41,7 @@ def test_rule_to_dict(rule: Rule):
     assert rule_dict["rule_id"] == "test_rule"
 
 
-def test_detect_wildcards(workflow: Workflow):
+def test_detect_wildcards_explode_expand(workflow: Workflow):
     # test expand method with explode and expand wildcards
     expand_method = MockExpandMethod(
         input_file="{region}/test_file",
@@ -54,15 +56,19 @@ def test_detect_wildcards(workflow: Workflow):
         "w": ["output_file", "output_file2"],
     }
 
+
+def test_detect_wildcards_reduce(workflow: Workflow):
     # test reduce method with reduce wildcards
     reduce_method = MockReduceMethod(
-        files="test_{w}",
+        files="test_{region}",
         root="/",
     )
     rule = Rule(method=reduce_method, workflow=workflow, rule_id="rule_id")
-    assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["w"]}
-    assert rule._wildcard_fields == {"w": ["files"]}
+    assert rule._wildcards == {"explode": [], "expand": [], "reduce": ["region"]}
+    assert rule._wildcard_fields == {"region": ["files"]}
 
+
+def test_detect_wildcards_explode(workflow: Workflow):
     # test normal method with explode wildcards
     test_method = TestMethod(
         input_file1="{region}/test_file1", input_file2="{region}/test_file2"
@@ -79,10 +85,36 @@ def test_detect_wildcards(workflow: Workflow):
         ]
     }
 
+
+def test_detect_wildcards_none(workflow: Workflow):
     # test normal method with no wildcards
     test_method = TestMethod(input_file1="testfile1", input_file2="testfile2")
     rule = Rule(method=test_method, workflow=workflow)
     assert rule._wildcards == {"explode": [], "expand": [], "reduce": []}
+
+
+def test_detect_wildcards_params_explode(workflow: Workflow):
+    # test normal method with expand wildcards on a param field
+    test_method = TestMethod(
+        input_file1="testfile1", input_file2="testfile2", out_root="{region}"
+    )
+    rule = Rule(method=test_method, workflow=workflow)
+    assert rule._wildcards == {"explode": ["region"], "expand": [], "reduce": []}
+    assert rule._wildcard_fields == {
+        "region": ["output_file1", "output_file2", "out_root"]
+    }
+
+
+def test_detect_wildcards_params_explode_expand(workflow: Workflow):
+    # test expand method with explode on a param field
+    expand_method = MockExpandMethod(
+        input_file="test_file",
+        root="{region}",  # param field
+        events=["1", "2", "3"],
+        wildcard="w",
+    )
+    rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
+    assert rule._wildcards == {"explode": ["region"], "expand": ["w"], "reduce": []}
 
 
 def test_validate_wildcards(workflow: Workflow):
@@ -129,8 +161,9 @@ def test_validate_wildcards(workflow: Workflow):
         Rule(method=test_method, workflow=workflow)
 
     # test normal method with missing wildcard on input
-    test_method = TestMethod(
-        input_file1="test1", input_file2="test2", out_root="{region}"
+    test_method = TestMethod(input_file1="test1", input_file2="test2")
+    test_method.output = test_method.output.model_copy(
+        update=dict(output_file1="{region}/test1")
     )
     err_msg = f"Wildcard(s) ['region'] missing on input or method {name} should be an ExpandMethod (Rule {name})."
     with pytest.raises(ValueError, match=re.escape(err_msg)):
@@ -265,6 +298,17 @@ def test_create_references_for_method_inputs(workflow: Workflow):
         "input_file2": "$rules.method1.output.output_file2",
     }
 
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2=workflow.get_ref("$rules.method2.output.output_file2"),
+        out_root="new_root",
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert workflow.rules[2].method.input._refs == {
+        "input_file1": "$config.method1_input_file1",
+        "input_file2": "$rules.method2.output.output_file2",
+    }
+
 
 def test_add_method_params_to_config(workflow: Workflow):
     method = TestMethod(
@@ -281,42 +325,203 @@ def test_add_method_params_to_config(workflow: Workflow):
     assert "default_param" not in workflow.config.to_dict().values()
     assert "default_param2" not in workflow.config.to_dict().values()
 
+    # Check whether ref to value already in config is correctly set
+    method2 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root",
+        param="test_param",
+    )
+    workflow.add_rule(method2, rule_id="method2")
+    assert workflow.rules[1].method.params._refs == {
+        "param": "$config.test_method_param",
+        "out_root": "$config.method2_out_root",
+    }
+    # make sure not a new param is added to config
+    assert "method2_param" not in workflow.config.to_dict().keys()
+
+    # Make sure not a new item is added to config if param is already a ref
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root3",
+        param=workflow.get_ref("$config.test_method_param"),
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert "method3_param" not in workflow.config.to_dict().keys()
+
+    # Make sure param is not added to config if it contains a wildcard
+    method4 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        param="{region}",
+        out_root="{region}",
+    )
+    workflow.add_rule(method4, rule_id="method4")
+    assert "method4_param" not in workflow.config.to_dict().keys()
+
+
+def test_rule_dependency(workflow: Workflow):
+    # Test for rule with no dependencies
+    method1 = TestMethod(input_file1="file1", input_file2="file2")
+    workflow.add_rule(method=method1, rule_id="method1")
+    assert workflow.rules["method1"]._dependency is None
+
+    # Test for rule with single dependency
+    method2 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
+        out_root="root",
+    )
+    workflow.add_rule(method=method2, rule_id="method2")
+    assert workflow.rules["method2"]._dependency == "method1"
+
+    # Test for rule with multiple different dependencies
+    method3 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method2.output.output_file2,
+        out_root="root3",
+    )
+    workflow.add_rule(method=method3, rule_id="method3")
+    assert workflow.rules["method3"]._dependency == "method2"
+
+    # Test for rule with single dependency not being the last in workflow.rules
+    method4 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method1.output.output_file2,
+        out_root="root4",
+    )
+    workflow.add_rule(method=method4, rule_id="method4")
+    assert workflow.rules["method4"]._dependency == "method1"
+
+
+def test_parameters(workflow: Workflow):
+    # Test for rule with no wildcard
+    test_method = TestMethod(input_file1="test1", input_file2="test2")
+    rule = Rule(method=test_method, workflow=workflow)
+    assert rule._parameters == {
+        "input": {
+            "input_file1": [rule.method.input.input_file1],
+            "input_file2": [rule.method.input.input_file2],
+        },
+        "output": {
+            "output_file1": [rule.method.output.output_file1],
+            "output_file2": [rule.method.output.output_file2],
+        },
+        "params": {
+            "param": [rule.method.params.param],
+            "out_root": [rule.method.input.input_file1.parent],
+            "default_param": [rule.method.params.default_param],
+            "default_param2": [rule.method.params.default_param2],
+        },
+    }
+
+    # Test for rule with explode wildcard
+    explode_method = TestMethod(
+        input_file1="{region}/test1", input_file2="{region}/test2"
+    )
+    rule = Rule(method=explode_method, workflow=workflow)
+    methods = rule._method_instances
+    assert rule._parameters == {
+        "input": {
+            "input_file1": [method.input.input_file1 for method in methods],
+            "input_file2": [method.input.input_file2 for method in methods],
+        },
+        "output": {
+            "output_file1": [method.output.output_file1 for method in methods],
+            "output_file2": [method.output.output_file2 for method in methods],
+        },
+        "params": {
+            "param": [methods[0].params.param],
+            "out_root": [
+                method.params.out_root for method in methods
+            ],  # has region wildcard
+            "default_param": [methods[0].params.default_param],
+            "default_param2": [methods[0].params.default_param2],
+        },
+    }
+
+    # Test for reduce rule
+    reduce_method = MockReduceMethod(files="test{region}", root="")
+    rule = Rule(method=reduce_method, workflow=workflow)
+    # only 1 instance for reduce rules
+    methods = rule._method_instances
+    assert rule._parameters == {
+        "input": {
+            # Evaluated input is already a list, so no extra brackets
+            "files": methods[0].input.files
+        },
+        "output": {"output_file": [methods[0].output.output_file]},
+        "params": {"root": [methods[0].params.root]},
+    }
+
+    # Test for expand rule
+    expand_method = MockExpandMethod(
+        input_file="{region}/test_file",
+        root="{region}",
+        events=["1", "2"],
+        wildcard="event",
+    )
+    rule = Rule(method=expand_method, workflow=workflow)
+    methods = rule._method_instances
+    assert rule._parameters == {
+        "input": {"input_file": [method.input.input_file for method in methods]},
+        "output": {
+            # _parameters flattens nested list
+            "output_file": list(
+                chain(*[method.output.output_file for method in methods])
+            ),
+            "output_file2": list(
+                chain(*[method.output.output_file2 for method in methods])
+            ),
+        },
+        "params": {
+            "root": [method.params.root for method in methods],
+            "events": [methods[0].params.events],
+            "wildcard": [methods[0].params.wildcard],
+        },
+    }
+
+
+def test_dryrun(caplog, tmp_path):
+    caplog.set_level(logging.INFO)
+    workflow = Workflow(wildcards={"region": ["region1", "region2"]}, root=tmp_path)
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+    rule = Rule(method=test_method, workflow=workflow)
+    # test dryrun without missing file error
+    rule.dryrun(missing_file_error=False)
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
+    # test dryrun with missing file error
+    with pytest.raises(FileNotFoundError):
+        rule.dryrun(missing_file_error=True)
+    # test dryrun with missing file error and missing file
+    input_files = []
+    for file_list in rule._parameters["input"].values():
+        input_files.extend(file_list)
+    rule.dryrun(missing_file_error=True, input_files=input_files)
+    # write input files and test again
+    for file in input_files:
+        abs_path = Path(workflow.root, file)
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path.write_text("")
+    rule.dryrun(missing_file_error=True)
+
 
 def test_run(caplog, mocker):
     caplog.set_level(logging.INFO)
     workflow = Workflow(wildcards={"region": ["region1", "region2"]})
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
-    mocker.patch.object(Rule, "_run_method_instance")
-    rule.run(dryrun=True)
-    assert "Running test_method 1/2" in caplog.text
-    assert "Running test_method 2/2" in caplog.text
-
-    mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
-    rule.run(max_workers=2)
-    mock_thread_map.assert_called_with(
-        rule._run_method_instance, rule._method_instances, max_workers=2
-    )
-    rule.run(dryrun=True)
-    assert "Running test_method 1/2" in caplog.text
-    assert "Running test_method 2/2" in caplog.text
-
-
-def test_run_method_instance(mocker):
-    workflow = Workflow(wildcards={"region": ["region1", "region2"]})
-    test_method = TestMethod(input_file1="test1", input_file2="test2")
-    rule = Rule(method=test_method, workflow=workflow)
-
-    mocker.patch.object(TestMethod, "dryrun")
-    rule._run_method_instance(
-        method=rule._method_instances[0],
-        dryrun=True,
-        missing_file_error=True,
-    )
-    test_method.dryrun.assert_called_with(missing_file_error=True)
+    # mock all run_with_checks methods of methods in rule.methods
     mocker.patch.object(TestMethod, "run_with_checks")
-    rule._run_method_instance(method=rule._method_instances[0])
-    test_method.run_with_checks.assert_called()
+    rule.run()
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
+    assert TestMethod.run_with_checks.call_count == 2
+    # test with max_workers
+    rule.run(max_workers=2)
+    assert TestMethod.run_with_checks.call_count == 4
 
 
 def test_rules(workflow, rule):

@@ -10,10 +10,7 @@ Workflow script
 
 The starting point for a workflow is in most cases a script that assembles all tasks and general configuration options.
 The script is written in python and we recommend to gradually expand the script Let's have a look at an example
-workflow template file.
-
-.. literalinclude:: ../../examples/pluvial_hazard.py
-    :language: python
+workflow.
 
 Below we describe the most important components, following this example:
 
@@ -160,12 +157,10 @@ the input-output logic is correct.
 
         .. code-block:: python
 
-            workflow.run(dryrun=True, tmp="./")
+            workflow.dryrun()
 
-        The workflow will then try to create all the files and you can check the expected activities, wildcard
-        expansions and reductions and connections between tasks. The ``tmp`` flag defines in which path the dryrun
-        should occur. The file structure will be made relative to this path. Any file will only be a zero-bytes touched
-        file.
+        The workflow will then try to run all rules and you can check the expected activities, wildcard
+        expansions and reductions and connections between tasks.
 
         Running in the API can be done as follows:
 

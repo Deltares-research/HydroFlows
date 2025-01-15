@@ -27,15 +27,15 @@ def create_workflow_with_mock_methods(
 ):
     # create initial input file for workflow
     if root:
-        for wild_card in w.wildcards.get("region"):
-            (root / wild_card).mkdir()
-            with open(root / wild_card / input_file, "w") as f:
-                yaml.dump(dict(test="test"), f)
+        w.root = root
+        root.mkdir(parents=True, exist_ok=True)
+        with open(root / input_file, "w") as f:
+            yaml.dump(dict(test="test"), f)
     else:
         root = Path("./")
 
     mock_expand_method = MockExpandMethod(
-        input_file=Path("{region}") / input_file,
+        input_file=input_file,
         root="{region}",
         events=["1", "2"],
         wildcard="event",
@@ -44,14 +44,14 @@ def create_workflow_with_mock_methods(
     w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
 
     mock_method = TestMethod(
-        input_file1=w.get_ref("$rules.mock_expand_rule.output.output_file"),
-        input_file2=w.get_ref("$rules.mock_expand_rule.output.output_file2"),
+        input_file1=mock_expand_method.output.output_file,
+        input_file2=mock_expand_method.output.output_file2,
     )
 
     w.add_rule(mock_method, rule_id="mock_rule")
 
     mock_reduce_method = MockReduceMethod(
-        files=w.get_ref("$rules.mock_rule.output.output_file1"),
+        files=mock_method.output.output_file1,
         root="out_{region}",
     )
 
@@ -80,6 +80,34 @@ def test_workflow_add_rule(workflow: Workflow, tmp_path):
     assert w.rules[0].rule_id == "mock_expand_rule"
     assert w.rules[1].rule_id == "mock_rule"
     assert w.rules[2].rule_id == "mock_reduce_rule"
+
+
+def test_workflow_rules_order(workflow: Workflow):
+    method1 = TestMethod(input_file1="file1", input_file2="file2")
+    workflow.add_rule(method=method1, rule_id="method1")
+
+    method2 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
+        out_root="root",
+    )
+    workflow.add_rule(method=method2, rule_id="method2")
+
+    method3 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method2.output.output_file2,
+        out_root="root3",
+    )
+    workflow.add_rule(method=method3, rule_id="method3")
+
+    method4 = TestMethod(
+        input_file1=method1.output.output_file1,
+        input_file2=method1.output.output_file2,
+        out_root="root4",
+    )
+    workflow.add_rule(method=method4, rule_id="method4")
+
+    assert workflow.rules.names == ["method1", "method4", "method2", "method3"]
 
 
 def test_workflow_rule_from_kwargs(workflow: Workflow, mocker, mock_expand_method):
@@ -145,18 +173,13 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(
         workflow, root=tmp_path, input_file=test_file.name
     )
-    snake_file = tmp_path / "snake_file.smk"
-    w.to_snakemake(snakefile=snake_file)
-    assert "snake_file.config.yml" in os.listdir(tmp_path)
-    assert "snake_file.smk" in os.listdir(tmp_path)
+    w.to_snakemake(snakefile="Snakefile")
+    assert "Snakefile.config.yml" in os.listdir(tmp_path)
+    assert "Snakefile" in os.listdir(tmp_path)
     subprocess.run(
         [
             "snakemake",
-            "-s",
-            str(snake_file),
             "--dry-run",
-            "--configfile",
-            (tmp_path / "snake_file.config.yml").as_posix(),
         ],
         cwd=tmp_path,
     ).check_returncode()
@@ -213,16 +236,19 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(workflow: Workflow, tmp_path, caplog):
+def test_workflow_dryrun(mocker, workflow: Workflow, tmp_path: Path, caplog):
     caplog.set_level(logging.INFO)
     w = create_workflow_with_mock_methods(workflow, root=tmp_path)
 
-    w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
+    w.dryrun()
 
     for rule in w.rules:
         assert rule.rule_id in caplog.text
 
     # Run workflow without region wildcard
+
+
+def test_workflow_run(tmp_path: Path):
     w = Workflow(name="test_workflow")
     root = tmp_path / "test_root"
     root.mkdir()
@@ -242,7 +268,7 @@ def test_workflow_run(workflow: Workflow, tmp_path, caplog):
         root=root,
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
-    w.run(dryrun=True, missing_file_error=True)
+    w.run()
 
 
 def test_output_path_refs(w: Workflow):
