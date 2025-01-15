@@ -21,7 +21,7 @@
 
 project = "HydroFlows"
 copyright = "Deltares"
-author = "Athanasios Tsiokanos"
+author = "Deltares"
 
 # -- General configuration ------------------------------------------------
 
@@ -44,7 +44,8 @@ extensions = [
     # "IPython.sphinxext.ipython_directive",
     # "IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib.autodoc_pydantic",
-    "sphinxcontrib.programoutput"
+    "sphinxcontrib.programoutput",
+    # "nbsphinx",
 ]
 
 autosummary_generate = True

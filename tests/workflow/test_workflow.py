@@ -25,6 +25,7 @@ def create_workflow_with_mock_methods(
 ):
     # create initial input file for workflow
     if root:
+        w.root = root
         root.mkdir(parents=True, exist_ok=True)
         with open(root / input_file, "w") as f:
             yaml.dump(dict(test="test"), f)
@@ -170,18 +171,13 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(
         workflow, root=tmp_path, input_file=test_file.name
     )
-    snake_file = tmp_path / "snake_file.smk"
-    w.to_snakemake(snakefile=snake_file)
-    assert "snake_file.config.yml" in os.listdir(tmp_path)
-    assert "snake_file.smk" in os.listdir(tmp_path)
+    w.to_snakemake(snakefile="Snakefile")
+    assert "Snakefile.config.yml" in os.listdir(tmp_path)
+    assert "Snakefile" in os.listdir(tmp_path)
     subprocess.run(
         [
             "snakemake",
-            "-s",
-            str(snake_file),
             "--dry-run",
-            "--configfile",
-            (tmp_path / "snake_file.config.yml").as_posix(),
         ],
         cwd=tmp_path,
     ).check_returncode()
@@ -205,16 +201,19 @@ def test_workflow_to_yaml(tmp_path, workflow_yaml_dict):
     )
 
 
-def test_workflow_run(workflow: Workflow, tmp_path, caplog):
+def test_workflow_dryrun(mocker, workflow: Workflow, tmp_path: Path, caplog):
     caplog.set_level(logging.INFO)
     w = create_workflow_with_mock_methods(workflow, root=tmp_path)
 
-    w.run(dryrun=True, missing_file_error=True, tmpdir=tmp_path)
+    w.dryrun()
 
     for rule in w.rules:
         assert rule.rule_id in caplog.text
 
     # Run workflow without region wildcard
+
+
+def test_workflow_run(tmp_path: Path):
     w = Workflow(name="test_workflow")
     root = tmp_path / "test_root"
     root.mkdir()
@@ -234,7 +233,7 @@ def test_workflow_run(workflow: Workflow, tmp_path, caplog):
         root=root,
     )
     w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
-    w.run(dryrun=True, missing_file_error=True)
+    w.run()
 
 
 def test_output_path_refs(w: Workflow):
