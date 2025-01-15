@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
 
-from hydroflows.utils.parsers import get_wildcards
+from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 
@@ -287,6 +287,9 @@ class Rule:
     def _create_references_for_method_inputs(self):
         """Create references for method inputs based on output paths of previous rules."""
         output_path_refs = self.workflow._output_path_refs
+        # unpack existing config
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         # Check on duplicate output values
         for key, value in self.method.output:
             if not isinstance(value, Path):
@@ -306,6 +309,10 @@ class Rule:
                 value = value.as_posix()
             if value in output_path_refs.keys():
                 self.method.input._refs.update({key: output_path_refs[value]})
+            # Check if value already exists in conf and update ref if so
+            elif value in conf_values:
+                conf_key = conf_keys[conf_values.index(value)]
+                self.method.input._refs.update({key: "$config." + conf_key})
             else:
                 config_key = f"{self.rule_id}_{key}"
                 logger.debug("Adding %s to config", config_key)
@@ -319,6 +326,9 @@ class Rule:
 
     def _add_method_params_to_config(self) -> None:
         """Add method parameters to the config and update the method params refs."""
+        # unpack existing config
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         for p in self.method.params:
             key, value = p
             # Check if key can be found in method Params class
@@ -327,7 +337,18 @@ class Rule:
             else:
                 default_value = None
 
-            if value != default_value:
+            # Skip if key is already a ref
+            if key in self.method.params._refs:
+                continue
+            # Skip if param value has wildcard
+            elif has_wildcards(value):
+                continue
+            # Check if value already exists in conf and update ref if so
+            elif value in conf_values:
+                conf_key = conf_keys[conf_values.index(value)]
+                self.method.params._refs.update({key: "$config." + conf_key})
+
+            elif value != default_value:
                 config_key = f"{self.rule_id}_{key}"
                 self.workflow.config = self.workflow.config.model_copy(
                     update={config_key: value}

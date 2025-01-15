@@ -298,6 +298,17 @@ def test_create_references_for_method_inputs(workflow: Workflow):
         "input_file2": "$rules.method1.output.output_file2",
     }
 
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2=workflow.get_ref("$rules.method2.output.output_file2"),
+        out_root="new_root",
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert workflow.rules[2].method.input._refs == {
+        "input_file1": "$config.method1_input_file1",
+        "input_file2": "$rules.method2.output.output_file2",
+    }
+
 
 def test_add_method_params_to_config(workflow: Workflow):
     method = TestMethod(
@@ -313,6 +324,41 @@ def test_add_method_params_to_config(workflow: Workflow):
     # default_param should not be included in workflow.config
     assert "default_param" not in workflow.config.to_dict().values()
     assert "default_param2" not in workflow.config.to_dict().values()
+
+    # Check whether ref to value already in config is correctly set
+    method2 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root",
+        param="test_param",
+    )
+    workflow.add_rule(method2, rule_id="method2")
+    assert workflow.rules[1].method.params._refs == {
+        "param": "$config.test_method_param",
+        "out_root": "$config.method2_out_root",
+    }
+    # make sure not a new param is added to config
+    assert "method2_param" not in workflow.config.to_dict().keys()
+
+    # Make sure not a new item is added to config if param is already a ref
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root3",
+        param=workflow.get_ref("$config.test_method_param"),
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert "method3_param" not in workflow.config.to_dict().keys()
+
+    # Make sure param is not added to config if it contains a wildcard
+    method4 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        param="{region}",
+        out_root="{region}",
+    )
+    workflow.add_rule(method4, rule_id="method4")
+    assert "method4_param" not in workflow.config.to_dict().keys()
 
 
 def test_rule_dependency(workflow: Workflow):
