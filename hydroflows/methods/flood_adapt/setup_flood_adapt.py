@@ -168,16 +168,19 @@ class SetupFloodAdapt(Method):
             )
 
             # Create FloodAdapt Database Builder config
-            fa_db_config(probabilistic_set=self.input.event_set_yaml.stem)
+            fa_db_config(
+                self.params.output_dir, probabilistic_set=self.input.event_set_yaml.stem
+            )
 
         else:
             # Create FloodAdapt Database Builder config
-            fa_db_config()
+            fa_db_config(self.params.output_dir)
 
         pass
 
 
 def fa_db_config(
+    fa_root: Path,
     config: Path = Path(HYDROMT_CONFIG_DIR / "fa_database_build.yml"),
     probabilistic_set: Path | None = None,
 ):
@@ -193,5 +196,5 @@ def fa_db_config(
     config = configread(config)
     if probabilistic_set is not None:
         config["probabilistic_set"] = probabilistic_set
-    with open(Path("flood_adapt_builder", "fa_build.toml"), "w") as toml_file:
+    with open(Path(fa_root, "fa_build.toml"), "w") as toml_file:
         toml.dump(config, toml_file)

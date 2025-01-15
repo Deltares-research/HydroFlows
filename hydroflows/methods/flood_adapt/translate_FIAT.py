@@ -47,5 +47,5 @@ def translate_model(root, new_root):
     fm.exposure.exposure_db = exposure_db
     fm.exposure.exposure_geoms = exposure_geoms
 
-    fm.set_root(new_root)
+    fm.set_root(new_root, mode="w+")
     fm.write()

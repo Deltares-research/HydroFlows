@@ -32,7 +32,9 @@ def nested_dict_values(d):
 
 
 @pytest.mark.requires_test_data()
-def test_fa_setup(fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path):
+def test_fa_setup(
+    fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path, tmp_path: Path
+):
     # Setup the rule
     """
     Test the SetupFloodAdapt rule.
@@ -55,12 +57,13 @@ def test_fa_setup(fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: 
         fiat_cfg=Path(fiat_tmp_model, "settings.toml"),
         sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
         event_set_yaml=event_set_file,
+        output_dir=tmp_path.joinpath("flood_adapt"),
     )
     rule.run_with_checks()
 
 
 @pytest.mark.requires_test_data()
-def test_translate_fiat_model(fiat_tmp_model: Path):
+def test_translate_fiat_model(fiat_tmp_model: Path, tmp_path: Path):
     """
     Test the translate_fiat_model function.
 
@@ -78,7 +81,7 @@ def test_translate_fiat_model(fiat_tmp_model: Path):
     tmp_output_model : Path
         The path to the temporary translated model.
     """
-    fn_output = fiat_tmp_model.joinpath("translated_fiat_model")
+    fn_output = tmp_path.joinpath("translated_fiat_model")
     fiat.translate_model(fiat_tmp_model, fn_output)
 
     exposure = pd.read_csv(fn_output.joinpath("exposure", "exposure.csv"))
@@ -111,7 +114,7 @@ def test_translate_fiat_model(fiat_tmp_model: Path):
 
 
 @pytest.mark.requires_test_data()
-def test_translate_events(event_set_file: Path):
+def test_translate_events(event_set_file: Path, tmp_path: Path):
     """
     Test the translate_events function.
 
@@ -127,7 +130,7 @@ def test_translate_events(event_set_file: Path):
     event_set_file : Path
         The path to the temporary event set.
     """
-    fn_output = event_set_file.parent.joinpath("fa_event_set")
+    fn_output = tmp_path.joinpath("fa_event_set")
     name = event_set_file.stem
     events.translate_events(event_set_file, fn_output, name)
 
