@@ -57,6 +57,7 @@ dev = [
   "hydroflows[test, doc, extra]"
 ]
 doc = [
+  "nbsphinx",  # Jupyter notebooks in Sphinx
   "pip>=23.1.2", # needed for editable installs
   "sphinx",
   "sphinx_design",
@@ -65,6 +66,7 @@ doc = [
   "sphinxcontrib-programoutput",
 ]
 extra = [
+  "papermill",  # execute Jupyter notebooks
   "jupyter",
   "snakemake>=8.20, <9.0",      # Workflow manager
   "graphviz",
@@ -182,7 +184,7 @@ python = "3.11.*"
 
 [tool.pixi.environments]
 default = { features = ["dev", "doc", "test", "extra", "py311", "models", "full"], solve-group = "py311" }
-doc = { features = ["doc"], solve-group = "py311" }
+doc = { features = ["doc", "extra"], solve-group = "py311" }
 slim = { solve-group = "py311" }
 extra = { features = ["extra"], solve-group = "py311" }
 test-py311 = { features = ["test", "extra"], solve-group = "py311" }
@@ -196,11 +198,12 @@ test = { cmd = ["pytest", "tests", "--cov=hydroflows", "--cov-report=term-missin
 test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and not slow", "-vv"] }
 test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
+examples = { cmd = ["python", "./docs/run_notebooks.py"] }
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
-docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"]}
-docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"]}
-docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated"] }
+docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends_on = ["examples"]}
+docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends_on = ["examples"]}
+docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated", "./docs/_examples"] }
 docs-html-clean = { depends_on = ["docs-clean", "docs-html"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
