@@ -38,16 +38,12 @@ class WorkflowConfig(BaseModel):
                 conf[k] = [v.as_posix() if isinstance(v, Path) else v for v in org_val]
         return conf
 
-    def model_fields(self) -> List[str]:
-        """Return the model fields."""
-        return list(self.model_dump().keys())
-
     @property
     def keys(self) -> List[str]:
         """Return the model fields."""
-        return self.model_fields()
+        return list(self.model_extra.keys())
 
     @property
     def values(self) -> List[Any]:
         """Return the model values."""
-        return [getattr(self, k) for k in self.model_fields()]
+        return list(self.model_extra.values())
