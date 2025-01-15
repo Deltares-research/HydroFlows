@@ -41,3 +41,13 @@ class WorkflowConfig(BaseModel):
     def model_fields(self) -> List[str]:
         """Return the model fields."""
         return list(self.model_dump().keys())
+
+    @property
+    def keys(self) -> List[str]:
+        """Return the model fields."""
+        return self.model_fields()
+
+    @property
+    def values(self) -> List[Any]:
+        """Return the model values."""
+        return [getattr(self, k) for k in self.model_fields()]

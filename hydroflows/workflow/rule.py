@@ -288,9 +288,8 @@ class Rule:
         """Create references for method inputs based on output paths of previous rules."""
         output_path_refs = self.workflow._output_path_refs
         # unpack existing config
-        conf = self.workflow.config.to_dict()
-        conf_keys = list(conf.keys())
-        conf_values = list(conf.values())
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         # Check on duplicate output values
         for key, value in self.method.output:
             if not isinstance(value, Path):
@@ -328,9 +327,8 @@ class Rule:
     def _add_method_params_to_config(self) -> None:
         """Add method parameters to the config and update the method params refs."""
         # unpack existing config
-        conf = self.workflow.config.to_dict()
-        conf_keys = list(conf.keys())
-        conf_values = list(conf.values())
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         for p in self.method.params:
             key, value = p
             # Check if key can be found in method Params class
