@@ -11,6 +11,7 @@ if __name__ == "__main__":
     current_dir = Path(__file__).parent
     examples_dir = current_dir / "../examples"
     output_dir = Path(current_dir, "_examples")
+    output_dir.mkdir(exist_ok=True)
     os.chdir(examples_dir)
     for nb in Path(examples_dir).glob("*.ipynb"):
         nb_name = nb.name
