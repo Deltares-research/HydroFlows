@@ -116,7 +116,7 @@ def test_future_climate_sea_level(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "coastal_events" / "coastal_events.yml"
+    event_set_yaml = test_data_dir / "event-sets" / "coastal_events.yml"
 
     out_root = Path(tmp_path / "future_climate_sea_level")
 

@@ -46,14 +46,17 @@ def test_sfincs_build(
 
 
 @pytest.mark.requires_test_data()
-def test_sfincs_update(sfincs_tmp_model: Path, test_data_dir: Path):
+def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path):
+    event_name = "p_event01"
     sf = SfincsUpdateForcing(
         sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
-        event_yaml=str(test_data_dir / "rainfall_events" / "event_rp010.yml"),
-        event_name="rp010",
+        event_yaml=event_set_file.as_posix(),
+        event_name=event_name,
         sim_subfolder="sim",
     )
-    assert sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / "rp010" / "sfincs.inp"
+    assert (
+        sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / event_name / "sfincs.inp"
+    )
     sf.run_with_checks()
 
 
