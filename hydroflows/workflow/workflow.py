@@ -4,8 +4,6 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import logging
-import os
-import tempfile
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, List, Optional, Union
@@ -32,6 +30,7 @@ class Workflow:
         name="hydroflows",
         config: Optional[Union[Dict, WorkflowConfig]] = None,
         wildcards: Optional[Dict] = None,
+        root: Optional[Path] = None,
     ) -> None:
         """Create a workflow instance.
 
@@ -49,6 +48,9 @@ class Workflow:
         if wildcards is None:
             wildcards = {}
 
+        if root is not None:
+            self.root = root
+
         self.name: str = str(name)
         self.config: WorkflowConfig = (
             WorkflowConfig(**config) if isinstance(config, dict) else config
@@ -60,6 +62,19 @@ class Workflow:
         rules_str = pformat(self.rules)
         wc_str = pformat(self.wildcards.to_dict())
         return f"Workflow(\nwildcards={wc_str}\nrules={rules_str}\n)"
+
+    @property
+    def root(self) -> Path:
+        """Get the root of the workflow."""
+        if not hasattr(self, "_root"):
+            return Path.cwd()
+        return self._root
+
+    @root.setter
+    def root(self, root: Path) -> None:
+        """Set the root of the workflow and create the directory if it does not yet exist."""
+        self._root = Path(root)
+        self._root.mkdir(parents=True, exist_ok=True)
 
     def add_rule(self, method: Method, rule_id: Optional[str] = None) -> None:
         """Add a rule to the workflow."""
@@ -114,7 +129,7 @@ class Workflow:
 
     def to_snakemake(
         self,
-        snakefile: Path,
+        snakefile: str = "Snakefile",
         dryrun: bool = False,
     ) -> None:
         """Save the workflow to a snakemake workflow.
@@ -122,40 +137,39 @@ class Workflow:
         Parameters
         ----------
         snakefile : Path
-            The path to the snakefile.
+            The snakefile filename, by default "Snakefile".
         dryrun : bool, optional
             Run the workflow in dryrun mode, by default False.
-        run_env : Literal["shell", "script"], optional
-            The environment in which to run the methods, by default "shell".
         """
-        snakefile = Path(snakefile).resolve()
-        configfile = snakefile.with_suffix(".config.yml")
+        # set paths and creat directory
+        snake_path = Path(self.root, snakefile).resolve()
+        config_path = Path(snake_path.parent, f"{snake_path.stem}.config.yml").resolve()
+        # render the snakefile template
         template_env = Environment(
             loader=PackageLoader("hydroflows"),
             trim_blocks=True,
             lstrip_blocks=True,
         )
         template = template_env.get_template("workflow.smk.jinja")
-        configfile = snakefile.parent / snakefile.with_suffix(".config.yml").name
         snake_rules = [JinjaSnakeRule(r) for r in self.rules]
         _str = template.render(
             version=__version__,
-            configfile=configfile.name,
+            configfile=config_path.name,
             rules=snake_rules,
             wildcards=self.wildcards.wildcards,
             dryrun=dryrun,
         )
-        # Small check for the parent directory
-        snakefile.parent.mkdir(parents=True, exist_ok=True)
-        # After that write
-        with open(snakefile, "w") as f:
+        # write the snakefile and config file
+        with open(snake_path, "w") as f:
             f.write(_str)
-        with open(snakefile.parent / configfile, "w") as f:
+        with open(config_path, "w") as f:
             yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
         yml_dict = {
+            "name": self.name,
+            "root": self.root.as_posix(),
             "config": self.config.to_dict(mode="json"),
             "wildcards": self.wildcards.to_dict(),
             "rules": [r.to_dict() for r in self.rules],
@@ -166,9 +180,6 @@ class Workflow:
     def run(
         self,
         max_workers=1,
-        dryrun: bool = False,
-        missing_file_error: bool = False,
-        tmpdir: Optional[Path] = None,
     ) -> None:
         """Run the workflow.
 
@@ -177,34 +188,31 @@ class Workflow:
         max_workers : int, optional
             The maximum number of workers, by default 1.
             Only used when dryrun is False.
-        dryrun : bool, optional
-            Run the workflow in dryrun mode, by default False.
         missing_file_error : bool, optional
             Raise an error when a file is missing, by default False.
             This only works when dryrun is True.
-        tmpdir : Optional[Path], optional
-            The temporary directory to run the dryrun in, by default None.
         """
-        # do dryrun in a tmp directory
-        if dryrun:
-            curdir = Path.cwd()
-            if tmpdir is None:
-                tmpdir = Path(tempfile.mkdtemp(prefix="hydroflows_"))
-            Path(tmpdir).mkdir(parents=True, exist_ok=True)
-            os.chdir(tmpdir)
-            logger.info("Running dryrun in %s", tmpdir)
-
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
             logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
-            rule.run(
-                dryrun=dryrun,
-                max_workers=max_workers,
-                missing_file_error=missing_file_error,
-            )
+            rule.run(max_workers=max_workers)
 
-        if dryrun:
-            os.chdir(curdir)
+    def dryrun(self, missing_file_error: bool = False) -> None:
+        """Dryrun the workflow.
+
+        Parameters
+        ----------
+        missing_file_error : bool, optional
+            Raise an error when a file is missing, by default False.
+        """
+        nrules = len(self.rules)
+        input_files = []
+        for i, rule in enumerate(self.rules):
+            logger.info(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            output_files = rule.dryrun(
+                missing_file_error=missing_file_error, input_files=input_files
+            )
+            input_files = list(set(input_files + output_files))
 
     @property
     def _output_path_refs(self) -> Dict[str, str]:

@@ -82,18 +82,19 @@ def test_event(tmp_csv: Path, tmp_path: Path):
 
 def test_event_set(test_data_dir: Path):
     event_set = EventSet(
-        root=str(test_data_dir / "rainfall_events"),
+        root=str(test_data_dir / "event-sets"),
         events=[
-            {"name": "rp050", "path": "event_rp050.yml"},
-            {"name": "rp010", "path": "event_rp010.yml"},
+            {"name": "p_event01", "path": "p_event01.yml"},
+            {"name": "p_event02", "path": "p_event02.yml"},
+            {"name": "p_event03", "path": "p_event03.yml"},
         ],
     )
     assert isinstance(event_set.events[0]["path"], Path)
     assert event_set.events[0]["path"].is_absolute()
-    assert len(event_set.events) == 2
-    event = event_set.get_event("rp050")
+    assert len(event_set.events) == 3
+    event = event_set.get_event("p_event01")
     assert isinstance(event, Event)
-    assert event.return_period == 50.0
+    assert event.return_period == 5.0
 
 
 def test_event_set_io(event_set: EventSet, tmp_path: Path):

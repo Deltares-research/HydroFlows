@@ -1,6 +1,7 @@
 import logging
 import re
 from itertools import chain
+from pathlib import Path
 from weakref import ReferenceType
 
 import pytest
@@ -297,6 +298,17 @@ def test_create_references_for_method_inputs(workflow: Workflow):
         "input_file2": "$rules.method1.output.output_file2",
     }
 
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2=workflow.get_ref("$rules.method2.output.output_file2"),
+        out_root="new_root",
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert workflow.rules[2].method.input._refs == {
+        "input_file1": "$config.method1_input_file1",
+        "input_file2": "$rules.method2.output.output_file2",
+    }
+
 
 def test_add_method_params_to_config(workflow: Workflow):
     method = TestMethod(
@@ -312,6 +324,41 @@ def test_add_method_params_to_config(workflow: Workflow):
     # default_param should not be included in workflow.config
     assert "default_param" not in workflow.config.to_dict().values()
     assert "default_param2" not in workflow.config.to_dict().values()
+
+    # Check whether ref to value already in config is correctly set
+    method2 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root",
+        param="test_param",
+    )
+    workflow.add_rule(method2, rule_id="method2")
+    assert workflow.rules[1].method.params._refs == {
+        "param": "$config.test_method_param",
+        "out_root": "$config.method2_out_root",
+    }
+    # make sure not a new param is added to config
+    assert "method2_param" not in workflow.config.to_dict().keys()
+
+    # Make sure not a new item is added to config if param is already a ref
+    method3 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        out_root="root3",
+        param=workflow.get_ref("$config.test_method_param"),
+    )
+    workflow.add_rule(method3, rule_id="method3")
+    assert "method3_param" not in workflow.config.to_dict().keys()
+
+    # Make sure param is not added to config if it contains a wildcard
+    method4 = TestMethod(
+        input_file1="test.file",
+        input_file2="test2.file",
+        param="{region}",
+        out_root="{region}",
+    )
+    workflow.add_rule(method4, rule_id="method4")
+    assert "method4_param" not in workflow.config.to_dict().keys()
 
 
 def test_rule_dependency(workflow: Workflow):
@@ -436,41 +483,45 @@ def test_parameters(workflow: Workflow):
     }
 
 
+def test_dryrun(caplog, tmp_path):
+    caplog.set_level(logging.INFO)
+    workflow = Workflow(wildcards={"region": ["region1", "region2"]}, root=tmp_path)
+    test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
+    rule = Rule(method=test_method, workflow=workflow)
+    # test dryrun without missing file error
+    rule.dryrun(missing_file_error=False)
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
+    # test dryrun with missing file error
+    with pytest.raises(FileNotFoundError):
+        rule.dryrun(missing_file_error=True)
+    # test dryrun with missing file error and missing file
+    input_files = []
+    for file_list in rule._parameters["input"].values():
+        input_files.extend(file_list)
+    rule.dryrun(missing_file_error=True, input_files=input_files)
+    # write input files and test again
+    for file in input_files:
+        abs_path = Path(workflow.root, file)
+        abs_path.parent.mkdir(parents=True, exist_ok=True)
+        abs_path.write_text("")
+    rule.dryrun(missing_file_error=True)
+
+
 def test_run(caplog, mocker):
     caplog.set_level(logging.INFO)
     workflow = Workflow(wildcards={"region": ["region1", "region2"]})
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
-    mocker.patch.object(Rule, "_run_method_instance")
-    rule.run(dryrun=True)
-    assert "Running test_method 1/2" in caplog.text
-    assert "Running test_method 2/2" in caplog.text
-
-    mock_thread_map = mocker.patch("hydroflows.workflow.rule.thread_map")
-    rule.run(max_workers=2)
-    mock_thread_map.assert_called_with(
-        rule._run_method_instance, rule._method_instances, max_workers=2
-    )
-    rule.run(dryrun=True)
-    assert "Running test_method 1/2" in caplog.text
-    assert "Running test_method 2/2" in caplog.text
-
-
-def test_run_method_instance(mocker):
-    workflow = Workflow(wildcards={"region": ["region1", "region2"]})
-    test_method = TestMethod(input_file1="test1", input_file2="test2")
-    rule = Rule(method=test_method, workflow=workflow)
-
-    mocker.patch.object(TestMethod, "dryrun")
-    rule._run_method_instance(
-        method=rule._method_instances[0],
-        dryrun=True,
-        missing_file_error=True,
-    )
-    test_method.dryrun.assert_called_with(missing_file_error=True)
+    # mock all run_with_checks methods of methods in rule.methods
     mocker.patch.object(TestMethod, "run_with_checks")
-    rule._run_method_instance(method=rule._method_instances[0])
-    test_method.run_with_checks.assert_called()
+    rule.run()
+    assert "Running test_method 1/2" in caplog.text
+    assert "Running test_method 2/2" in caplog.text
+    assert TestMethod.run_with_checks.call_count == 2
+    # test with max_workers
+    rule.run(max_workers=2)
+    assert TestMethod.run_with_checks.call_count == 4
 
 
 def test_rules(workflow, rule):

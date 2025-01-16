@@ -57,9 +57,12 @@ def fetch_data(
     Path
         The output directory where the data is stored
     """
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
     if output_dir is None:
         output_dir = CACHE_DIR
-    output_dir = Path(output_dir)  # Ensure Path object type
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
 
     # Quick check whether the data can be found
     choices_raw = list(REGISTRY.keys())
@@ -70,22 +73,18 @@ def fetch_data(
 
     # Setup Pooch
     retriever = pooch.create(
-        path=output_dir,
+        path=CACHE_DIR,  # store archive to cache
         base_url=BASE_URL,
         registry=REGISTRY,
     )
 
-    # create the output directory
-    logger.info(f"Fetching data: {data} to {output_dir.as_posix()}")
-    output_dir.mkdir(parents=True, exist_ok=True)
-
     # Set the way of unpacking it
     suffix = choices_raw[idx].split(".", 1)[1]
-    extract_dir = "."
+    extract_dir = output_dir
     if sub_dir:
-        extract_dir += f"/{data}"
+        extract_dir = Path(extract_dir, data)
     processor = unpack_processor(suffix, extract_dir=extract_dir)
     # Retrieve the data
     retriever.fetch(choices_raw[idx], processor=processor)
 
-    return output_dir / extract_dir
+    return extract_dir
