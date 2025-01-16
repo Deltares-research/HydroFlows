@@ -111,15 +111,13 @@ def test_pluvial_historical_events(
 
 
 def test_future_climate_rainfall(
-    test_data_dir: Path,
     tmp_path: Path,
+    event_set_file: Path,
 ):
-    event_set_yaml = test_data_dir / "rainfall_events" / "events.yml"
-
     out_root = Path(tmp_path / "CC_scaling")
 
     rule = FutureClimateRainfall(
-        event_set_yaml=event_set_yaml,
+        event_set_yaml=event_set_file,
         dT=2.5,
         event_root=out_root,
     )
