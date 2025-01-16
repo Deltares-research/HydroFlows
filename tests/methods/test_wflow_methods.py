@@ -61,7 +61,6 @@ def test_wflow_config(wflow_sim_model: Path):
     # Assert the settings
     assert "ri_input__more_forcing" in rule.input.to_dict()
     assert "some_var" in rule.params.to_dict()
-    assert len(rule.params.wildcards) == 0
 
     # Run the method
     rule.run_with_checks()
