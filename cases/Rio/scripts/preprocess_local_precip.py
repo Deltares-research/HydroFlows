@@ -33,7 +33,7 @@ def main(
     df_station = df_station.loc[time_start:time_end]
 
     duplicated_index = df_station.index.duplicated(keep="first")
-    df_station_res = df_station[~duplicated_index].resample("1H").mean()
+    df_station_res = df_station[~duplicated_index].resample("1h").mean()
 
     ds_station_res = xr.Dataset.from_dataframe(df_station_res)
 
@@ -53,6 +53,6 @@ if __name__ == "__main__":
     precip_raw_fn = "bq-results-20240701-123456-1719837312017.csv"
     station_to_export = 11
     time_start = "1997-01-01"
-    time_end = "2024-01-01"
+    time_end = "2024-01-31"
 
     main(precip_raw_root, precip_raw_fn, station_to_export, time_start, time_end)

@@ -19,6 +19,7 @@ from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
+__all__ = ["FloodmarksValidation"]
 logger = logging.getLogger(__name__)
 
 

@@ -2,7 +2,7 @@
 
 # %%
 # Import packages
-import os
+import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow
@@ -26,22 +26,19 @@ pwd = Path(__file__).parent
 # Define variables
 name = "local"
 setup_root = Path(pwd, "setups", name)
-# Create the case directory
-setup_root.mkdir(exist_ok=True, parents=True)
-os.chdir(setup_root)
 # Setup the log file
-setuplog(path=setup_root / "hydroflows.log", level="DEBUG")
+setuplog(path=setup_root / "hydroflows-logger-validation.log", level="DEBUG")
 
 # %%
 # Setup the config file
+# Config
 config = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/region.geojson"),
     data_libs=[
-        Path(pwd, "data/local-data/data_catalog.yml"),  # local data catalog
-        Path(pwd, "data/global-data/data_catalog.yml"),  # global data catalog
-        Path(pwd, "data/preprocessed-data/data_catalog.yml"),
-    ],  # preprocessed data catalog
+        Path(pwd, "data/local-data/data_catalog.yml"),
+        Path(pwd, "data/global-data/data_catalog.yml"),
+    ],
     plot_fig=True,
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
@@ -78,10 +75,8 @@ w = Workflow(
 sfincs_build = SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
-    default_config=w.get_ref("$config.hydromt_sfincs_config"),
+    config=w.get_ref("$config.hydromt_sfincs_config"),
     data_libs=w.get_ref("$config.data_libs"),
-    res=w.get_ref("$config.sfincs_res"),
-    river_upa=w.get_ref("$config.river_upa"),
     plot_fig=w.get_ref("$config.plot_fig"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
@@ -97,14 +92,15 @@ precipitation = ScriptMethod(
         )
     },
 )
+w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
 
 historical_event = PluvialHistoricalEvents(
     precip_nc=precipitation.output.precip_nc,
-    events_dates=w.get_ref("$config.events_dates"),
-    event_root="events",
+    events_dates=w.get_ref("$config.historical_events_dates"),
+    event_root="historical_events",
     wildcard="pluvial_historical_event",
 )
-w.add_rule(historical_event, rule_id="pluvial_historical_event")
+w.add_rule(historical_event, rule_id="historical_event")
 
 # %%
 # Update the sfincs model with pluvial events
@@ -128,8 +124,9 @@ sfincs_down = SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output",
+    output_root="output/hazard",
 )
+w.add_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Validate the downscaled inundation map against floodmarks
@@ -138,5 +135,26 @@ floodmark_validation = FloodmarksValidation(
     flood_hazard_map=sfincs_down.output.hazard_tif,
     waterlevel_col=w.get_ref("$config.waterlevel_col"),
     waterlevel_unit=w.get_ref("$config.waterlevel_unit"),
-    out_root="output/validation",
+    out_root="output/validation/{pluvial_historical_event}",
+    bmap=w.get_ref("$config.bmap"),
+    bins=w.get_ref("$config.bins"),
+    cmap=w.get_ref("$config.cmap"),
+    region=sfincs_build.output.sfincs_region,
 )
+w.add_rule(floodmark_validation, rule_id="floodmark_validation")
+
+# %%
+# run workflow
+w.dryrun()
+
+# %%
+# to snakemake
+w.to_snakemake("local-workflow-validation.smk")
+
+# %%
+# (test) run the workflow with snakemake and visualize the directed acyclic graph
+subprocess.run(
+    "snakemake -s local-workflow-validation.smk --configfile local-workflow-validation.config.yml --dag | dot -Tsvg > dag-validation.svg",
+    cwd=w.root,
+    shell=True,
+).check_returncode()
