@@ -16,24 +16,34 @@ class JinjaCWLRule:
 
     def __init__(self, rule: "Rule"):
         self.rule = rule
+        self.id = rule.rule_id
+        self.method_name = rule.method.name
+        self.loop_depth = rule._loop_depth
+
+        self._input: Dict[str, Dict] = {}
+        self._input_wildcards: list[str] = []
+        self._output: Dict[str, Dict] = {}
+
+        self._set_input()
+        self._set_input_wildcards()
+        self._set_output()
 
     @property
-    def rule_id(self) -> str:
-        """Get the name of the rule."""
-        return self.rule.rule_id
+    def input(self) -> Dict[str, Dict]:
+        """Return nested dict of input keys and CWL info."""
+        return self._input
 
     @property
-    def method_name(self) -> str:
-        """Get the name of the method."""
-        return self.rule.method.name
+    def output(self) -> Dict[str, Dict]:
+        """Return nested dict of output keys and CWL info."""
+        return self._output
 
     @property
-    def loop_depth(self) -> int:
-        """Get loop depth of rule."""
-        return self.rule._loop_depth
+    def input_wildcards(self) -> List[str]:
+        """Return list of explode wildcards occuring in inputs."""
+        return self._input_wildcards
 
-    @property
-    def input(self) -> Dict[str, str]:
+    def _set_input(self) -> Dict[str, str]:
         """Get input dict for CWL step."""
         refs = self.rule.method.input.to_dict(filter_types=Path, return_refs=True)
         inputs = {}
@@ -43,20 +53,23 @@ class JinjaCWLRule:
             (reduce_wc,) = self.rule.wildcards["reduce"]
 
         for key, val in refs.items():
-            inputs[key] = {}
-            inputs[key]["type"] = "File"
-            if isinstance(val, folderpath):
-                inputs[key]["type"] = "Directory"
-            # Set the source of the input (from prev rule, config)
-            if "$config" in val:
+            # inputs[key] = {}
+            ref = self.rule.workflow.get_ref(val)
+            inputs[key] = map_cwl_types(ref.value)
+            # inputs[key]["type"] = "File"
+            # if isinstance(val, folderpath):
+            #     inputs[key]["type"] = "Directory"
+            # # Set the source of the input (from prev rule, config)
+            if "$config" in ref.ref:
                 inputs[key]["source"] = val.split(".")[-1]
-                if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
-                    inputs[key]["type"] = "Directory"
-            if "$rules" in val:
+                # inputs[key] = map_cwl_types(val)
+                # if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
+                #     inputs[key]["type"] = "Directory"
+            if "$rules" in ref.ref:
                 tmp = val.split(".")
                 inputs[key]["source"] = f"{tmp[-3]}/{tmp[-1]}"
-                if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
-                    inputs[key]["type"] = "Directory"
+                # if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
+                #     inputs[key]["type"] = "Directory"
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
                 inputs[key]["type"] += "[]"
@@ -70,34 +83,31 @@ class JinjaCWLRule:
                 inputs[key] = map_cwl_types(val)
             inputs[key]["type"] += "?"
 
-        return inputs
+        self._input = inputs
 
-    @property
-    def input_wildcards(self) -> str:
+    def _set_input_wildcards(self) -> str:
         """Get wildcards that need to be included in CWL step input."""
         if self.rule.wildcards["explode"]:
             wc = self.rule.wildcards["explode"]
-            if len(wc) > 1:
-                wc = [item + "_list" for item in wc]
-            return wc
-        else:
-            return None
+            wc = [item + "_wc" for item in wc]
+            # if len(wc) > 1:
+            #     wc = [item + "_list" for item in wc]
+            self._input_wildcards = wc
 
-    @property
-    def input_scatter(self) -> List[str]:
-        """Get inputs for CWL step that are scattered over."""
-        if self.rule.wildcards["reduce"]:
-            return []
-        ins = self.rule.method.input.to_dict()
-        params = self.rule.method.params.to_dict()
-        scatters = [key for key in ins.keys() if "{" in ins[key].as_posix()]
-        scatters.extend([key for key in params.keys() if "{" in str(params[key])])
-        if self.input_wildcards:
-            scatters.extend(self.input_wildcards)
-        return scatters
+    # @property
+    # def input_scatter(self) -> List[str]:
+    #     """Get inputs for CWL step that are scattered over."""
+    #     if self.rule.wildcards["reduce"]:
+    #         return []
+    #     ins = self.rule.method.input.to_dict()
+    #     params = self.rule.method.params.to_dict()
+    #     scatters = [key for key in ins.keys() if has_wildcards(ins[key])]
+    #     scatters.extend([key for key in params.keys() if has_wildcards(params[key])])
+    #     if self.input_wildcards:
+    #         scatters.extend(self.input_wildcards)
+    #     return scatters
 
-    @property
-    def output(self) -> Dict[str, str]:
+    def _set_output(self) -> Dict[str, str]:
         """Get outputs of CWL step."""
         results = self.rule.method.output.to_dict(mode="python", filter_types=Path)
         outputs = {}
@@ -110,21 +120,28 @@ class JinjaCWLRule:
             else:
                 outputs[key]["type"] = "File"
             if self.input_wildcards:
+                # This is for explode (n-to-n) methods.
+                # We dont want every possible output value here
+                # only replace {wildcard} by CWL-style $(input.wildcard)
                 for wc in self.input_wildcards:
+                    wc = wc.split("_")[0]
                     outputs[key]["value"] = [
                         item.replace(("{" + f"{wc}" + "}"), f"$(input.{wc})")
                         for item in outputs[key]["value"]
                     ]
             if wc_expand and any(get_wildcards(val, wc_expand)):
+                # This is for expand (1-to-n) methods
+                # Here we want every possible value for the expand wildcards
                 wc_dict = self.rule.method.expand_wildcards
                 wc_values = list(product(*wc_dict.values()))
+                # output[key]["value"] is a singleton list before filling in wildcard values
                 outputs[key]["value"] = [
-                    str(outputs[key]["value"]).format(**dict(zip(wc_expand, wc)))
+                    outputs[key]["value"][0].format(**dict(zip(wc_expand, wc)))
                     for wc in wc_values
                 ]
                 outputs[key]["type"] += "[]"
 
-        return outputs
+        self._output = outputs
 
     @property
     def params(self) -> Dict[str, str]:
@@ -144,40 +161,40 @@ class JinjaCWLWorkflow:
         self.rules = rules
         self.workflow = rules[0].rule.workflow
         self.start_loop = start_loop_depth
+        self.id = f"subworkflow_{rules[0].id}"
 
-    @property
-    def input(self) -> Dict[str, str]:
-        """Set CWL workflow inputs to be workflog.config + wildcards."""
-        input_dict = {}
+        self._steps: List[Union[JinjaCWLRule, "JinjaCWLWorkflow"]] = []
+        self._input: Dict[str, Dict] = {}
+        self._output: Dict[str, Dict] = {}
+        self._input_scatter: List[str] = []
 
-        for key, value in self.workflow.config:
-            input_dict[key] = map_cwl_types(value)
-        for wc in self.workflow.wildcards.names:
-            input_dict[wc] = {
-                "type": "string[]",
-                "value": self.workflow.wildcards.get(wc),
-            }
-
-        return input_dict
-
-    @property
-    def output(self) -> Dict[str, str]:
-        """Set CWL workflow outputs to be outputs of all rules."""
-        output_dict = {}
-
-        for rule in self.rules:
-            for id, info in rule.output.items():
-                output_dict[id] = {
-                    "type": f"{info['type']}[]"
-                    if rule.input_scatter
-                    else f"{info['type']}",
-                    "outputSource": f"{rule.rule_id}/{id}",
-                }
-
-        return output_dict
+        self._set_steps()
+        # self._step_input_sources()
+        self._set_output()
+        self._set_input()
+        self._set_input_scatter()
 
     @property
     def steps(self) -> List[Union[JinjaCWLRule, "JinjaCWLWorkflow"]]:
+        """Return list of steps and subworkflows."""
+        return self._steps
+
+    @property
+    def input(self) -> Dict[str, Dict]:
+        """Return nested dict of input keys and info."""
+        return self._input
+
+    @property
+    def output(self) -> Dict[str, Dict]:
+        """Return nest dict of output keys and info."""
+        return self._output
+
+    @property
+    def input_scatter(self) -> List[str]:
+        """Return list of inputs that are scattered over in CWL workflow."""
+        return self._input_scatter
+
+    def _set_steps(self):
         """Set list of steps and subworkflows."""
         step_list = deepcopy(self.rules)
 
@@ -189,9 +206,96 @@ class JinjaCWLWorkflow:
                 JinjaCWLWorkflow(rules=sub_wf, start_loop_depth=self.start_loop + 1)
             ]
 
-        return step_list
+        self._steps = step_list
 
-    @property
-    def input_scatter(self) -> List[str]:
+    def _set_input(self):
+        """Set CWL workflow inputs to be workflog.config + wildcards."""
+        input_dict = {}
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
+        ids = [rule.id for rule in self.rules]
+        step_ids = [step.id for step in self.steps]
+
+        for step in self.steps:
+            if isinstance(step, JinjaCWLRule):
+                ins = deepcopy(step.input)
+                for key, info in ins.items():
+                    if "source" in info and "/" not in info["source"]:
+                        if info["source"] in conf_keys:
+                            in_val = conf_values[conf_keys.index(info["source"])]
+                        elif info["source"] in self.workflow.wildcards.names:
+                            in_val = self.workflow.wildcards.get(info["source"])
+                        else:
+                            in_val = info["value"]
+                        input_dict[info["source"]] = map_cwl_types(in_val)
+                    elif "source" in info:
+                        if key in input_dict:
+                            input_dict[key + f"_{step.id}"] = info
+                        else:
+                            input_dict[key] = info
+                        # source = info["source"].split("/")[0]
+                        # if source not in step_ids:
+                        if not any([id in info["source"] for id in step_ids]):
+                            step._input[key]["source"] = key
+            elif isinstance(step, JinjaCWLWorkflow):
+                for key in step.input:
+                    if key in list(self.output.keys()):
+                        step.input[key]["source"] = self.output[key]["outputSource"]
+                input_dict.update(step.input)
+
+        tmp = deepcopy(input_dict)
+        for key, info in tmp.items():
+            if "source" in info:
+                if any([id in info["source"] for id in ids]):
+                    input_dict.pop(key)
+
+        for wc in self.rules[0].input_wildcards:
+            input_dict.update({wc: {"type": "string[]", "source": wc}})
+
+        self._input = input_dict
+
+    def _set_output(self):
+        """Set CWL workflow outputs to be outputs of all rules."""
+        output_dict = {}
+
+        for step in self.steps:
+            for id, info in step.output.items():
+                output_dict[id] = {
+                    "type": info["type"],
+                    # "type": f"{info['type']}[]"
+                    # if has_wildcards(info['value']) and "[]" not in info['type']
+                    # else f"{info['type']}",
+                    "outputSource": f"{step.id}/{id}",
+                }
+        self._output = output_dict
+
+    def _set_input_scatter(self) -> List[str]:
         """Set inputs which need to be scattered over."""
-        return self.rules[0].input_scatter
+        wc = self.rules[0].rule.wildcards["explode"]
+        ins = self.input
+        scatters = []
+
+        for key, info in ins.items():
+            if info["type"] == "File":
+                val = info["value"]["path"]
+            elif "value" in info:
+                val = info["value"]
+            else:
+                continue
+            if get_wildcards(val, wc):
+                scatters.append(key)
+
+        self._input_scatter = scatters
+
+    def _step_input_sources(self):
+        """Reset input sources of steps to steps only in (sub)workflow."""
+        ids = [step.id for step in self.steps]
+        for step in self.steps:
+            for key, info in step.input.items():
+                # Check if source field exists and is ref to other step
+                if "source" in info and "/" in info["source"]:
+                    source = info["source"].split("/")[0]
+                    # If source refs to step not in current (sub)workflow
+                    # Reset to overall workflow input
+                    if source not in ids:
+                        step._input[key]["source"] = key

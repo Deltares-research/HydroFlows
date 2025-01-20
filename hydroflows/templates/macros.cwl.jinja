@@ -1,15 +1,15 @@
 {% macro add_single_step(rule, dryrun) %}
-{{ rule.rule_id }}:
+{{ rule.id }}:
 {% if rule.rule.wildcards.reduce %}
         requirements:
             MultipleInputFeatureRequirement: {}
-{% elif rule.input_scatter %}
-        scatter:
-{% for item in rule.input_scatter %}
-            - {{ item }}
-{% endfor %}
-        scatterMethod: dotproduct
-{% endif %}
+# {% elif rule.input_scatter %}
+#         scatter:
+# {% for item in rule.input_scatter %}
+#             - {{ item }}
+# {% endfor %}
+#         scatterMethod: dotproduct
+# {% endif %}
         in:
 {% for id, info in rule.input.items() %}
 {% if info.source %}
@@ -32,11 +32,15 @@
 {% endmacro %}
 
 {% macro add_subworkflow(wf, dryrun)%}
-subworkflow:
+{{wf.id}}:
         in:
-{% for id in wf.input%}
+{% for id, info in wf.input.items()%}
+{% if info.source%}
+            {{id}}: {{info.source}}
+{% else %}
             {{id}}: {{id}}
-{% endfor %}
+{% endif %}
+{%- endfor %}
 {% if dryrun%}
             dryrun: dryrun
 {% endif %}

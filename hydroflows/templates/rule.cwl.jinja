@@ -27,8 +27,10 @@ inputs:
             {% endif %}
     {% endfor %}
     {% if rule.input_wildcards %}
-    {{rule.input_wildcards}}:
+    {% for wc in rule.input_wildcards%}
+    {{wc}}:
         type: string
+    {% endfor %}
     {% endif %}
     dryrun:
         type: boolean

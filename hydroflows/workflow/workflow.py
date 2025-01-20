@@ -204,7 +204,10 @@ class Workflow:
         for key, value in self.config:
             input_dict[key] = map_cwl_types(value)
         for wc in self.wildcards.names:
-            input_dict[wc] = {"type": "string[]", "value": self.wildcards.get(wc)}
+            input_dict[wc + "_wc"] = {
+                "type": "string[]",
+                "value": self.wildcards.get(wc),
+            }
         if dryrun:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
         # wc_tup = list(product(*self.wildcards.values))
