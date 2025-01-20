@@ -82,20 +82,16 @@ def test_fiat_run(
 
 
 @pytest.mark.requires_test_data()
-@pytest.mark.parametrize("method", ["python", "exe"])
 def test_fiat_visualize_single_event(
     fiat_sim_model: Path,
-    sfincs_sim_model: Path,
     event_set_file: Path,
-    fiat_exe: Path,
-    method: str,
 ):
     fiat_cfg = Path(fiat_sim_model) / "settings.toml"
 
     # Visualize output
     rule = FIATVisualize(fiat_cfg=fiat_cfg, event_set_file=event_set_file)
     rule.run_with_checks()
-    visual_output_fn = next(walk(Path(fiat_tmp_model) / "fiat_metrics"))[-1]
+    visual_output_fn = next(walk(Path(fiat_sim_model) / "fiat_metrics"))[-1]
 
     # Assert all infometrics and infographic files are in output folder
     assert "geojson" in visual_output_fn
