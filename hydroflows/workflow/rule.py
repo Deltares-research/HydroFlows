@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
 
-from hydroflows.utils.parsers import get_wildcards
+from hydroflows.utils.parsers import get_wildcards, has_wildcards
+from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 
 if TYPE_CHECKING:
@@ -286,6 +287,9 @@ class Rule:
     def _create_references_for_method_inputs(self):
         """Create references for method inputs based on output paths of previous rules."""
         output_path_refs = self.workflow._output_path_refs
+        # unpack existing config
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         # Check on duplicate output values
         for key, value in self.method.output:
             if not isinstance(value, Path):
@@ -305,6 +309,10 @@ class Rule:
                 value = value.as_posix()
             if value in output_path_refs.keys():
                 self.method.input._refs.update({key: output_path_refs[value]})
+            # Check if value already exists in conf and update ref if so
+            elif value in conf_values:
+                conf_key = conf_keys[conf_values.index(value)]
+                self.method.input._refs.update({key: "$config." + conf_key})
             else:
                 config_key = f"{self.rule_id}_{key}"
                 logger.debug("Adding %s to config", config_key)
@@ -318,6 +326,9 @@ class Rule:
 
     def _add_method_params_to_config(self) -> None:
         """Add method parameters to the config and update the method params refs."""
+        # unpack existing config
+        conf_keys = self.workflow.config.keys
+        conf_values = self.workflow.config.values
         for p in self.method.params:
             key, value = p
             # Check if key can be found in method Params class
@@ -326,7 +337,18 @@ class Rule:
             else:
                 default_value = None
 
-            if value != default_value:
+            # Skip if key is already a ref
+            if key in self.method.params._refs:
+                continue
+            # Skip if param value has wildcard
+            elif has_wildcards(value):
+                continue
+            # Check if value already exists in conf and update ref if so
+            elif value in conf_values:
+                conf_key = conf_keys[conf_values.index(value)]
+                self.method.params._refs.update({key: "$config." + conf_key})
+
+            elif value != default_value:
                 config_key = f"{self.rule_id}_{key}"
                 self.workflow.config = self.workflow.config.model_copy(
                     update={config_key: value}
@@ -394,45 +416,64 @@ class Rule:
                 break
 
     ## RUN METHODS
-    def run(
-        self,
-        max_workers=1,
-        dryrun: bool = False,
-        missing_file_error: bool = False,
-    ) -> None:
+    def run(self, max_workers=1) -> None:
         """Run the rule.
 
         Parameters
         ----------
         max_workers : int, optional
             The maximum number of workers to use, by default 1
-        dryrun : bool, optional
-            Whether to run in dryrun mode, by default False
-        missing_file_error : bool, optional
-            Whether to raise an error if a file is missing, by default False
         """
         nruns = self.n_runs
-        if dryrun or nruns == 1 or max_workers == 1:
+        # set working directory to workflow root
+        with cwd(self.workflow.root):
+            if nruns == 1 or max_workers == 1:
+                for i, method in enumerate(self._method_instances):
+                    msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                    logger.info(msg)
+                    method.run_with_checks()
+            else:
+                tqdm_kwargs = {}
+                if max_workers is not None:
+                    tqdm_kwargs.update(max_workers=max_workers)
+                thread_map(
+                    lambda method: method.run_with_checks(),
+                    self._method_instances,
+                    **tqdm_kwargs,
+                )
+
+    def dryrun(
+        self,
+        input_files: Optional[List[Path]] = None,
+        missing_file_error: bool = False,
+    ) -> List[Path]:
+        """Dryrun the rule.
+
+        Parameters
+        ----------
+        input_files : List[Path], optional
+            The input files to use for the dryrun, by default None
+        missing_file_error : bool, optional
+            Whether to raise an error if a file is missing, by default False
+
+        Returns
+        -------
+        List[Path]
+            The output files of the dryrun.
+        """
+        nruns = self.n_runs
+        input_files = input_files or []
+        output_files = []
+        # set working directory to workflow root
+        with cwd(self.workflow.root):
             for i, method in enumerate(self._method_instances):
                 msg = f"Running {self.rule_id} {i+1}/{nruns}"
                 logger.info(msg)
-                self._run_method_instance(
-                    method=method, dryrun=dryrun, missing_file_error=missing_file_error
+                output_files_i = method.dryrun(
+                    missing_file_error=missing_file_error, input_files=input_files
                 )
-        else:
-            tqdm_kwargs = {}
-            if max_workers is not None:
-                tqdm_kwargs.update(max_workers=max_workers)
-            thread_map(self._run_method_instance, self._method_instances, **tqdm_kwargs)
-
-    def _run_method_instance(
-        self, method: Method, dryrun: bool = False, missing_file_error: bool = False
-    ) -> None:
-        """Run a method instance with the given kwargs."""
-        if dryrun:
-            method.dryrun(missing_file_error=missing_file_error)
-        else:
-            method.run_with_checks()
+                output_files.extend(output_files_i)
+        return output_files
 
 
 class Rules:

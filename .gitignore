@@ -116,10 +116,10 @@ bin/
 # vscode
 .vscode
 
-# only force add
-examples/cases
-examples/bin
-examples/data
+# ignore example outputs
+examples/cases/*
+examples/bin/*
+examples/data/*
 
 # pixi environments
 .pixi

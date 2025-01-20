@@ -150,3 +150,4 @@ if __name__ == "__main__":
     subprocess.run(["snakemake", "-n", "--rerun-incomplete"], cwd=case_root)
     # uncomment to run the workflow
     # subprocess.run(["snakemake", "-c", "1", "--rerun-incomplete"], cwd=case_root)
+

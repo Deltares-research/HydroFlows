@@ -1,0 +1,5 @@
+name: q_event01
+forcings:
+- type: discharge
+  path: q_event01.csv
+return_period: 5.0

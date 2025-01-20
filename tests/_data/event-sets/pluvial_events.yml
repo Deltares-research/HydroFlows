@@ -1,0 +1,7 @@
+events:
+- name: p_event01
+  path: p_event01.yml
+- name: p_event02
+  path: p_event02.yml
+- name: p_event03
+  path: p_event03.yml

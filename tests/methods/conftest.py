@@ -242,22 +242,6 @@ def hazard_map_tif(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
 
 
 @pytest.fixture()
-def first_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
-    # Set root
-    root = Path(tmp_path, "flood_map_rp010.nc")
-    hazard_map_data.to_netcdf(root)
-    return root
-
-
-@pytest.fixture()
-def second_hazard_map(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
-    # Set root
-    root = Path(tmp_path, "flood_map_rp050.nc")
-    (hazard_map_data * 2).to_netcdf(root)
-    return root
-
-
-@pytest.fixture()
 def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
     # Generating datetime index
     dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
