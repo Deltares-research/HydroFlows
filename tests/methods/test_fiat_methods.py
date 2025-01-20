@@ -86,10 +86,10 @@ def test_fiat_visualize_single_event(
     fiat_sim_model: Path,
     event_set_file: Path,
 ):
-    fiat_cfg = Path(fiat_sim_model) / "settings.toml"
+    fiat_output = Path(fiat_sim_model.parent.parent) / "output" / "output.csv"
 
     # Visualize output
-    rule = FIATVisualize(fiat_cfg=fiat_cfg, event_set_file=event_set_file)
+    rule = FIATVisualize(fiat_output=fiat_output, event_set_file=event_set_file)
     rule.run_with_checks()
     visual_output_fn = next(walk(Path(fiat_sim_model) / "fiat_metrics"))[-1]
 
@@ -103,7 +103,7 @@ def test_fiat_visualize_single_event(
     assert len(infometrics) == 2
 
     # Assert expected output metrics are in csv infometrics
-    with open((fiat_cfg.parent / "spatial_joins.toml"), "r") as f:
+    with open((fiat_output.parent / "spatial_joins.toml"), "r") as f:
         spatial_joins = toml.load(f)
     aggregation = spatial_joins["aggregation_areas"][0]["name"]
 

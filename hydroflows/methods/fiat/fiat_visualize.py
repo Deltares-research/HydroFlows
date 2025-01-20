@@ -29,7 +29,7 @@ class Input(Parameters):
     required for the :py:class:`FIATVisualize` method.
     """
 
-    fiat_cfg: Path
+    fiat_output: Path
     """
     The file path to the output of the FIAT model.
     """
@@ -78,7 +78,7 @@ class FIATVisualize(Method):
 
     def __init__(
         self,
-        fiat_cfg: Path,
+        fiat_output: Path,
         event_set_file: Path,
         output_dir: Path = "models/fiat/fiat_metrics",
         infographics_template: FilePath = CFG_DIR
@@ -92,8 +92,8 @@ class FIATVisualize(Method):
 
         Parameters
         ----------
-        fiat_cfg: Path
-            The file path to the output of the FIAT model.
+        fiat_output: Path
+            The file path to the output csv of the FIAT model.
         event_set_file: Path
             The file path to the event set output of the hydromt SFINCS model.
         output_dir: Path = "models/fiat/fiat_metrics"
@@ -112,7 +112,7 @@ class FIATVisualize(Method):
         """
         self.params: Params = Params(output_dir=output_dir)
         self.input: Input = Input(
-            fiat_cfg=fiat_cfg,
+            fiat_output=fiat_output,
             event_set_file=event_set_file,
         )
         self.output: Output = Output(
@@ -140,10 +140,10 @@ class FIATVisualize(Method):
         if len(events.events) > 1:
             mode = "risk"
             metrics_config = write_risk_infometrics_config(
-                rp, self.input.fiat_cfg, self.params.output_dir
+                rp, self.input.fiat_output, self.params.output_dir
             )
             self._add_exeedance_probability(
-                self.input.fiat_cfg.parent / "output" / "output.csv", metrics_config
+                self.input.fiat_output.parent / "output" / "output.csv", metrics_config
             )
             metrics_writer = MetricsFileWriter(
                 Path(self.params.output_dir / "infometrics_config_risk.toml")
@@ -153,13 +153,13 @@ class FIATVisualize(Method):
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+            aggregation_areas = get_aggregation_areas(self.input.fiat_output.parent)
             aggr_names = []
             for aggregation_area in aggregation_areas:
                 name = aggregation_area["name"]
                 aggr_names.append(name)
             infometrics_cfg["aggregateBy"] = aggr_names
-            if Path(self.input.fiat_cfg.parent / "exposure" / "roads.gpkg").exists():
+            if Path(self.input.fiat_output.parent / "exposure" / "roads.gpkg").exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
                 Path(self.params.output_dir / "infometrics_config.toml"), "w"
@@ -172,7 +172,7 @@ class FIATVisualize(Method):
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
-                self.input.fiat_cfg.parent / "output" / "output.csv"
+                self.input.fiat_output.parent / "output" / "output.csv"
             ),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
@@ -181,15 +181,15 @@ class FIATVisualize(Method):
         # Write metrics
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(
-                self.input.fiat_cfg.parent / "output" / "output.csv"
+                self.input.fiat_output.parent / "output" / "output.csv"
             ),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
-        aggregation_areas = get_aggregation_areas(self.input.fiat_cfg.parent)
+        aggregation_areas = get_aggregation_areas(self.input.fiat_output.parent)
         create_output_map(
             aggregation_areas,
-            self.input.fiat_cfg.parent,
+            self.input.fiat_output.parent,
             self.input.event_set_file.stem,
             self.params.output_dir,
         )
