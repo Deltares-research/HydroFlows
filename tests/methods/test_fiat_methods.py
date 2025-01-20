@@ -1,7 +1,6 @@
 """Testing for FIAT rules."""
 
 import platform
-import shutil
 from os import walk
 from pathlib import Path
 
@@ -75,32 +74,13 @@ def test_fiat_run(
 @pytest.mark.requires_test_data()
 @pytest.mark.parametrize("method", ["python", "exe"])
 def test_fiat_visualize_single_event(
-    fiat_tmp_model: Path,
+    fiat_sim_model: Path,
     sfincs_sim_model: Path,
     event_set_file: Path,
     fiat_exe: Path,
     method: str,
 ):
-    fiat_cfg = Path(fiat_tmp_model) / "settings.toml"
-    hazard = Path(sfincs_sim_model / "zsmax_p_event01.nc")
-    if not Path(fiat_cfg.parent / "hazard").is_dir():
-        Path(fiat_cfg.parent / "hazard").mkdir(parents=True)
-    shutil.copy2(hazard, Path(fiat_cfg.parent / "hazard"))
-
-    with open(fiat_cfg, "r") as f:
-        settings = toml.load(f)
-    dict_hazard = {
-        "risk": "false",
-        "file": str("hazard/" + hazard.stem + ".nc"),
-        "elevation_reference": "datum",
-    }
-    settings["hazard"] = dict_hazard
-    with open(fiat_cfg, "w") as f:
-        toml.dump(settings, f)
-
-    # Run FIAT to get output to visualize
-    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
-    rule.run_with_checks()
+    fiat_cfg = Path(fiat_sim_model) / "settings.toml"
 
     # Visualize output
     rule = FIATVisualize(fiat_cfg=fiat_cfg, event_set_file=event_set_file)
