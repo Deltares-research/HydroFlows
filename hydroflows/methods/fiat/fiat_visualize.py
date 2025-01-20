@@ -4,6 +4,9 @@ import os
 from pathlib import Path
 
 import geopandas as gpd
+import hydromt
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import toml
 import tomli
@@ -268,6 +271,18 @@ def create_output_map(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.geojson"
             )
         )
+        with toml.read(Path(fiat_model / "settings.toml")) as f:
+            floodmap_fn = toml.load(f)["hazard"]["file"]
+
+        create_impact_figure(
+            crs="EPSG:4326",
+            floodmap_fn=floodmap_fn,
+            region=Path(fiat_model / "geoms" / "region.geojson"),
+            impact_gpkg_fn=gdf_new_aggr,
+            output_path=Path(
+                fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.png"
+            ),
+        )
     # Create roads output
     if Path(fiat_model / "exposure" / "roads.gpkg").exists():
         gdf_roads = gpd.read_file(Path(fiat_model / "exposure" / "roads.gpkg"))
@@ -435,3 +450,40 @@ def add_road_infometrics(config_metrics: dict) -> dict:
     config_metrics["queries"].append(major_roads)
 
     return config_metrics
+
+
+def create_impact_figure(
+    crs: str, floodmap_fn: str, region: Path, impact_gpkg, output_path
+):
+    cmap = "bwr"
+    floodmap = hydromt.io.open_raster(floodmap_fn)
+    bounds = floodmap.raster.box.total_bounds
+    extent = np.array(bounds)[[0, 2, 1, 3]]
+    fig = plt.figure(figsize=(12, 7))
+    ax = plt.subplot(projection=crs)
+    ax.set_extent(extent, crs=crs)
+    ax.set_title("Flood Impact", size=14)
+
+    # Add a region plot in case there is one
+    if region is not None:
+        region_gdf = gpd.read_file(region)
+        region_gdf = region_gdf.to_crs(crs)
+        region_gdf.plot(
+            ax=ax,
+            color="grey",
+            edgecolor="black",
+            linewidth=2,
+            alpha=0.3,
+            label="Region",
+        )
+    cmap = plt.get_cmap(cmap)
+
+    # Plot data    # NOTE! Probably here need the bins to plot
+    impact_gpkg.plot(ax=ax, color="red", linewidth=1, edgecolor="black", markersize=100)
+
+    # Add the color bar for the bins
+    sm = 3  # This is wrong!
+    cbar = plt.colorbar(sm, ax=ax, shrink=0.75, orientation="vertical")
+    cbar.set_label("Economic Flood Impact [$]")
+
+    fig.savefig(output_path, dpi=150, bbox_inches="tight")
