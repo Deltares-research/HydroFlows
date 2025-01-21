@@ -34,6 +34,7 @@ dependencies = [
   "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
   "xarray",                   # data handling
+  "dask<=2024.12.1"
 ]
 
 
