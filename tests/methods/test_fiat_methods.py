@@ -83,15 +83,17 @@ def test_fiat_run(
 
 @pytest.mark.requires_test_data()
 def test_fiat_visualize_single_event(
-    fiat_sim_model: Path,
+    fiat_cached_model: Path,
     event_set_file: Path,
 ):
-    fiat_output = Path(fiat_sim_model.parent.parent) / "output" / "output.csv"
+    fiat_output = Path(
+        fiat_cached_model / "simulations" / "pluvial_events" / "output" / "output.csv"
+    )
 
     # Visualize output
     rule = FIATVisualize(fiat_output=fiat_output, event_set_file=event_set_file)
     rule.run_with_checks()
-    visual_output_fn = next(walk(Path(fiat_sim_model) / "fiat_metrics"))[-1]
+    visual_output_fn = next(walk(Path(fiat_cached_model) / "fiat_metrics"))[-1]
 
     # Assert all infometrics and infographic files are in output folder
     assert "geojson" in visual_output_fn
