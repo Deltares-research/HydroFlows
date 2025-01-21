@@ -39,6 +39,8 @@ def translate_model(root, new_root):
         "ground_elevtn": "Ground Elevation",
         "fn_damage_structure": "Damage Function: Structure",
         "fn_damage_content": "Damage Function: Content",
+        "fn_damage_total": "Damage Function: Total",
+        "segment_length": "Segment Length",
     }
     exposure_db.rename(columns=trans_dict, inplace=True)
     for i in exposure_geoms:
