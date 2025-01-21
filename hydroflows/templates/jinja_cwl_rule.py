@@ -172,7 +172,9 @@ class JinjaCWLWorkflow:
         # self._step_input_sources()
         self._set_output()
         self._set_input()
-        self._set_input_scatter()
+        # input scatter only needed for subworkflows
+        if self.start_loop > 0:
+            self._set_input_scatter()
 
     @property
     def steps(self) -> List[Union[JinjaCWLRule, "JinjaCWLWorkflow"]]:
@@ -238,10 +240,11 @@ class JinjaCWLWorkflow:
                         if not any([id in info["source"] for id in step_ids]):
                             step._input[key]["source"] = key
             elif isinstance(step, JinjaCWLWorkflow):
-                for key in step.input:
+                ins = deepcopy(step.input)
+                for key in ins:
                     if key in list(self.output.keys()):
-                        step.input[key]["source"] = self.output[key]["outputSource"]
-                input_dict.update(step.input)
+                        ins[key]["source"] = self.output[key]["outputSource"]
+                input_dict.update(ins)
 
         tmp = deepcopy(input_dict)
         for key, info in tmp.items():
@@ -275,6 +278,7 @@ class JinjaCWLWorkflow:
         ins = self.input
         scatters = []
 
+        # Fetch all inputs with relevant wildcard
         for key, info in ins.items():
             if info["type"] == "File":
                 val = info["value"]["path"]
@@ -284,6 +288,30 @@ class JinjaCWLWorkflow:
                 continue
             if get_wildcards(val, wc):
                 scatters.append(key)
+                if "[]" in info["type"]:
+                    self._input[key]["type"] = info["type"].replace("[]", "")
+
+        for item in wc:
+            scatters.append(item + "_wc")
+
+        # Make sure the correct wildcards are treated as single input vs array input
+        for key, info in ins.items():
+            if "_wc" in key:
+                # wildcards that are scattered over should be single input
+                if key in scatters and "[]" in info["type"]:
+                    self._input[key]["type"] = self._input[key]["type"].replace(
+                        "[]", ""
+                    )
+                # Wildcards that are only scattered over in a subworkflow should be array inputs
+                if key not in scatters and "[]" not in info["type"]:
+                    self._input[key]["type"] += "[]"
+
+        # Correct input_scatter of subworkflow
+        for step in self.steps:
+            if isinstance(step, JinjaCWLWorkflow):
+                for item in wc:
+                    if (item + "_wc") in step.input_scatter:
+                        step.input_scatter.pop(step.input_scatter.index(item + "_wc"))
 
         self._input_scatter = scatters
 
