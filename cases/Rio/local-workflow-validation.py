@@ -43,8 +43,6 @@ config = WorkflowConfig(
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
-    sfincs_res=50,
-    river_upa=10,
     depth_min=0.05,
     # historical events settings
     historical_events_dates={
@@ -158,3 +156,5 @@ subprocess.run(
     cwd=w.root,
     shell=True,
 ).check_returncode()
+
+# %%
