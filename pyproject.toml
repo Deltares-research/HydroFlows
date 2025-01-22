@@ -14,10 +14,11 @@ authors = [
 dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
+  "fiat-toolbox",
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
+  "hydromt_fiat>=0.5.1, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
@@ -33,6 +34,7 @@ dependencies = [
   "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
   "xarray",                   # data handling
+  "dask<=2024.12.1"
 ]
 
 
@@ -160,6 +162,7 @@ deps_not_in_conda = [
   "hatyan",
   "autodoc_pydantic",
   "sphinxcontrib-programoutput",
+  "fiat-toolbox"
 ]
 
 [tool.pixi.project]
