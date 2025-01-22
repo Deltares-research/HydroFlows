@@ -13,6 +13,7 @@ __eps__ = {
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
     "fiat_update_hazard": "hydroflows.methods.fiat.fiat_update:FIATUpdateHazard",
+    "fiat_visualize": "hydroflows.methods.fiat.fiat_visualize:FIATVisualize",
     "get_ERA5_rainfall": "hydroflows.methods.rainfall.get_ERA5_rainfall:GetERA5Rainfall",
     "pluvial_design_events": "hydroflows.methods.rainfall.pluvial_design_events:PluvialDesignEvents",
     "pluvial_design_events_GPEX": "hydroflows.methods.rainfall.pluvial_design_events_GPEX:PluvialDesignEventsGPEX",

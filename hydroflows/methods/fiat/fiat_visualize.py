@@ -132,10 +132,10 @@ class FIATVisualize(Method):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
         rp = []
-        event_set = EventSet(root=self.input.event_set_file, events=events.events)
+
         for event in events.events:
             name = event["name"]
-            event = event_set.get_event(name)
+            event = events.events.get_event(name)
             rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
 
@@ -274,15 +274,15 @@ def create_output_map(
         with toml.read(Path(fiat_model / "settings.toml")) as f:
             floodmap_fn = toml.load(f)["hazard"]["file"]
 
-        create_impact_figure(
-            crs="EPSG:4326",
-            floodmap_fn=floodmap_fn,
-            region=Path(fiat_model / "geoms" / "region.geojson"),
-            impact_gpkg_fn=gdf_new_aggr,
-            output_path=Path(
-                fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.png"
-            ),
-        )
+        # create_impact_figure(
+        #    crs="EPSG:4326",
+        #    floodmap_fn=floodmap_fn,
+        #    region=Path(fiat_model / "geoms" / "region.geojson"),
+        ##    impact_gpkg_fn=gdf_new_aggr,
+        #    output_path=Path(
+        #        fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.png"
+        #    ),
+        # )
     # Create roads output
     if Path(fiat_model / "exposure" / "roads.gpkg").exists():
         gdf_roads = gpd.read_file(Path(fiat_model / "exposure" / "roads.gpkg"))
