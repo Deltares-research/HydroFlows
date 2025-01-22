@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 from pydantic import FilePath
 
-from hydroflows._typing import DataCatalogPath
+from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
@@ -35,6 +35,9 @@ class Input(Parameters):
     For more information see hydromt_wflow method
     `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
     """
+
+    catalog_path: Optional[Path] = None
+    """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
 
     gauges: Optional[Path] = None
     """Gauges vector file including the locations of interest to get Wflow simulation outputs.
@@ -65,10 +68,9 @@ class Params(Parameters):
     wflow_root: Path
     """The path to the root directory where the wflow model will be created."""
 
-    data_libs: DataCatalogPath = ["artifact_data"]
+    predefined_catalogs: Optional[ListOfStr] = None
     """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources specified in the config file.
-    """
+    yml format, which should contain the data sources specified in the config file."""
 
     plot_fig: bool = True
     """Determines whether to plot a figure with the
@@ -90,6 +92,8 @@ class WflowBuild(Method):
         self,
         region: Path,
         config: Path,
+        catalog_path: Optional[Path] = None,
+        predefined_catalogs: Optional[ListOfStr] = None,
         gauges: Path = None,
         wflow_root: Path = "models/wflow",
         **params,
@@ -101,6 +105,15 @@ class WflowBuild(Method):
         region : Path
             The file path to the geometry file that defines the region of interest
             for constructing a wflow model.
+        config : Path
+            The path to the configuration file (.yml) that defines the settings
+            to build a Wflow model. In this file the different model components
+            that are required by the :py:class:`hydromt_wflow.wflow.WflowModel` are listed.
+        catalog_path: Optional[Path], optional
+            The path to the data catalog file (.yml) that contains the data sources
+            specified in the config file. If None (default), a predefined data catalog should be provided.
+        predefined_catalogs : Optional[ListOfStr], optional
+            A list containing the predefined data catalog names.
         wflow_root : Path
             The path to the root directory where the  wflow model will be created, by default "models/wflow".
         **params
@@ -114,8 +127,12 @@ class WflowBuild(Method):
         :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
         :py:class:`hydromt_wflow.WflowModel`
         """
-        self.params: Params = Params(wflow_root=wflow_root, **params)
-        self.input: Input = Input(region=region, config=config, gauges=gauges)
+        self.params: Params = Params(
+            wflow_root=wflow_root, predefined_catalogs=predefined_catalogs, **params
+        )
+        self.input: Input = Input(
+            region=region, config=config, catalog_path=catalog_path, gauges=gauges
+        )
         self.output: Output = Output(
             wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )
@@ -124,13 +141,24 @@ class WflowBuild(Method):
         """Run the WflowBuild method."""
         logger = setuplog("build", log_level=20)
 
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
+
+        data_libs = []
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
+        if self.params.predefined_catalogs:
+            data_libs += self.params.predefined_catalogs
+
         # create the hydromt model
         root = self.output.wflow_toml.parent
         w = WflowModel(
             root=root,
             mode="w+",
             config_fn=self.output.wflow_toml.name,
-            data_libs=self.params.data_libs,
+            data_libs=data_libs,
             logger=logger,
         )
 

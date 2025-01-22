@@ -3,11 +3,12 @@
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import DataCatalogPath
+from hydroflows._typing import ListOfStr
 from hydroflows.methods.wflow.wflow_utils import shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -21,6 +22,11 @@ class Input(Parameters):
     wflow_toml: Path
     """The file path to the Wflow (toml) configuration file from the initial
     Wflow model to be updated."""
+
+    catalog_path: Optional[Path] = None
+    """The file path to the data catalog. This is a file in yml format, which should contain the data sources for precipitation,
+    temperature, elevation grid of the climate data (optionally) and
+    potential evaporation (PET) estimation."""
 
 
 class Output(Parameters):
@@ -51,11 +57,9 @@ class Params(Parameters):
     timestep: int = 86400  # in seconds
     """The timestep for generated forcing in seconds."""
 
-    data_libs: DataCatalogPath = ["artifact_data"]
+    predefined_catalogs: Optional[ListOfStr] = None
     """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources for precipitation,
-    temperature, elevation grid of the climate data (optionally) and
-    potential evaporation (PET) estimation."""
+    yml format, which should contain the data sources specified in the config file."""
 
     precip_src: str = "era5_daily_zarr"
     """The source for precipitation data."""
@@ -97,6 +101,8 @@ class WflowUpdateForcing(Method):
         wflow_toml: Path,
         start_time: datetime,
         end_time: datetime,
+        catalog_path: Optional[Path] = None,
+        predefined_catalogs: Optional[ListOfStr] = None,
         sim_subfolder: str = "simulations/default",
         **params,
     ):
@@ -113,6 +119,11 @@ class WflowUpdateForcing(Method):
             The start time of the period for which we want to generate forcing.
         end_time:datetime
             The end time of the period for which we want to generate forcing
+        catalog_path: Optional[Path], optional
+            The path to the data catalog file (.yml) that contains the data sources
+            specified in the config file. If None (default), a predefined data catalog should be provided.
+        predefined_catalogs : Optional[ListOfStr], optional
+            A list containing the predefined data catalog names.
         sim_subfolder : str, optional
             The subfolder relative to the basemodel where the simulation folders are stored.
         **params
@@ -129,10 +140,11 @@ class WflowUpdateForcing(Method):
         self.params: Params = Params(
             start_time=start_time,
             end_time=end_time,
+            predefined_catalogs=predefined_catalogs,
             sim_subfolder=sim_subfolder,
             **params,
         )
-        self.input: Input = Input(wflow_toml=wflow_toml)
+        self.input: Input = Input(wflow_toml=wflow_toml, catalog_path=catalog_path)
         wflow_out_toml = (
             self.input.wflow_toml.parent / self.params.sim_subfolder / "wflow_sbm.toml"
         )
@@ -144,11 +156,17 @@ class WflowUpdateForcing(Method):
 
         root = self.input.wflow_toml.parent
 
+        data_libs = []
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
+        if self.params.predefined_catalogs:
+            data_libs += self.params.predefined_catalogs
+
         w = WflowModel(
             root=root,
             mode="r",
             config_fn=self.input.wflow_toml.name,
-            data_libs=self.params.data_libs,
+            data_libs=data_libs,
             logger=logger,
         )
 
