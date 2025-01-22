@@ -8,7 +8,7 @@ from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 from pydantic import Field, FilePath, model_validator
 
-from hydroflows._typing import DataCatalogPath
+from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -34,6 +34,9 @@ class Input(Parameters):
     For more information see hydromt_sfincs method
     `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
     """
+
+    catalog_path: Optional[Path] = None
+    """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
 
 
 class Output(Parameters):
@@ -80,10 +83,9 @@ class Params(Parameters):
     """The path to the root directory where the SFINCS model will be created."""
 
     # optional parameter
-    data_libs: DataCatalogPath = ["artifact_data"]
+    predefined_catalogs: Optional[ListOfStr] = None
     """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources specified in the config file.
-    """
+    yml format, which should contain the data sources specified in the config file."""
 
     plot_fig: bool = True
     """Determines whether to plot a figure with the
@@ -105,6 +107,8 @@ class SfincsBuild(Method):
         self,
         region: Path,
         config: Path = CFG_DIR / "sfincs_build.yml",
+        catalog_path: Optional[Path] = None,
+        predefined_catalogs: Optional[ListOfStr] = None,
         sfincs_root: Path = Path("models/sfincs"),
         **params,
     ) -> None:
@@ -115,6 +119,15 @@ class SfincsBuild(Method):
         region : Path
             The file path to the geometry file that defines the region of interest
             for constructing a SFINCS model.
+        config : Path
+            The path to the configuration file (.yml) that defines the settings
+            to build a SFINCS model. In this file the different model components
+            that are required by the :py:class:`hydromt_sfincs.sfincs.SfincsModel` are listed.
+        catalog_path: Optional[Path], optional
+            The path to the data catalog file (.yml) that contains the data sources
+            specified in the config file. If None (default), a predefined data catalog should be provided.
+        predefined_catalogs : Optional[ListOfStr], optional
+            A list containing the predefined data catalog names.
         sfincs_root : Path
             The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
         res : float, optional
@@ -130,8 +143,12 @@ class SfincsBuild(Method):
         :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
         :py:class:`hydromt_sfincs.SfincsModel`
         """
-        self.params: Params = Params(sfincs_root=sfincs_root, **params)
-        self.input: Input = Input(region=region, config=config)
+        self.params: Params = Params(
+            sfincs_root=sfincs_root, predefined_catalogs=predefined_catalogs, **params
+        )
+        self.input: Input = Input(
+            region=region, config=config, catalog_path=catalog_path
+        )
         self.output: Output = Output(
             sfincs_inp=self.params.sfincs_root / "sfincs.inp",
             sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",
@@ -147,12 +164,23 @@ class SfincsBuild(Method):
         opt["setup_grid_from_region"].update(region={"geom": str(self.input.region)})
         opt["setup_mask_active"].update(mask=str(self.input.region))
 
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
+
+        data_libs = []
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
+        if self.params.predefined_catalogs:
+            data_libs += self.params.predefined_catalogs
+
         # create the hydromt model
         root = self.output.sfincs_inp.parent
         sf = SfincsModel(
             root=root,
             mode="w+",
-            data_libs=self.params.data_libs,
+            data_libs=data_libs,
             logger=setuplog("sfincs_build", log_level=20),
         )
         # build the model
