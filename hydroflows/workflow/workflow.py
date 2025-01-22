@@ -16,6 +16,7 @@ from hydroflows import __version__
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.utils.cwl_utils import map_cwl_types
+from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule, Rules
@@ -202,7 +203,25 @@ class Workflow:
         # Write CWL file for the workflow
         input_dict = {}
         for key, value in self.config:
-            input_dict[key] = map_cwl_types(value)
+            if isinstance(value, Path) and "{" in value.as_posix():
+                wildcards = get_wildcards(value)
+                for wc in wildcards:
+                    new_val = [
+                        value.as_posix().format(**dict(zip([wc], [wc_val])))
+                        for wc_val in self.wildcards.get(wc)
+                    ]
+                    new_val = [Path(val) for val in new_val]
+            elif isinstance(value, str) and "{" in value:
+                wildcards = get_wildcards(value)
+                for wc in wildcards:
+                    new_val = [
+                        value.format(**dict(zip([wc], [wc_val])))
+                        for wc_val in self.wildcards.get(wc)
+                    ]
+            else:
+                new_val = value
+
+            input_dict[key] = map_cwl_types(new_val)
         for wc in self.wildcards.names:
             input_dict[wc + "_wc"] = {
                 "type": "string[]",

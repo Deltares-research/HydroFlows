@@ -6,6 +6,7 @@ class: Workflow
 
 requirements:
     ScatterFeatureRequirement: {}
+    SubworkflowFeatureRequirement: {}
 
 inputs:
     {% for key,value in inputs.items()%}
@@ -15,7 +16,15 @@ inputs:
 outputs:
 {% for id,info in workflow.output.items()%}
     {{id}}:
+{% if "[][]" in info.type%}
+        type:
+            type: array
+            items:
+                type: array
+                items: {{info.type.replace("[][]","")}}
+{% else %}
         type: {{info.type}}
+{% endif %}
         outputSource: {{info.outputSource}}
 {% endfor%}
 

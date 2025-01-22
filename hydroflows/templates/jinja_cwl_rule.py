@@ -76,9 +76,13 @@ class JinjaCWLRule:
         # Add params to inputs
         params = self.rule.method.params.to_dict(return_refs=True)
         for key, val in params.items():
+            # Set source for input to correct reference
             if isinstance(val, str) and "$" in val:
                 inputs[key] = map_cwl_types(self.rule.method.params.to_dict()[key])
                 inputs[key]["source"] = val.split(".")[-1]
+                # wildcards have _wc added when turned into workflow inputs
+                if "wildcards" in val:
+                    inputs[key]["source"] += "_wc"
             else:
                 inputs[key] = map_cwl_types(val)
             inputs[key]["type"] += "?"
@@ -266,10 +270,14 @@ class JinjaCWLWorkflow:
                 output_dict[id] = {
                     "type": info["type"],
                     # "type": f"{info['type']}[]"
-                    # if has_wildcards(info['value']) and "[]" not in info['type']
+                    # if any(["$(input." in value for value in info['value']]) and "[]" not in info['type']
                     # else f"{info['type']}",
                     "outputSource": f"{step.id}/{id}",
+                    "value": info["value"],
                 }
+                # Make sure outputs produced by subworkflows are labeled as array outputs
+                if "subworkflow" in output_dict[id]["outputSource"]:
+                    output_dict[id]["type"] += "[]"
         self._output = output_dict
 
     def _set_input_scatter(self) -> List[str]:
@@ -309,9 +317,21 @@ class JinjaCWLWorkflow:
         # Correct input_scatter of subworkflow
         for step in self.steps:
             if isinstance(step, JinjaCWLWorkflow):
+                scatter_keys = [key for key in step.input_scatter if "_wc" not in key]
+                scatter_vals = [step.input[key]["value"] for key in scatter_keys]
+                scatter_vals = [
+                    val["path"] if isinstance(val, Dict) else val
+                    for val in scatter_vals
+                ]
                 for item in wc:
                     if (item + "_wc") in step.input_scatter:
                         step.input_scatter.pop(step.input_scatter.index(item + "_wc"))
+                rem_wc = [wc for wc in step.input_scatter if "_wc" in wc]
+                rem_wc = [wc.replace("_wc", "") for wc in rem_wc]
+                for key in scatter_keys:
+                    val = scatter_vals[scatter_keys.index(key)]
+                    if not any(get_wildcards(val, rem_wc)):
+                        step.input_scatter.pop(step.input_scatter.index(key))
 
         self._input_scatter = scatters
 

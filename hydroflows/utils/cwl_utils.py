@@ -60,6 +60,14 @@ def map_cwl_types(input: Any) -> Dict[str, str]:
             if all(isinstance(item, str) for item in input):
                 out["type"] = "string[]"
                 out["value"] = [f"{item}" for item in input]
+            elif all(isinstance(item, Path) and item.suffix for item in input):
+                out["type"] = "File[]"
+                out["value"] = [
+                    {"class": "File", "path": item.as_posix()} for item in input
+                ]
+            elif all(isinstance(item, Path) for item in input):
+                out["type"] = "string[]"
+                out["value"] = [item.as_posix() for item in input]
             elif all(isinstance(item, float) for item in input):
                 out["type"] = "float[]"
                 out["value"] = input
