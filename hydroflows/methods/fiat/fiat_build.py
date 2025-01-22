@@ -80,6 +80,12 @@ class Params(Parameters):
     """List of data libraries to be used. This is a predefined data catalog in
     yml format, which should contain the data sources specified in the config file."""
 
+    res_x: Optional[float] = None
+    """The x resolution for the default aggregation grid."""
+
+    res_y: Optional[float] = None
+    """The y resolution for the default aggregation grid."""
+
 
 class FIATBuild(Method):
     """Rule for building FIAT."""
@@ -141,6 +147,15 @@ class FIATBuild(Method):
                 "ground_elevation"
             ] = self.input.ground_elevation.as_posix()
             opt["setup_exposure_buildings"]["grnd_elev_unit"] = "meters"
+        if self.params.res_x is not None:
+            if "setup_aggregation_areas" not in opt:
+                opt["setup_aggregation_areas"] = {
+                    "res_x": self.params.res_x,
+                    "res_y": self.params.res_y,
+                }
+        if "jrc_vulnerability_curves" in opt["setup_vulnerability"]["vulnerability_fn"]:
+            opt["setup_exposure_buildings"]["eur_to_us_dollar"] = True
+
         # Add additional information
         region_gdf = gpd.read_file(self.input.region.as_posix())
         region_gdf = region_gdf.dissolve()
