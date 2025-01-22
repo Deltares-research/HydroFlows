@@ -186,19 +186,18 @@ def translate_events(
 
     # Get events
     events = EventSet.from_yaml(root)
-    event_set = EventSet(root=root, events=events.events)
 
     # Set variables for function
-    if len(event_set.events) > 1:
+    if len(events.events) > 1:
         subevent_name = []
         rp = []
 
     forcing_sources = ForcingSources()
 
-    for event_yml, event_dict in zip(event_set.events, events.events):
+    for event_yml, event_dict in zip(events.events, events.events):
         name = event_dict["name"]
         file_name = event_yml["path"].stem
-        event = event_set.get_event(name)
+        event = events.get_event(name)
         event.read_forcing_data()
         tstart = event.tstart
         tstop = event.tstop
@@ -280,7 +279,7 @@ def translate_events(
                     river.append(rivers.dict())
                 fa_event.river = river
 
-        if len(event_set.events) > 1:
+        if len(events.events) > 1:
             return_period = 1 / event.return_period
 
         # Surge
@@ -338,7 +337,7 @@ def translate_events(
                     )
 
         # Save return period for test set toml
-        if len(event_set.events) > 1:
+        if len(events.events) > 1:
             rp.append(return_period)
             subevent_name.append(file_name)
 
@@ -348,7 +347,7 @@ def translate_events(
             forcing_sources.discharge = None
 
     # Create dictionary for floodadapt for test set
-    if len(event_set.events) > 1:
+    if len(events.events) > 1:
         name_test_set = root.stem
 
         floodadapt_config = {
