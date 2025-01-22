@@ -200,7 +200,7 @@ class Workflow:
             with open(f"{cwlfile.parent}/cwl/{rule.method.name}.cwl", "w") as f:
                 f.write(_str)
 
-        # Write CWL file for the workflow
+        # Set workflow config as inputs and evaluate wildcards
         input_dict = {}
         for key, value in self.config:
             if isinstance(value, Path) and "{" in value.as_posix():
@@ -229,15 +229,8 @@ class Workflow:
             }
         if dryrun:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
-        # wc_tup = list(product(*self.wildcards.values))
-        # prod = [
-        #     dict(zip(self.wildcards.names, list(vals))) for vals in wc_tup
-        # ]
-        # input_dict = {
-        #     **input_dict,
-        #     **{name+"_list": [] for name in self.wildcards.names},
-        # }
 
+        # Write CWL file for workflow
         cwl_workflow = JinjaCWLWorkflow([JinjaCWLRule(r) for r in self.rules])
 
         _str = template_workflow.render(
@@ -251,13 +244,6 @@ class Workflow:
 
         # Write CWL config file
         config = {key: value["value"] for key, value in input_dict.items()}
-        # config = {}
-        # for key, value in input_dict.items():
-        #     config[key] = value["value"]
-        #     # if value["type"] == "File":
-        #     #     config[key] = value["value"]
-        #     # else:
-        #     #     config[key] = value["value"]
         with open(configfile, "w") as f:
             yaml.dump(config, f)
 

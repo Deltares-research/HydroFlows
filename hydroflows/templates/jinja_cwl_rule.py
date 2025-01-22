@@ -53,23 +53,14 @@ class JinjaCWLRule:
             (reduce_wc,) = self.rule.wildcards["reduce"]
 
         for key, val in refs.items():
-            # inputs[key] = {}
             ref = self.rule.workflow.get_ref(val)
             inputs[key] = map_cwl_types(ref.value)
-            # inputs[key]["type"] = "File"
-            # if isinstance(val, folderpath):
-            #     inputs[key]["type"] = "Directory"
-            # # Set the source of the input (from prev rule, config)
+            # Set the source of the input (from prev rule, config)
             if "$config" in ref.ref:
                 inputs[key]["source"] = val.split(".")[-1]
-                # inputs[key] = map_cwl_types(val)
-                # if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
-                #     inputs[key]["type"] = "Directory"
             if "$rules" in ref.ref:
                 tmp = val.split(".")
                 inputs[key]["source"] = f"{tmp[-3]}/{tmp[-1]}"
-                # if isinstance(self.rule.workflow.get_ref(val).value, folderpath):
-                #     inputs[key]["type"] = "Directory"
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
                 inputs[key]["type"] += "[]"
@@ -94,22 +85,7 @@ class JinjaCWLRule:
         if self.rule.wildcards["explode"]:
             wc = self.rule.wildcards["explode"]
             wc = [item + "_wc" for item in wc]
-            # if len(wc) > 1:
-            #     wc = [item + "_list" for item in wc]
             self._input_wildcards = wc
-
-    # @property
-    # def input_scatter(self) -> List[str]:
-    #     """Get inputs for CWL step that are scattered over."""
-    #     if self.rule.wildcards["reduce"]:
-    #         return []
-    #     ins = self.rule.method.input.to_dict()
-    #     params = self.rule.method.params.to_dict()
-    #     scatters = [key for key in ins.keys() if has_wildcards(ins[key])]
-    #     scatters.extend([key for key in params.keys() if has_wildcards(params[key])])
-    #     if self.input_wildcards:
-    #         scatters.extend(self.input_wildcards)
-    #     return scatters
 
     def _set_output(self) -> Dict[str, str]:
         """Get outputs of CWL step."""
@@ -147,16 +123,6 @@ class JinjaCWLRule:
 
         self._output = outputs
 
-    @property
-    def params(self) -> Dict[str, str]:
-        """Get rule params."""
-        pars = self.rule.method.params.model_dump()
-        results = {}
-        for key, value in pars.items():
-            if value is not None:
-                results[key] = map_cwl_types(value)
-        return results
-
 
 class JinjaCWLWorkflow:
     """Class for exporting workflow to CWL."""
@@ -173,7 +139,6 @@ class JinjaCWLWorkflow:
         self._input_scatter: List[str] = []
 
         self._set_steps()
-        # self._step_input_sources()
         self._set_output()
         self._set_input()
         # input scatter only needed for subworkflows
@@ -222,10 +187,12 @@ class JinjaCWLWorkflow:
         ids = [rule.id for rule in self.rules]
         step_ids = [step.id for step in self.steps]
 
+        # copy inputs from steps
         for step in self.steps:
             if isinstance(step, JinjaCWLRule):
                 ins = deepcopy(step.input)
                 for key, info in ins.items():
+                    # Set correct format for input source
                     if "source" in info and "/" not in info["source"]:
                         if info["source"] in conf_keys:
                             in_val = conf_values[conf_keys.index(info["source"])]
@@ -239,10 +206,9 @@ class JinjaCWLWorkflow:
                             input_dict[key + f"_{step.id}"] = info
                         else:
                             input_dict[key] = info
-                        # source = info["source"].split("/")[0]
-                        # if source not in step_ids:
                         if not any([id in info["source"] for id in step_ids]):
                             step._input[key]["source"] = key
+            # Copy inputs from subworkflow
             elif isinstance(step, JinjaCWLWorkflow):
                 ins = deepcopy(step.input)
                 for key in ins:
@@ -250,12 +216,14 @@ class JinjaCWLWorkflow:
                         ins[key]["source"] = self.output[key]["outputSource"]
                 input_dict.update(ins)
 
+        # Delete any inputs with sources to other steps
         tmp = deepcopy(input_dict)
         for key, info in tmp.items():
             if "source" in info:
                 if any([id in info["source"] for id in ids]):
                     input_dict.pop(key)
 
+        # Add wildcards to input
         for wc in self.rules[0].input_wildcards:
             input_dict.update({wc: {"type": "string[]", "source": wc}})
 
@@ -265,17 +233,16 @@ class JinjaCWLWorkflow:
         """Set CWL workflow outputs to be outputs of all rules."""
         output_dict = {}
 
+        # copy outputs from cwl rule
         for step in self.steps:
             for id, info in step.output.items():
                 output_dict[id] = {
                     "type": info["type"],
-                    # "type": f"{info['type']}[]"
-                    # if any(["$(input." in value for value in info['value']]) and "[]" not in info['type']
-                    # else f"{info['type']}",
                     "outputSource": f"{step.id}/{id}",
                     "value": info["value"],
                 }
                 # Make sure outputs produced by subworkflows are labeled as array outputs
+                # This can give output types with [][], corrected for in jinja template
                 if "subworkflow" in output_dict[id]["outputSource"]:
                     output_dict[id]["type"] += "[]"
         self._output = output_dict
@@ -334,16 +301,3 @@ class JinjaCWLWorkflow:
                         step.input_scatter.pop(step.input_scatter.index(key))
 
         self._input_scatter = scatters
-
-    def _step_input_sources(self):
-        """Reset input sources of steps to steps only in (sub)workflow."""
-        ids = [step.id for step in self.steps]
-        for step in self.steps:
-            for key, info in step.input.items():
-                # Check if source field exists and is ref to other step
-                if "source" in info and "/" in info["source"]:
-                    source = info["source"].split("/")[0]
-                    # If source refs to step not in current (sub)workflow
-                    # Reset to overall workflow input
-                    if source not in ids:
-                        step._input[key]["source"] = key
