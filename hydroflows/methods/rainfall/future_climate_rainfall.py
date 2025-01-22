@@ -7,8 +7,9 @@ from typing import List, Optional
 import pandas as pd
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfStr, WildcardStr
 from hydroflows.events import Event, EventSet
+from hydroflows.utils.parsers import has_wildcards
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -45,7 +46,7 @@ class Params(Parameters):
     scenario_name: Optional[str] = None
     """Future scenario name for which CC scaling is applied."""
 
-    dT: float
+    dT: str | WildcardStr | float
     """Temperature change corresponding to the future climate scenario `scenario_name`
     Note that this value indicates the temperature difference between the year of the event
     to be scaled and the future climate period of interest.
@@ -80,8 +81,12 @@ class Params(Parameters):
 
     @model_validator(mode="after")
     def _validate_model(self):
+        if isinstance(self.dT, float):
+            self.dT = f"{self.dT:.1f}"
         if self.scenario_name is None:
-            self.scenario_name = f"dt{self.dT:.1f}".replace(".", "_")
+            self.scenario_name = f"dt{self.dT}"
+        if not has_wildcards(self.dT):
+            self.dT = float(self.dT)
         # Check if the input event set yaml file exists and check / set event names
         if self.input.event_set_yaml.is_file():
             input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
@@ -121,7 +126,7 @@ class FutureClimateRainfall(ExpandMethod):
 
     def __init__(
         self,
-        dT: int,
+        dT: str | WildcardStr | float,
         event_set_yaml: Path,
         event_root: Path = Path("data/events/future_rainfall"),
         wildcard: str = "future_event",
@@ -136,10 +141,12 @@ class FutureClimateRainfall(ExpandMethod):
         event_set_yaml : Path
             The file path to the event set YAML file, which includes the events to be scaled
             for a future climate projection.
-        dT: float
+        dT: str | WildcardStr | float
             Temperature change corresponding to the future climate scenario `scenario_name`,
             indicating the temperature difference between the year of the event
             to be scaled and the future climate period of interest.
+            Note: if a str it should contain a wildcard.
+
         event_root: Path, optional
             Root folder to save the derived scaled events, by default "data/events/future_rainfall".
         wildcard: str
