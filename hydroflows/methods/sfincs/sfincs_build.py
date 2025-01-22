@@ -84,8 +84,7 @@ class Params(Parameters):
 
     # optional parameter
     predefined_catalogs: Optional[ListOfStr] = None
-    """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources specified in the config file."""
+    """List of predefined data catalogs containing the data sources specified in the config file."""
 
     plot_fig: bool = True
     """Determines whether to plot a figure with the

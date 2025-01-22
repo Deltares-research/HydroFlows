@@ -80,8 +80,7 @@ class Params(Parameters):
     """The path to the root directory where the FIAT model will be created."""
 
     predefined_catalogs: Optional[ListOfStr] = None
-    """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources specified in the config file."""
+    """List of predefined data catalogs containing the data sources specified in the config file."""
 
 
 class FIATBuild(Method):
