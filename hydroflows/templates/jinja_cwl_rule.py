@@ -67,6 +67,9 @@ class JinjaCWLRule:
         # Add params to inputs
         params = self.rule.method.params.to_dict(return_refs=True)
         for key, val in params.items():
+            default_value = self.rule.method.params.model_fields.get(key).default
+            if val == default_value:
+                continue
             # Set source for input to correct reference
             if isinstance(val, str) and "$" in val:
                 inputs[key] = map_cwl_types(self.rule.method.params.to_dict()[key])
@@ -106,7 +109,7 @@ class JinjaCWLRule:
                 for wc in self.input_wildcards:
                     wc = wc.split("_")[0]
                     outputs[key]["value"] = [
-                        item.replace(("{" + f"{wc}" + "}"), f"$(input.{wc})")
+                        item.replace(("{" + f"{wc}" + "}"), f"$(inputs.{wc}_wc)")
                         for item in outputs[key]["value"]
                     ]
             if wc_expand and any(get_wildcards(val, wc_expand)):
