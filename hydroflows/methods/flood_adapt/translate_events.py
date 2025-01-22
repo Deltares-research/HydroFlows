@@ -14,7 +14,7 @@ from pydantic import BaseModel
 from hydroflows.events import EventSet
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
-# run the event in the FloodAdapt model. This foldr must be placed into the Floodadapt input/events folder.
+# run the event in the FloodAdapt model. This folder must be placed into the Floodadapt input/events folder.
 # NOTE: FloodAdapt does not support multiple water level stations, hence the time series can only be provided for one water level station. Only offshore models support that functionality.
 
 
@@ -177,28 +177,23 @@ def translate_events(
         Folder to write the floodadapt events to, by default None
     """
     # Create output directory
-    # fn_floodadapt = Path.joinpath(fa_events)
-    # if not os.path.exists(fn_floodadapt):
-    #    os.makedirs(fn_floodadapt)
     fn_floodadapt = Path.joinpath(fa_events, root.stem)
-    if not os.path.exists(fn_floodadapt):
-        os.makedirs(fn_floodadapt)
+    fn_floodadapt.parent.mkdir(parents=True, exist_ok=True)
 
     # Get events
     events = EventSet.from_yaml(root)
-    event_set = EventSet(root=root, events=events.events)
 
     # Set variables for function
-    if len(event_set.events) > 1:
+    if len(events.events) > 1:
         subevent_name = []
         rp = []
 
     forcing_sources = ForcingSources()
 
-    for event_yml, event_dict in zip(event_set.events, events.events):
+    for event_dict in events.events:
         name = event_dict["name"]
-        file_name = event_yml["path"].stem
-        event = event_set.get_event(name)
+        file_name = event_dict["path"].stem
+        event = events.get_event(name)
         event.read_forcing_data()
         tstart = event.tstart
         tstop = event.tstop
@@ -277,10 +272,10 @@ def translate_events(
                 )
                 for key in csv_station_timeseries_discharge.items():
                     rivers.timeseries_file = f"{key}.csv"
-                    river.append(rivers.dict())
+                    river.append(rivers.model_dump())
                 fa_event.river = river
 
-        if len(event_set.events) > 1:
+        if len(events.events) > 1:
             return_period = 1 / event.return_period
 
         # Surge
@@ -338,7 +333,7 @@ def translate_events(
                     )
 
         # Save return period for test set toml
-        if len(event_set.events) > 1:
+        if len(events.events) > 1:
             rp.append(return_period)
             subevent_name.append(file_name)
 
@@ -348,7 +343,7 @@ def translate_events(
             forcing_sources.discharge = None
 
     # Create dictionary for floodadapt for test set
-    if len(event_set.events) > 1:
+    if len(events.events) > 1:
         name_test_set = root.stem
 
         floodadapt_config = {
