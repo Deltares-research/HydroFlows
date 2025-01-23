@@ -95,7 +95,7 @@ w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
 historical_event = PluvialHistoricalEvents(
     precip_nc=precipitation.output.precip_nc,
     events_dates=w.get_ref("$config.historical_events_dates"),
-    event_root="historical_events",
+    event_root="events/historical",
     wildcard="pluvial_historical_event",
 )
 w.add_rule(historical_event, rule_id="historical_event")

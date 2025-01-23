@@ -156,7 +156,7 @@ pluvial_events = PluvialDesignEvents(
     precip_nc=precipitation.output.precip_nc,
     rps=w.get_ref("$config.rps"),
     wildcard="pluvial_design_events",
-    event_root="events",
+    event_root="events/design",
 )
 w.add_rule(pluvial_events, rule_id="pluvial_design_events")
 
@@ -182,8 +182,9 @@ sfincs_down = SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output",
+    output_root="output/hazard",
 )
+w.add_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Postprocesses SFINCS results
@@ -218,6 +219,7 @@ floodadapt_build = SetupFloodAdapt(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     fiat_cfg=fiat_build.output.fiat_cfg,
     event_set_yaml=pluvial_events.output.event_set_yaml,
+    output_dir="models/flood_adapt_builder",
 )
 w.add_rule(floodadapt_build, rule_id="floodadapt_build")
 

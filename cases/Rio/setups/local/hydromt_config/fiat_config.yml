@@ -20,7 +20,7 @@ setup_exposure_buildings:
   ground_floor_height: preprocessed_floor_height
   gfh_attribute_name: altura
   unit: m
-  ground_elevation_file: rio/setups/local/models/sfincs/subgrid/dep_subgrid.tif
+  ground_elevation: rio/setups/local/models/sfincs/subgrid/dep_subgrid.tif
   damage_types: [structure, content]
   country: Brazil
 
