@@ -243,8 +243,15 @@ class PluvialDesignEvents(ExpandMethod):
 
         # keep durations up to the max user defined duration
         ds_idf = ds_idf.sel(duration=slice(None, self.params.duration))
-
         ds_idf = ds_idf.assign_coords(rps=self.params.rps)
+        # in case rps has one value expand return values dim
+        if len(self.params.rps) == 1:
+            return_values_expanded = ds_idf.return_values.expand_dims(
+                rps=ds_idf.rps.values
+            )
+            # this is needed later for df conversion and plotting
+            return_values_expanded = return_values_expanded.transpose("duration", "rps")
+            ds_idf = ds_idf.assign(return_values=return_values_expanded)
         # make sure there are no negative values
         ds_idf["return_values"] = xr.where(
             ds_idf["return_values"] < 0, 0, ds_idf["return_values"]

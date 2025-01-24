@@ -276,8 +276,11 @@ class FluvialDesignEvents(ExpandMethod):
         da_rps = extremes.get_return_value(
             da_params, rps=np.maximum(1.001, self.params.rps)
         ).load()
-        da_rps = da_rps.assign_coords(rps=self.params.rps)
-
+        # in case rps has one value expand dims
+        if len(self.params.rps) == 1:
+            da_rps = da_rps.expand_dims(dim={"rps": self.params.rps})
+        else:
+            da_rps = da_rps.assign_coords(rps=self.params.rps)
         # hydrographs based on the n highest peaks
         dims = [time_dim, "peak", index_dim]
         da_q_hydrograph = design_events.get_peak_hydrographs(
