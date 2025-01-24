@@ -12,7 +12,7 @@
 [Other]
     [Other.Expected_Damages]
         title = "Expected annual damages"
-        image = "images/money.png"
+        image = "{image_path}/money.png"
         image_scale = 1.3
         title_font_size = 25
         numbers_font_size = 20
@@ -20,7 +20,7 @@
 
     [Other.Flooded]
         title = "Number of homes with a high chance of being flooded in a 30-year period"
-        image = "images/house.png"
+        image = "{image_path}/house.png"
         image_scale = 0.7
         title_font_size = 25
         numbers_font_size = 20
