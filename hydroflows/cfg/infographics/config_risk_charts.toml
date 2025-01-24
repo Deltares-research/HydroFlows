@@ -1,22 +1,3 @@
-[Charts]
-    [Charts.2Y]
-        Name = "2Y"
-        Image = "https://openclipart.org/image/800px/217511"
-    [Charts.5Y]
-        Name = "5Y"
-        Image = "https://openclipart.org/image/800px/217511"
-    [Charts.10Y]
-        Name = "10Y"
-        Image = "https://openclipart.org/image/800px/217511"
-    [Charts.25Y]
-        Name = "25Y"
-        Image = "https://openclipart.org/image/800px/217511"
-	[Charts.50Y]
-        Name = "50Y"
-        Image = "https://openclipart.org/image/800px/217511"
-	[Charts.100Y]
-        Name = "100Y"
-        Image = "https://openclipart.org/image/800px/217511"
 [Categories]
     [Categories.Residential]
         Name = "Residential"
@@ -28,102 +9,10 @@
         Name = "Industrial"
         Color = "#2F4343"
 
-[Slices]
-    [Slices.Homes_2Y]
-        Name = "2Y Homes"
-        Query = "FloodedHomes2Y"
-        Chart = "2Y"
-        Category = "Residential"
-    [Slices.Commercial_2Y]
-        Name = "2Y Commercial Buildings"
-        Query = "FloodedBusinesses2Y"
-        Chart = "2Y"
-        Category = "Commercial"
-    [Slices.Industrial_2Y]
-        Name = "2Y Industrial Buildings"
-        Query = "FloodedIndustry2Y"
-        Chart = "2Y"
-        Category = "Industrial"
-    [Slices.Homes_5Y]
-        Name = "5Y Homes"
-        Query = "FloodedHomes5Y"
-        Chart = "5Y"
-        Category = "Residential"
-    [Slices.Commercial_5Y]
-        Name = "5Y Commercial Buildings"
-        Query = "FloodedBusinesses5Y"
-        Chart = "5Y"
-        Category = "Commercial"
-    [Slices.Industrial_5Y]
-        Name = "5Y Industrial Buildings"
-        Query = "FloodedIndustry5Y"
-        Chart = "5Y"
-        Category = "Industrial"
-    [Slices.Homes_10Y]
-        Name = "10Y Homes"
-        Query = "FloodedHomes10Y"
-        Chart = "10Y"
-        Category = "Residential"
-    [Slices.Commercial_10Y]
-        Name = "10Y Commercial Buildings"
-        Query = "FloodedBusinesses10Y"
-        Chart = "10Y"
-        Category = "Commercial"
-    [Slices.Industrial_10Y]
-        Name = "10Y Industrial Buildings"
-        Query = "FloodedIndustry10Y"
-        Chart = "10Y"
-        Category = "Industrial"
-    [Slices.Homes_25Y]
-        Name = "25Y Homes"
-        Query = "FloodedHomes25Y"
-        Chart = "25Y"
-        Category = "Residential"
-    [Slices.Commercial_25Y]
-        Name = "25Y Commercial Buildings"
-        Query = "FloodedBusinesses25Y"
-        Chart = "25Y"
-        Category = "Commercial"
-    [Slices.Industrial_25Y]
-        Name = "25Y Industrial Buildings"
-        Query = "FloodedIndustry25Y"
-        Chart = "25Y"
-        Category = "Industrial"
-    [Slices.Homes_50Y]
-        Name = "50Y Homes"
-        Query = "FloodedHomes50Y"
-        Chart = "50Y"
-        Category = "Residential"
-    [Slices.Commercial_50Y]
-        Name = "50Y Commercial Buildings"
-        Query = "FloodedBusinesses50Y"
-        Chart = "50Y"
-        Category = "Commercial"
-    [Slices.Industrial_50Y]
-        Name = "50Y Industrial Buildings"
-        Query = "FloodedIndustry50Y"
-        Chart = "50Y"
-        Category = "Industrial"
-    [Slices.Homes_100Y]
-        Name = "100Y Homes"
-        Query = "FloodedHomes100Y"
-        Chart = "100Y"
-        Category = "Residential"
-    [Slices.Commercial_100Y]
-        Name = "100Y Commercial Buildings"
-        Query = "FloodedBusinesses100Y"
-        Chart = "100Y"
-        Category = "Commercial"
-    [Slices.Industrial_100Y]
-        Name = "100Y Industrial Buildings"
-        Query = "FloodedIndustry100Y"
-        Chart = "100Y"
-        Category = "Industrial"
-
 [Other]
     [Other.Expected_Damages]
         title = "Expected annual damages"
-        image = "{image_path}/money.png"
+        image = "images/money.png"
         image_scale = 1.3
         title_font_size = 25
         numbers_font_size = 20
@@ -131,7 +20,7 @@
 
     [Other.Flooded]
         title = "Number of homes with a high chance of being flooded in a 30-year period"
-        image = "{image_path}/house.png"
+        image = "images/house.png"
         image_scale = 0.7
         title_font_size = 25
         numbers_font_size = 20

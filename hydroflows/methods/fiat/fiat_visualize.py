@@ -1,6 +1,7 @@
 """Module/ Rule for building FIAT models."""
 
 import os
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
@@ -90,6 +91,7 @@ class FIATVisualize(Method):
         infometrics_template: FilePath = CFG_DIR
         / "infometrics"
         / "metrics_config.toml",
+        infographic_images: FilePath = CFG_DIR / "infographics" / "images",
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
@@ -105,6 +107,8 @@ class FIATVisualize(Method):
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
             Path to the infometrics template file.
+        infographic_images: FilePath = CFG_DIR / "images"
+            Path to the infographic images.
 
         See Also
         --------
@@ -127,26 +131,40 @@ class FIATVisualize(Method):
 
         self.infographics_template = infographics_template
         self.infometrics_template = infometrics_template
+        self.infographic_images = infographic_images
 
     def run(self):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
         rp = []
-
         for event in events.events:
             name = event["name"]
-            event = events.events.get_event(name)
+            event = events.get_event(name)
             rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
+        os.mkdir(Path(self.params.output_dir / "images"))
+        shutil.copy(
+            Path(self.infographic_images / "money.png"),
+            Path(self.params.output_dir / "images"),
+        )
+        shutil.copy(
+            Path(self.infographic_images / "house.png"),
+            Path(self.params.output_dir / "images"),
+        )
 
         # Write the metrics to file
         if len(events.events) > 1:
             mode = "risk"
-            metrics_config = write_risk_infometrics_config(
-                rp, self.input.fiat_output, self.params.output_dir
+            metrics_config, config_charts = write_risk_infometrics_config(
+                rp,
+                self.input.fiat_output.parent,
+                self.params.output_dir,
+                Path(self.infographics_template.parent / "config_risk_charts.toml"),
             )
+
+            self.infographics_template = config_charts
             self._add_exeedance_probability(
-                self.input.fiat_output.parent / "output" / "output.csv", metrics_config
+                self.input.fiat_output.parent / "output.csv", metrics_config
             )
             metrics_writer = MetricsFileWriter(
                 Path(self.params.output_dir / "infometrics_config_risk.toml")
@@ -174,18 +192,14 @@ class FIATVisualize(Method):
             )
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
         metrics_full_path = metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(
-                self.input.fiat_output.parent / "output" / "output.csv"
-            ),
+            df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
 
         # Write metrics
         metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(
-                self.input.fiat_output.parent / "output" / "output.csv"
-            ),
+            df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
@@ -202,7 +216,7 @@ class FIATVisualize(Method):
             infographic_mode=mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=Path(self.infographics_template.parent),
+            config_base_path=Path(self.infographics_template),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
 
@@ -249,7 +263,7 @@ def create_output_map(
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
-        gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
+        gdf_aggregation = gpd.read_file(Path(fiat_model.parent.parent.parent / fn))
         metrics_fn = Path(
             fn_aggregated_metrics
             / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
@@ -271,8 +285,8 @@ def create_output_map(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.geojson"
             )
         )
-        with toml.read(Path(fiat_model / "settings.toml")) as f:
-            floodmap_fn = toml.load(f)["hazard"]["file"]
+        # with toml.read(Path(fiat_model / "settings.toml")) as f:
+        #    floodmap_fn = toml.load(f)["hazard"]["file"]
 
         # create_impact_figure(
         #    crs="EPSG:4326",
@@ -300,12 +314,16 @@ def create_output_map(
 
 
 def get_aggregation_areas(fiat_model):
-    spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
+    spatial_joins = toml.load(
+        Path(fiat_model.parent.parent.parent / "spatial_joins.toml")
+    )
     aggregation_areas = spatial_joins["aggregation_areas"]
     return aggregation_areas
 
 
-def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Path):
+def write_risk_infometrics_config(
+    rp: list, fiat_model: Path, output_folder: Path, infographics_template: Path
+):
     """
     Write risk infometrics configuration file.
 
@@ -339,13 +357,14 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Pat
     "infometrics_config_risk.toml".
     """
     # Get aggregation area
-    with open((fiat_model.parent / "spatial_joins.toml"), "r") as f:
-        spatial_joins = toml.load(f)
+    spatial_joins = toml.load(
+        Path(fiat_model.parent.parent.parent / "spatial_joins.toml")
+    )
     aggregation = spatial_joins["aggregation_areas"][0]["name"]
     x = 0
     rp = [int(i) for i in rp]
     # add mandatory metrics
-    mandatory_metrics = mandatory_metrics = {
+    mandatory_metrics = {
         "aggregateBy": [aggregation],
         "flood_exceedance": {"column": "inun_depth", "threshold": 0.5, "period": 30},
         "queries": [
@@ -426,7 +445,56 @@ def write_risk_infometrics_config(rp: list, fiat_model: Path, output_folder: Pat
     with open(config_risk_fn, "w") as f:
         toml.dump(mandatory_metrics, f)
 
-    return config_risk_fn
+    # Write config risk chart
+    with open(infographics_template, "r") as toml_file:
+        infographic_charts = toml.load(toml_file)
+
+    infographic_charts_dict = {
+        "Categories": infographic_charts["Categories"],
+        "Other": infographic_charts["Other"],
+        "Charts": {},
+        "Slices": {},
+    }
+
+    x = 0
+    while x < len(rp):
+        slices_rp_home = {
+            "Name": f"{rp[x]}Y Homes",
+            "Query": f"FloodedHomes{rp[x]}Y",
+            "Chart": f"{rp[x]}Y",
+            "Category": "Residential",
+        }
+        infographic_charts_dict["Slices"][f"Homes_{rp[x]}Y"] = slices_rp_home
+
+        slices_rp_commercial = {
+            "Name": f"{rp[x]}Y Homes",
+            "Query": f"FloodedHomes{rp[x]}Y",
+            "Chart": f"{rp[x]}Y",
+            "Category": "Commercial",
+        }
+        infographic_charts_dict["Slices"][f"Commercial_{rp[x]}Y"] = slices_rp_commercial
+
+        slices_rp_industrial = {
+            "Name": f"{rp[x]}Y Homes",
+            "Query": f"FloodedHomes{rp[x]}Y",
+            "Chart": f"{rp[x]}Y",
+            "Category": "Industrial",
+        }
+        infographic_charts_dict["Slices"][f"Industrial_{rp[x]}Y"] = slices_rp_industrial
+
+        config_chart_rp = {
+            "Name": f"{rp[x]}Y",
+            "Image": "https://openclipart.org/image/800px/217511",
+        }
+        infographic_charts_dict["Charts"][f"{rp[x]}Y"] = config_chart_rp
+        x += 1
+
+    config_risk_charts_fn = Path(output_folder / "config_risk_charts.toml")
+
+    with open(config_risk_charts_fn, "w") as f:
+        toml.dump(infographic_charts_dict, f)
+
+    return config_risk_fn, config_risk_charts_fn.parent
 
 
 def add_road_infometrics(config_metrics: dict) -> dict:
