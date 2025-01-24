@@ -192,7 +192,7 @@ class FluvialDesignEvents(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "fluvial_events.yml",
+            event_set_yaml=self.params.event_root / "fluvial_design_events.yml",
         )
         # set wildcard
         self.set_expand_wildcard(wildcard, self.params.event_names)
