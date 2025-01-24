@@ -153,7 +153,10 @@ class FIATBuild(Method):
                     "res_x": self.params.res_x,
                     "res_y": self.params.res_y,
                 }
-        if "jrc_vulnerability_curves" in opt["setup_vulnerability"]["vulnerability_fn"]:
+        if (
+            "jrc_damage_values"
+            in opt["setup_exposure_buildings"]["max_potential_damage"]
+        ):
             opt["setup_exposure_buildings"]["eur_to_us_dollar"] = True
 
         # Add additional information
