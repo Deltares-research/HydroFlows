@@ -69,7 +69,7 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    output_dir: Path = ("models/fiat/fiat_metrics",)
+    output_dir: Path = Input.fiat_output
     """The file path to the FIAT infometrics output."""
 
     aggregation: bool = False
@@ -85,7 +85,7 @@ class FIATVisualize(Method):
         self,
         fiat_output: Path,
         event_set_file: Path,
-        output_dir: Path = "models/fiat/fiat_metrics",
+        output_dir: Path = Input.fiat_output,
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -102,7 +102,7 @@ class FIATVisualize(Method):
             The file path to the output csv of the FIAT model.
         event_set_file: Path
             The file path to the event set output of the hydromt SFINCS model.
-        output_dir: Path = "models/fiat/fiat_metrics"
+        output_dir: Path = Input.fiat_output
             The file path to the output of the FIAT infometrics and infographics.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
@@ -137,22 +137,26 @@ class FIATVisualize(Method):
     def run(self):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
-        base_fiat_model = self.input.fiat_output.parent.parent.parent.parent
+
+        # Get original FIAT mdodel
+        for _ in range(4):
+            base_fiat_model = self.input.fiat_cfg.parent
+
+        # Prep Events
         rp = []
         for event in events.events:
             name = event["name"]
             event = events.get_event(name)
             rp.append(event.return_period)
         scenario_name = self.input.event_set_file.stem
+
+        # Get infographic images
         os.mkdir(Path(self.params.output_dir / "images"))
-        shutil.copy(
-            Path(self.infographic_images / "money.png"),
-            Path(self.params.output_dir / "images"),
-        )
-        shutil.copy(
-            Path(self.infographic_images / "house.png"),
-            Path(self.params.output_dir / "images"),
-        )
+        for png_file in Path(self.infographic_images).glob("*.png"):
+            shutil.copy(
+                png_file,
+                Path(self.params.output_dir / "images"),
+            )
 
         # Write the metrics to file
         if len(events.events) > 1:
@@ -193,19 +197,23 @@ class FIATVisualize(Method):
                 Path(self.params.output_dir / "infometrics_config.toml")
             )
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
+
+        # Write non-aggregated metrics
         metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
 
-        # Write metrics
+        # Write aggregated metrics
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
         aggregation_areas = get_aggregation_areas(base_fiat_model)
+
+        # Create output map and figure
         create_output_map(
             aggregation_areas,
             base_fiat_model,
