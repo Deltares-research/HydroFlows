@@ -133,10 +133,6 @@ class FIATVisualize(Method):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
 
-        # Get original FIAT mdodel
-        # for _ in range(4):
-        #    base_fiat_model = self.input.fiat_output.parent
-
         # Prep Events
         rp = []
         for event in events.events:
