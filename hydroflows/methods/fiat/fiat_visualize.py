@@ -137,6 +137,7 @@ class FIATVisualize(Method):
     def run(self):
         """Run the FIATVisualize method."""
         events = EventSet.from_yaml(self.input.event_set_file)
+        base_fiat_model = self.input.fiat_output.parent.parent.parent.parent
         rp = []
         for event in events.events:
             name = event["name"]
@@ -158,7 +159,7 @@ class FIATVisualize(Method):
             mode = "risk"
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
-                self.input.fiat_output.parent,
+                base_fiat_model,
                 self.params.output_dir,
                 Path(self.infographics_template.parent / "config_risk_charts.toml"),
             )
@@ -175,7 +176,7 @@ class FIATVisualize(Method):
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(self.input.fiat_output.parent)
+            aggregation_areas = get_aggregation_areas(base_fiat_model)
             aggr_names = []
             for aggregation_area in aggregation_areas:
                 name = aggregation_area["name"]
@@ -204,10 +205,10 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
-        aggregation_areas = get_aggregation_areas(self.input.fiat_output.parent)
+        aggregation_areas = get_aggregation_areas(base_fiat_model)
         create_output_map(
             aggregation_areas,
-            self.input.fiat_output.parent,
+            base_fiat_model,
             self.input.event_set_file.stem,
             self.params.output_dir,
         )
@@ -264,7 +265,7 @@ def create_output_map(
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
-        gdf_aggregation = gpd.read_file(Path(fiat_model.parent.parent.parent / fn))
+        gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
         metrics_fn = Path(
             fn_aggregated_metrics
             / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
@@ -288,7 +289,7 @@ def create_output_map(
         )
 
         create_total_damage_figure(
-            region=Path(fiat_model.parent.parent.parent / "geoms" / "region.geojson"),
+            region=Path(fiat_model / "geoms" / "region.geojson"),
             gpd_aggregated_damages=gdf_new_aggr,
             output_path=Path(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}"
@@ -311,9 +312,7 @@ def create_output_map(
 
 
 def get_aggregation_areas(fiat_model):
-    spatial_joins = toml.load(
-        Path(fiat_model.parent.parent.parent / "spatial_joins.toml")
-    )
+    spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
     aggregation_areas = spatial_joins["aggregation_areas"]
     return aggregation_areas
 
@@ -354,9 +353,7 @@ def write_risk_infometrics_config(
     "infometrics_config_risk.toml".
     """
     # Get aggregation area
-    spatial_joins = toml.load(
-        Path(fiat_model.parent.parent.parent / "spatial_joins.toml")
-    )
+    spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
     aggregation = spatial_joins["aggregation_areas"][0]["name"]
     x = 0
     rp = [int(i) for i in rp]
