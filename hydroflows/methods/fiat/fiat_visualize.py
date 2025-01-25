@@ -43,6 +43,22 @@ class Input(Parameters):
     """Path to the eventset cfg file."""
 
 
+class Params(Parameters):
+    """Parameters for the :py:class:`FIATBuild`.
+
+    Instances of this class are used in the :py:class:`FIATBuild`
+    method to define the required settings.
+
+    See Also
+    --------
+    :py:class:`hydromt_fiat.fiat.FiatModel`
+        For more details on the FiatModel used in hydromt_fiat.
+    """
+
+    base_fiat_model: Path = "models/fiat"
+    """The path to the root directory where the FIAT model will be created."""
+
+
 class Output(Parameters):
     """Output parameters.
 
@@ -57,25 +73,6 @@ class Output(Parameters):
     """The file path to the FIAT infographics output."""
 
 
-class Params(Parameters):
-    """Parameters for the :py:class:`FIATVisualize`.
-
-    Instances of this class are used in the :py:class:`FIATVisualize`
-    method to define the required settings.
-
-    See Also
-    --------
-    :py:class:`hydromt_fiat.fiat.FiatModel`
-        For more details on the FiatModel used in hydromt_fiat.
-    """
-
-    output_dir: Path = Input.fiat_output
-    """The file path to the FIAT infometrics output."""
-
-    aggregation: bool = False
-    """Boolean to default aggregate or by aggregation area."""
-
-
 class FIATVisualize(Method):
     """Rule for visualizing FIAT output."""
 
@@ -85,7 +82,7 @@ class FIATVisualize(Method):
         self,
         fiat_output: Path,
         event_set_file: Path,
-        output_dir: Path = Input.fiat_output,
+        base_fiat_model: Path = "models/fiat",
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -102,8 +99,6 @@ class FIATVisualize(Method):
             The file path to the output csv of the FIAT model.
         event_set_file: Path
             The file path to the event set output of the hydromt SFINCS model.
-        output_dir: Path = Input.fiat_output
-            The file path to the output of the FIAT infometrics and infographics.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
@@ -118,15 +113,15 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(output_dir=output_dir)
+        self.params: Params = Params(base_fiat_model=base_fiat_model)
         self.input: Input = Input(
             fiat_output=fiat_output,
             event_set_file=event_set_file,
         )
         self.output: Output = Output(
-            fiat_infometrics=self.params.output_dir
+            fiat_infometrics=self.input.fiat_output.parent
             / f"Infometrics_{self.input.event_set_file.stem}.csv",
-            fiat_infographics=self.params.output_dir
+            fiat_infographics=self.input.fiat_output.parent
             / f"{self.input.event_set_file.stem}_metrics.html",
         )
 
@@ -139,8 +134,8 @@ class FIATVisualize(Method):
         events = EventSet.from_yaml(self.input.event_set_file)
 
         # Get original FIAT mdodel
-        for _ in range(4):
-            base_fiat_model = self.input.fiat_cfg.parent
+        # for _ in range(4):
+        #    base_fiat_model = self.input.fiat_output.parent
 
         # Prep Events
         rp = []
@@ -151,11 +146,11 @@ class FIATVisualize(Method):
         scenario_name = self.input.event_set_file.stem
 
         # Get infographic images
-        os.mkdir(Path(self.params.output_dir / "images"))
+        os.mkdir(Path(self.input.fiat_output.parent / "images"))
         for png_file in Path(self.infographic_images).glob("*.png"):
             shutil.copy(
                 png_file,
-                Path(self.params.output_dir / "images"),
+                Path(self.input.fiat_output.parent / "images"),
             )
 
         # Write the metrics to file
@@ -163,8 +158,8 @@ class FIATVisualize(Method):
             mode = "risk"
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
-                base_fiat_model,
-                self.params.output_dir,
+                self.params.base_fiat_model,
+                self.input.fiat_output.parent,
                 Path(self.infographics_template.parent / "config_risk_charts.toml"),
             )
 
@@ -173,14 +168,14 @@ class FIATVisualize(Method):
                 self.input.fiat_output.parent / "output.csv", metrics_config
             )
             metrics_writer = MetricsFileWriter(
-                Path(self.params.output_dir / "infometrics_config_risk.toml")
+                Path(self.input.fiat_output.parent / "infometrics_config_risk.toml")
             )
         else:
             mode = "single_event"
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(base_fiat_model)
+            aggregation_areas = get_aggregation_areas(self.params.base_fiat_model)
             aggr_names = []
             for aggregation_area in aggregation_areas:
                 name = aggregation_area["name"]
@@ -189,12 +184,12 @@ class FIATVisualize(Method):
             if Path(self.input.fiat_output.parent / "exposure" / "roads.gpkg").exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
-                Path(self.params.output_dir / "infometrics_config.toml"), "w"
+                Path(self.input.fiat_output.parent / "infometrics_config.toml"), "w"
             ) as f:
                 toml.dump(infometrics_cfg, f)
 
             metrics_writer = MetricsFileWriter(
-                Path(self.params.output_dir / "infometrics_config.toml")
+                Path(self.input.fiat_output.parent / "infometrics_config.toml")
             )
         infometrics_name = f"Infometrics_{(scenario_name)}.csv"
 
@@ -211,14 +206,14 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
-        aggregation_areas = get_aggregation_areas(base_fiat_model)
+        aggregation_areas = get_aggregation_areas(self.params.base_fiat_model)
 
         # Create output map and figure
         create_output_map(
             aggregation_areas,
-            base_fiat_model,
+            self.params.base_fiat_model,
             self.input.event_set_file.stem,
-            self.params.output_dir,
+            self.input.fiat_output.parent,
         )
 
         # Write the infographic
