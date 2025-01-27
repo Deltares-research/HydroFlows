@@ -137,10 +137,6 @@ class WflowUpdateForcing(Method):
         :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`
         :py:class:`hydromt_wflow.WflowModel`
         """
-        if not catalog_path and not predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
         self.params: Params = Params(
             start_time=start_time,
             end_time=end_time,
@@ -149,6 +145,10 @@ class WflowUpdateForcing(Method):
             **params,
         )
         self.input: Input = Input(wflow_toml=wflow_toml, catalog_path=catalog_path)
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         wflow_out_toml = (
             self.input.wflow_toml.parent / self.params.sim_subfolder / "wflow_sbm.toml"
         )

@@ -127,16 +127,16 @@ class WflowBuild(Method):
         :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
         :py:class:`hydromt_wflow.WflowModel`
         """
-        if not catalog_path and not predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
         self.params: Params = Params(
             wflow_root=wflow_root, predefined_catalogs=predefined_catalogs, **params
         )
         self.input: Input = Input(
             region=region, config=config, catalog_path=catalog_path, gauges=gauges
         )
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.output: Output = Output(
             wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )

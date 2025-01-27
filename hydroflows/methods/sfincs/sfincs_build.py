@@ -143,16 +143,16 @@ class SfincsBuild(Method):
         :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
         :py:class:`hydromt_sfincs.SfincsModel`
         """
-        if not catalog_path and not predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
         self.params: Params = Params(
             sfincs_root=sfincs_root, predefined_catalogs=predefined_catalogs, **params
         )
         self.input: Input = Input(
             region=region, config=config, catalog_path=catalog_path
         )
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.output: Output = Output(
             sfincs_inp=self.params.sfincs_root / "sfincs.inp",
             sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",

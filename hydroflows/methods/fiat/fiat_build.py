@@ -135,11 +135,6 @@ class FIATBuild(Method):
         :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        if not catalog_path and not predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
-
         self.params: Params = Params(
             fiat_root=fiat_root, predefined_catalogs=predefined_catalogs, **params
         )
@@ -149,6 +144,10 @@ class FIATBuild(Method):
             ground_elevation=ground_elevation,
             catalog_path=catalog_path,
         )
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
