@@ -99,6 +99,7 @@ def test_fiat_visualize_single_event(
     assert "geojson" in visual_output_fn
     assert "html" in visual_output_fn
     assert "csv" in visual_output_fn
+    assert "png" in visual_output_fn
 
     # Assert total and aggregated metrics output exists
     infometrics = [i for i in visual_output_fn if i.endswith(".csv")]
