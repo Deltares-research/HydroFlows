@@ -209,7 +209,7 @@ class FIATVisualize(Method):
             aggregation_areas,
             self.params.base_fiat_model,
             self.input.event_set_file.stem,
-            self.input.fiat_output.parent,
+            self.input.fiat_output,
         )
 
         # Write the infographic
@@ -257,9 +257,10 @@ def create_output_map(
     aggregation_areas: list,
     fiat_model: Path,
     event_set_file: str,
-    fn_aggregated_metrics: Path = None,
+    fiat_output: Path,
 ):
     # Create aggregated output
+    fn_aggregated_metrics = fiat_output.parent
     for aggregation_area in aggregation_areas:
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
@@ -297,9 +298,7 @@ def create_output_map(
     # Create roads output
     if Path(fiat_model / "exposure" / "roads.gpkg").exists():
         gdf_roads = gpd.read_file(Path(fiat_model / "exposure" / "roads.gpkg"))
-        exposure_csv = pd.read_csv(
-            Path(fiat_model / "output" / "output.csv"),
-        )
+        exposure_csv = pd.read_csv(Path(fiat_output.parent / "output.csv"))
         inun_depth_roads = exposure_csv.filter(regex="inun_depth").columns
         road_id = exposure_csv[["object_id", "segment_length"]].columns
         exposure_roads = list(inun_depth_roads) + list(road_id)

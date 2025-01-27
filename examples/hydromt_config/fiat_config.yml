@@ -21,3 +21,9 @@ setup_exposure_buildings:
   unit: "meters"
   extraction_method: centroid
   country: "Italy"
+
+setup_exposure_roads:
+  roads_fn: "OSM"
+  road_types: ["motorway", "primary", "secondary", "tertiary"]
+  road_damage: null
+  unit: "meters"
