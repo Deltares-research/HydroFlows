@@ -91,6 +91,7 @@ class FIATBuild(Method):
     _test_kwargs = {
         "region": Path("region.geojson"),
         "config": Path("hydroflows/cfg/fiat_build.yml"),
+        "predefined_catalogs": ["artifact_data"],
     }
 
     def __init__(
@@ -134,6 +135,11 @@ class FIATBuild(Method):
         :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
+        if not catalog_path and not predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
+
         self.params: Params = Params(
             fiat_root=fiat_root, predefined_catalogs=predefined_catalogs, **params
         )
@@ -169,16 +175,12 @@ class FIATBuild(Method):
         root = self.params.fiat_root
         #
         logger = setuplog("fiat_build", log_level="DEBUG")
-        if not self.input.catalog_path and not self.params.predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
 
         data_libs = [FIAT_DATA_PATH]
-        if self.input.catalog_path:
-            data_libs += [self.input.catalog_path]
         if self.params.predefined_catalogs:
             data_libs += self.params.predefined_catalogs
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
 
         model = FiatModel(
             root=root,

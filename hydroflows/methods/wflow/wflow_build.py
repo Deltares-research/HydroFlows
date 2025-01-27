@@ -85,6 +85,7 @@ class WflowBuild(Method):
     _test_kwargs = {
         "region": Path("region.geojson"),
         "config": CFG_DIR / "wflow_build.yml",
+        "catalog_path": Path("data_catalog.yml"),
     }
 
     def __init__(
@@ -126,6 +127,10 @@ class WflowBuild(Method):
         :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
         :py:class:`hydromt_wflow.WflowModel`
         """
+        if not catalog_path and not predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.params: Params = Params(
             wflow_root=wflow_root, predefined_catalogs=predefined_catalogs, **params
         )
@@ -140,16 +145,11 @@ class WflowBuild(Method):
         """Run the WflowBuild method."""
         logger = setuplog("build", log_level=20)
 
-        if not self.input.catalog_path and not self.params.predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
-
         data_libs = []
-        if self.input.catalog_path:
-            data_libs += [self.input.catalog_path]
         if self.params.predefined_catalogs:
             data_libs += self.params.predefined_catalogs
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
 
         # create the hydromt model
         root = self.output.wflow_toml.parent

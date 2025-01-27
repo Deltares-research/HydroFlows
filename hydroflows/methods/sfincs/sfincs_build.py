@@ -100,6 +100,7 @@ class SfincsBuild(Method):
     _test_kwargs = {
         "region": Path("region.geojson"),
         "config": CFG_DIR / "sfincs_build.yml",
+        "catalog_path": Path("data_catalog.yml"),
     }
 
     def __init__(
@@ -142,6 +143,10 @@ class SfincsBuild(Method):
         :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
         :py:class:`hydromt_sfincs.SfincsModel`
         """
+        if not catalog_path and not predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.params: Params = Params(
             sfincs_root=sfincs_root, predefined_catalogs=predefined_catalogs, **params
         )
@@ -163,16 +168,11 @@ class SfincsBuild(Method):
         opt["setup_grid_from_region"].update(region={"geom": str(self.input.region)})
         opt["setup_mask_active"].update(mask=str(self.input.region))
 
-        if not self.input.catalog_path and not self.params.predefined_catalogs:
-            raise ValueError(
-                "A data catalog must be specified either via catalog_path or predefined_catalogs."
-            )
-
         data_libs = []
-        if self.input.catalog_path:
-            data_libs += [self.input.catalog_path]
         if self.params.predefined_catalogs:
             data_libs += self.params.predefined_catalogs
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
 
         # create the hydromt model
         root = self.output.sfincs_inp.parent
