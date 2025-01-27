@@ -259,6 +259,27 @@ def create_output_map(
     event_set_file: str,
     fiat_output: Path,
 ):
+    """Create vector and image output of the damages per single event or return period.
+
+    Parameters
+    ----------
+    aggregation_areas: list
+        List of aggregation areas to be visualized.
+    fiat_model: Path
+        Path to the base fiat model.
+    event_set_file: str
+        Path to the event set file.
+    fiat_output: Path
+        Path to the FIAT output folder.
+
+    Returns
+    -------
+    GeoPandas.DataFrame
+        An aggregated FIAT results dataframe with damages.
+
+    str
+        Path to the PNG file containing a map of the aggregated damages.
+    """
     # Create aggregated output
     fn_aggregated_metrics = fiat_output.parent
     for aggregation_area in aggregation_areas:
@@ -310,6 +331,18 @@ def create_output_map(
 
 
 def get_aggregation_areas(fiat_model):
+    """Get the aggregation areas of the FIAT model.
+
+    Parameters
+    ----------
+    fiat_model: Path
+        Path to the base fiat model.
+
+    Returns
+    -------
+    List
+        A list of the aggregation areas.
+    """
     spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
     aggregation_areas = spatial_joins["aggregation_areas"]
     return aggregation_areas
@@ -490,6 +523,19 @@ def write_risk_infometrics_config(
 
 
 def add_road_infometrics(config_metrics: dict) -> dict:
+    """
+    Write road infometrics configuration file.
+
+    Parameters
+    ----------
+    config_metrics : dict
+        a dictionary of the metrics.
+
+    Returns
+    -------
+    config_metrics : dict
+        A dictionary of the updated metrics config.
+    """
     minor_roads = {
         "name": "MinorFloodedRoads",
         "description": "Roads disrupted for cars",
@@ -512,7 +558,21 @@ def add_road_infometrics(config_metrics: dict) -> dict:
     return config_metrics
 
 
-def create_total_damage_figure(region: Path, gpd_aggregated_damages, output_path):
+def create_total_damage_figure(
+    region: Path, gpd_aggregated_damages: gpd.GeoDataFrame, output_path: Path
+):
+    """
+    Create a total damage figure for the aggregated FIAT results dataframe.
+
+    Parameters
+    ----------
+    region : Path
+        The file path to the region file.
+    gpd_aggregated_damages : gpd.GeoDataFrame
+        The GeoDataFrame of the aggregated damages.
+    output_path : Path
+        The file path to store the output file.
+    """
     web_crs = "EPSG:3857"
     gpd_aggregated_damages = gpd_aggregated_damages.to_crs(web_crs)
     crs = ccrs.epsg(gpd_aggregated_damages.crs.to_epsg())
