@@ -159,7 +159,7 @@ class FIATVisualize(Method):
                 Path(self.infographics_template.parent / "config_risk_charts.toml"),
             )
 
-            self.infographics_template = config_charts
+            self.infographics_template = Path(config_charts / "config_risk_charts.toml")
             self._add_exeedance_probability(
                 self.input.fiat_output.parent / "output.csv", metrics_config
             )
