@@ -22,6 +22,10 @@ setup_exposure_buildings:
   extraction_method: centroid
   country: "Italy"
 
+setup_aggregation_areas:
+  res_x: 450
+  res_y: 450
+
 setup_exposure_roads:
   roads_fn: "OSM"
   road_types: ["motorway", "primary", "secondary", "tertiary"]
