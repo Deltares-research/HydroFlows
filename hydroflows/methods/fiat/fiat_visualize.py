@@ -177,7 +177,7 @@ class FIATVisualize(Method):
                 name = aggregation_area["name"]
                 aggr_names.append(name)
             infometrics_cfg["aggregateBy"] = aggr_names
-            if Path(self.input.fiat_output.parent / "exposure" / "roads.gpkg").exists():
+            if Path(self.params.base_fiat_model / "exposure" / "roads.gpkg").exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
                 Path(self.input.fiat_output.parent / "infometrics_config.toml"), "w"
@@ -217,7 +217,7 @@ class FIATVisualize(Method):
             infographic_mode=mode,
             scenario_name=scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=Path(self.infographics_template),
+            config_base_path=Path(self.infographics_template.parent),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
 
