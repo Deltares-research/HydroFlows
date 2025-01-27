@@ -21,8 +21,8 @@ setup_exposure_buildings:
   eur_to_us_dollar: True
 
 setup_aggregation_areas:
-  res_x: 500
-  res_y: 500
+  res_x: 0.1
+  res_y: 0.1
 
 setup_exposure_roads:
   roads_fn: "OSM"
