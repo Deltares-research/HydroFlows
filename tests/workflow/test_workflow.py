@@ -142,9 +142,19 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     assert w.config.input_file == "tests/_data/region.geojson"
 
     test_yml = {
-        "config": {"region": "data/test_region.geojson", "rps": [5, 10, 50]},
+        "config": {
+            "region": "data/test_region.geojson",
+            "rps": [5, 10, 50],
+            "catalog_path": "data/global-data/data_catalog.yml",
+        },
         "rules": [
-            {"method": "sfincs_build", "kwargs": {"region": "$config.region"}},
+            {
+                "method": "sfincs_build",
+                "kwargs": {
+                    "region": "$config.region",
+                    "catalog_path": "$config.catalog_path",
+                },
+            },
             "method",
         ],
     }
@@ -155,7 +165,9 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     with pytest.raises(ValueError, match="Rule 2 invalid: not a dictionary."):
         Workflow.from_yaml(test_file)
 
-    test_yml["rules"] = [{"kwargs": {"region": "$config.region"}}]
+    test_yml["rules"] = [
+        {"kwargs": {"region": "$config.region", "catalog_path": "$config.catalog_path"}}
+    ]
 
     with open(test_file, "w") as f:
         yaml.dump(test_yml, f, sort_keys=False)
