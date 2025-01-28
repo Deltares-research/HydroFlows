@@ -1,7 +1,3 @@
-setup_region:
-  region:
-    geom: <region> # placeholder for region vector file
-
 setup_output:
   output_dir: output
   output_csv_name: output.csv
@@ -10,7 +6,7 @@ setup_output:
 setup_vulnerability:
   vulnerability_fn: jrc_vulnerability_curves
   vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
-  unit: meters
+  unit: m
   continent: Europe
 
 setup_exposure_buildings:
@@ -18,6 +14,18 @@ setup_exposure_buildings:
   occupancy_type: OSM
   max_potential_damage: jrc_damage_values
   ground_floor_height: 0
-  unit: "meters"
+  unit: m
   extraction_method: centroid
+  damage_types: ["structure", "content"]
   country: "Italy"
+  eur_to_us_dollar: True
+
+setup_aggregation_areas:
+  res_x: 0.1
+  res_y: 0.1
+
+setup_exposure_roads:
+  roads_fn: "OSM"
+  road_types: ["motorway", "primary", "secondary", "tertiary"]
+  road_damage: null
+  unit: "meters"
