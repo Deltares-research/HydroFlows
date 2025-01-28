@@ -5,18 +5,9 @@
 import subprocess
 from pathlib import Path
 
-from hydroflows import Workflow
+from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods.hazard_validation import FloodmarksValidation
-from hydroflows.methods.rainfall import PluvialHistoricalEvents
-from hydroflows.methods.script import ScriptMethod
-from hydroflows.methods.sfincs import (
-    SfincsBuild,
-    SfincsDownscale,
-    SfincsRun,
-    SfincsUpdateForcing,
-)
-from hydroflows.workflow.workflow_config import WorkflowConfig
+from hydroflows.methods import hazard_validation, rainfall, script, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -70,7 +61,7 @@ w = Workflow(
 
 # %%
 # Sfincs build
-sfincs_build = SfincsBuild(
+sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
     config=w.get_ref("$config.hydromt_sfincs_config"),
@@ -82,7 +73,7 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 # %%
 # Preprocess local precipitation data and get the historical event for validation, i.e January's 2024
 # Preprocess precipitation
-precipitation = ScriptMethod(
+precipitation = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_local_precip.py"),
     output={
         "precip_nc": Path(
@@ -92,7 +83,7 @@ precipitation = ScriptMethod(
 )
 w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
 
-historical_event = PluvialHistoricalEvents(
+historical_event = rainfall.PluvialHistoricalEvents(
     precip_nc=precipitation.output.precip_nc,
     events_dates=w.get_ref("$config.historical_events_dates"),
     event_root="events/historical",
@@ -102,7 +93,7 @@ w.add_rule(historical_event, rule_id="historical_event")
 
 # %%
 # Update the sfincs model with pluvial events
-sfincs_update = SfincsUpdateForcing(
+sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=historical_event.output.event_yaml,
 )
@@ -110,7 +101,7 @@ w.add_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
-sfincs_run = SfincsRun(
+sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
@@ -118,7 +109,7 @@ w.add_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
-sfincs_down = SfincsDownscale(
+sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
@@ -128,7 +119,7 @@ w.add_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Validate the downscaled inundation map against floodmarks
-floodmark_validation = FloodmarksValidation(
+floodmark_validation = hazard_validation.FloodmarksValidation(
     floodmarks_geom=w.get_ref("$config.floodmarks_geom"),
     flood_hazard_map=sfincs_down.output.hazard_tif,
     waterlevel_col=w.get_ref("$config.waterlevel_col"),

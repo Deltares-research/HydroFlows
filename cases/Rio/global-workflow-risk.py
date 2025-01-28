@@ -3,27 +3,12 @@
 # %%
 # Import packages
 import os
+import subprocess
 from pathlib import Path
 
-from hydroflows import Workflow
+from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods.fiat import (
-    FIATBuild,
-    FIATRun,
-    FIATUpdateHazard,
-)
-from hydroflows.methods.rainfall import (
-    GetERA5Rainfall,
-    PluvialDesignEvents,
-)
-from hydroflows.methods.sfincs import (
-    SfincsBuild,
-    SfincsDownscale,
-    SfincsPostprocess,
-    SfincsRun,
-    SfincsUpdateForcing,
-)
-from hydroflows.workflow.workflow_config import WorkflowConfig
+from hydroflows.methods import fiat, flood_adapt, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -37,7 +22,7 @@ setup_root = Path(pwd, "setups", name)
 setup_root.mkdir(exist_ok=True, parents=True)
 os.chdir(setup_root)
 # Setup the log file
-setuplog(path=setup_root / "hydroflows.log", level="DEBUG")
+setuplog(path=setup_root / "hydroflows-logger-risk.log", level="DEBUG")
 
 # %%
 # Setup the config file
@@ -49,16 +34,13 @@ config = WorkflowConfig(
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
-    sfincs_res=50,
-    river_upa=10,
     depth_min=0.05,
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
-    fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
-    continent="South America",
+    fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
     risk=True,
     # design events settings
-    rps=[5, 10, 25],
+    rps=[1, 2],
     start_date="1990-01-01",
     end_date="2023-12-31",
 )
@@ -69,33 +51,29 @@ w = Workflow(config=config, name=name, root=setup_root)
 
 # %%
 # Sfincs build
-sfincs_build = SfincsBuild(
+sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
-    default_config=w.get_ref("$config.hydromt_sfincs_config"),
+    config=w.get_ref("$config.hydromt_sfincs_config"),
     data_libs=w.get_ref("$config.data_libs"),
-    res=w.get_ref("$config.sfincs_res"),
-    river_upa=w.get_ref("$config.river_upa"),
     plot_fig=w.get_ref("$config.plot_fig"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
 # %%
 # Fiat build
-fiat_build = FIATBuild(
+fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
-    ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
     fiat_root="models/fiat",
     data_libs=w.get_ref("$config.data_libs"),
     config=w.get_ref("$config.hydromt_fiat_config"),
-    continent=w.get_ref("$config.continent"),
 )
 w.add_rule(fiat_build, rule_id="fiat_build")
 
 # %%
 # Pluvial events (get data + derive events)
 # Get ERA5 data
-pluvial_data = GetERA5Rainfall(
+pluvial_data = rainfall.GetERA5Rainfall(
     region=sfincs_build.output.sfincs_region,
     data_root=Path(pwd, "data/global-data"),
     start_date=w.get_ref("$config.start_date"),
@@ -104,17 +82,17 @@ pluvial_data = GetERA5Rainfall(
 w.add_rule(pluvial_data, rule_id="pluvial_data")
 
 # Derive desing pluvial events based on the downloaded (ERA5) data
-pluvial_events = PluvialDesignEvents(
+pluvial_events = rainfall.PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard="pluvial_events",
-    event_root="events/rainfall/current",
+    wildcard="pluvial_design_events",
+    event_root="events/design",
 )
-w.add_rule(pluvial_events, rule_id="pluvial_events")
+w.add_rule(pluvial_events, rule_id="pluvial_design_events")
 
 # %%
 # Update the sfincs model with pluvial events
-sfincs_update = SfincsUpdateForcing(
+sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
 )
@@ -122,7 +100,7 @@ w.add_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
-sfincs_run = SfincsRun(
+sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
@@ -130,23 +108,24 @@ w.add_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
-sfincs_down = SfincsDownscale(
+sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output",
+    output_root="output/hazard",
 )
+w.add_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Postprocesses SFINCS results (zsmax variable to the global zsmax on a regular grid for FIAT)
-sfincs_post = SfincsPostprocess(
+sfincs_post = sfincs.SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
 w.add_rule(sfincs_post, rule_id="sfincs_post")
 
 # %%
 # Update FIAT hazard
-fiat_update = FIATUpdateHazard(
+fiat_update = fiat.FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
     event_set_yaml=pluvial_events.output.event_set_yaml,
     map_type="water_level",
@@ -156,11 +135,21 @@ fiat_update = FIATUpdateHazard(
 w.add_rule(fiat_update, rule_id="fiat_update")
 
 # Run FIAT
-fiat_run = FIATRun(
+fiat_run = fiat.FIATRun(
     fiat_cfg=fiat_update.output.fiat_out_cfg,
-    fiat_bin=w.get_ref("$config.fiat_exe"),
+    fiat_exe=w.get_ref("$config.fiat_exe"),
 )
 w.add_rule(fiat_run, rule_id="fiat_run")
+
+# %%
+# Setup FloodAdapt with the models above and the design events
+floodadapt_build = flood_adapt.SetupFloodAdapt(
+    sfincs_inp=sfincs_build.output.sfincs_inp,
+    fiat_cfg=fiat_build.output.fiat_cfg,
+    event_set_yaml=pluvial_events.output.event_set_yaml,
+    output_dir="models/flood_adapt_builder",
+)
+w.add_rule(floodadapt_build, rule_id="floodadapt_build")
 
 # %%
 # run workflow
@@ -168,4 +157,13 @@ w.dryrun()
 
 # %%
 # to snakemake
-w.to_snakemake()
+w.to_snakemake("global-workflow-risk.smk")
+
+# %%
+# (test) run the workflow with snakemake and visualize the directed acyclic graph
+subprocess.run(
+    "snakemake -s global-workflow-risk.smk --configfile global-workflow-risk.config.yml --dag | dot -Tsvg > dag-risk.svg",
+    cwd=w.root,
+    shell=True,
+).check_returncode()
+# %%
