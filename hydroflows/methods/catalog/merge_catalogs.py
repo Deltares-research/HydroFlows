@@ -24,8 +24,7 @@ class Input(Parameters):
     @classmethod
     def _set_abs_paths(cls, data: dict) -> dict:
         if isinstance(data, dict) and "catalog_paths" in data:
-            for i, path in enumerate(data["catalog_paths"]):
-                data[f"catalog_path{i+3}"] = Path(path)
+            data.update(**data["catalog_paths"])
             del data["catalog_paths"]
         return data
 
@@ -51,8 +50,8 @@ class MergeCatalogs(Method):
         self,
         catalog_path1: Path,
         catalog_path2: Path,
-        *catalog_paths: Path,
         merged_catalog_path: Path,
+        **catalog_paths: dict[str, Path],
     ) -> None:
         self.input: Input = Input(
             catalog_path1=catalog_path1,

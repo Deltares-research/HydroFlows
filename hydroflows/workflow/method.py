@@ -131,7 +131,11 @@ class Method(ABC):
             mode=mode, posix_path=posix_path, return_refs=return_refs, **kwargs
         )
         # get all input, output which are in the __init__ signature
-        par = list(inspect.signature(self.__init__).parameters.keys())
+        par = set(inspect.signature(self.__init__).parameters.keys())
+        # Add extra optional (not defined) vars from input
+        par.update(par ^ set(self.input.to_dict().keys()))
+        par = list(par)
+        # Get the arguments
         in_kw = self.input.to_dict(filter_keys=par, **kwargs)
         out_kw = self.output.to_dict(filter_keys=par, **kwargs)
         # get all non-default params
