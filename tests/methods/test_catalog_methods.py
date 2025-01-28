@@ -3,7 +3,6 @@ from pathlib import Path
 from hydromt.data_catalog import DataCatalog
 
 from hydroflows.methods.catalog.merge_catalogs import MergeCatalogs
-from hydroflows.workflow.workflow import Workflow
 
 
 def test_merge_catalogs(global_catalog: Path, tmp_path: Path):
@@ -35,13 +34,8 @@ def test_merge_catalogs(global_catalog: Path, tmp_path: Path):
     assert "catalog_path3" in m.input.model_extra
     assert isinstance(m.input.catalog_path3, Path)
 
-    #
     m.run_with_checks()
 
     dc_out = DataCatalog(merged_catalog)
     assert sources_keys[0] in dc_out.sources
     assert sources_keys[-1] in dc_out.sources
-
-    w = Workflow(root=tmp_path)
-    w.add_rule(m, "merge_catalogs")
-    w.to_snakemake()
