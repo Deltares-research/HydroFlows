@@ -210,7 +210,7 @@ class PluvialDesignEvents(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "pluvial_design_events.yml",
+            event_set_yaml=self.params.event_root / "pluvial_events.yml",
         )
         # set wildcards and its expand values
         self.set_expand_wildcard(wildcard, self.params.event_names)
