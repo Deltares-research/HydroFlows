@@ -5,7 +5,6 @@ import shutil
 from pathlib import Path
 
 import cartopy.crs as ccrs
-import contextily as ctx
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -573,6 +572,11 @@ def create_total_damage_figure(
     output_path : Path
         The file path to store the output file.
     """
+    try:
+        import contextily as ctx
+    except ImportError:
+        pass
+
     web_crs = "EPSG:3857"
     gpd_aggregated_damages = gpd_aggregated_damages.to_crs(web_crs)
     crs = ccrs.epsg(gpd_aggregated_damages.crs.to_epsg())
