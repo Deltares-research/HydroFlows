@@ -77,6 +77,11 @@ class FIATVisualize(Method):
 
     name: str = "fiat_visualize"
 
+    _test_kwargs = {
+        "fiat_output": Path("output.csv"),
+        "event_set_file": Path("event_set.yaml"),
+    }
+
     def __init__(
         self,
         fiat_output: Path,

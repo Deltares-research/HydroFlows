@@ -85,6 +85,7 @@ def test_fiat_run(
     assert fiat_cfg.exists()
 
 
+@pytest.mark.requires_test_data()
 def test_fiat_visualize_risk_event(
     fiat_cached_model: Path,
     event_set_file: Path,
