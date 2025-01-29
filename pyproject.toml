@@ -14,16 +14,17 @@ authors = [
 dependencies = [
   "cartopy",                  # plotting
   "click",                    # CLI
+  "fiat-toolbox",
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt_fiat>=0.5.0, <1.0", # hydromt plugin for FIAT models
+  "hydromt_fiat>=0.5.1, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
-  "numpy>=1.20",              # pin necessary to ensure compatability with C headers
+  "numpy>=1.20",           # pin necessary to ensure compatability with C headers
   "pandas",                   # data handling
   "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
@@ -32,7 +33,8 @@ dependencies = [
   "shapely",                  # geometry
   "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
-  "xarray",                   # data handling
+  "xarray==2024.3.0",         # data handling
+  "dask==2024.11.2"
 ]
 
 
@@ -160,6 +162,7 @@ deps_not_in_conda = [
   "hatyan",
   "autodoc_pydantic",
   "sphinxcontrib-programoutput",
+  "fiat-toolbox"
 ]
 
 [tool.pixi.project]
@@ -171,7 +174,11 @@ hydroflows = { path = ".", editable = true }
 
 # conda dependencies
 [tool.pixi.dependencies]
+hydromt = ">=0.9.4,<1.0"
 hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
+hydromt_wflow = ">=0.6,<1.0"
+xarray = "==2024.3.0"
+dask = "==2024.11.2"
 
 [tool.pixi.feature.extra.dependencies]
 snakemake = {version=">=8.20, <9.0", channel= "bioconda" }

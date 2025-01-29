@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 # use create_artifact.py script in the p-drive hydroflows-test-data folder to update the registry
 with open(Path(__file__).parent / "registry.json", "r") as f:
     DATABASE = json.load(f)
-    BASE_URL = DATABASE["url"]
-    REGISTRY = DATABASE["data"]
+    BASE_URL: str = DATABASE["url"]
+    REGISTRY: dict[str:str] = DATABASE["data"]
 CACHE_DIR = Path("~", ".cache", "hydroflows").expanduser()
 PROCESSORS = {
     "tar.gz": pooch.Untar,
@@ -81,3 +81,8 @@ def fetch_data(
     retriever.fetch(choices_raw[idx], processor=processor)
 
     return output_dir / data
+
+
+if __name__ == "__main__":
+    for item in list(REGISTRY.keys()):
+        fetch_data(item.split(".", 1)[0])
