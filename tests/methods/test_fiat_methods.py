@@ -64,8 +64,8 @@ def test_fiat_run(
         pytest.skip(f"FIAT executable not found at {fiat_exe}")
     elif method == "exe" and platform.system() != "Windows":
         pytest.skip("FIAT exe only supported on Windows")
-    # elif method == "python" and not has_fiat_python:
-    #    pytest.skip("FIAT python package not found")
+    elif method == "python" and not has_fiat_python:
+        pytest.skip("FIAT python package not found")
     elif method == "python" and platform.system() != "Windows":
         # FIXME: FIAT python does currently not work on Linux
         # when reading the vulnerability curves
