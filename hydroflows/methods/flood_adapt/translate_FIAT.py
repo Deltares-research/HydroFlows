@@ -39,7 +39,7 @@ def translate_model(root, new_root):
         "ground_elevtn": "Ground Elevation",
         "fn_damage_structure": "Damage Function: Structure",
         "fn_damage_content": "Damage Function: Content",
-        "aggregation_label:_default_aggregation": "Aggregation Label: _default_aggregation",
+        "aggregation_label:_default_aggregation": "Aggregation Label: default_aggregation",
     }
     exposure_db.rename(columns=trans_dict, inplace=True)
     for i in exposure_geoms:
