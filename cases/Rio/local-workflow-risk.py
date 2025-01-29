@@ -1,4 +1,4 @@
-"""Script to generate workflow files for the Rio case flood risk assessment using local data."""
+"""Script to generate workflow files for the Rio case flood risk assessment integrating local data."""
 
 # %%
 # Import packages
@@ -8,7 +8,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import fiat, flood_adapt, rainfall, script, sfincs
+from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -31,25 +31,21 @@ config = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/region.geojson"),
     plot_fig=True,
+    catalog_path_global=Path(pwd, "data/global-data/data_catalog.yml"),
+    catalog_path_local=Path(pwd, "data/local-data/data_catalog.yml"),
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
-    fiat_exe=Path(pwd, "bin/fiat_v0.2.0/fiat.exe"),
+    fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
     risk=True,
     # design events settings
-    rps=[5, 10, 25],
+    rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
 )
-
-# Data libs (outside config as we will append the preprocessed dc)
-data_libs = [
-    Path(pwd, "data/local-data/data_catalog.yml"),
-    Path(pwd, "data/global-data/data_catalog.yml"),
-]
 
 # %%
 # Setup the workflow
@@ -60,12 +56,21 @@ w = Workflow(
 )
 
 # %%
+# Merge global and local data catalogs
+merged_catalog_global_local = catalog.MergeCatalogs(
+    catalog_path1=w.get_ref("$config.catalog_path_global"),
+    catalog_path2=w.get_ref("$config.catalog_path_local"),
+    merged_catalog_path=Path(pwd, "data/merged_data_catalog_local_global.yml"),
+)
+w.add_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
+
+# %%
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
     config=w.get_ref("$config.hydromt_sfincs_config"),
-    data_libs=data_libs,
+    catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
@@ -77,7 +82,7 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 fiat_clip_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "clip_exposure.py"),
     # Note that the output paths/names are hardcoded in the scipt
-    # the same applies to the data catalog
+    # These names are used in the hydromt_fiat config
     input={
         "region": sfincs_build.output.sfincs_region,
     },
@@ -108,26 +113,31 @@ fiat_preprocess_clip_exp = script.ScriptMethod(
 w.add_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
 
 # %%
-# Fiat build
-# Before running the FIAT build make sure that the hydromt_fiat config contains
-# proper names based on the ones specified in produced/preprocessed data catalog
-data_libs.append(fiat_preprocess_clip_exp.output.preprocessed_data_catalog)
-data_libs_with_fiat_local = data_libs
+# Merge the preprocessed data catalog with the merged global and local data catalog
+merged_catalog_all = catalog.MergeCatalogs(
+    catalog_path1=merged_catalog_global_local.output.merged_catalog_path,
+    catalog_path2=fiat_preprocess_clip_exp.output.preprocessed_data_catalog,
+    merged_catalog_path=Path(pwd, "data/merged_data_catalog_all.yml"),
+)
+w.add_rule(merged_catalog_all, rule_id="merge_all_catalogs")
 
+# %%
+# Fiat build
 fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
     ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
     fiat_root="models/fiat",
-    data_libs=data_libs_with_fiat_local,
+    catalog_path=merged_catalog_all.output.merged_catalog_path,
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
 w.add_rule(fiat_build, rule_id="fiat_build")
 
 # %%
-# Preprocess local precipitation data and get design events for both future and current climate conditions
+# Preprocess local precipitation data and get design events
 # Preprocess precipitation
 precipitation = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_local_precip.py"),
+    # Note that the output path/filename is hardcoded in the scipt
     output={
         "precip_nc": Path(
             pwd, "data/preprocessed-data/output_scalar_resampled_precip_station11.nc"
@@ -216,7 +226,6 @@ w.dryrun()
 # to snakemake
 w.to_snakemake("local-workflow-risk.smk")
 
-# %%
 # %%
 # (test) run the workflow with snakemake and visualize the directed acyclic graph
 subprocess.run(

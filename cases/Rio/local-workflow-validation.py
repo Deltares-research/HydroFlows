@@ -7,7 +7,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import hazard_validation, rainfall, script, sfincs
+from hydroflows.methods import catalog, hazard_validation, rainfall, script, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -26,10 +26,8 @@ setuplog(path=setup_root / "hydroflows-logger-validation.log", level="DEBUG")
 config = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/region.geojson"),
-    data_libs=[
-        Path(pwd, "data/local-data/data_catalog.yml"),
-        Path(pwd, "data/global-data/data_catalog.yml"),
-    ],
+    catalog_path_global=Path(pwd, "data/global-data/data_catalog.yml"),
+    catalog_path_local=Path(pwd, "data/local-data/data_catalog.yml"),
     plot_fig=True,
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
@@ -60,12 +58,21 @@ w = Workflow(
 )
 
 # %%
+# Merge global and local data catalogs
+merged_catalog_global_local = catalog.MergeCatalogs(
+    catalog_path1=w.get_ref("$config.catalog_path_global"),
+    catalog_path2=w.get_ref("$config.catalog_path_local"),
+    merged_catalog_path=Path(pwd, "data/merged_data_catalog_local_global.yml"),
+)
+w.add_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
+
+# %%
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
     config=w.get_ref("$config.hydromt_sfincs_config"),
-    data_libs=w.get_ref("$config.data_libs"),
+    catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")

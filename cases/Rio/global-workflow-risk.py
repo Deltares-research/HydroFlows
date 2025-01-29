@@ -29,7 +29,7 @@ setuplog(path=setup_root / "hydroflows-logger-risk.log", level="DEBUG")
 config = WorkflowConfig(
     # general settings
     region=Path(pwd, "data/region.geojson"),
-    data_libs=[Path(pwd, "data/global-data/data_catalog.yml")],
+    catalog_path=Path(pwd, "data/global-data/data_catalog.yml"),
     plot_fig=True,
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
@@ -40,7 +40,7 @@ config = WorkflowConfig(
     fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
     risk=True,
     # design events settings
-    rps=[1, 2],
+    rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
 )
@@ -55,7 +55,7 @@ sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
     sfincs_root="models/sfincs",
     config=w.get_ref("$config.hydromt_sfincs_config"),
-    data_libs=w.get_ref("$config.data_libs"),
+    catalog_path=w.get_ref("$config.catalog_path"),
     plot_fig=w.get_ref("$config.plot_fig"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
@@ -65,7 +65,7 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
     fiat_root="models/fiat",
-    data_libs=w.get_ref("$config.data_libs"),
+    catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
 w.add_rule(fiat_build, rule_id="fiat_build")
