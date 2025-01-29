@@ -67,6 +67,12 @@ class SetupFloodAdapt(Method):
 
     name: str = "setup_flood_adapt"
 
+    _test_kwargs = dict(
+        sfincs_inp=Path("models", "sfincs", "sfincs.inp").as_posix(),
+        fiat_cfg=Path("models", "fiat", "settings.toml").as_posix(),
+        event_set_yaml=Path("data", "event_set", "event_set.yaml").as_posix(),
+    )
+
     def __init__(
         self,
         sfincs_inp: Path,

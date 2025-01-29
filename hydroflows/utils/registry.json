@@ -1,10 +1,12 @@
 {
     "data": {
-        "fiat-model.tar.gz": "ba9ad369b260ad2ebc6bec8a15f5abfe339d8f21d72675c99d926233f6bab2a3",
-        "global-data.tar.gz": "6ff2498c9bbb900f1ad750ed8054a69352bbd7a50b4c4d4c108145ea88245c8e",
+        "cmip6-data.tar.gz": "15f0b47e0031c11821a1373c296ce5b88a804a3421770ff0c2f6e849807616a8",
+        "cmip6-stats.tar.gz": "9a7627b59e85e93084f597f95937743996b425ea235e21f41bcd2b9e84c802da",
+        "fiat-model.tar.gz": "f58049d02c53f080fa1389b085aba935eadd0e0431b6d0fc8c712291aa8a54a1",
+        "global-data.tar.gz": "b3f1b7de64bf5757abd591cd6b733c51a8b11f126be7d027d740e271ccd1f375",
         "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
         "wflow-model.tar.gz": "d64eb186f034fca32d88ee9a834eea4b5d518c848485c3a586772eb2ead8b0ef"
     },
-    "url": "doi:10.5281/zenodo.14409552",
-    "version": "v0.1.5"
+    "url": "doi:10.5281/zenodo.14753386",
+    "version": "v0.1.8"
 }
