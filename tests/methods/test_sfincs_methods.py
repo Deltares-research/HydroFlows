@@ -38,7 +38,7 @@ def test_sfincs_build(
         region=str(region),
         config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
-        data_libs=str(global_catalog),
+        catalog_path=str(global_catalog),
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
 

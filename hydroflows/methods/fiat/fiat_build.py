@@ -10,7 +10,7 @@ from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
 from pydantic import FilePath
 
-from hydroflows._typing import DataCatalogPath
+from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
@@ -46,6 +46,9 @@ class Input(Parameters):
     For more information see hydromt_fiat method
     `documentation <https://deltares.github.io/hydromt_fiat/latest/user_guide/user_guide_overview.html>`_."""
 
+    catalog_path: Optional[Path] = None
+    """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
+
     ground_elevation: Optional[Path] = None
     """Path to the DEM file with to set ground elevation data."""
 
@@ -76,9 +79,8 @@ class Params(Parameters):
     fiat_root: Path
     """The path to the root directory where the FIAT model will be created."""
 
-    data_libs: DataCatalogPath = ["artifact_data"]
-    """List of data libraries to be used. This is a predefined data catalog in
-    yml format, which should contain the data sources specified in the config file."""
+    predefined_catalogs: Optional[ListOfStr] = None
+    """List of predefined data catalogs containing the data sources specified in the config file."""
 
 
 class FIATBuild(Method):
@@ -89,12 +91,15 @@ class FIATBuild(Method):
     _test_kwargs = {
         "region": Path("region.geojson"),
         "config": Path("hydroflows/cfg/fiat_build.yml"),
+        "predefined_catalogs": ["artifact_data"],
     }
 
     def __init__(
         self,
         region: Path,
         config: Path,
+        catalog_path: Optional[Path] = None,
+        predefined_catalogs: Optional[ListOfStr] = None,
         fiat_root: Path = "models/fiat",
         ground_elevation: Optional[Path] = None,
         **params,
@@ -106,6 +111,15 @@ class FIATBuild(Method):
         region : Path
             The file path to the geometry file that defines the region of interest
             for constructing a FIAT model.
+        config : Path
+            The path to the configuration file (.yml) that defines the settings
+            to build a FIAT model. In this file the different model components
+            that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
+        catalog_path: Optional[Path], optional
+            The path to the data catalog file (.yml) that contains the data sources
+            specified in the config file. If None (default), a predefined data catalog should be provided.
+        predefined_catalogs : Optional[ListOfStr], optional
+            A list containing the predefined data catalog names.
         fiat_root : Path
             The path to the root directory where the FIAT model will be created, by default "models/fiat".
         ground_elevation : Optional[Path], optional
@@ -121,10 +135,19 @@ class FIATBuild(Method):
         :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(fiat_root=fiat_root, **params)
-        self.input: Input = Input(
-            region=region, config=config, ground_elevation=ground_elevation
+        self.params: Params = Params(
+            fiat_root=fiat_root, predefined_catalogs=predefined_catalogs, **params
         )
+        self.input: Input = Input(
+            region=region,
+            config=config,
+            ground_elevation=ground_elevation,
+            catalog_path=catalog_path,
+        )
+        if not self.input.catalog_path and not self.params.predefined_catalogs:
+            raise ValueError(
+                "A data catalog must be specified either via catalog_path or predefined_catalogs."
+            )
         self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
 
     def run(self):
@@ -158,10 +181,17 @@ class FIATBuild(Method):
         root = self.params.fiat_root
         #
         logger = setuplog("fiat_build", log_level="DEBUG")
+
+        data_libs = [FIAT_DATA_PATH]
+        if self.params.predefined_catalogs:
+            data_libs += self.params.predefined_catalogs
+        if self.input.catalog_path:
+            data_libs += [self.input.catalog_path]
+
         model = FiatModel(
             root=root,
             mode="w+",
-            data_libs=[FIAT_DATA_PATH] + self.params.data_libs,
+            data_libs=data_libs,
             logger=logger,
         )
 
