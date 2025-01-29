@@ -171,12 +171,6 @@ class FIATBuild(Method):
         # Select only geometry in case gdf contains more columns
         # Hydromt-fiat selects first column for geometry when fetching OSM
         region_gdf = region_gdf[["geometry"]]
-        # If aggregation areas is None, create aggregation vector layer
-        if "setup_aggregation_areas" not in opt:
-            opt["setup_aggregation_areas"] = {}
-            opt["setup_aggregation_areas"]["aggregation_area_fn"] = "default"
-            opt["setup_aggregation_areas"]["res_x"] = self.params.res_x
-            opt["setup_aggregation_areas"]["res_y"] = self.params.res_y
         # Setup the model
         root = self.params.fiat_root
         #
