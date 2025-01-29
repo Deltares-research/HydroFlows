@@ -82,4 +82,10 @@ General method
 
 .. include:: fiat_methods.rst
 
+.. _api_hazard_validation:
+
 .. include:: hazard_validation_methods.rst
+
+.. _api_catalog:
+
+.. include:: catalog_methods.rst
