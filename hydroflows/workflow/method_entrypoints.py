@@ -39,6 +39,7 @@ __eps__ = {
     "fluvial_design_events": "hydroflows.methods.discharge.fluvial_design_events:FluvialDesignEvents",
     "script_method": "hydroflows.methods.script.script_method:ScriptMethod",
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
+    "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
 }
 
 
