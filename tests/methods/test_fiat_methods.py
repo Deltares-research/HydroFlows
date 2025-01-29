@@ -2,6 +2,7 @@
 
 import os
 import platform
+import shutil
 from pathlib import Path
 
 import pandas as pd
@@ -93,6 +94,18 @@ def test_fiat_visualize_risk_event(
         fiat_cached_model / "simulations" / "pluvial_events" / "output" / "output.csv"
     )
     base_fiat_model = fiat_output.parent.parent.parent.parent
+
+    # Remove output files if already exist
+    mandatory_output_files = ["output.csv", "spatial.gpkg", "fiat.log"]
+    output_files = os.listdir(fiat_output.parent)
+    for file in output_files:
+        file_name = Path(fiat_output.parent / file)
+        if os.path.isdir(file_name):
+            shutil.rmtree(file_name)
+        else:
+            if file not in mandatory_output_files:
+                os.remove(file_name)
+
     # Visualize output
     rule = FIATVisualize(
         fiat_output=fiat_output,
