@@ -173,7 +173,6 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         # Setup the model
         root = self.params.fiat_root
-        #
         logger = setuplog("fiat_build", log_level="DEBUG")
 
         data_libs = [FIAT_DATA_PATH]
