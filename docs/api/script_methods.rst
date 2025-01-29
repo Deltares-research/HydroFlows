@@ -10,6 +10,6 @@ Run a python script
    :toctree: ../_generated
 
    script_method.RunScript
-   script_method.Input
-   script_method.Params
-   script_method.Output
+   script_method.ScriptInput
+   script_method.ScriptParams
+   script_method.ScriptOutput

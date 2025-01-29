@@ -3,21 +3,10 @@
 FloodAdapt related methods
 ==========================
 
-Methods to prepare a FloodAdapt data base from HydroFlows
+Method to setup a FloodAdapt database from HydroFlows events/models.
 
-Translate HydroFlows events to FloodAdapt events
-------------------------------------------------
-
-.. autosummary::
-   :toctree: ../_generated
-
-   translate_events.FloodAdaptEvent
-   translate_events.Input
-   translate_events.Params
-   translate_events.Output
-
-Setup FloodAdapt database
----------------------------
+Setup FloodAdapt
+----------------
 
 .. autosummary::
    :toctree: ../_generated
