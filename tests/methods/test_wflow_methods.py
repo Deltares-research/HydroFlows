@@ -23,7 +23,7 @@ def test_wflow_build(
     wflow_root = Path(tmp_path, "wflow_model")
 
     # some additional params
-    data_libs = global_catalog.as_posix()
+    catalog_path = global_catalog.as_posix()
     gauges = None
     plot_fig = False
 
@@ -32,7 +32,7 @@ def test_wflow_build(
         config=build_cfgs["wflow_build"],
         gauges=gauges,
         wflow_root=wflow_root,
-        data_libs=data_libs,
+        catalog_path=catalog_path,
         plot_fig=plot_fig,
     )
 
@@ -80,13 +80,13 @@ def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
     end_time = "2020-02-10"
 
     # additional param
-    data_libs = global_catalog.as_posix()
+    catalog_path = global_catalog.as_posix()
 
     rule = WflowUpdateForcing(
         wflow_toml=wflow_toml,
         start_time=start_time,
         end_time=end_time,
-        data_libs=data_libs,
+        catalog_path=catalog_path,
     )
 
     rule.run_with_checks()
