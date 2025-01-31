@@ -63,6 +63,7 @@ def test_climate_stats(
     ds = xr.open_dataset(rule2.output.stats)
     assert "2090-2100" in ds.horizon
     assert int(ds.precip.values.mean() * 100) == 381
+    ds = None
 
 
 @pytest.mark.requires_test_data()
@@ -110,6 +111,7 @@ def test_downscale_climate(
     ds = xr.open_dataset(rule.output.downscaled)
     assert int(ds.precip.values.mean() * 100) == 102
     assert ds.latitude.size == 200
+    ds = None
 
 
 @pytest.mark.requires_test_data()
@@ -131,3 +133,4 @@ def test_merge_datasets(tmp_path: Path, cmip6_stats: Path):
     ds = xr.open_dataset(rule.output.merged)
     assert ds.lon.size == 8
     assert int(ds.precip.values.mean() * 100) == -190
+    ds = None
