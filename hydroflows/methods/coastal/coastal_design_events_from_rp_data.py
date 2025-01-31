@@ -161,7 +161,7 @@ class CoastalDesignEventFromRPData(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "coastal_events.yml",
+            event_set_yaml=self.params.event_root / "coastal_design_events.yml",
         )
 
         # set wildcards and its expand values

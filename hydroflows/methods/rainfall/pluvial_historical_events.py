@@ -131,7 +131,7 @@ class PluvialHistoricalEvents(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "pluvial_events.yml",
+            event_set_yaml=self.params.event_root / "pluvial_historical_events.yml",
         )
 
         self.set_expand_wildcard(wildcard, list(self.params.events_dates.keys()))

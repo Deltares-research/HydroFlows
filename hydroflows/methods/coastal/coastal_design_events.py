@@ -155,7 +155,7 @@ class CoastalDesignEvents(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "coastal_events.yml",
+            event_set_yaml=self.params.event_root / "coastal_design_events.yml",
         )
 
         # set wildcards and its expand values
@@ -209,6 +209,15 @@ class CoastalDesignEvents(ExpandMethod):
         da_surge_eva = eva(
             da_surge, ev_type="BM", min_dist=min_dist, rps=np.array(self.params.rps)
         ).load()
+
+        # if rp contains one value expand the return_values dim with the rp
+        if len(self.params.rps) == 1:
+            da_surge_eva = da_surge_eva.assign_coords(rps=self.params.rps)
+            return_values_expanded = da_surge_eva.return_values.expand_dims(
+                rps=da_surge_eva.rps.values
+            )
+            da_surge_eva = da_surge_eva.assign(return_values=return_values_expanded)
+
         surge_hydrographs = (
             get_peak_hydrographs(
                 da_surge,
