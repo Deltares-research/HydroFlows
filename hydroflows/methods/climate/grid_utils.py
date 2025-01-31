@@ -417,10 +417,10 @@ def extract_climate_projections_statistics(
         else:
             model_entry = model
         entry = f"{clim_source}_{model_entry}_{scenario}_{member}"
-        if entry in data_catalog:
+        if data_catalog.contains_source(entry):
             # bug #677 in hydromt: attrs for non selected variables
             # for now, remove and update after get_data method
-            dc_entry = data_catalog[entry].to_dict()
+            dc_entry = data_catalog.get_source(entry).to_dict()
             entry_attrs = dc_entry.pop("attrs", None)
             dc_entry.pop("data_type", None)
             adapter = hydromt.data_adapter.RasterDatasetAdapter(**dc_entry)
