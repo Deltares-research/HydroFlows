@@ -3,6 +3,7 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Optional
 
 import cartopy.crs as ccrs
 import geopandas as gpd
@@ -55,6 +56,9 @@ class Params(Parameters):
 
     infographic_images: FilePath = CFG_DIR / "infographics" / "images"
     """The path to the directory where the images for the infographics are saved."""
+
+    output_dir: Optional[Path] = None
+    """The path to the directory where the infometrics and infographics output can be saved."""
 
 
 class Output(Parameters):
