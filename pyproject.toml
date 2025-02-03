@@ -33,7 +33,7 @@ dependencies = [
   "shapely",                  # geometry
   "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
-  "xarray==2024.3.0",         # data handling
+  "xarray==2025.1.2",         # data handling
   "dask==2024.11.2"
 ]
 
