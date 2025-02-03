@@ -50,8 +50,8 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    base_fiat_model: Path = "models/fiat"
-    """The path to the root directory where the FIAT model will be created."""
+    spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
+    """The path to the spatial joins configuration file."""
 
     infographic_images: FilePath = CFG_DIR / "infographics" / "images"
     """The path to the directory where the images for the infographics are saved."""
@@ -84,7 +84,7 @@ class FIATVisualize(Method):
     def __init__(
         self,
         fiat_output: Path,
-        base_fiat_model: Path = "models/fiat",
+        spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml",
         infographics_template: FilePath = CFG_DIR
         / "infographics"
         / "config_charts.toml",
@@ -99,6 +99,8 @@ class FIATVisualize(Method):
         ----------
         fiat_output: Path
             The file path to the output csv of the FIAT model.
+        spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
+            The path to the spatial joins configuration file.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
@@ -114,7 +116,7 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(base_fiat_model=base_fiat_model, **params)
+        self.params: Params = Params(spatial_joins_cfg=spatial_joins_cfg, **params)
         self.input: Input = Input(
             fiat_output=fiat_output,
         )
@@ -153,7 +155,7 @@ class FIATVisualize(Method):
         if mode == "risk":
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
-                self.params.base_fiat_model,
+                self.params.spatial_joins_cfg.parent,
                 self.input.fiat_output.parent,
                 Path(self.infographics_template.parent / "config_risk_charts.toml"),
             )
@@ -169,13 +171,15 @@ class FIATVisualize(Method):
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(self.params.base_fiat_model)
+            aggregation_areas = get_aggregation_areas(self.params.spatial_joins_cfg)
             aggr_names = []
             for aggregation_area in aggregation_areas:
                 name = aggregation_area["name"]
                 aggr_names.append(name)
             infometrics_cfg["aggregateBy"] = aggr_names
-            if Path(self.params.base_fiat_model / "exposure" / "roads.gpkg").exists():
+            if Path(
+                self.params.spatial_joins_cfg.parent / "exposure" / "roads.gpkg"
+            ).exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
                 Path(self.input.fiat_output.parent / "infometrics_config.toml"), "w"
@@ -200,12 +204,12 @@ class FIATVisualize(Method):
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
-        aggregation_areas = get_aggregation_areas(self.params.base_fiat_model)
+        aggregation_areas = get_aggregation_areas(self.params.spatial_joins_cfg)
 
         # Create output map and figure
         create_output_map(
             aggregation_areas,
-            self.params.base_fiat_model,
+            self.params.spatial_joins_cfg,
             self.input.fiat_output.parent.parent.stem,
             self.input.fiat_output,
         )
@@ -253,7 +257,7 @@ class FIATVisualize(Method):
 
 def create_output_map(
     aggregation_areas: list,
-    fiat_model: Path,
+    spatial_joins_cfg: Path,
     event_name: str,
     fiat_output: Path,
 ):
@@ -263,8 +267,8 @@ def create_output_map(
     ----------
     aggregation_areas: list
         List of aggregation areas to be visualized.
-    fiat_model: Path
-        Path to the base fiat model.
+    spatial_joins_cfg: Path
+        Path to the spatial joins configuration.
     event_name: str
         Name of the event.
     fiat_output: Path
@@ -284,7 +288,7 @@ def create_output_map(
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
-        gdf_aggregation = gpd.read_file(Path(fiat_model / fn))
+        gdf_aggregation = gpd.read_file(Path(spatial_joins_cfg.parent / fn))
         metrics_fn = Path(
             fn_aggregated_metrics
             / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
@@ -306,15 +310,17 @@ def create_output_map(
         )
 
         create_total_damage_figure(
-            region=Path(fiat_model / "geoms" / "region.geojson"),
+            region=Path(spatial_joins_cfg.parent / "geoms" / "region.geojson"),
             gpd_aggregated_damages=gdf_new_aggr,
             output_path=Path(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_name}"
             ),
         )
     # Create roads output
-    if Path(fiat_model / "exposure" / "roads.gpkg").exists():
-        gdf_roads = gpd.read_file(Path(fiat_model / "exposure" / "roads.gpkg"))
+    if Path(spatial_joins_cfg.parent / "exposure" / "roads.gpkg").exists():
+        gdf_roads = gpd.read_file(
+            Path(spatial_joins_cfg.parent / "exposure" / "roads.gpkg")
+        )
         exposure_csv = pd.read_csv(Path(fiat_output.parent / "output.csv"))
         inun_depth_roads = exposure_csv.filter(regex="inun_depth").columns
         road_id = exposure_csv[["object_id", "segment_length"]].columns
@@ -326,20 +332,20 @@ def create_output_map(
         )
 
 
-def get_aggregation_areas(fiat_model):
+def get_aggregation_areas(spatial_joins_cfg):
     """Get the aggregation areas of the FIAT model.
 
     Parameters
     ----------
-    fiat_model: Path
-        Path to the base fiat model.
+    spatial_joins_cfg: Path
+        Path to the spatial joins configuration.
 
     Returns
     -------
     List
         A list of the aggregation areas.
     """
-    spatial_joins = toml.load(Path(fiat_model / "spatial_joins.toml"))
+    spatial_joins = toml.load(spatial_joins_cfg)
     aggregation_areas = spatial_joins["aggregation_areas"]
     return aggregation_areas
 
