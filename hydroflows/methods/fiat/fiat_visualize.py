@@ -19,7 +19,6 @@ from fiat_toolbox.metrics_writer.fiat_write_return_period_threshold import (
 from pydantic import FilePath
 
 from hydroflows.cfg import CFG_DIR
-from hydroflows.events import EventSet
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -37,9 +36,6 @@ class Input(Parameters):
     """
     The file path to the output of the FIAT model.
     """
-
-    event_set_file: Path
-    """Path to the eventset cfg file."""
 
 
 class Params(Parameters):
@@ -82,14 +78,12 @@ class FIATVisualize(Method):
 
     _test_kwargs = {
         "fiat_output": Path("output.csv"),
-        "event_set_file": Path("event_set.yaml"),
         "infographic_images": CFG_DIR / "infographics" / "images",
     }
 
     def __init__(
         self,
         fiat_output: Path,
-        event_set_file: Path,
         base_fiat_model: Path = "models/fiat",
         infographics_template: FilePath = CFG_DIR
         / "infographics"
@@ -105,8 +99,6 @@ class FIATVisualize(Method):
         ----------
         fiat_output: Path
             The file path to the output csv of the FIAT model.
-        event_set_file: Path
-            The file path to the event set output of the hydromt SFINCS model.
         infographics_template: FilePath = CFG_DIR / "config_charts.toml"
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
@@ -125,13 +117,12 @@ class FIATVisualize(Method):
         self.params: Params = Params(base_fiat_model=base_fiat_model, **params)
         self.input: Input = Input(
             fiat_output=fiat_output,
-            event_set_file=event_set_file,
         )
         self.output: Output = Output(
             fiat_infometrics=self.input.fiat_output.parent
-            / f"Infometrics_{self.input.event_set_file.stem}.csv",
+            / f"Infometrics_{self.input.fiat_output.parent.parent.stem}.csv",
             fiat_infographics=self.input.fiat_output.parent
-            / f"{self.input.event_set_file.stem}_metrics.html",
+            / f"{self.input.fiat_output.parent.parent.stem}_metrics.html",
         )
 
         self.infographics_template = infographics_template
@@ -140,16 +131,16 @@ class FIATVisualize(Method):
 
     def run(self):
         """Run the FIATVisualize method."""
-        events = EventSet.from_yaml(self.input.event_set_file)
-
-        # Prep Events
-        rp = []
-        for event in events.events:
-            name = event["name"]
-            event = events.get_event(name)
-            rp.append(event.return_period)
-        scenario_name = self.input.event_set_file.stem
-
+        # Get return periods
+        config = toml.load(Path(self.input.fiat_output.parent.parent / "settings.toml"))
+        if (
+            "return_periods" in config["hazard"].keys()
+        ):  # NOTE Is there always rp in settings.toml and just empty for single event?
+            rp = config["hazard"]["return_periods"]
+            mode = "risk"
+        else:
+            mode = "single_event"
+        scenario_name = str(self.input.fiat_output.parent.parent.stem)
         # Get infographic images
         os.mkdir(Path(self.input.fiat_output.parent / "images"))
         for png_file in Path(self.infographic_images).glob("*.png"):
@@ -159,8 +150,7 @@ class FIATVisualize(Method):
             )
 
         # Write the metrics to file
-        if len(events.events) > 1:
-            mode = "risk"
+        if mode == "risk":
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
                 self.params.base_fiat_model,
@@ -176,7 +166,6 @@ class FIATVisualize(Method):
                 Path(self.input.fiat_output.parent / "infometrics_config_risk.toml")
             )
         else:
-            mode = "single_event"
             metrics_config = self.infometrics_template
             with open(metrics_config, "r") as f:
                 infometrics_cfg = toml.load(f)
@@ -217,7 +206,7 @@ class FIATVisualize(Method):
         create_output_map(
             aggregation_areas,
             self.params.base_fiat_model,
-            self.input.event_set_file.stem,
+            self.input.fiat_output.parent.parent.stem,
             self.input.fiat_output,
         )
 
@@ -265,7 +254,7 @@ class FIATVisualize(Method):
 def create_output_map(
     aggregation_areas: list,
     fiat_model: Path,
-    event_set_file: str,
+    event_name: str,
     fiat_output: Path,
 ):
     """Create vector and image output of the damages per single event or return period.
@@ -276,8 +265,8 @@ def create_output_map(
         List of aggregation areas to be visualized.
     fiat_model: Path
         Path to the base fiat model.
-    event_set_file: str
-        Path to the event set file.
+    event_name: str
+        Name of the event.
     fiat_output: Path
         Path to the FIAT output folder.
 
@@ -313,16 +302,14 @@ def create_output_map(
                 gdf_new_aggr[column] = metrics_float
 
         gdf_new_aggr.to_file(
-            Path(
-                fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}.geojson"
-            )
+            Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
         )
 
         create_total_damage_figure(
             region=Path(fiat_model / "geoms" / "region.geojson"),
             gpd_aggregated_damages=gdf_new_aggr,
             output_path=Path(
-                fn_aggregated_metrics / f"{name}_total_damages_{event_set_file}"
+                fn_aggregated_metrics / f"{name}_total_damages_{event_name}"
             ),
         )
     # Create roads output
@@ -335,7 +322,7 @@ def create_output_map(
         roads = exposure_csv[exposure_roads]
         gdf_roads_output = gdf_roads.merge(roads, how="left", on="object_id")
         gdf_roads_output.to_file(
-            Path(fn_aggregated_metrics / f"Impact_roads_{event_set_file}.geojson")
+            Path(fn_aggregated_metrics / f"Impact_roads_{event_name}.geojson")
         )
 
 
@@ -365,12 +352,12 @@ def write_risk_infometrics_config(
 
     Parameters
     ----------
-    event_set_file : str
-        Path to the event set file
+    rp: list
+        A list of the return periods.
     fiat_model : str
-        Path to the FIAT model folder
+        Path to the FIAT model folder.
     output_folder : str
-        Path to the metrics output
+        Path to the metrics output.
 
     Returns
     -------
