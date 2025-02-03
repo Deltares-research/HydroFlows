@@ -57,6 +57,9 @@ class Params(Parameters):
     base_fiat_model: Path = "models/fiat"
     """The path to the root directory where the FIAT model will be created."""
 
+    infographic_images: FilePath = CFG_DIR / "infographics" / "images"
+    """The path to the directory where the images for the infographics are saved."""
+
 
 class Output(Parameters):
     """Output parameters.
@@ -80,6 +83,7 @@ class FIATVisualize(Method):
     _test_kwargs = {
         "fiat_output": Path("output.csv"),
         "event_set_file": Path("event_set.yaml"),
+        "infographic_images": CFG_DIR / "infographics" / "images",
     }
 
     def __init__(
@@ -93,7 +97,7 @@ class FIATVisualize(Method):
         infometrics_template: FilePath = CFG_DIR
         / "infometrics"
         / "metrics_config.toml",
-        infographic_images: FilePath = CFG_DIR / "infographics" / "images",
+        **params,
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
@@ -107,8 +111,9 @@ class FIATVisualize(Method):
             Path to the infographics template file.
         infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
             Path to the infometrics template file.
-        infographic_images: FilePath = CFG_DIR / "images"
-            Path to the infographic images.
+        **params
+            Additional parameters to pass to the FIATVisualize instance.
+            See :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
 
         See Also
         --------
@@ -117,7 +122,7 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(base_fiat_model=base_fiat_model)
+        self.params: Params = Params(base_fiat_model=base_fiat_model, **params)
         self.input: Input = Input(
             fiat_output=fiat_output,
             event_set_file=event_set_file,
@@ -131,7 +136,7 @@ class FIATVisualize(Method):
 
         self.infographics_template = infographics_template
         self.infometrics_template = infometrics_template
-        self.infographic_images = infographic_images
+        self.infographic_images = self.params.infographic_images
 
     def run(self):
         """Run the FIATVisualize method."""
