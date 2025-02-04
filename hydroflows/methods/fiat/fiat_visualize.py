@@ -17,7 +17,7 @@ from fiat_toolbox.metrics_writer.fiat_write_metrics_file import MetricsFileWrite
 from fiat_toolbox.metrics_writer.fiat_write_return_period_threshold import (
     ExceedanceProbabilityCalculator,
 )
-from pydantic import FilePath
+from pydantic import DirectoryPath, FilePath
 
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
@@ -33,10 +33,16 @@ class Input(Parameters):
     required for the :py:class:`FIATVisualize` method.
     """
 
-    fiat_output: Path
+    fiat_output_csv: Path
     """
-    The file path to the output of the FIAT model.
+    The file path to the output.csv file of the FIAT model.
     """
+
+    spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
+    """The path to the spatial joins configuration file."""
+
+    fiat_cfg: Path
+    """The file path to the FIAT configuration (toml) file from the FIAT model simulation."""
 
 
 class Params(Parameters):
@@ -51,14 +57,27 @@ class Params(Parameters):
         For more details on the FiatModel used in hydromt_fiat.
     """
 
-    spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
-    """The path to the spatial joins configuration file."""
+    infographics_template: FilePath = Path(
+        CFG_DIR, "infographics", "config_charts.toml"
+    )
+    """The path to the infographics template file."""
 
-    infographic_images: FilePath = CFG_DIR / "infographics" / "images"
+    infographics_template_risk: FilePath = Path(
+        CFG_DIR, "infographics", "config_charts_risk.toml"
+    )
+    """The path to the infographics template file."""
+
+    infometrics_template: FilePath = Path(CFG_DIR, "infometrics", "metrics_config.toml")
+    """The path to the infometrics template file."""
+
+    infographic_images: DirectoryPath = CFG_DIR / "infographics" / "images"
     """The path to the directory where the images for the infographics are saved."""
 
-    output_dir: Optional[Path] = None
+    output_dir: Path = Path("output/fiat")
     """The path to the directory where the infometrics and infographics output can be saved."""
+
+    scenario_name: str
+    """The name of the simulation scenario."""
 
 
 class Output(Parameters):
@@ -87,28 +106,23 @@ class FIATVisualize(Method):
 
     def __init__(
         self,
-        fiat_output: Path,
+        fiat_output_csv: Path,
+        fiat_cfg: Path,
+        scenario_name: Optional[str] = None,
         spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml",
-        infographics_template: FilePath = CFG_DIR
-        / "infographics"
-        / "config_charts.toml",
-        infometrics_template: FilePath = CFG_DIR
-        / "infometrics"
-        / "metrics_config.toml",
+        output_dir: Path = Path("output/fiat"),
         **params,
     ) -> None:
         """Create and validate a FIATVisualize instance.
 
         Parameters
         ----------
-        fiat_output: Path
+        fiat_output_csv: Path
             The file path to the output csv of the FIAT model.
+        fiat_cfg: Path
+            The file path to the FIAT configuration (toml) file from the FIAT model simulation.
         spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
             The path to the spatial joins configuration file.
-        infographics_template: FilePath = CFG_DIR / "config_charts.toml"
-            Path to the infographics template file.
-        infometrics_template: FilePath = CFG_DIR / "metrics_config.toml"
-            Path to the infometrics template file.
         **params
             Additional parameters to pass to the FIATVisualize instance.
             See :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
@@ -120,25 +134,27 @@ class FIATVisualize(Method):
         :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
         :py:class:`hydromt_fiat.fiat.FIATModel`
         """
-        self.params: Params = Params(spatial_joins_cfg=spatial_joins_cfg, **params)
         self.input: Input = Input(
-            fiat_output=fiat_output,
+            spatial_joins_cfg=spatial_joins_cfg,
+            fiat_output_csv=fiat_output_csv,
+            fiat_cfg=fiat_cfg,
+        )
+        if scenario_name is None:
+            scenario_name = str(self.input.fiat_cfg.parent.stem)
+        self.params: Params = Params(
+            output_dir=output_dir, scenario_name=scenario_name, **params
         )
         self.output: Output = Output(
-            fiat_infometrics=self.input.fiat_output.parent
-            / f"Infometrics_{self.input.fiat_output.parent.parent.stem}.csv",
-            fiat_infographics=self.input.fiat_output.parent
-            / f"{self.input.fiat_output.parent.parent.stem}_metrics.html",
+            fiat_infometrics=self.params.output_dir
+            / f"Infometrics_{self.params.scenario_name}.csv",
+            fiat_infographics=self.params.output_dir
+            / f"{self.params.scenario_name}_metrics.html",
         )
-
-        self.infographics_template = infographics_template
-        self.infometrics_template = infometrics_template
-        self.infographic_images = self.params.infographic_images
 
     def run(self):
         """Run the FIATVisualize method."""
         # Get return periods
-        config = toml.load(Path(self.input.fiat_output.parent.parent / "settings.toml"))
+        config = toml.load(self.input.fiat_cfg)
         if (
             "return_periods" in config["hazard"].keys()
         ):  # NOTE Is there always rp in settings.toml and just empty for single event?
@@ -146,9 +162,8 @@ class FIATVisualize(Method):
             mode = "risk"
         else:
             mode = "single_event"
-        scenario_name = str(self.input.fiat_output.parent.parent.stem)
         # Get infographic images
-        os.mkdir(Path(self.input.fiat_output.parent / "images"))
+        Path(self.input.fiat_output.parent / "images").mkdir(exist_ok=True)
         for png_file in Path(self.infographic_images).glob("*.png"):
             shutil.copy(
                 png_file,
@@ -157,14 +172,14 @@ class FIATVisualize(Method):
 
         # Write the metrics to file
         if mode == "risk":
+            infographics_template = self.params.infographics_template_risk
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
-                self.params.spatial_joins_cfg.parent,
-                self.input.fiat_output.parent,
-                Path(self.infographics_template.parent / "config_risk_charts.toml"),
+                fiat_model=self.params.spatial_joins_cfg.parent,
+                output_folder=self.input.fiat_output.parent,
+                infographics_template=infographics_template,
             )
 
-            self.infographics_template = Path(config_charts / "config_risk_charts.toml")
             self._add_exeedance_probability(
                 self.input.fiat_output.parent / "output.csv", metrics_config
             )
@@ -172,8 +187,8 @@ class FIATVisualize(Method):
                 Path(self.input.fiat_output.parent / "infometrics_config_risk.toml")
             )
         else:
-            metrics_config = self.infometrics_template
-            with open(metrics_config, "r") as f:
+            infographics_template = self.params.infographics_template
+            with open(self.params.infometrics_template, "r") as f:
                 infometrics_cfg = toml.load(f)
             aggregation_areas = get_aggregation_areas(self.params.spatial_joins_cfg)
             aggr_names = []
@@ -193,18 +208,18 @@ class FIATVisualize(Method):
             metrics_writer = MetricsFileWriter(
                 Path(self.input.fiat_output.parent / "infometrics_config.toml")
             )
-        infometrics_name = f"Infometrics_{(scenario_name)}.csv"
+        infometrics_name = f"Infometrics_{self.params.scenario_name}.csv"
 
         # Write non-aggregated metrics
         metrics_full_path = metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
+            df_results=pd.read_csv(self.input.fiat_output_csv),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate=None,
         )
 
         # Write aggregated metrics
         metrics_writer.parse_metrics_to_file(
-            df_results=pd.read_csv(self.input.fiat_output.parent / "output.csv"),
+            df_results=pd.read_csv(self.input.fiat_output_csv),
             metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
             write_aggregate="all",
         )
@@ -214,16 +229,16 @@ class FIATVisualize(Method):
         create_output_map(
             aggregation_areas,
             self.params.spatial_joins_cfg,
-            self.input.fiat_output.parent.parent.stem,
-            self.input.fiat_output,
+            self.params.scenario_name,
+            self.input.fiat_output_csv,
         )
 
         # Write the infographic
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
-            scenario_name=scenario_name,
+            scenario_name=self.params.scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=Path(self.infographics_template.parent),
+            config_base_path=Path(infographics_template.parent),
             output_base_path=self.output.fiat_infographics.parent,
         ).write_infographics_to_file()
 

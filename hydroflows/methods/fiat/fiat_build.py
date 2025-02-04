@@ -66,6 +66,8 @@ class Output(Parameters):
     spatial_joins_cfg: Path
     """The file path to the FIAT spatial joins configuration (toml) file."""
 
+    ## TODO check if spatial_joins_cfg is created based on config file
+
 
 class Params(Parameters):
     """Parameters for the :py:class:`FIATBuild`.

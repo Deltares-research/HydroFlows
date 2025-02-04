@@ -108,8 +108,11 @@ class FIATRun(Method):
         self.params: Params = Params(fiat_exe=fiat_exe, run_method=run_method, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
-            fiat_out=self.input.fiat_cfg.parent / "output" / "spatial.gpkg"
+            fiat_out_gpkg=self.input.fiat_cfg.parent / "output" / "spatial.gpkg",
+            fiat_out_csv=self.input.fiat_cfg.parent / "output" / "output.csv",
         )
+
+        # TODO check if cfg matches output
 
     def run(self):
         """Run the FIATRun method."""
