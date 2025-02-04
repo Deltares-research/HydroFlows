@@ -78,6 +78,7 @@ def test_coastal_design_events(
         tide_timeseries=data_dir / "tide_timeseries.nc",
         bnd_locations=data_dir / "bnd_locations.gpkg",
         event_root=str(data_dir),
+        rps=[1, 10, 50],
     )
 
     rule.run_with_checks()
