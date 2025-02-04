@@ -63,7 +63,7 @@ class Params(Parameters):
     """The path to the infographics template file."""
 
     infographics_template_risk: FilePath = Path(
-        CFG_DIR, "infographics", "config_charts_risk.toml"
+        CFG_DIR, "infographics", "config_risk_charts.toml"
     )
     """The path to the infographics template file."""
 
@@ -100,7 +100,11 @@ class FIATVisualize(Method):
     name: str = "fiat_visualize"
 
     _test_kwargs = {
-        "fiat_output": Path("output.csv"),
+        "infometrics_template": Path(CFG_DIR, "infometrics", "metrics_config.toml"),
+        "infographics_template_risk": Path(
+            CFG_DIR, "infographics", "config_charts_risk.toml"
+        ),
+        "infographics_template": Path(CFG_DIR, "infographics", "config_charts.toml"),
         "infographic_images": CFG_DIR / "infographics" / "images",
     }
 
@@ -163,11 +167,11 @@ class FIATVisualize(Method):
         else:
             mode = "single_event"
         # Get infographic images
-        Path(self.input.fiat_output.parent / "images").mkdir(exist_ok=True)
-        for png_file in Path(self.infographic_images).glob("*.png"):
+        Path(self.input.fiat_output_csv.parent / "images").mkdir(exist_ok=True)
+        for png_file in Path(self.params.infographic_images).glob("*.png"):
             shutil.copy(
                 png_file,
-                Path(self.input.fiat_output.parent / "images"),
+                Path(self.input.fiat_output_csv.parent / "images"),
             )
 
         # Write the metrics to file
@@ -175,61 +179,61 @@ class FIATVisualize(Method):
             infographics_template = self.params.infographics_template_risk
             metrics_config, config_charts = write_risk_infometrics_config(
                 rp,
-                fiat_model=self.params.spatial_joins_cfg.parent,
-                output_folder=self.input.fiat_output.parent,
+                fiat_model=self.input.spatial_joins_cfg.parent,
+                output_folder=self.input.fiat_output_csv.parent,
                 infographics_template=infographics_template,
             )
 
             self._add_exeedance_probability(
-                self.input.fiat_output.parent / "output.csv", metrics_config
+                self.input.fiat_output_csv.parent / "output.csv", metrics_config
             )
             metrics_writer = MetricsFileWriter(
-                Path(self.input.fiat_output.parent / "infometrics_config_risk.toml")
+                Path(self.input.fiat_output_csv.parent / "infometrics_config_risk.toml")
             )
         else:
             infographics_template = self.params.infographics_template
             with open(self.params.infometrics_template, "r") as f:
                 infometrics_cfg = toml.load(f)
-            aggregation_areas = get_aggregation_areas(self.params.spatial_joins_cfg)
+            aggregation_areas = get_aggregation_areas(self.input.spatial_joins_cfg)
             aggr_names = []
             for aggregation_area in aggregation_areas:
                 name = aggregation_area["name"]
                 aggr_names.append(name)
             infometrics_cfg["aggregateBy"] = aggr_names
             if Path(
-                self.params.spatial_joins_cfg.parent / "exposure" / "roads.gpkg"
+                self.input.spatial_joins_cfg.parent / "exposure" / "roads.gpkg"
             ).exists():
                 infometrics_cfg = add_road_infometrics(infometrics_cfg)
             with open(
-                Path(self.input.fiat_output.parent / "infometrics_config.toml"), "w"
+                Path(self.input.fiat_output_csv.parent / "infometrics_config.toml"), "w"
             ) as f:
                 toml.dump(infometrics_cfg, f)
 
             metrics_writer = MetricsFileWriter(
-                Path(self.input.fiat_output.parent / "infometrics_config.toml")
+                Path(self.input.fiat_output_csv.parent / "infometrics_config.toml")
             )
-        infometrics_name = f"Infometrics_{self.params.scenario_name}.csv"
 
         # Write non-aggregated metrics
         metrics_full_path = metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(self.input.fiat_output_csv),
-            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+            metrics_path=self.output.fiat_infometrics,
             write_aggregate=None,
         )
 
         # Write aggregated metrics
         metrics_writer.parse_metrics_to_file(
             df_results=pd.read_csv(self.input.fiat_output_csv),
-            metrics_path=self.output.fiat_infometrics.parent.joinpath(infometrics_name),
+            metrics_path=self.output.fiat_infometrics,
             write_aggregate="all",
         )
-        aggregation_areas = get_aggregation_areas(self.params.spatial_joins_cfg)
+        aggregation_areas = get_aggregation_areas(self.input.spatial_joins_cfg)
 
         # Create output map and figure
         create_output_map(
             aggregation_areas,
-            self.params.spatial_joins_cfg,
+            self.input.spatial_joins_cfg,
             self.params.scenario_name,
+            self.output.fiat_infometrics,
             self.input.fiat_output_csv,
         )
 
@@ -238,8 +242,8 @@ class FIATVisualize(Method):
             infographic_mode=mode,
             scenario_name=self.params.scenario_name,
             metrics_full_path=metrics_full_path,
-            config_base_path=Path(infographics_template.parent),
-            output_base_path=self.output.fiat_infographics.parent,
+            config_base_path=Path(self.input.fiat_output_csv.parent),
+            output_base_path=Path(self.output.fiat_infographics.parent),
         ).write_infographics_to_file()
 
     def _add_exeedance_probability(self, fiat_results_path, config_path):
@@ -278,6 +282,7 @@ def create_output_map(
     aggregation_areas: list,
     spatial_joins_cfg: Path,
     event_name: str,
+    infometrics_output: Path,
     fiat_output: Path,
 ):
     """Create vector and image output of the damages per single event or return period.
@@ -290,6 +295,8 @@ def create_output_map(
         Path to the spatial joins configuration.
     event_name: str
         Name of the event.
+    infometrics_output: Path
+        Path to the FIAT infometrics output folder.
     fiat_output: Path
         Path to the FIAT output folder.
 
@@ -302,7 +309,7 @@ def create_output_map(
         Path to the PNG file containing a map of the aggregated damages.
     """
     # Create aggregated output
-    fn_aggregated_metrics = fiat_output.parent
+    fn_aggregated_metrics = infometrics_output.parent
     for aggregation_area in aggregation_areas:
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
