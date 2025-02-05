@@ -259,7 +259,7 @@ def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
         attrs={"long_name": "Total precipitation", "units": "mm"},
     )
 
-    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    fn_time_series_nc = Path(tmp_path, "precip_output_scalar.nc")
     da.to_netcdf(fn_time_series_nc)
 
     return fn_time_series_nc
@@ -287,7 +287,7 @@ def tmp_disch_time_series_nc(tmp_path: Path) -> Path:
 
     da.name = "Q"
 
-    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    fn_time_series_nc = Path(tmp_path, "discharge_output_scalar.nc")
     da.to_netcdf(fn_time_series_nc)
 
     return fn_time_series_nc
@@ -321,20 +321,24 @@ def tmp_floodmark_points(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def waterlevel_timeseries() -> xr.DataArray:
+def temp_waterlevel_timeseries_nc(tmp_path: Path) -> Path:
     dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
 
     np.random.seed(1234)
-    data = np.random.rand(len(dates))
+    data = np.random.rand(len(dates), 1)
 
     da = xr.DataArray(
         data=data,
-        dims=("time"),
-        coords={"time": dates},
-        name="h",
+        dims=("time", "stations"),
+        coords={"time": dates, "stations": ["1"]},
     )
-    da = da.expand_dims(dim={"stations": 1})
-    return da
+
+    da.name = "h"
+
+    fn_time_series_nc = Path(tmp_path, "water_level_output_scalar.nc")
+    da.to_netcdf(fn_time_series_nc)
+
+    return fn_time_series_nc
 
 
 @pytest.fixture()
