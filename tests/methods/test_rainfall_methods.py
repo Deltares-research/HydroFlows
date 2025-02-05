@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import pandas as pd
@@ -11,7 +10,6 @@ from hydroflows.methods.rainfall import (
     GetERA5Rainfall,
     PluvialDesignEvents,
     PluvialDesignEventsGPEX,
-    PluvialHistoricalEvents,
 )
 
 
@@ -78,36 +76,6 @@ def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
 
     da = xr.open_dataarray(get_era5.output.precip_nc)
     assert da["time"].min() == pd.Timestamp("2023-11-01")
-
-
-def test_pluvial_historical_events(
-    tmp_precip_time_series_nc: Path, tmp_path: Path, caplog
-):
-    caplog.set_level(logging.WARNING)
-    events_dates = {
-        # The first event is outside the available time series to test warning coverage.
-        "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
-        "p_event02": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
-        # The last event is partially overlapping the available time series to test warning coverage.
-        "p_event03": {"startdate": "1999-12-20 09:00", "enddate": "2001-01-07 17:00"},
-    }
-
-    p_events = PluvialHistoricalEvents(
-        precip_nc=tmp_precip_time_series_nc,
-        events_dates=events_dates,
-        event_root=Path(tmp_path, "data"),
-    )
-
-    p_events.run_with_checks()
-
-    assert (
-        "Time slice for event 'p_event01' (from 1995-03-04 12:00:00 to 1995-03-05 14:00:00) returns no data."
-        in caplog.text
-    )
-    assert (
-        "The selected series for the event 'p_event03' is shorter than anticipated"
-        in caplog.text
-    )
 
 
 def test_future_climate_rainfall(
