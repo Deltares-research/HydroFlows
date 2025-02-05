@@ -1,5 +1,6 @@
-"""Utility for merging climate change factor datasets."""
+"""Utility for reducing multiple datasets using a quantile."""
 
+from pathlib import Path
 from typing import List
 
 import numpy as np
@@ -53,27 +54,28 @@ def create_regular_grid(
     return grid
 
 
-def merge_climate_datasets(
-    change_ds: list | tuple,
+def merge_raster_datasets(
+    datasets: list[Path],
+    reduce_dim: str = "model",
+    quantile: float = 0.5,
     aligned: bool = False,
     res: float = 0.25,
-    quantile: float = 0.5,
 ) -> xr.Dataset:
-    """Merge climate datasets.
-
-    These contain monthly change factors.
+    """Merge raster datasets.
 
     Parameters
     ----------
-    change_ds : list | tuple
-        List of datasets of all climate models for a certain \
-scenario-horizon combination.
+    datasets : list[Path],
+        List of dataset paths to raster netcdf datasets to merge
+    reduce_dim : str
+        The dimension to reduce the datasets along. Default is "model"
+        This dimension will be added if not present in the datasets.
+    quantile : float
+        The quantile of the merged data to be returned. Default is 0.5 (median)
     aligned : bool
         Whether the datasets are already aligned or not. By default False
     res : float
         The resolution of the resulting dataset in degrees.
-    quantile : float
-        The quantile of the merged data to be returned. Dafault is 0.5 (median)
 
     Returns
     -------
@@ -81,7 +83,7 @@ scenario-horizon combination.
         The resulting merged dataset.
     """
     ymax, ymin, xmax, xmin = None, None, None, None
-    for fname in change_ds:
+    for fname in datasets:
         ds = xr.open_dataset(fname, lock=False)
         if len(ds) == 0 or ds is None:
             continue
@@ -96,7 +98,7 @@ scenario-horizon combination.
     ds_grid = create_regular_grid(bbox=[xmin, ymin, xmax, ymax], res=res, align=True)
 
     ds_list = []
-    for fname in change_ds:
+    for fname in datasets:
         ds = xr.open_dataset(fname, lock=False)
         if len(ds) == 0 or ds is None:
             continue
@@ -106,23 +108,22 @@ scenario-horizon combination.
         # Reproject to regular grid
         # drop extra dimensions for reprojection
         if not aligned:
-            ds_reproj = ds.squeeze(drop=True)
+            ds_reproj = ds.squeeze(
+                drop=True
+            ).raster.mask_nodata()  # drop extra dims and set nodata to nan
             ds_reproj = ds_reproj.raster.reproject_like(ds_grid, method="nearest")
             # Re-add the extra dims
             ds_reproj = ds_reproj.expand_dims(
-                {
-                    "clim_project": ds["clim_project"].values,
-                    "model": ds["model"].values,
-                    "scenario": ds["scenario"].values,
-                    "horizon": ds["horizon"].values,
-                    "member": ds["member"].values,
-                }
+                **{dim: ds.coords[dim] for dim in ds.dims if dim not in ds_reproj.dims}
             )
+            if reduce_dim not in ds_reproj.dims:
+                ds_reproj = ds_reproj.expand_dims(reduce_dim)
             ds_list.append(ds_reproj)
             continue
         ds_list.append(ds)
 
     ds_out = xr.merge(ds_list)
-    ds_out_stat = ds_out.quantile(quantile, dim="model").squeeze(drop=True)
+    ds_out_stat = ds_out.quantile(quantile, dim=reduce_dim).squeeze(drop=True)
+    ds_out_stat.raster.set_crs(ds_grid.raster.crs)
 
     return ds_out_stat

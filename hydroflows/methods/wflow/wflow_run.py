@@ -97,7 +97,7 @@ class WflowRun(Method):
     def __init__(
         self,
         wflow_toml: Path,
-        run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe",
+        run_method: Literal["exe", "docker", "julia", "apptainer", "script"] = "exe",
         wflow_bin: Optional[Path] = None,
         **params,
     ) -> "WflowRun":
@@ -107,7 +107,7 @@ class WflowRun(Method):
         ----------
         wflow_toml : Path
             The file path to the Wflow (toml) configuration file.
-        run_method : Literal["exe", "docker", "apptainer"]
+        run_method : Literal["exe", "docker", "julia", "apptainer", "script"]
             How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
             'docker' or 'apptainer' for running the model in a container.
         wflow_bin : Path

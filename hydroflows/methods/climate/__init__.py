@@ -1,13 +1,13 @@
 """Climate submodule."""
 
+from .climate_change_factors import ClimateChangeFactors
 from .downscale import DownscaleClimateDataset
-from .grid_change import ClimateFactorsGridded
-from .grid_stats import ClimateStatistics
-from .merge import MergeDatasets
+from .merge import MergeGriddedDatasets
+from .monthly_climatology import MonthlyClimatolgy
 
 __all__ = [
-    "ClimateFactorsGridded",
-    "ClimateStatistics",
+    "ClimateChangeFactors",
+    "MonthlyClimatolgy",
     "DownscaleClimateDataset",
-    "MergeDatasets",
+    "MergeGriddedDatasets",
 ]

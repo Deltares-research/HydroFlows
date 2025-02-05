@@ -49,7 +49,12 @@ ListOfPath = Annotated[
     BeforeValidator(lambda x: str_to_list(x) if isinstance(x, str) else x),
 ]
 
-JsonDict = Union[Dict, Json]
+JsonDict = Annotated[
+    Union[Dict, Json],
+    BeforeValidator(
+        lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
+    ),
+]
 
 
 def _check_path_has_wildcard(path: Union[Path, List[Path]]) -> Path:

@@ -10,10 +10,10 @@ if TYPE_CHECKING:
 __all__ = ["METHODS"]
 
 __eps__ = {
-    "climate_factors_gridded": "hydroflows.methods.climate.grid_change:ClimateFactorsGridded",
-    "climate_statistics": "hydroflows.methods.climate.grid_stats:ClimateStatistics",
+    "climate_change_factors": "hydroflows.methods.climate.climate_change_factors:ClimateChangeFactors",
+    "monthly_climatology": "hydroflows.methods.climate.monthly_climatology:MonthlyClimatolgy",
     "downscale_climate_datasets": "hydroflows.methods.climate.downscale:DownscaleClimateDataset",
-    "merge_datasets": "hydroflows.methods.climate.merge:MergeDatasets",
+    "merge_gridded_datasets": "hydroflows.methods.climate.merge:MergeGriddedDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
     "fiat_update_hazard": "hydroflows.methods.fiat.fiat_update:FIATUpdateHazard",

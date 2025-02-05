@@ -251,7 +251,7 @@ def get_stats_clim_projections(
 
 def extract_climate_projections_statistics(
     region_fn: Union[str, Path],
-    data_catalog: Union[str, Path],
+    data_libs: Union[str, Path],
     clim_source: str,
     scenario: str,
     members: List[str],
@@ -286,7 +286,7 @@ def extract_climate_projections_statistics(
     ----------
     region_fn : str, Path
         Path to the region geodataframe file.
-    data_catalog : str, Path
+    data_libs : str, Path
         Path to the data catalog yml file containing the climate source info.
     path_output : str, Path
         Path to the output folder.
@@ -337,7 +337,7 @@ def extract_climate_projections_statistics(
     buffer = 1
 
     # initialize data_catalog from yml file
-    data_catalog = hydromt.DataCatalog(data_libs=data_catalog)
+    data_catalog = hydromt.DataCatalog(data_libs=data_libs)
 
     # Check climate source name and get time_tuple
     if clim_source not in CLIM_PROJECT_TIME_TUPLE.keys():

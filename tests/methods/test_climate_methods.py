@@ -4,10 +4,10 @@ import pytest
 import xarray as xr
 
 from hydroflows.methods.climate import (
-    ClimateFactorsGridded,
-    ClimateStatistics,
+    ClimateChangeFactors,
     DownscaleClimateDataset,
-    MergeDatasets,
+    MergeGriddedDatasets,
+    MonthlyClimatolgy,
 )
 from hydroflows.methods.climate.merge_utils import (
     create_regular_grid,
@@ -29,52 +29,57 @@ def test_regular_grid():
 
 # More integration test like
 @pytest.mark.requires_test_data()
-def test_climate_stats(
+def test_monthly_climatology(
     tmp_path: Path,
     cmip6_catalog: Path,
     region: Path,
 ):
-    rule = ClimateStatistics(
+    rule = MonthlyClimatolgy(
         region,
-        data_libs=[cmip6_catalog],
+        catalog_path=cmip6_catalog,
         model="NOAA-GFDL_GFDL-ESM4",
+        scenario="historical",
         horizon=[[2000, 2010]],
-        data_root=tmp_path,
+        output_dir=tmp_path,
     )
     rule.run_with_checks()
 
-    assert rule.output.stats.is_file()
-    ds = xr.open_dataset(rule.output.stats)
+    assert rule.output.climatology.is_file()
+    ds = xr.open_dataset(rule.output.climatology)
     assert "historical" in ds.horizon
     assert int(ds.precip.values.mean() * 100) == 377
     ds = None
 
-    rule2 = ClimateStatistics(
+    rule2 = MonthlyClimatolgy(
         region,
-        data_libs=[cmip6_catalog],
+        catalog_path=cmip6_catalog,
         model="NOAA-GFDL_GFDL-ESM4",
         scenario="ssp585",
         horizon=[[2090, 2100]],
-        data_root=tmp_path,
+        output_dir=tmp_path,
     )
     rule2.run_with_checks()
 
-    assert rule2.output.stats.is_file()
-    ds = xr.open_dataset(rule2.output.stats)
+    assert rule2.output.climatology.is_file()
+    ds = xr.open_dataset(rule2.output.climatology)
     assert "2090-2100" in ds.horizon
     assert int(ds.precip.values.mean() * 100) == 381
     ds = None
 
 
 @pytest.mark.requires_test_data()
-def test_climate_factors(tmp_path: Path, cmip6_stats: Path):
-    rule = ClimateFactorsGridded(
-        hist_stats=cmip6_stats / "stats" / "stats_NOAA-GFDL_GFDL-ESM4_historical.nc",
-        fut_stats=cmip6_stats / "stats" / "stats_NOAA-GFDL_GFDL-ESM4_ssp585_future.nc",
+def test_climate_change_factors(tmp_path: Path, cmip6_stats: Path):
+    rule = ClimateChangeFactors(
+        hist_climatology=cmip6_stats
+        / "stats"
+        / "stats_NOAA-GFDL_GFDL-ESM4_historical.nc",
+        future_climatology=cmip6_stats
+        / "stats"
+        / "stats_NOAA-GFDL_GFDL-ESM4_ssp585_future.nc",
         model="NOAA-GFDL_GFDL-ESM4",
         scenario="ssp585",
         horizon=[[2090, 2100]],
-        data_root=tmp_path,
+        output_dir=tmp_path,
     )
     rule.run_with_checks()
 
@@ -85,8 +90,8 @@ def test_climate_factors(tmp_path: Path, cmip6_stats: Path):
     )
     assert file.is_file()
     ds = xr.open_dataset(file)
-    assert rule.formatted_wildcards[0] in ds.horizon
-    assert int(ds.precip.values.mean() * 100) == 264
+    assert rule.formatted_wildcards[0] in ds["horizon"]
+    assert int(ds["precip"].values.mean() * 100) == 264  # 2.64 [%]
     ds = None
 
 
@@ -102,35 +107,34 @@ def test_downscale_climate(
             "change",
             "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
         ),
-        ds_like=Path(wflow_cached_model, "staticmaps.nc"),
-        data_root=tmp_path,
+        target_grid=Path(wflow_cached_model, "staticmaps.nc"),
+        output_dir=tmp_path,
     )
     rule.run_with_checks()
 
     assert rule.output.downscaled.is_file()
     ds = xr.open_dataset(rule.output.downscaled)
-    assert int(ds.precip.values.mean() * 100) == 102
-    assert ds.latitude.size == 200
+    assert int(ds["precip"].values.mean() * 100) == 102
+    assert ds["latitude"].size == 200
     ds = None
 
 
 @pytest.mark.requires_test_data()
-def test_merge_datasets(tmp_path: Path, cmip6_stats: Path):
+def test_merge_gridded_datasets(tmp_path: Path, cmip6_stats: Path):
     models = ["CSIRO-ARCCSS_ACCESS-CM2", "INM_INM-CM5-0", "NOAA-GFDL_GFDL-ESM4"]
     datasets = [
         Path(cmip6_stats, "change", f"change_{item}_ssp585_2090-2100.nc")
         for item in models
     ]
-    rule = MergeDatasets(
+    rule = MergeGriddedDatasets(
         datasets=datasets,
-        scenario="ssp585",
-        horizon="2090-2100",
-        data_root=tmp_path,
+        output_name="merged_ssp585_2090-2100.nc",
+        output_dir=tmp_path,
     )
     rule.run_with_checks()
 
-    assert rule.output.merged.is_file()
-    ds = xr.open_dataset(rule.output.merged)
+    assert rule.output.merged_dataset.is_file()
+    ds = xr.open_dataset(rule.output.merged_dataset)
     assert ds.lon.size == 8
-    assert int(ds.precip.values.mean() * 100) == -190
+    assert int(ds["precip"].values.mean() * 100) == -190
     ds = None

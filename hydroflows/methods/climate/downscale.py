@@ -20,7 +20,7 @@ class Input(Parameters):
     dataset: Path
     """The path to the to be downscaled dataset."""
 
-    ds_like: Path
+    target_grid: Path
     """
     The dataset with the desired resolution.
     """
@@ -44,7 +44,7 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    data_root: Path
+    output_dir: Path
     """
     The output directory of the dataset.
     """
@@ -60,14 +60,15 @@ class DownscaleClimateDataset(Method):
 
     _test_kwargs = {
         "dataset": Path("dataset.nc"),
-        "ds_like": Path("ds_like.nc"),
-        "data_root": Path("data"),
+        "target_grid": Path("target_grid.nc"),
+        "output_dir": Path("data"),
     }
 
     def __init__(
         self,
         dataset: Path,
-        ds_like: Path,
+        target_grid: Path,
+        output_dir: Path,
         **params,
     ):
         """Downscale a dataset to the resolution of another dataset.
@@ -76,7 +77,7 @@ class DownscaleClimateDataset(Method):
         ----------
         dataset : Path
             Path to the to be downscaled dataset.
-        ds_like : Path
+        target_grid : Path
             Path to the dataset with the target resolution.
         **params
             Additional parameters to pass to the DownscaleClimateDataset instance.
@@ -88,12 +89,12 @@ class DownscaleClimateDataset(Method):
         :py:class:`downscale Output <~hydroflows.methods.climate.downscale.Output>`
         :py:class:`downscale Params <~hydroflows.methods.climate.downscale.Params>`
         """
-        self.params: Params = Params(**params)
-        self.input: Input = Input(dataset=dataset, ds_like=ds_like)
+        self.params: Params = Params(output_dir=output_dir, **params)
+        self.input: Input = Input(dataset=dataset, target_grid=target_grid)
         fname = self.input.dataset.stem
         fsuffix = self.input.dataset.suffix
         self.output: Output = Output(
-            downscaled=self.params.data_root / f"{fname}_downscaled{fsuffix}"
+            downscaled=self.params.output_dir / f"{fname}_downscaled{fsuffix}"
         )
 
     def run(self):
@@ -101,27 +102,32 @@ class DownscaleClimateDataset(Method):
         # open datasets
         ds = xr.open_dataset(self.input.dataset, lock=False)
         # Open dst_grid similar to WflowModel.read_grid
-        ds_like = xr.open_dataset(
-            self.input.ds_like, mask_and_scale=False, decode_coords="all"
+        # TODO: do we need to load the entire dataset or only the coordinates?
+        target_grid = xr.open_dataset(
+            self.input.target_grid, mask_and_scale=False, decode_coords="all"
         ).load()
-        ds_like.close()
+        target_grid.close()
         # make sure maps are always North -> South oriented for hydromt
-        if ds_like.raster.res[1] > 0:
-            ds_like = ds_like.raster.flipud()
+        if target_grid.raster.res[1] > 0:
+            target_grid = target_grid.raster.flipud()
 
         # squeeze
         ds = ds.squeeze()
 
+        # TODO move to change_factors method ?
         # convert from percentage to fraction for variables that are not temperature
         for var in ds.data_vars:
             if not var.startswith("temp"):
                 ds[var] = 1 + ds[var] / 100
+                ds[var].attrs["long_name"] = f"fraction change in {var}"
+                ds[var].attrs["units"] = "-"
 
         ds_downscaled = ds.raster.reproject_like(
-            ds_like,
+            target_grid,
             method=self.params.resample_method,
         )
 
+        # TODO: if this is wflow-specific it should be moved to wflow methods
         # rename from month to time for wflow
         if "month" in ds_downscaled.coords:
             ds_downscaled = ds_downscaled.rename({"month": "time"})
@@ -130,5 +136,5 @@ class DownscaleClimateDataset(Method):
         to_netcdf(
             ds_downscaled,
             file_name=self.output.downscaled.name,
-            output_dir=self.params.data_root,
+            output_dir=self.params.output_dir,
         )

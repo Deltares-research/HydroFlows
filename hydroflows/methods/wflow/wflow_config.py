@@ -55,7 +55,7 @@ class Params(Parameters):
 
     model_config = ConfigDict(extra="allow")
 
-    data_root: Path
+    output_dir: Path
     """Path to the outgoing directory."""
 
     config_basename: str = "wflow_sbm"
@@ -68,8 +68,7 @@ class Params(Parameters):
         for value in self.to_dict().values():
             if not isinstance(value, types):
                 raise ValueError(
-                    f"{type(value)} is not allowed, present either \
-{types_str}"
+                    f"{type(value)} is not allowed, present either {types_str}"
                 )
 
 
@@ -80,10 +79,10 @@ class WflowConfig(Method):
 
     _test_kwargs = {
         "wflow_toml": Path("wflow_sbm.toml"),
-        "data_root": Path("data"),
+        "output_dir": Path("data"),
     }
 
-    def __init__(self, wflow_toml: Path, **params):
+    def __init__(self, wflow_toml: Path, output_dir: Path, **params):
         """Adjust and create a new settings file for wflow.
 
         Parameters
@@ -108,10 +107,10 @@ class WflowConfig(Method):
                 input_kwargs[key] = Path(params.pop(key))
                 continue
 
-        self.params: Params = Params(**params)
+        self.params: Params = Params(output_dir=output_dir, **params)
         self.input: Input = Input(wflow_toml=wflow_toml, **input_kwargs)
         self.output: Output = Output(
-            wflow_out_toml=self.params.data_root
+            wflow_out_toml=self.params.output_dir
             / (self.params.config_basename + ".toml")
         )
 
