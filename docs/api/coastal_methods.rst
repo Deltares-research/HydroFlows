@@ -64,10 +64,10 @@ Pluvial historical events
 .. autosummary::
    :toctree: ../_generated
 
-   coastal.historical_events.historical_events.HistoricalEvents
-   coastal.historical_events.historical_events.Input
-   coastal.historical_events.historical_events.Params
-   coastal.historical_events.historical_events.Output
+   historical_events.historical_events.HistoricalEvents
+   historical_events.historical_events.Input
+   historical_events.historical_events.Params
+   historical_events.historical_events.Output
 
 Future climate coastal events
 -----------------------------

@@ -100,7 +100,7 @@ class Params(Parameters):
     start and end dates/times of the event, while the third one defines the type of the
     historical event, i.e. "water_level", "discharge" or "rainfall", for example:
 
-    events_dates = {
+    events_info = {
     "p_event": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00", "type": "rainfall"},
     "wl_event": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00", "type": "water_level"},
     "q_event": {"startdate": "2010-03-04 09:00", "enddate": "2010-03-07 17:00", "type": "discharge"}
@@ -131,7 +131,7 @@ class HistoricalEvents(ExpandMethod):
     _test_kwargs = {
         "discharge_nc": Path("discharge.nc"),
         "precip_nc": Path("precip.nc"),
-        "events_dates": {
+        "events_info": {
             "q_event01": {
                 "startdate": "1995-03-04 12:00",
                 "enddate": "1995-03-05 14:00",
