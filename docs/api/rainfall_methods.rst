@@ -1,4 +1,4 @@
-.. currentmodule:: hydroflows.methods.rainfall
+.. currentmodule:: hydroflows.methods
 
 Creating rainfall forcing datasets
 ==================================
@@ -9,10 +9,10 @@ GetERA5 rainfall data
 .. autosummary::
    :toctree: ../_generated
 
-   get_ERA5_rainfall.GetERA5Rainfall
-   get_ERA5_rainfall.Input
-   get_ERA5_rainfall.Params
-   get_ERA5_rainfall.Output
+   rainfall.get_ERA5_rainfall.GetERA5Rainfall
+   rainfall.get_ERA5_rainfall.Input
+   rainfall.get_ERA5_rainfall.Params
+   rainfall.get_ERA5_rainfall.Output
 
 Pluvial design events
 ---------------------
@@ -20,10 +20,10 @@ Pluvial design events
 .. autosummary::
    :toctree: ../_generated
 
-   pluvial_design_events.PluvialDesignEvents
-   pluvial_design_events.Input
-   pluvial_design_events.Params
-   pluvial_design_events.Output
+   rainfall.pluvial_design_events.PluvialDesignEvents
+   rainfall.pluvial_design_events.Input
+   rainfall.pluvial_design_events.Params
+   rainfall.pluvial_design_events.Output
 
 Pluvial design events GPEX
 --------------------------
@@ -31,10 +31,10 @@ Pluvial design events GPEX
 .. autosummary::
    :toctree: ../_generated
 
-   pluvial_design_events_GPEX.PluvialDesignEventsGPEX
-   pluvial_design_events_GPEX.Input
-   pluvial_design_events_GPEX.Params
-   pluvial_design_events_GPEX.Output
+   rainfall.pluvial_design_events_GPEX.PluvialDesignEventsGPEX
+   rainfall.pluvial_design_events_GPEX.Input
+   rainfall.pluvial_design_events_GPEX.Params
+   rainfall.pluvial_design_events_GPEX.Output
 
 
 Pluvial historical events
@@ -43,10 +43,10 @@ Pluvial historical events
 .. autosummary::
    :toctree: ../_generated
 
-   pluvial_historical_events.PluvialHistoricalEvents
-   pluvial_historical_events.Input
-   pluvial_historical_events.Params
-   pluvial_historical_events.Output
+   historical_events.historical_events.HistoricalEvents
+   historical_events.historical_events.Input
+   historical_events.historical_events.Params
+   historical_events.historical_events.Output
 
 
 Future climate rainfall
@@ -55,7 +55,7 @@ Future climate rainfall
 .. autosummary::
    :toctree: ../_generated
 
-   future_climate_rainfall.FutureClimateRainfall
-   future_climate_rainfall.Input
-   future_climate_rainfall.Params
-   future_climate_rainfall.Output
+   rainfall.future_climate_rainfall.FutureClimateRainfall
+   rainfall.future_climate_rainfall.Input
+   rainfall.future_climate_rainfall.Params
+   rainfall.future_climate_rainfall.Output
