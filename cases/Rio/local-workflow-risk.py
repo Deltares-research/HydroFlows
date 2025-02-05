@@ -1,4 +1,4 @@
-"""Script to generate workflow files for the Rio case flood risk assessment integrating local data."""
+"""Script to generate workflow files for the flood risk assessment of the Rio case integrating local data."""
 
 # %%
 # Import packages
@@ -87,7 +87,7 @@ fiat_clip_exp = script.ScriptMethod(
         "region": sfincs_build.output.sfincs_region,
     },
     output={
-        "census": Path(pwd, "data/preprocessed-data/census20102.gpkg"),
+        "census": Path(pwd, "data/preprocessed-data/census2010.gpkg"),
         "building_footprints": Path(
             pwd, "data/preprocessed-data/building_footprints.gpkg"
         ),

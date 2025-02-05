@@ -1,4 +1,4 @@
-"""Script to generate workflow files for the Rio case flood risk assessment using global data."""
+"""Script to generate workflow files for the flood risk assessment of the Rio case using global data."""
 
 # %%
 # Import packages

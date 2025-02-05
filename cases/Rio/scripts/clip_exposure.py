@@ -7,7 +7,7 @@ import geopandas as gpd
 import pandas as pd
 
 # Root to the input data
-root = Path(R"p:\11209169-003-up2030\cases\rio_new\data\local-data")
+root = Path(R"p:\11209169-003-up2030\cases\rio\data\local-data")
 # Output root relative to this script
 out_root = Path(os.path.abspath(__file__)).parent.parent / "data" / "preprocessed-data"
 
@@ -15,7 +15,7 @@ if not os.path.exists(out_root):
     os.makedirs(out_root)
 
 # Path to the area of interest
-region_path = Path(R"p:\11209169-003-up2030\cases\rio_new\data\region.gpkg")
+region_path = Path(R"p:\11209169-003-up2030\cases\rio\data\region.gpkg")
 region = gpd.read_file(region_path)
 
 

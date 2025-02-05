@@ -49,7 +49,7 @@ def main(
 
 
 if __name__ == "__main__":
-    precip_raw_root = "p:/11209169-003-up2030/cases/rio_new/data/local-data/rainfall"
+    precip_raw_root = "p:/11209169-003-up2030/cases/rio/data/local-data/rainfall"
     precip_raw_fn = "bq-results-20240701-123456-1719837312017.csv"
     station_to_export = 11
     time_start = "1997-01-01"

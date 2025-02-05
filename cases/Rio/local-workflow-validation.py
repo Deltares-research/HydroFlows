@@ -1,4 +1,4 @@
-"""Script to generate workflow files for the Rio case model validation using local data."""
+"""Script to generate workflow files for the Rio case model validation integrating local data."""
 
 # %%
 # Import packages

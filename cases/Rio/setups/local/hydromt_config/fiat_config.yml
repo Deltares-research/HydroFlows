@@ -12,6 +12,13 @@ setup_vulnerability:
   unit: m
   continent: South America
 
+setup_population_vulnerability:
+  vertical_unit: "m" # unit of the inundation depth
+  threshold_value: 0.4 # depth at which people would be fully affected
+  min_hazard_value: 0
+  max_hazard_value: 10 # per building, e.g. 10 people per building
+  step_hazard_value: 0.1 # resolution of the damage curve and the interpolation between the values
+
 setup_exposure_buildings:
   asset_locations: preprocessed_occupaction_jrc
   occupancy_type: preprocessed_occupaction_jrc
@@ -23,7 +30,20 @@ setup_exposure_buildings:
   ground_elevation: rio/setups/local/models/sfincs/subgrid/dep_subgrid.tif
   damage_types: [structure, content]
   country: Brazil
+  eur_to_us_dollar: True
+
+# setup_exposure_roads:
+#   roads_fn: "OSM"
+#   road_types: ["motorway", "primary", "secondary", "tertiary"]
+#   road_damage: null
+#   unit: "meters"
 
 setup_exposure_population:
   impacted_population_fn: preprocessed_asset_population
   attribute_name: residents
+
+# setup_aggregation_areas:
+#   aggregation_area_fn: "aggregation_neighbourhood.gpkg"
+#   attribute_names: "Nome_do_bairro"
+#   label_names: "Neighbourhood"
+#   file_names: "census_neighbourhoods"
