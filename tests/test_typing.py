@@ -4,7 +4,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from hydroflows._typing import (
-    EventDatesDict,
+    EventInfoDict,
     ListOfFloat,
     ListOfInt,
     ListOfStr,
@@ -64,27 +64,48 @@ def test_tuple_of_int():
 
 
 def test_event_dates_dict():
-    ta = TypeAdapter(EventDatesDict)
+    ta = TypeAdapter(EventInfoDict)
 
-    dates = {
-        "p_event1": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
-        "p_event2": {"startdate": "2030-03-04 09:00", "enddate": "2005-03-07 17:00"},
+    info = {
+        "p_event1": {
+            "startdate": "2005-03-04 09:00",
+            "enddate": "2005-03-07 17:00",
+            "type": "rainfall",
+        },
+        "q_event2": {
+            "startdate": "2030-03-04 09:00",
+            "enddate": "2005-03-07 17:00",
+            "type": "discharge",
+        },
     }
 
-    validated_python = ta.validate_python(dates)
-    validated_json = ta.validate_python(json.dumps(dates))
-    validated_json2 = ta.validate_python(f"{dates}")
+    validated_python = ta.validate_python(info)
+    validated_json = ta.validate_python(json.dumps(info))
+    validated_json2 = ta.validate_python(f"{info}")
 
     assert validated_python == validated_json
     assert validated_python == validated_json2
     with pytest.raises(ValidationError):
-        ta.validate_python({"p_event1": {"startdate": "2005-03-04 09:00"}})
+        ta.validate_python(
+            {"p_event1": {"startdate": "2005-03-04 09:00", "type": "rainfall"}}
+        )
     with pytest.raises(ValidationError):
         ta.validate_python(
             {
                 "p_event2": {
                     "startdate": "2030-03-04 09:00",
                     "enTdate": "2005-03-07 17:00",
+                    "type": "rainfall",
+                }
+            }
+        )
+    with pytest.raises(ValidationError):
+        ta.validate_python(
+            {
+                "p_event3": {
+                    "startdate": "2030-03-04 09:00",
+                    "enddate": "2005-03-07 17:00",
+                    "type": "rain",
                 }
             }
         )
