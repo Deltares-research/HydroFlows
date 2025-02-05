@@ -65,7 +65,7 @@ class Params(Parameters):
     duration: int = 48
     """Duration of the produced design event."""
 
-    eva_method: Literal["gev", "gumb", "mev", "pot"] = "gev"
+    eva_method: Literal["gev", "gumbel", "mev", "pot"] = "gev"
     """Extreme value distribution method to get the GPEX estimate.
     Valid options within the GPEX dataset are "gev" for the Generalized Extreme Value ditribution,
     "mev" for the Metastatistical Extreme Value distribution, and "pot" for the
@@ -84,6 +84,10 @@ class Params(Parameters):
     plot_fig: bool = True
     """Determines whether to plot figures, including the derived design hyetographs
     as well as the calculated IDF curves per return period."""
+
+    save_idf_csv: bool = True
+    """Determines whether to save the calculated IDF curve values
+    per return period in a csv format."""
 
     @model_validator(mode="after")
     def _validate_model(self):
@@ -184,7 +188,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         self.output: Output = Output(
             event_yaml=self.params.event_root / f"{wc}.yml",
             event_csv=self.params.event_root / f"{wc}.csv",
-            event_set_yaml=self.params.event_root / "pluvial_events.yml",
+            event_set_yaml=self.params.event_root / "pluvial_design_events_GPEX.yml",
         )
         # set wildcards and its expand values
         self.set_expand_wildcard(wildcard, self.params.event_names)
@@ -229,6 +233,12 @@ class PluvialDesignEventsGPEX(ExpandMethod):
 
         # keep durations up to the max user defined duration
         da_idf = da_idf.sel(dur=slice(None, self.params.duration))
+
+        if self.params.save_idf_csv:
+            df_idf = da_idf.rename(
+                {"tr": "Return period\n[year]", "dur": "duration"}
+            ).to_pandas()
+            df_idf.to_csv(Path(self.output.event_csv.parent, "idf.csv"), index=True)
 
         # Get design events hyetograph for each return period
         p_hyetograph: xr.DataArray = get_hyetograph(da_idf, intensity_dim="dur")
