@@ -39,6 +39,7 @@ __eps__ = {
     "script_method": "hydroflows.methods.script.script_method:ScriptMethod",
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
+    "historical_events": "hydroflows.methods.historical_events.historical_events:HistoricalEvents",
 }
 
 

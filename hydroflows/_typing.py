@@ -1,7 +1,7 @@
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Literal, Tuple, Union
 
 from pydantic import AfterValidator, BeforeValidator, Json
 from typing_extensions import Annotated, TypedDict
@@ -54,9 +54,17 @@ WildcardPath = Annotated[
     AfterValidator(_check_path_has_wildcard),
 ]
 
-EventDatesDict = Annotated[
+EventInfoDict = Annotated[
     Dict[
-        str, TypedDict("EventDatesDict", {"startdate": datetime, "enddate": datetime})
+        str,
+        TypedDict(
+            "EventInfoDict",
+            {
+                "startdate": datetime,
+                "enddate": datetime,
+                "type": Literal["water_level", "discharge", "rainfall"],
+            },
+        ),
     ],
     BeforeValidator(
         lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
