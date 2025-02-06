@@ -100,12 +100,8 @@ class FIATVisualize(Method):
     name: str = "fiat_visualize"
 
     _test_kwargs = {
-        "infometrics_template": Path(CFG_DIR, "infometrics", "metrics_config.toml"),
-        "infographics_template_risk": Path(
-            CFG_DIR, "infographics", "config_charts_risk.toml"
-        ),
-        "infographics_template": Path(CFG_DIR, "infographics", "config_charts.toml"),
-        "infographic_images": CFG_DIR / "infographics" / "images",
+        "fiat_output_csv": Path("models/fiat/output/output.csv"),
+        "fiat_cfg": Path("models/fiat/settings.toml"),
     }
 
     def __init__(
