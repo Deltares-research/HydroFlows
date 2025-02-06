@@ -78,6 +78,7 @@ def test_coastal_design_events(
         tide_timeseries=data_dir / "tide_timeseries.nc",
         bnd_locations=data_dir / "bnd_locations.gpkg",
         event_root=str(data_dir),
+        rps=[1, 10, 50],
     )
 
     rule.run_with_checks()
@@ -116,7 +117,7 @@ def test_future_climate_sea_level(
     test_data_dir: Path,
     tmp_path: Path,
 ):
-    event_set_yaml = test_data_dir / "coastal_events" / "coastal_events.yml"
+    event_set_yaml = test_data_dir / "event-sets" / "coastal_events.yml"
 
     out_root = Path(tmp_path / "future_climate_sea_level")
 

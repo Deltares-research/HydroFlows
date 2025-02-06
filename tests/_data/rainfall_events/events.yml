@@ -1,5 +1,0 @@
-events:
-  - name: rp050
-    path: event_rp050.yml
-  - name: rp010
-    path: event_rp010.yml

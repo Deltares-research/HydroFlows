@@ -4,6 +4,7 @@ import platform
 from pathlib import Path
 
 import pytest
+import xarray as xr
 
 from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard
 
@@ -13,10 +14,13 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     # Setting input data
     region = sfincs_test_region.as_posix()
     fiat_root = Path(tmp_path, "fiat_model")
-
+    predefined_catalogs = ["artifact_data"]
     # Setup the rule
     rule = FIATBuild(
-        region=region, config=build_cfgs["fiat_build"], fiat_root=fiat_root
+        region=region,
+        config=build_cfgs["fiat_build"],
+        fiat_root=fiat_root,
+        predefined_catalogs=predefined_catalogs,
     )
     rule.run_with_checks()
 
@@ -24,17 +28,26 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
 @pytest.mark.requires_test_data()
 def test_fiat_update_hazard(
     fiat_tmp_model: Path,
-    first_hazard_map: Path,
-    second_hazard_map: Path,
+    hazard_map_data: xr.DataArray,
     event_set_file: Path,
+    tmp_path: Path,
 ):
     # Specify in- and output
     fiat_cfg = Path(fiat_tmp_model) / "settings.toml"
+
+    # create hazard maps
+    # NOTE file names should match the event names in the event set
+    hazard_maps = []
+    for i in range(3):
+        nc_file = tmp_path / f"flood_map_p_event{i+1:02d}.nc"
+        hazard_map_data.to_netcdf(nc_file)
+        hazard_maps.append(nc_file)
+
     # Setup the method.
     rule = FIATUpdateHazard(
         fiat_cfg=fiat_cfg,
         event_set_yaml=event_set_file,
-        hazard_maps=[first_hazard_map, second_hazard_map],
+        hazard_maps=hazard_maps,
     )
     rule.run_with_checks()
 
