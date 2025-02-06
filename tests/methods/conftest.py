@@ -244,7 +244,7 @@ def hazard_map_tif(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
 @pytest.fixture()
 def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
     # Generating datetime index
-    dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
+    dates = pd.date_range(start="2001-01-01", end="2009-12-31", freq="h")
 
     # set a seed for reproducibility
     np.random.seed(0)

@@ -4,7 +4,7 @@ import pytest
 from pydantic import TypeAdapter, ValidationError
 
 from hydroflows._typing import (
-    EventInfoDict,
+    EventDatesDict,
     ListOfFloat,
     ListOfInt,
     ListOfStr,
@@ -64,48 +64,34 @@ def test_tuple_of_int():
 
 
 def test_event_dates_dict():
-    ta = TypeAdapter(EventInfoDict)
+    ta = TypeAdapter(EventDatesDict)
 
-    info = {
+    event_dates = {
         "p_event1": {
             "startdate": "2005-03-04 09:00",
             "enddate": "2005-03-07 17:00",
             "type": "rainfall",
         },
-        "q_event2": {
+        "p_event2": {
             "startdate": "2030-03-04 09:00",
-            "enddate": "2005-03-07 17:00",
-            "type": "discharge",
+            "enddate": "2030-03-07 17:00",
         },
     }
 
-    validated_python = ta.validate_python(info)
-    validated_json = ta.validate_python(json.dumps(info))
-    validated_json2 = ta.validate_python(f"{info}")
+    validated_python = ta.validate_python(event_dates)
+    validated_json = ta.validate_python(json.dumps(event_dates))
+    validated_json2 = ta.validate_python(f"{event_dates}")
 
     assert validated_python == validated_json
     assert validated_python == validated_json2
     with pytest.raises(ValidationError):
-        ta.validate_python(
-            {"p_event1": {"startdate": "2005-03-04 09:00", "type": "rainfall"}}
-        )
+        ta.validate_python({"p_event1": {"startdate": "2005-03-04 09:00"}})
     with pytest.raises(ValidationError):
         ta.validate_python(
             {
                 "p_event2": {
                     "startdate": "2030-03-04 09:00",
-                    "enTdate": "2005-03-07 17:00",
-                    "type": "rainfall",
-                }
-            }
-        )
-    with pytest.raises(ValidationError):
-        ta.validate_python(
-            {
-                "p_event3": {
-                    "startdate": "2030-03-04 09:00",
-                    "enddate": "2005-03-07 17:00",
-                    "type": "rain",
+                    "enTdate": "2030-03-07 17:00",
                 }
             }
         )
