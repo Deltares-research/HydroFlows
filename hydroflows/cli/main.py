@@ -117,9 +117,18 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 @click.option(
     "--dry_run", "--dryrun", is_flag=True, help="Perform a dry_run of the method."
 )
+@click.option(
+    "--touch-output",
+    is_flag=True,
+    help="Create empty files at output location during dryrun.",
+)
 @click.pass_context
 def method(
-    ctx: click.Context, method: str, kwargs: Dict[str, str], dry_run: bool = False
+    ctx: click.Context,
+    method: str,
+    kwargs: Dict[str, str],
+    dry_run: bool = False,
+    touch_output: bool = False,
 ):
     """Run a method with a set of key-word arguments.
 
@@ -130,7 +139,13 @@ def method(
     try:
         method: Method = Method.from_kwargs(method, **kwargs)
         if dry_run:
-            method.dryrun(missing_file_error=True)
+            input_files = list(method.input.to_dict().values())
+            if touch_output:
+                method.dryrun(
+                    input_files=input_files, missing_file_error=True, touch_output=True
+                )
+            else:
+                method.dryrun(input_files=input_files, missing_file_error=True)
         else:
             method.run_with_checks()
     except Exception as e:

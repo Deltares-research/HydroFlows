@@ -3,13 +3,7 @@
 {% if rule.rule.wildcards.reduce %}
         requirements:
             MultipleInputFeatureRequirement: {}
-# {% elif rule.input_scatter %}
-#         scatter:
-# {% for item in rule.input_scatter %}
-#             - {{ item }}
-# {% endfor %}
-#         scatterMethod: dotproduct
-# {% endif %}
+{% endif %}
         in:
 {% for id, info in rule.input.items() %}
 {% if info.source %}
@@ -23,6 +17,7 @@
 {% endif %}
 {% if dryrun%}
             dryrun: dryrun
+            touch_output: touch_output
 {% endif %}
         out:
 {% for id, info in rule.output.items()%}
@@ -43,6 +38,7 @@
 {%- endfor %}
 {% if dryrun%}
             dryrun: dryrun
+            touch_output: touch_output
 {% endif %}
         out:
 {% for id in wf.output%}
@@ -61,6 +57,7 @@
 {% endfor %}
 {% if dryrun %}
                 dryrun: boolean
+                touch_output: boolean
 {% endif %}
             outputs:
 {% for id, info in wf.output.items()%}

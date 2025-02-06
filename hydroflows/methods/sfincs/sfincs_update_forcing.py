@@ -1,16 +1,19 @@
 """SFINCS Update forcing method."""
 
 # from datetime.datetime import strftime
+import logging
 from pathlib import Path
 from typing import Optional
 
-from hydroflows._typing import JsonDict, FolderPath
+from hydroflows._typing import FolderPath, JsonDict, OutPath
 from hydroflows.events import Event
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsUpdateForcing"]
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -19,7 +22,7 @@ class Input(Parameters):
     sfincs_inp: FolderPath
     """The file path to the SFINCS basemodel configuration file (inp)."""
 
-    event_yaml: Path
+    event_yaml: FolderPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
@@ -42,6 +45,9 @@ class Params(Parameters):
 
     sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
+
+    out_root: OutPath
+    """Root folder in which outputs are created."""
 
 
 class SfincsUpdateForcing(Method):
@@ -97,12 +103,15 @@ class SfincsUpdateForcing(Method):
         if event_name is None:
             # event name is the stem of the event file
             event_name = self.input.event_yaml.stem
+        if "out_root" in params:
+            logger.warning("Param out_root will be overwritten.", stacklevel=1)
+        params["out_root"] = self.input.sfincs_inp.parent
         self.params: Params = Params(
             event_name=event_name, sim_subfolder=sim_subfolder, **params
         )
 
         sfincs_out_inp = (
-            self.input.sfincs_inp.parent
+            self.params.out_root
             / self.params.sim_subfolder
             / self.params.event_name
             / "sfincs.inp"

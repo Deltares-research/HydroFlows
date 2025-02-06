@@ -3,8 +3,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-from hydroflows._typing import folderpath
-
 
 def map_cwl_types(input: Any) -> Dict[str, str]:
     """Map variable to cwl type and value.
@@ -32,10 +30,6 @@ def map_cwl_types(input: Any) -> Dict[str, str]:
             # Bool on out CLI is passed as a string
             out["type"] = "string"
             out["value"] = f"{str(input)}"
-        case folderpath():
-            # When indicated, set CWL type to Directory with parent folder as value
-            out["type"] = "Directory"
-            out["value"] = {"class": "Directory", "path": input.parent}
         case Path():
             if "{" in input.as_posix():
                 # If path contains wildcard, input is array

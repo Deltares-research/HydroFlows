@@ -78,3 +78,17 @@ def folderpath_validator(x: Path) -> folderpath:
 
 
 FolderPath = Annotated[Path, AfterValidator(folderpath_validator)]
+
+
+class outpath(Path):
+    """Subclass Path to indicate path is used as root for output locations."""
+
+    _flavour = type(Path())._flavour
+
+
+def outpath_validator(x: Path) -> outpath:
+    """Promote Path to outpath."""
+    return outpath(x)
+
+
+OutPath = Annotated[Path, AfterValidator(outpath_validator)]

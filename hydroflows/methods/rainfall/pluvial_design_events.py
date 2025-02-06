@@ -9,7 +9,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfInt, ListOfStr
+from hydroflows._typing import FolderPath, ListOfFloat, ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -33,7 +33,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
 
-    event_yaml: Path
+    event_yaml: FolderPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 

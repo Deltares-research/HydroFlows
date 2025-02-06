@@ -3,7 +3,7 @@ from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Union
 
-from hydroflows._typing import folderpath
+from hydroflows._typing import folderpath, outpath
 from hydroflows.utils.cwl_utils import map_cwl_types
 from hydroflows.utils.parsers import get_wildcards
 
@@ -64,6 +64,13 @@ class JinjaCWLRule:
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
                 inputs[key]["type"] += "[]"
+            if isinstance(ref.value, folderpath):
+                inputs[key + "_dir"] = {
+                    "type": "Directory",
+                    "source": inputs[key]["source"] + "_dir",
+                    "value": {"class": "Directory", "path": ref.value.parent},
+                }
+
         # Add params to inputs
         params = self.rule.method.params.to_dict(return_refs=True)
         for key, val in params.items():
@@ -93,36 +100,68 @@ class JinjaCWLRule:
     def _set_output(self) -> Dict[str, str]:
         """Get outputs of CWL step."""
         results = self.rule.method.output.to_dict(mode="python", filter_types=Path)
+        out_root = ""
+        for _, value in self.rule.method.params:
+            if isinstance(value, outpath):
+                out_root = value
         outputs = {}
         wc_expand = self.rule.wildcards["expand"]
         for key, val in results.items():
-            outputs[key] = {"value": [val.as_posix()]}
-            if isinstance(val, folderpath):
-                outputs[key]["type"] = "Directory"
-                outputs[key]["value"] = [val.parent.as_posix()]
-            else:
-                outputs[key]["type"] = "File"
+            try:
+                out_value = val.relative_to(out_root).as_posix()
+            except ValueError:
+                out_value = val.as_posix()
+            out_eval = val.as_posix()
+            out_type = "File"
             if self.input_wildcards:
                 # This is for explode (n-to-n) methods.
                 # We dont want every possible output value here
                 # only replace {wildcard} by CWL-style $(input.wildcard)
                 for wc in self.input_wildcards:
                     wc = wc.split("_")[0]
-                    outputs[key]["value"] = [
-                        item.replace(("{" + f"{wc}" + "}"), f"$(inputs.{wc}_wc)")
-                        for item in outputs[key]["value"]
-                    ]
+                    out_value = out_value.replace(
+                        ("{" + f"{wc}" + "}"), f"$(inputs.{wc}_wc)"
+                    )
+                    out_eval = out_eval.replace(
+                        ("{" + f"{wc}" + "}"), f"$(inputs.{wc}_wc)"
+                    )
             if wc_expand and any(get_wildcards(val, wc_expand)):
                 # This is for expand (1-to-n) methods
                 # Here we want every possible value for the expand wildcards
                 wc_dict = self.rule.method.expand_wildcards
                 wc_values = list(product(*wc_dict.values()))
-                # output[key]["value"] is a singleton list before filling in wildcard values
-                outputs[key]["value"] = [
-                    outputs[key]["value"][0].format(**dict(zip(wc_expand, wc)))
-                    for wc in wc_values
+                out_value = [
+                    out_value.format(**dict(zip(wc_expand, wc))) for wc in wc_values
                 ]
-                outputs[key]["type"] += "[]"
+                out_eval = [
+                    out_eval.format(**dict(zip(wc_expand, wc))) for wc in wc_values
+                ]
+                out_type += "[]"
+            if not isinstance(out_value, list):
+                out_value = [out_value]
+            if not isinstance(out_eval, list):
+                out_eval = [out_eval]
+            outputs[key] = {
+                "type": out_type,
+                "value": out_value,
+                "eval": out_eval,
+            }
+            if isinstance(val, folderpath):
+                outputs[key + "_dir"] = {
+                    "type": out_type.replace("File", "Directory"),
+                    "value": [Path(out).parent.as_posix() for out in out_value],
+                    "eval": [Path(out).parent.as_posix() for out in out_eval],
+                }
+                if "[]" in out_type and len(set(outputs[key + "_dir"]["value"])) == 1:
+                    outputs[key + "_dir"]["value"] = list(
+                        set(outputs[key + "_dir"]["value"])
+                    )
+                    outputs[key + "_dir"]["eval"] = list(
+                        set(outputs[key + "_dir"]["eval"])
+                    )
+                    outputs[key + "_dir"]["type"] = outputs[key + "_dir"][
+                        "type"
+                    ].replace("[]", "")
 
         self._output = outputs
 
@@ -217,6 +256,8 @@ class JinjaCWLWorkflow:
                 for key in ins:
                     if key in list(self.output.keys()):
                         ins[key]["source"] = self.output[key]["outputSource"]
+                    if key in step.input_scatter and "_wc" not in key:
+                        ins[key]["type"] += "[]"
                 input_dict.update(ins)
 
         # Delete any inputs with sources to other steps
@@ -258,13 +299,14 @@ class JinjaCWLWorkflow:
 
         # Fetch all inputs with relevant wildcard
         for key, info in ins.items():
-            if info["type"] == "File":
+            if info["type"] == "File" or info["type"] == "Directory":
                 val = info["value"]["path"]
             elif "value" in info:
                 val = info["value"]
             else:
                 continue
             if get_wildcards(val, wc):
+                print(f"step: {self.id}, input: {key}, value: {val}")
                 scatters.append(key)
                 if "[]" in info["type"]:
                     self._input[key]["type"] = info["type"].replace("[]", "")
@@ -302,5 +344,4 @@ class JinjaCWLWorkflow:
                     val = scatter_vals[scatter_keys.index(key)]
                     if not any(get_wildcards(val, rem_wc)):
                         step.input_scatter.pop(step.input_scatter.index(key))
-
         self._input_scatter = scatters

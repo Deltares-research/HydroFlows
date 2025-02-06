@@ -229,6 +229,7 @@ class Workflow:
             }
         if dryrun:
             input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
+            input_dict["touch_output"] = {"type": "boolean", "value": True}
 
         # Write CWL file for workflow
         cwl_workflow = JinjaCWLWorkflow([JinjaCWLRule(r) for r in self.rules])
@@ -246,6 +247,25 @@ class Workflow:
         config = {key: value["value"] for key, value in input_dict.items()}
         with open(configfile, "w") as f:
             yaml.dump(config, f)
+
+        # For dryrun, touch missing input files
+        if dryrun:
+            for _, info in config.items():
+                if isinstance(info, dict):
+                    fn = Path(info["path"])
+                    if not fn.is_absolute():
+                        fn = self.root / fn
+                    if not fn.exists():
+                        fn.parent.mkdir(parents=True)
+                        fn.touch()
+                elif isinstance(info, list) and all(isinstance(x, dict) for x in info):
+                    for x in info:
+                        fn = Path(x["path"])
+                        if not fn.is_absolute():
+                            fn = self.root / fn
+                        if not fn.exists():
+                            fn.parent.mkdir(parents=True, exist_ok=True)
+                            fn.touch()
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""

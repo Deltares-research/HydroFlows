@@ -59,11 +59,13 @@ class Output(Parameters):
         opt = configread(self.input.config)
         # set optional output paths based on config
         if "setup_subgrid" in opt:
-            self.sfincs_subgrid_dep = (
+            self.sfincs_subgrid_dep = Path(
                 self.sfincs_inp.parent / "subgrid" / "dep_subgrid.tif"
             )
         if "setup_river_inflow" in opt:
-            self.sfincs_src_points = self.sfincs_inp.parent / "gis" / "src.geojson"
+            self.sfincs_src_points = Path(
+                self.sfincs_inp.parent / "gis" / "src.geojson"
+            )
         return self
 
 

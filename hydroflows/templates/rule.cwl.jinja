@@ -19,12 +19,14 @@ inputs:
     {% for key,value in rule.input.items() %}
     {{key}}:
         type: {{value.type}}
+        {%if "_dir" not in key%}
         inputBinding:
             prefix: {{key}}=
             separate: false
             {% if value.separator %}
             itemSeparator: {{value.separator}}
             {% endif %}
+        {%endif%}
     {% endfor %}
     {% if rule.input_wildcards %}
     {% for wc in rule.input_wildcards%}
@@ -38,20 +40,26 @@ inputs:
             prefix: --dryrun
             position: 1
         default: false
+    touch_output:
+        type: boolean
+        inputBinding:
+            prefix: --touch-output
+            position: 2
+        default: false
 
 outputs:
-    {% for key,value in rule.output.items()%}
+    {% for key,info in rule.output.items()%}
     {{key}}:
-        type: {{value.type}}
+        type: {{info.type}}
         outputBinding:
             glob:
-            {% for item in value.value%}
+            {% for item in info.value%}
             - "{{item}}"
             {% endfor %}
             outputEval: |
                 ${
-                    {% for item in value.value%}
-                    self[{{loop.index0}}].basename = "{{item}}";
+                    {% for item in info.eval%}
+                    self[{{loop.index0}}].basename = "{{item.replace("$(","\"+").replace(")", "+\"")}}";
                     {% endfor %}
                     return self
                 }

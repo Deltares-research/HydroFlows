@@ -1,5 +1,5 @@
 """SFINCS run method."""
-
+import logging
 import platform
 import subprocess
 from pathlib import Path
@@ -7,12 +7,14 @@ from typing import Literal, Optional
 
 from pydantic import model_validator
 
-from hydroflows._typing import FolderPath
+from hydroflows._typing import FolderPath, OutPath
 from hydroflows.methods.sfincs.sfincs_utils import get_sfincs_basemodel_root
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsRun"]
+
+logger = logging.getLogger(__name__)
 
 
 class Input(Parameters):
@@ -54,6 +56,9 @@ class Params(Parameters):
 
     docker_tag: str = "sfincs-v2.1.1-Dollerup-Release"
     """The Docker tag to specify the version of the Docker image to use."""
+
+    out_root: OutPath
+    """Root folder in which outputs are created."""
 
     @model_validator(mode="after")
     def check_run_method(self) -> None:
@@ -101,13 +106,17 @@ class SfincsRun(Method):
         :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
         :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
         """
+        self.input: Input = Input(sfincs_inp=sfincs_inp)
+
+        if "out_root" in params:
+            logger.warning("Param out_root will be overwritten.", stacklevel=1)
+        params["out_root"] = self.input.sfincs_inp.parent
+
         self.params: Params = Params(
             sfincs_exe=sfincs_exe, run_method=run_method, **params
         )
-        self.input: Input = Input(sfincs_inp=sfincs_inp)
-        self.output: Output = Output(
-            sfincs_map=self.input.sfincs_inp.parent / "sfincs_map.nc"
-        )
+
+        self.output: Output = Output(sfincs_map=self.params.out_root / "sfincs_map.nc")
 
     def run(self) -> None:
         """Run the SfincsRun method."""
