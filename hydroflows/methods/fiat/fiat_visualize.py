@@ -155,9 +155,7 @@ class FIATVisualize(Method):
         """Run the FIATVisualize method."""
         # Get return periods
         config = toml.load(self.input.fiat_cfg)
-        if (
-            "return_periods" in config["hazard"].keys()
-        ):  # NOTE Is there always rp in settings.toml and just empty for single event?
+        if config["hazard"]["risk"]:
             rp = config["hazard"]["return_periods"]
             mode = "risk"
         else:
@@ -337,6 +335,7 @@ def create_output_map(
             output_path=Path(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_name}"
             ),
+            aggr_names=aggregation_areas,
         )
     # Create roads output
     if Path(spatial_joins_cfg.parent / "exposure" / "roads.gpkg").exists():
@@ -583,7 +582,10 @@ def add_road_infometrics(config_metrics: dict) -> dict:
 
 
 def create_total_damage_figure(
-    region: Path, gpd_aggregated_damages: gpd.GeoDataFrame, output_path: Path
+    region: Path,
+    gpd_aggregated_damages: gpd.GeoDataFrame,
+    output_path: Path,
+    aggr_names: list,
 ):
     """
     Create a total damage figure for the aggregated FIAT results dataframe.
@@ -596,6 +598,8 @@ def create_total_damage_figure(
         The GeoDataFrame of the aggregated damages.
     output_path : Path
         The file path to store the output file.
+    aggr_names: list
+
     """
     try:
         import contextily as ctx
@@ -603,6 +607,8 @@ def create_total_damage_figure(
         pass
 
     web_crs = "EPSG:3857"
+    aggr_labels = []
+    [aggr_labels.append(aggr["field_name"]) for aggr in aggr_names]
     gpd_aggregated_damages = gpd_aggregated_damages.to_crs(web_crs)
     crs = ccrs.epsg(gpd_aggregated_damages.crs.to_epsg())
     region_gdf = gpd.read_file(region)
@@ -611,13 +617,13 @@ def create_total_damage_figure(
     buffer = 2000
     bounds = np.array(bounds) + np.array([-buffer, -buffer, buffer, buffer])
     extent = np.array(bounds)[[0, 2, 1, 3]]
-    damages_rp = [
+    damages = [
         col
         for col in gpd_aggregated_damages.columns
-        if col not in ["geometry", "default_aggregation"]
+        if col not in ["geometry"] and col not in aggr_labels
     ]
 
-    for column in damages_rp:
+    for column in damages:
         fig = plt.figure(figsize=(12, 7))
         ax = plt.subplot(projection=crs)
         ax.set_extent(extent, crs=crs)
