@@ -168,6 +168,8 @@ class FIATVisualize(Method):
                 Path(self.input.fiat_output_csv.parent / "images"),
             )
 
+        # Get damage unit (currency)
+        damage_unit = config["exposure"]["damage_unit"]
         # Write the metrics to file
         if mode == "risk":
             infographics_template = self.params.infographics_template_risk
@@ -229,6 +231,7 @@ class FIATVisualize(Method):
             self.params.scenario_name,
             self.output.fiat_infometrics,
             self.input.fiat_output_csv,
+            damage_unit,
         )
 
         # Write the infographic
@@ -278,6 +281,7 @@ def create_output_map(
     event_name: str,
     infometrics_output: Path,
     fiat_output: Path,
+    damage_unit: str = "$",
 ):
     """Create vector and image output of the damages per single event or return period.
 
@@ -336,6 +340,7 @@ def create_output_map(
                 fn_aggregated_metrics / f"{name}_total_damages_{event_name}"
             ),
             aggr_names=aggregation_areas,
+            damage_unit=damage_unit,
         )
     # Create roads output
     if Path(spatial_joins_cfg.parent / "exposure" / "roads.gpkg").exists():
@@ -586,6 +591,7 @@ def create_total_damage_figure(
     gpd_aggregated_damages: gpd.GeoDataFrame,
     output_path: Path,
     aggr_names: list,
+    damage_unit: str = "$",
 ):
     """
     Create a total damage figure for the aggregated FIAT results dataframe.
@@ -599,6 +605,8 @@ def create_total_damage_figure(
     output_path : Path
         The file path to store the output file.
     aggr_names: list
+    damage_unit: str
+        The currency of the damages. Default is set to USD$.
 
     """
     try:
@@ -653,7 +661,7 @@ def create_total_damage_figure(
             ),
         )
         cbar = fig.colorbar(sm, ax=ax, shrink=0.75, orientation="vertical")
-        cbar.set_label(f"{column} [$]")
+        cbar.set_label(f"{column} {damage_unit}")
 
         # Add a region plot in case there is one
         region_gdf.plot(
