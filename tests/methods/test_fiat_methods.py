@@ -94,6 +94,10 @@ def test_fiat_visualize_risk_event(
         fiat_cached_model / "simulations" / "pluvial_events" / "output" / "output.csv"
     )
     base_fiat_model = fiat_output.parent.parent.parent.parent
+    fiat_cfg = Path(fiat_output.parent.parent / "settings.toml")
+    fiat_spatial_joins = Path(
+        fiat_output.parent.parent.parent.parent / "spatial_joins.toml"
+    )
 
     # Remove output files if already exist
     mandatory_output_files = ["output.csv", "spatial.gpkg", "fiat.log"]
@@ -108,9 +112,9 @@ def test_fiat_visualize_risk_event(
 
     # Visualize output
     rule = FIATVisualize(
-        fiat_output=fiat_output,
-        event_set_file=event_set_file,
-        base_fiat_model=base_fiat_model,
+        fiat_output_csv=fiat_output,
+        fiat_cfg=fiat_cfg,
+        spatial_joins_cfg=fiat_spatial_joins,
     )
     rule.run_with_checks()
     output_files = os.listdir(fiat_output.parent)
