@@ -205,6 +205,10 @@ class FIATVisualize(Method):
             ) as f:
                 toml.dump(infometrics_cfg, f)
 
+            shutil.copy(
+                self.params.infographics_template,
+                Path(self.input.fiat_output_csv.parent),
+            )
             metrics_writer = MetricsFileWriter(
                 Path(self.input.fiat_output_csv.parent / "infometrics_config.toml")
             )
