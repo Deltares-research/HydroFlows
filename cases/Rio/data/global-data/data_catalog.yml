@@ -1,5 +1,3 @@
-meta:
-  root: rio\data\global-data
 esa_worldcover:
   data_type: RasterDataset
   path: esa_worldcover.tif
@@ -113,3 +111,9 @@ osm_landareas:
     source_url: https://osmdata.openstreetmap.de/data/coastlines.html
     source_version: 1.0
   crs: 4326
+osm_water:
+  data_type: GeoDataFrame
+  path: OSM/OSM_waterway_filtered.gpkg
+osm_water_poly:
+  data_type: GeoDataFrame
+  path: OSM/OSM_water_poly.gpkg
