@@ -1,5 +1,3 @@
-meta:
-  root: p:\11209169-003-up2030\cases\rio\data\local-data
 local_DTM_1m:
   data_type: RasterDataset
   path: DEM/MDT_Lidar_1m1-001.tif
