@@ -24,17 +24,13 @@ class Input(Parameters):
     discharge_nc: Optional[Path] = None
     """The file path to the discharge time series in NetCDF format which is used
     to derive historical events. This file should contain a time and an index
-    dimension for several (gauge) locations.
+    dimension, specified by the `discharge_index_dim` parameter, for
+    several (gauge) locations.
 
     The discharge time series can be produced either by the Wflow toolchain (via the
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowBuild`,
     :py:class:`hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`, and
     :py:class:`hydroflows.methods.wflow.wflow_run.WflowRun` methods) or can be directly supplied by the user.
-
-    In case of forcing the historical discharge events in Sfincs using the
-    :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
-    the index dimension should correspond to the index of the Sfincs source points, providing the corresponding
-    time series at specific locations.
     """
 
     precip_nc: Optional[Path] = None
@@ -50,16 +46,11 @@ class Input(Parameters):
     """
     The file path to the water level time series in NetCDF format which are used
     to derive the historical events of interest. This file should contain a time and an index
-    dimension for several locations.
+    dimension specified by the `water_level_index_dim` parameter for several locations.
 
     The water level time series can be produced either after processing GTSM tide and surge data
     (can be obtained by the :py:class:`hydroflows.methods.coastal.get_gtsm_data.GetGTSMData` method)
     or can be directly supplied by the user.
-
-    In case of forcing the historical water level events in Sfincs using the
-    :py:class:`hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
-    the index dimension should correspond to the index of the Sfincs bnd points, providing the corresponding
-    time series at specific locations.
     """
 
     @model_validator(mode="after")
@@ -99,8 +90,8 @@ class Params(Parameters):
     }
     """
 
-    event_root: Path
-    """Root folder to save the derived historical events."""
+    output_dir: Path
+    """Directory to save the derived historical events."""
 
     wildcard: str = "event"
     """The wildcard key for expansion over the historical events."""
@@ -138,7 +129,7 @@ class HistoricalEvents(ExpandMethod):
         discharge_nc: Path = None,
         precip_nc: Path = None,
         water_level_nc: Path = None,
-        event_root: Path = Path("data/historical_events"),
+        output_dir: Path = Path("data/historical_events"),
         wildcard: str = "event",
         **params,
     ) -> None:
@@ -155,8 +146,8 @@ class HistoricalEvents(ExpandMethod):
         events_dates : Dict
             The dictionary mapping event names to their start and end date/time information. For example,
             events_dates = {"p_event": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"}.
-        event_root : Path, optional
-            The root folder to save the derived historical events, by default "data/historical_events".
+        output_dir : Path, optional
+            The directory where the derived historical events will be saved, by default "data/historical_events".
         wildcard : str, optional
             The wildcard key for expansion over the historical events, by default "event".
         **params
@@ -169,7 +160,7 @@ class HistoricalEvents(ExpandMethod):
         :py:class:`HistoricalEvents Params <hydroflows.methods.historical_events.historical_events.Params>`
         """
         self.params: Params = Params(
-            event_root=event_root,
+            output_dir=output_dir,
             events_dates=events_dates,
             wildcard=wildcard,
             **params,
@@ -182,8 +173,8 @@ class HistoricalEvents(ExpandMethod):
 
         wc = "{" + self.params.wildcard + "}"
         self.output: Output = Output(
-            event_yaml=self.params.event_root / f"{wc}.yml",
-            event_set_yaml=self.params.event_root / "historical_events.yml",
+            event_yaml=self.params.output_dir / f"{wc}.yml",
+            event_set_yaml=self.params.output_dir / "historical_events.yml",
         )
 
         self.set_expand_wildcard(wildcard, list(self.params.events_dates.keys()))
