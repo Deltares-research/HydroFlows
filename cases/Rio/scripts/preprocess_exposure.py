@@ -197,7 +197,6 @@ def create_entry(path, crs):
 
 # Dict
 yaml_dict = {
-    "meta": {"root": str(data_source)},
     "preprocessed_occupaction_jrc": create_entry(
         fn_jrc,
         occupancy_gdf_jrc.crs,
@@ -216,3 +215,5 @@ yaml_dict = {
 catalog_path = data_source / "data_catalog.yml"
 with open(catalog_path, "w") as yaml_file:
     yaml.dump(yaml_dict, yaml_file, default_flow_style=False, sort_keys=False)
+
+# %%

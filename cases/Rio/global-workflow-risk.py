@@ -2,7 +2,6 @@
 
 # %%
 # Import packages
-import os
 import subprocess
 from pathlib import Path
 
@@ -18,9 +17,6 @@ pwd = Path(__file__).parent
 # Define variables
 name = "global"
 setup_root = Path(pwd, "setups", name)
-# Create the case directory
-setup_root.mkdir(exist_ok=True, parents=True)
-os.chdir(setup_root)
 # Setup the log file
 setuplog(path=setup_root / "hydroflows-logger-risk.log", level="DEBUG")
 
