@@ -64,6 +64,7 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 # Fiat build
 fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
+    ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
     fiat_root="models/fiat",
     catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
