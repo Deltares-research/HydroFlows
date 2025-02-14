@@ -256,7 +256,7 @@ def extract_climate_projections_statistics(
     scenario: str,
     members: List[str],
     model: str,
-    variables: List[str] = ["precip", "temp"],  # noqa: B006
+    variables: List[str] = ["precip", "temp", "pet"],  # noqa: B006
     pet_method: Optional[str] = "makkink",
     tdew_method: Optional[str] = "rh",
     compute_wind: bool = False,

@@ -11,10 +11,10 @@ Climate statistics
 .. autosummary::
     :toctree: ../_generated
 
-    monthly_climatology.MonthlyClimatolgy
-    monthly_climatology.Input
-    monthly_climatology.Params
-    monthly_climatology.Output
+    climatology.MonthlyClimatolgy
+    climatology.Input
+    climatology.Params
+    climatology.Output
 
 Climate factors gridded
 -----------------------
@@ -22,29 +22,7 @@ Climate factors gridded
 .. autosummary::
     :toctree: ../_generated
 
-    climate_change_factors.ClimateChangeFactors
-    climate_change_factors.Input
-    climate_change_factors.Params
-    climate_change_factors.Output
-
-Downscale climate data
-----------------------
-
-.. autosummary::
-    :toctree: ../_generated
-
-    downscale.DownscaleClimateDataset
-    downscale.Input
-    downscale.Params
-    downscale.Output
-
-Merge datasets
---------------
-
-.. autosummary::
-    :toctree: ../_generated
-
-    merge.MergeGriddedDatasets
-    merge.Input
-    merge.Params
-    merge.Output
+    change_factor.ClimateChangeFactors
+    change_factor.Input
+    change_factor.Params
+    change_factor.Output

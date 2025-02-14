@@ -3,8 +3,8 @@
 from pathlib import Path
 
 from hydroflows._typing import ListOfListOfInt
+from hydroflows.io import to_netcdf
 from hydroflows.methods.climate.grid_utils import get_expected_change_grid
-from hydroflows.methods.climate.utils import to_netcdf
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -61,6 +61,11 @@ class Params(Parameters):
     Name of the wildcard.
     """
 
+    convert_to_fraction: bool = True
+    """
+    Whether or not to convert the change factors from percentages to fractions.
+    """
+
     output_dir: Path
     """
     The output directory of the dataset.
@@ -111,13 +116,13 @@ class ClimateChangeFactors(ExpandMethod):
             The output directory of the change factor dataset.
         **params
             Additional parameters to pass to the ClimateChangeFactors instance.
-            See :py:class:`grid_change Params <hydroflows.methods.climate.grid_change.Params>`.
+            See :py:class:`change_factor Params <hydroflows.methods.climate.change_factor.Params>`.
 
         See Also
         --------
-        :py:class:`grid_change Input <~hydroflows.methods.climate.grid_change.Input>`
-        :py:class:`grid_change Output <~hydroflows.methods.climate.grid_change.Output>`
-        :py:class:`grid_change Params <~hydroflows.methods.climate.grid_change.Params>`
+        :py:class:`change_factor Input <~hydroflows.methods.climate.change_factor.Input>`
+        :py:class:`change_factor Output <~hydroflows.methods.climate.change_factor.Output>`
+        :py:class:`change_factor Params <~hydroflows.methods.climate.change_factor.Params>`
         """
         self.params: Params = Params(
             model=model,
@@ -152,6 +157,15 @@ class ClimateChangeFactors(ExpandMethod):
                 nc_future=self.input.future_climatology,
                 name_horizon=wc,
             )
+
+            # convert from percentage to fraction for variables that are not temperature
+            if self.params.convert_to_fraction:
+                for var in change_ds.data_vars:
+                    if var.startswith("temp"):
+                        continue
+                    change_ds[var] = 1 + change_ds[var] / 100
+                    change_ds[var].attrs["long_name"] = f"fraction change in {var}"
+                    change_ds[var].attrs["units"] = "-"
 
             to_netcdf(
                 change_ds,

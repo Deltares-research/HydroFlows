@@ -118,9 +118,11 @@ def cmip6_catalog(cmip6_data: Path):
 @pytest.fixture(scope="session")
 def cmip6_stats() -> Path:
     path = fetch_data("cmip6-stats")
-    assert Path(path, "stats").is_dir()
-    assert Path(path, "change").is_dir()
-    assert Path(path, "stats", "stats_NOAA-GFDL_GFDL-ESM4_historical.nc").is_file()
+    assert Path(path, "climatology").is_dir()
+    assert Path(path, "change_factor").is_dir()
+    assert Path(
+        path, "climatology", "climatology_NOAA-GFDL_GFDL-ESM4_historical.nc"
+    ).is_file()
     return path
 
 

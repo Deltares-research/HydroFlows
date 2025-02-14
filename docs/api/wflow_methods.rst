@@ -27,6 +27,17 @@ Wflow update config
    wflow_config.Params
    wflow_config.Output
 
+Wflow downscale
+---------------
+
+.. autosummary::
+    :toctree: ../_generated
+
+    wflow_downscale.WflowDownscale
+    wflow_downscale.Input
+    wflow_downscale.Params
+    wflow_downscale.Output
+
 Wflow update forcing
 --------------------
 

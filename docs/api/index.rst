@@ -74,6 +74,10 @@ General method
 
 .. include:: discharge_methods.rst
 
+.. _api_raster:
+
+.. include:: raster_methods.rst
+
 .. _api_wflow:
 
 .. include:: wflow_methods.rst

@@ -88,7 +88,9 @@ class WflowConfig(Method):
         Parameters
         ----------
         wflow_toml : Path
-           Path to the (current) wflow settings toml.
+            Path to the (current) wflow settings toml.
+        output_dir : Path
+            Path to the output directory where the new settings toml will be placed.
         **params
             Additional parameters to pass to the WflowConfig instance.
             See :py:class:`wflow_config Params <hydroflows.methods.wflow.wflow_config.Params>`.
@@ -140,7 +142,11 @@ class WflowConfig(Method):
         # Redirect paths to forcing and staticmaps
         for item in reset:
             value = get_config(cfg, item)
-            full_path = Path(old_parent, value)
+            full_path = Path(value)
+            if not full_path.is_absolute():
+                full_path = Path(old_parent, full_path)
+            else:
+                continue
             new_path = Path(relpath(full_path, new_parent))
             set_config(cfg, item, new_path.as_posix())
 

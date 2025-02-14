@@ -1,4 +1,6 @@
 """Utility functions for the wflow model."""
+
+import codecs
 import datetime
 from pathlib import Path
 
@@ -7,6 +9,7 @@ import cartopy.io.img_tiles as cimgt
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
+import toml
 import tomli
 import xarray as xr
 from dateutil.relativedelta import relativedelta
@@ -31,6 +34,24 @@ _ATTRS = {
     },
     "temp": {"standard_name": "temperature", "unit": "degree C", "color": "orange"},
 }
+
+
+def configread(
+    file: Path | str,
+):
+    """Read a config file into memory."""
+    with codecs.open(file, "r", encoding="utf-8") as f:
+        fdict = toml.load(f)
+    return fdict
+
+
+def configwrite(
+    config: dict,
+    out_file: Path,
+):
+    """Dump the config file to the drive."""
+    with codecs.open(out_file, "w", encoding="utf-8") as f:
+        toml.dump(config, f)
 
 
 def get_config(obj, *args, fallback=None):

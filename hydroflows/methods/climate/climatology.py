@@ -7,8 +7,8 @@ from typing import Literal
 from pydantic import ConfigDict, model_validator
 
 from hydroflows._typing import ListOfListOfInt, ListOfStr
+from hydroflows.io import to_netcdf
 from hydroflows.methods.climate.grid_utils import extract_climate_projections_statistics
-from hydroflows.methods.climate.utils import to_netcdf
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -138,13 +138,13 @@ class MonthlyClimatolgy(Method):
             The output directory of the climatology dataset.
         **params
             Additional parameters to pass to the MonthlyClimatolgy instance.
-            See :py:class:`monthly_climatology Params <hydroflows.methods.climate.monthly_climatology.Params>`.
+            See :py:class:`climatology Params <hydroflows.methods.climate.climatology.Params>`.
 
         See Also
         --------
-        :py:class:`monthly_climatology Input <~hydroflows.methods.climate.monthly_climatology.Input>`
-        :py:class:`monthly_climatology Output <~hydroflows.methods.climate.monthly_climatology.Output>`
-        :py:class:`monthly_climatology Params <~hydroflows.methods.climate.monthly_climatology.Params>`
+        :py:class:`climatology Input <~hydroflows.methods.climate.climatology.Input>`
+        :py:class:`climatology Output <~hydroflows.methods.climate.climatology.Output>`
+        :py:class:`climatology Params <~hydroflows.methods.climate.climatology.Params>`
         """
         self.input: Input = Input(region=region, catalog_path=catalog_path)
         if (
@@ -160,7 +160,7 @@ class MonthlyClimatolgy(Method):
             **params,
         )
         # post-fix required to avoid ambiguity in snakemake
-        pf = "-projection" if self.params.scenario != "historical" else ""
+        pf = "_future" if self.params.scenario != "historical" else ""
         file_name = f"climatology_{self.params.model}_{self.params.scenario}{pf}.nc"
         self.output: Output = Output(
             climatology=self.params.output_dir / file_name,

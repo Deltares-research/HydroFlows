@@ -5,8 +5,8 @@ from pathlib import Path
 from pydantic import Field, model_validator
 
 from hydroflows._typing import ListOfPath, WildcardPath
-from hydroflows.methods.climate.merge_utils import merge_raster_datasets
-from hydroflows.methods.climate.utils import to_netcdf
+from hydroflows.io import to_netcdf
+from hydroflows.methods.raster.merge_utils import merge_raster_datasets
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -107,13 +107,13 @@ class MergeGriddedDatasets(ReduceMethod):
             This dimension will be added if not present in the datasets.
         **params
             Additional parameters to pass to the MergeGriddedDatasets instance.
-            See :py:class:`merge Params <hydroflows.methods.climate.merge.Params>`.
+            See :py:class:`merge Params <hydroflows.methods.raster.merge.Params>`.
 
         See Also
         --------
-        :py:class:`merge Input <~hydroflows.methods.climate.merge.Input>`
-        :py:class:`merge Output <~hydroflows.methods.climate.merge.Output>`
-        :py:class:`merge Params <~hydroflows.methods.climate.merge.Params>`
+        :py:class:`merge Input <~hydroflows.methods.raster.merge.Input>`
+        :py:class:`merge Output <~hydroflows.methods.raster.merge.Output>`
+        :py:class:`merge Params <~hydroflows.methods.raster.merge.Params>`
         """
         self.input: Input = Input(datasets=datasets)
         self.params: Params = Params(

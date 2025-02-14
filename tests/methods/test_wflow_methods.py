@@ -2,12 +2,14 @@ import platform
 from pathlib import Path
 
 import pytest
+import xarray as xr
 from hydromt.config import configread
 from hydromt_wflow import WflowModel
 
 from hydroflows.methods.wflow import (
     WflowBuild,
     WflowConfig,
+    WflowDownscale,
     WflowRun,
     WflowUpdateForcing,
 )
@@ -54,7 +56,7 @@ def test_wflow_config(wflow_sim_model: Path):
         ri_input__more_forcing=Path(
             wflow_sim_model, "inmaps", "forcing_20140101.nc"
         ),  # Because why not
-        data_root=root,
+        output_dir=root,
         some_var="yes",
     )
 
@@ -70,6 +72,31 @@ def test_wflow_config(wflow_sim_model: Path):
     cfg = configread(rule.output.wflow_out_toml)
     assert cfg["some_var"] == "yes"
     assert cfg["input"]["more_forcing"] == "../default/inmaps/forcing_20140101.nc"
+
+
+@pytest.mark.requires_test_data()
+def test_wflow_downscale(
+    tmp_path: Path,
+    cmip6_stats: list,
+    wflow_cached_model: Path,
+):
+    rule = WflowDownscale(
+        dataset=Path(
+            cmip6_stats,
+            "change_factor",
+            "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
+        ),
+        target_grid=Path(wflow_cached_model, "staticmaps.nc"),
+        wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
+        output_dir=tmp_path,
+    )
+    rule.run_with_checks()
+
+    assert rule.output.downscaled.is_file()
+    ds = xr.open_dataset(rule.output.downscaled)
+    assert int(ds["precip"].values.mean() * 100) == 102
+    assert ds["latitude"].size == 200
+    ds = None
 
 
 @pytest.mark.requires_test_data()

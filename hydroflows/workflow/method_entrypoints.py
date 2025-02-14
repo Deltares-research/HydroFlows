@@ -10,10 +10,9 @@ if TYPE_CHECKING:
 __all__ = ["METHODS"]
 
 __eps__ = {
-    "climate_change_factors": "hydroflows.methods.climate.climate_change_factors:ClimateChangeFactors",
-    "monthly_climatology": "hydroflows.methods.climate.monthly_climatology:MonthlyClimatolgy",
-    "downscale_climate_datasets": "hydroflows.methods.climate.downscale:DownscaleClimateDataset",
-    "merge_gridded_datasets": "hydroflows.methods.climate.merge:MergeGriddedDatasets",
+    "climate_change_factors": "hydroflows.methods.climate.change_factor:ClimateChangeFactors",
+    "monthly_climatology": "hydroflows.methods.climate.climatology:MonthlyClimatolgy",
+    "merge_gridded_datasets": "hydroflows.methods.raster.merge:MergeGriddedDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
     "fiat_update_hazard": "hydroflows.methods.fiat.fiat_update:FIATUpdateHazard",
@@ -30,6 +29,7 @@ __eps__ = {
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_config": "hydroflows.methods.wflow.wflow_config:WflowConfig",
+    "wflow_downscale": "hydroflows.methods.wflow.wflow_downscale:WflowDownscale",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
     "fluvial_historical_events": "hydroflows.methods.discharge.fluvial_historical_events:FluvialHistoricalEvents",
