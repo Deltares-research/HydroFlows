@@ -4,7 +4,13 @@ from pathlib import Path
 import pytest
 from hydromt_wflow import WflowModel
 
-from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
+from hydroflows.methods.wflow import (
+    WflowBuild,
+    WflowConfig,
+    WflowRun,
+    WflowUpdateForcing,
+)
+from hydroflows.methods.wflow.wflow_utils import configread
 
 
 @pytest.mark.requires_test_data()
@@ -35,6 +41,35 @@ def test_wflow_build(
     # FIXME: add params gauges, then uncomment this
     # fn_geoms = Path(fn_wflow_toml.parent, "staticgeoms", "gauges_locs.geojson")
     # assert fn_geoms.exists()
+
+
+@pytest.mark.requires_test_data()
+def test_wflow_config(wflow_sim_model: Path):
+    wflow_toml = Path(wflow_sim_model, "wflow_sbm.toml")
+    root = Path(wflow_sim_model, "..", "new")
+
+    # Create instance of the method
+    rule = WflowConfig(
+        wflow_toml=wflow_toml,
+        ri_input__more_forcing=Path(
+            wflow_sim_model, "inmaps", "forcing_20140101.nc"
+        ),  # Because why not
+        output_dir=root,
+        some_var="yes",
+    )
+
+    # Assert the settings
+    assert "ri_input__more_forcing" in rule.input.to_dict()
+    assert "some_var" in rule.params.to_dict()
+
+    # Run the method
+    rule.run_with_checks()
+
+    # Assert output
+    assert rule.output.wflow_out_toml.is_file()
+    cfg = configread(rule.output.wflow_out_toml)
+    assert cfg["some_var"] == "yes"
+    assert cfg["input"]["more_forcing"] == "../default/inmaps/forcing_20140101.nc"
 
 
 @pytest.mark.requires_test_data()
