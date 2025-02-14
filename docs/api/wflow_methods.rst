@@ -16,17 +16,6 @@ Wflow build model
    wflow_build.Params
    wflow_build.Output
 
-Wflow update config
--------------------
-
-.. autosummary::
-   :toctree: ../_generated
-
-   wflow_config.WflowConfig
-   wflow_config.Input
-   wflow_config.Params
-   wflow_config.Output
-
 Wflow downscale
 ---------------
 

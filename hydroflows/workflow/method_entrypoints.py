@@ -28,7 +28,6 @@ __eps__ = {
     "sfincs_downscale": "hydroflows.methods.sfincs.sfincs_downscale:SfincsDownscale",
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
-    "wflow_config": "hydroflows.methods.wflow.wflow_config:WflowConfig",
     "wflow_downscale": "hydroflows.methods.wflow.wflow_downscale:WflowDownscale",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
