@@ -180,9 +180,12 @@ hydromt_wflow = ">=0.6,<1.0"
 xarray = "==2024.3.0"
 dask = "==2024.11.2"
 
+[tool.pixi.feature.doc.dependencies]
+nbsphinx = "*"
+
 [tool.pixi.feature.extra.dependencies]
 snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
-graphviz = {version = "*", channel= "conda-forge" }  # conda-forge to get dot executable
+graphviz = "*" # conda-forge to get dot executable
 
 [tool.pixi.feature.models.dependencies]
 delft_fiat = ">=0.2.1"

@@ -1,0 +1,4 @@
+.. _wildcards:
+
+Wildcards
+=========

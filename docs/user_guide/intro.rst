@@ -3,36 +3,47 @@
 User guide
 ==========
 
-The user guide describes all approaches available to a user of HydroFlows to go from a set of pre-stored and described
-environmental datasets, to workflows that translate these datasets into interconnected models, forecast products,
-risk calculations and outputs and so on. A "workflow" is an interconnected set of operations, also called "rules"
-that individually take one step in the translation from one or several input datasets into a certain output dataset.
+HydroFlows currently consists of two main components: the workflow framework and the method library.
+The workflow framework is used to create workflows using python scripts and parse these to a workflow engine like Snakemake_.
+The method library contains a collection of methods that can be used as building blocks in a workflow.
 
-This can be done using a command-line interface (CLI), or an application programming interface (API). We strongly
-recommend to use the API, and write your workflows in scripts. The CLI is more easy to use and does not require
-extensive programming experience, but does not offer the same flexibility.
+Workflow framework
+------------------
 
-In some places in this user guide you can navigate between API and CLI instructions by selecting one of two tabs. In
-this way, as a user, you are not bothered by details that you are not interested in. Try it out below!
+In HydroFlows, a :ref:`workflow` consists of methods that are chained together by connecting the file-based output of one method to the input of another.
+Users can use one of the many methods available in the library or create methods of their own.
+At initialization of a :ref:`method` its input, output and parameters are validated.
+Using the concept of :ref:`wildcards`, a method can be applied to multiple input files in parallel or reduce over multiple input files.
+When adding the method to the workflow, a :ref:`rule` is created which evaluates all wildcards and sets up the connections between the methods.
+In addition, some validation is done on the workflow to ensure it is correct.
+At this point, the workflow can test run, executed or parsed to a workflow engine.
+More information on how to use HydroFlows can be found in the :ref:`workflow_framework` section.
 
-.. tab-set::
+Method library
+--------------
 
-    .. tab-item:: API
+Methods are the building blocks of a workflow in HydroFlows.
+Currently, the available methods in HydroFlows are focused on flood risk assessments.
+An overview of the available methods can be found in the :ref:`method_library` section.
 
-        In this tab, you will be able to read and find examples of the usage of the Application Programming Interface
-        (API).
+Add your own methods
+--------------------
 
-    .. tab-item:: CLI
+Simple scripts can directly be added to a workflow using the `ScriptMethod` method, however this does not provide any validation of the input, output, or parameters.
+To develop your own methods which do get validated, users should use the HydroFlows `Method` class.
+This class uses the `pydantic`_ library to validate the `input`, `output`, and `params` of the method.
+Users need to subclass the `Method` class and define the `input`, `output`, and `params` of the method as pydantic models.
+Each method should also have a `run` method where the actual processing is done.
+For more information on how to create your own methods, see the :ref:`add_own_methods` section.
 
-        In this tab, you will be able to read and find examples of the usage of the command-line interface.
-
-From here onwards, we will dive into the details. We first give a general description of the CLI and API, and then go
-into the different functionalities for workflows, events, and detailed available methods.
 
 .. toctree::
-   :caption: Contents:
    :maxdepth: 2
 
-   api.rst
-   cli.rst
-   create.rst
+   workflow_framework/intro
+   method_library/intro
+   add_own_methods/intro
+   examples/intro
+
+
+.. _pydantic: https://docs.pydantic.dev/latest/

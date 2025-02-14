@@ -1,7 +1,7 @@
-.. _ug_cli:
+.. _cli:
 
-Command-line interface
-----------------------
+Command-line Interface
+======================
 
 The command line interface is meant to provide an easy, reproducible and streamlined approach to generate
 simple workflows from the existing set of methods available in HydroFlows, and export these to a language of choice.
