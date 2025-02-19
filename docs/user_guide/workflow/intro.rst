@@ -1,6 +1,6 @@
 .. _workflow_framework:
 
-Workflow framework
+Creating workflows
 ==================
 
 .. toctree::
@@ -8,6 +8,7 @@ Workflow framework
 
    workflow
    method
+   add_own_method
    rule
    wildcards
    cli

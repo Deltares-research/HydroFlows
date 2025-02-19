@@ -182,6 +182,7 @@ dask = "==2024.11.2"
 
 [tool.pixi.feature.doc.dependencies]
 nbsphinx = "*"
+papermill = "*"
 
 [tool.pixi.feature.extra.dependencies]
 snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
