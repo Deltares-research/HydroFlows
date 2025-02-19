@@ -25,7 +25,7 @@ def test_historical_events(
     # Testing multiple forcings
     hist_events_multiple = HistoricalEvents(
         discharge_nc=tmp_disch_time_series_nc,
-        precip_nc=tmp_precip_time_series_nc,
+        precip_nc=tmp_precip_time_series_nc,  # Note: outside of the event period
         water_level_nc=temp_waterlevel_timeseries_nc,
         events_dates=events_dates,
         water_level_index_dim="stations",

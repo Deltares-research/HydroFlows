@@ -229,9 +229,10 @@ class HistoricalEvents(ExpandMethod):
                 if event_data.size == 0:
                     logger.warning(
                         f"Time slice for event '{event_name}' (for driver {event_type} from {event_start_time} to {event_end_time}) "
-                        "returns no data.",
+                        "returns no data. Skipping this driver for this event.",
                         stacklevel=2,
                     )
+                    continue
                 else:
                     first_date = pd.to_datetime(event_data[time_dim][0].values)
                     last_date = pd.to_datetime(event_data[time_dim][-1].values)
