@@ -7,7 +7,9 @@ Method library
 Flood risk workflows
 --------------------
 
-# add workflow diagram here
+.. figure:: ../../_static/hydroflows_workflows.svg
+    :alt: HydroFlows Workflows
+    :align: center
 
 
 
