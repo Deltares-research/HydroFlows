@@ -16,8 +16,8 @@ __all__ = ["CoastalTidalAnalysis"]
 class Input(Parameters):
     """Input parameters for the :py:class:`CoastalTidalAnalysis` method."""
 
-    waterlevel_timeseries: Path
-    """Path to waterlevel timeseries to derive tide and surge from."""
+    waterlevel_nc: Path
+    """Path to water level time series in NetCDF format whici is used to derive tide and surge."""
 
 
 class Output(Parameters):
@@ -50,12 +50,12 @@ class CoastalTidalAnalysis(Method):
     name: str = "coastal_tidal_analysis"
 
     _test_kwargs = {
-        "waterlevel_timeseries": Path("waterlevel.nc"),
+        "waterlevel_nc": Path("waterlevel.nc"),
     }
 
     def __init__(
         self,
-        waterlevel_timeseries: Path,
+        waterlevel_nc: Path,
         data_root: Path = Path("data/input"),
         **params,
     ) -> None:
@@ -74,7 +74,7 @@ class CoastalTidalAnalysis(Method):
         :py:class:`CoastalTidalAnalysis Output <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
         :py:class:`CoastalTidalAnalysis Params <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
         """
-        self.input: Input = Input(waterlevel_timeseries=waterlevel_timeseries)
+        self.input: Input = Input(waterlevel_nc=waterlevel_nc)
         self.params: Params = Params(data_root=data_root, **params)
 
         surge_out = self.params.data_root / "surge_timeseries.nc"
@@ -86,7 +86,7 @@ class CoastalTidalAnalysis(Method):
     def run(self) -> None:
         """Run CoastalTidalAnalysis method."""
         # Open waterlevel data
-        h = xr.open_dataarray(self.input.waterlevel_timeseries)
+        h = xr.open_dataarray(self.input.waterlevel_nc)
         h = h.squeeze()
         ts = pd.DataFrame({"values": h.to_series()})
 
