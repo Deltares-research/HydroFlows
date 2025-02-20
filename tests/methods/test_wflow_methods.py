@@ -50,7 +50,7 @@ def test_wflow_update_factors(
     wflow_cached_model: Path,
 ):
     rule = WflowUpdateChangeFactors(
-        dataset=Path(
+        change_factor_dataset=Path(
             cmip6_stats,
             "change_factor",
             "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
@@ -60,8 +60,8 @@ def test_wflow_update_factors(
     )
     rule.run_with_checks()
 
-    assert rule.output.downscaled.is_file()
-    ds = xr.open_dataset(rule.output.downscaled)
+    assert rule.output.wflow_change_factors.is_file()
+    ds = xr.open_dataset(rule.output.wflow_change_factors)
     assert int(ds["precip"].values.mean() * 100) == 102
     assert ds["latitude"].size == 200
     ds = None
