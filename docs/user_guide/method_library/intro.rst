@@ -9,7 +9,11 @@ Flood risk workflows
 
 
 HydroFlows provides a modular set of methods for flood risk analysis. These methods are designed to be compatible with each other, allowing seamless integration into typical
-flood risk workflows. These methods can be categorized into two main groups:
+flood risk workflows. However, each method can also be executed independently, as they offer valuable functionality on their own. An overview of the available methods in HydroFlows
+is provided in this section. For more details regarding specifc inputs, outputs, and parameters per ``Method``,
+please refer to the method documentation in the :ref:`api_reference` section.
+
+HydroFlows methods can be categorized into two main groups:
 
 1. **Data Methods** (orange blocks in Figure) - Handle data retrieval and postprocessing for coastal, rainfall, and discharge data, but also visualization (not included in the figure).
 2. **Model-Related Methods** (yellow and green blocks in Figure) - Building (model setup methods; yellow blocks), updating, running, and postprocessing (model methods; green blocks) of the supported models (i.e., SFINCS, Wflow, Delft-FIAT, FloodAdapt).
@@ -26,7 +30,7 @@ The postprocessing methods allow users to derive design events for coastal, rain
 Getting rainfall design events from the global `GPEX <https://www.sciencedirect.com/science/article/pii/S0022169423005000>`_ Intensity-Duration-Frequency (IDF)
 curve data is also supported with the :py:class:`~hydroflows.methods.rainfall.pluvial_design_events_GPEX.PluvialDesignEventsGPEX` method.
 
-Additionally, historical events can be extracted from time series data using the ``HistoricalEvents`` method,
+Additionally, historical events can be extracted from time series data using the :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents` method,
 while the impact of future climate conditions on existing coastal and rainfall timeseries can be estimated with the :py:class:`~hydroflows.methods.coastal.future_slr.FutureSLR`
 and :py:class:`~hydroflows.methods.rainfall.future_climate_rainfall.FutureClimateRainfall` methods,
 respectivelly. Finally, in the postprocessing methods, the user can validate (and visualize) a flood hzard map against floodmarks
@@ -56,21 +60,23 @@ An overview with the current supported data methods in HydroFlows is shown in th
         :py:class:`~hydroflows.methods.coastal.coastal_design_events.CoastalDesignEvents`
         :py:class:`~hydroflows.methods.coastal.coastal_design_events_from_rp_data.CoastalDesignEventFromRPData`
         :py:class:`~hydroflows.methods.coastal.future_slr.FutureSLR`
-        CoastalHistoricalEvents
+        :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
     * - Rainfall data
       - :py:class:`~hydroflows.methods.rainfall.get_ERA5_rainfall.GetERA5Rainfall`
       - :py:class:`~hydroflows.methods.rainfall.pluvial_design_events.PluvialDesignEvents`
         :py:class:`~hydroflows.methods.rainfall.pluvial_design_events_GPEX.PluvialDesignEventsGPEX`
         :py:class:`~hydroflows.methods.rainfall.future_climate_rainfall.FutureClimateRainfall`
-        PluvialHistoricalEvents
+        :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
     * - Discharge data
       - N.A.
       - :py:class:`~hydroflows.methods.discharge.fluvial_design_events.FluvialDesignEvents`
-        FluvialHistoricalEvents
+        :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
     * - Validation/Visualization
       - N.A.
       - :py:class:`~hydroflows.methods.hazard_validation.floodmarks.FloodmarksValidation`
 
+In addition to the methods listed above, the following methods are available: :py:class:`~hydroflows.methods.script.script_method.ScriptMethod` method to run a simple script (not including validatation of the input, outpur, or parameters),
+and :py:class:`~hydroflows.methods.catalog.merge_catalogs.MergeCatalogs` method for merging multiple data catalogs into a single catalog.
 
 Model-Related Methods
 ---------------------
@@ -89,7 +95,7 @@ The model setup methods include the :py:class:`~hydroflows.methods.sfincs.sfincs
 The model setup methods require an Area of Interest (AOI), a data catalog, and a HydroMT configuration file as input.
 The user should always start by setting up the SFINCS model. A coupling between the
 models is achieved since the :py:class:`~hydroflows.methods.sfincs.sfincs_build.SfincsBuild` outputs can be used as input for the :py:class:`~hydroflows.methods.fiat.fiat_build.FIATBuild` and
-:py:class:`~hydroflows.methods.wflow.wflow_build.WflowBuild` methods (see for example the `pluvial_fluvial_risk` notebook example).
+:py:class:`~hydroflows.methods.wflow.wflow_build.WflowBuild` methods (see the `pluvial_fluvial_risk` notebook in :ref:`examples` section).
 
 The general model methods include the updating, running, and postprocessing methods for SFINCS, FIAT and Wflow models.
 
@@ -102,20 +108,20 @@ This will generate an event catalog compatible with the :py:class:`~hydroflows.m
 For Sfincs, the user can update the model with the event sets derived from the data methods (pluvial, fluvial or coastal forcings)
 using the :py:class:`~hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method,
 run the model with the :py:class:`~hydroflows.methods.sfincs.sfincs_run.SfincsRun` method, and postprocess the model output with the :py:class:`~hydroflows.methods.sfincs.sfincs_postprocess.SfincsPostprocess`
-and :py:class:`~hydroflows.methods.sfincs.sfincs_downscale.SfincsDownscale` methods (see for example the `pluvial_hazard` notebook example)
+and :py:class:`~hydroflows.methods.sfincs.sfincs_downscale.SfincsDownscale` methods (see for example the `pluvial_hazard` notebook in in :ref:`examples`)
 
 For FIAT, the user can update the model with the postprocessed hazard maps derived from the :py:class:`~hydroflows.methods.sfincs.sfincs_postprocess.SfincsPostprocess`
 using the :py:class:`~hydroflows.methods.fiat.fiat_update.FIATUpdateHazard` method, run the model with the :py:class:`~hydroflows.methods.fiat.fiat_run.FIATRun` method,
-and postprocess the model output with the FIATVisualize method (in development; see for example the `pluvial_risk` notebook example).
+and postprocess the model output with the ``FIATVisualize`` method (in development; see for example the `pluvial_risk` notebook in :ref:`examples`).
 
 A FloodAdapt database can be created using the HydroFlows event set definition with
 the :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
 
-For more information on how to combine these methods for flood risk analysis using HydroFlows, refer to the examples section for typical workflows.
+For guidance on combining these methods for flood risk analysis with HydroFlows, see the :ref:`examples` section for typical workflows.
 
 An overview with the current supported model-related methods in HydroFlows is shown in the table below.
 
-.. list-table:: Table overview with methods
+.. list-table:: Table overview with model-related methods
     :header-rows: 1
     :widths: 40 15 40 10 50
 
@@ -123,7 +129,7 @@ An overview with the current supported model-related methods in HydroFlows is sh
       - build model
       - update model
       - run model
-      - postprocess model output
+      - postprocess model
     * - SFINCS (flood hazard)
       - :py:class:`~hydroflows.methods.sfincs.sfincs_build.SfincsBuild` :py:class:`~hydroflows.methods.sfincs.sfincs_region.SfincsRegion`
       - :py:class:`~hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing`
@@ -131,19 +137,16 @@ An overview with the current supported model-related methods in HydroFlows is sh
       - :py:class:`~hydroflows.methods.hazard_validation.floodmarks.FloodmarksValidation` :py:class:`~hydroflows.methods.sfincs.sfincs_downscale.SfincsDownscale` :py:class:`~hydroflows.methods.sfincs.sfincs_postprocess.SfincsPostprocess`
     * - Wflow (discharge boundary)
       - :py:class:`~hydroflows.methods.wflow.wflow_build.WflowBuild`
-      - :py:class:`~hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing` WflowDownscale ClimateChangeFactors
+      - :py:class:`~hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing` ``WflowDownscale`` ``ClimateChangeFactors``
       - :py:class:`~hydroflows.methods.wflow.wflow_run.WflowRun`
       - (see Data Methods)
     * - Delft-FIAT (impact)
       - :py:class:`~hydroflows.methods.fiat.fiat_build.FIATBuild`
       - :py:class:`~hydroflows.methods.fiat.fiat_update.FIATUpdateHazard`
       - :py:class:`~hydroflows.methods.fiat.fiat_run.FIATRun`
-      - FIATVisualize
+      - ``FIATVisualize``
     * - FloodAdapt
       - :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt`
       - N.A.
       - N.A.
       - N.A.
-
-In addition to the methods listed above, the following methods are available: :py:class:`~hydroflows.methods.script.script_method.ScriptMethod` method to run a simple script (not including validatation of the input, outpur, or parameters),
-and :py:class:`~hydroflows.methods.catalog.merge_catalogs.MergeCatalogs` method for merging multiple data catalogs into a single catalog.
