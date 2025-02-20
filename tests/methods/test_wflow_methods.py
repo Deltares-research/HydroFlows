@@ -7,8 +7,8 @@ from hydromt_wflow import WflowModel
 
 from hydroflows.methods.wflow import (
     WflowBuild,
-    WflowDownscale,
     WflowRun,
+    WflowUpdateChangeFactors,
     WflowUpdateForcing,
 )
 
@@ -44,18 +44,17 @@ def test_wflow_build(
 
 
 @pytest.mark.requires_test_data()
-def test_wflow_downscale(
+def test_wflow_update_factors(
     tmp_path: Path,
     cmip6_stats: list,
     wflow_cached_model: Path,
 ):
-    rule = WflowDownscale(
+    rule = WflowUpdateChangeFactors(
         dataset=Path(
             cmip6_stats,
             "change_factor",
             "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
         ),
-        target_grid=Path(wflow_cached_model, "staticmaps.nc"),
         wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
         output_dir=tmp_path,
     )

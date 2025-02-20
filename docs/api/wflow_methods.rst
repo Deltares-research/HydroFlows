@@ -16,16 +16,16 @@ Wflow build model
    wflow_build.Params
    wflow_build.Output
 
-Wflow downscale
----------------
+Wflow update change factors
+---------------------------
 
 .. autosummary::
     :toctree: ../_generated
 
-    wflow_downscale.WflowDownscale
-    wflow_downscale.Input
-    wflow_downscale.Params
-    wflow_downscale.Output
+    wflow_update_factors.WflowUpdateChangeFactors
+    wflow_update_factors.Input
+    wflow_update_factors.Params
+    wflow_update_factors.Output
 
 Wflow update forcing
 --------------------
