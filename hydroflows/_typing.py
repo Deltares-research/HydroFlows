@@ -71,7 +71,14 @@ WildcardPath = Annotated[
 
 EventDatesDict = Annotated[
     Dict[
-        str, TypedDict("EventDatesDict", {"startdate": datetime, "enddate": datetime})
+        str,
+        TypedDict(
+            "EventInfoDict",
+            {
+                "startdate": datetime,
+                "enddate": datetime,
+            },
+        ),
     ],
     BeforeValidator(
         lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x

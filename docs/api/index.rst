@@ -78,6 +78,10 @@ General method
 
 .. include:: raster_methods.rst
 
+.. _api_historical_events:
+
+.. include:: historical_events_methods.rst
+
 .. _api_wflow:
 
 .. include:: wflow_methods.rst
