@@ -35,7 +35,7 @@ class Input(Parameters):
     `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
     """
 
-    catalog_path: Optional[Path] = None
+    catalog_path: Optional[FolderPath] = None
     """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
 
 

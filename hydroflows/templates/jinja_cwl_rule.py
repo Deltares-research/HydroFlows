@@ -70,6 +70,22 @@ class JinjaCWLRule:
                     "source": inputs[key]["source"] + "_dir",
                     "value": {"class": "Directory", "path": ref.value.parent},
                 }
+                # This is to ensure the proxy file and the dir it represents have the correct parentage
+                inputs[key]["valueFrom"] = f"$(inputs.{key}_dir.path)/$(self.basename)"
+            # ref to config does not maintain folderpath typing (reverts it instead to Path)
+            elif isinstance(getattr(self.rule.method.input, key), folderpath):
+                inputs[key + "_dir"] = {
+                    "type": "Directory",
+                    "source": inputs[key]["source"] + "_dir",
+                    "value": {"class": "Directory", "path": ref.value.parent},
+                }
+                inputs[key]["valueFrom"] = f"$(inputs.{key}_dir.path)/$(self.basename)"
+                # Add new folder input to config
+                config_key = f"{key}_dir"
+                # config_ref = "$config." + config_key
+                self.rule.workflow.config = self.rule.workflow.config.model_copy(
+                    update={config_key: ref.value.parent}
+                )
 
         # Add params to inputs
         params = self.rule.method.params.to_dict(return_refs=True)
@@ -103,7 +119,7 @@ class JinjaCWLRule:
         out_root = ""
         for _, value in self.rule.method.params:
             if isinstance(value, outpath):
-                out_root = value
+                out_root = value.parent
         outputs = {}
         wc_expand = self.rule.wildcards["expand"]
         for key, val in results.items():
@@ -118,7 +134,7 @@ class JinjaCWLRule:
                 # We dont want every possible output value here
                 # only replace {wildcard} by CWL-style $(input.wildcard)
                 for wc in self.input_wildcards:
-                    wc = wc.split("_")[0]
+                    wc = wc.replace("_wc", "")
                     out_value = out_value.replace(
                         ("{" + f"{wc}" + "}"), f"$(inputs.{wc}_wc)"
                     )
@@ -234,6 +250,9 @@ class JinjaCWLWorkflow:
             if isinstance(step, JinjaCWLRule):
                 ins = deepcopy(step.input)
                 for key, info in ins.items():
+                    # outpath inputs will be overwritten at runtime so skip
+                    if isinstance(info["value"], outpath):
+                        continue
                     # Set correct format for input source
                     if "source" in info and "/" not in info["source"]:
                         if info["source"] in conf_keys:
@@ -264,7 +283,10 @@ class JinjaCWLWorkflow:
         tmp = deepcopy(input_dict)
         for key, info in tmp.items():
             if "source" in info:
-                if any([id in info["source"] for id in ids]):
+                if (
+                    any([id in info["source"] for id in ids])
+                    and "_wc" not in info["source"]
+                ):
                     input_dict.pop(key)
 
         # Add wildcards to input
@@ -305,8 +327,7 @@ class JinjaCWLWorkflow:
                 val = info["value"]
             else:
                 continue
-            if get_wildcards(val, wc):
-                print(f"step: {self.id}, input: {key}, value: {val}")
+            if get_wildcards(val, wc) and len(get_wildcards(val)) <= self.start_loop:
                 scatters.append(key)
                 if "[]" in info["type"]:
                     self._input[key]["type"] = info["type"].replace("[]", "")
@@ -344,4 +365,6 @@ class JinjaCWLWorkflow:
                     val = scatter_vals[scatter_keys.index(key)]
                     if not any(get_wildcards(val, rem_wc)):
                         step.input_scatter.pop(step.input_scatter.index(key))
+                    # if key in scatters:
+                    #     scatters.pop(scatters.index(key))
         self._input_scatter = scatters

@@ -35,13 +35,15 @@ def map_cwl_types(input: Any) -> Dict[str, str]:
                 # If path contains wildcard, input is array
                 # Not yet seen a case where 'value' is needed here
                 out["type"] = "File[]"
-            if not input.suffix:
-                # Non existing directory roots as string
-                out["type"] = "string"
-                out["value"] = f"{input.as_posix()}"
-            else:
+            if input.suffix:
                 out["type"] = "File"
                 out["value"] = {"class": "File", "path": input.as_posix()}
+            elif input.exists():
+                out["type"] = "Directory"
+                out["value"] = {"class": "Directory", "path": input.as_posix()}
+            else:
+                out["type"] = "string"
+                out["value"] = f"{input.as_posix()}"
         case str():
             if "/" in input:
                 # In case a file path is passed as string

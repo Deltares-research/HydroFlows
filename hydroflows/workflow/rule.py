@@ -8,7 +8,8 @@ from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
 
 from tqdm.contrib.concurrent import thread_map
 
-from hydroflows.utils.parsers import get_wildcards, has_wildcards
+from hydroflows._typing import outpath
+from hydroflows.utils.parsers import get_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 
@@ -337,12 +338,15 @@ class Rule:
             else:
                 default_value = None
 
+            # outpath types will be overwritten at runtime anyways so no point adding to config
+            if isinstance(value, outpath):
+                continue
             # Skip if key is already a ref
             if key in self.method.params._refs:
                 continue
             # Skip if param value has wildcard
-            elif has_wildcards(value):
-                continue
+            # elif has_wildcards(value):
+            #     continue
             # Check if value already exists in conf and update ref if so
             elif value in conf_values:
                 conf_key = conf_keys[conf_values.index(value)]

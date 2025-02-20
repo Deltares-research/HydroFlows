@@ -4,6 +4,7 @@ Which is the main class for defining workflows in hydroflows.
 """
 
 import logging
+from itertools import product
 from pathlib import Path
 from pprint import pformat
 from typing import Dict, List, Optional, Union
@@ -203,21 +204,17 @@ class Workflow:
         # Set workflow config as inputs and evaluate wildcards
         input_dict = {}
         for key, value in self.config:
-            if isinstance(value, Path) and "{" in value.as_posix():
-                wildcards = get_wildcards(value)
-                for wc in wildcards:
-                    new_val = [
-                        value.as_posix().format(**dict(zip([wc], [wc_val])))
-                        for wc_val in self.wildcards.get(wc)
-                    ]
+            tmp = value
+            if isinstance(value, Path):
+                tmp = value.as_posix()
+            # if has_wildcards(tmp):
+            if "{" in tmp:
+                wildcards = get_wildcards(tmp)
+                wc_values = [self.wildcards.get(wc) for wc in wildcards]
+                wc_tuples = list(product(*wc_values))
+                new_val = [tmp.format(**dict(zip(wildcards, tup))) for tup in wc_tuples]
+                if isinstance(value, Path) or Path(value).suffix:
                     new_val = [Path(val) for val in new_val]
-            elif isinstance(value, str) and "{" in value:
-                wildcards = get_wildcards(value)
-                for wc in wildcards:
-                    new_val = [
-                        value.format(**dict(zip([wc], [wc_val])))
-                        for wc_val in self.wildcards.get(wc)
-                    ]
             else:
                 new_val = value
 
@@ -256,7 +253,7 @@ class Workflow:
                     if not fn.is_absolute():
                         fn = self.root / fn
                     if not fn.exists():
-                        fn.parent.mkdir(parents=True)
+                        fn.parent.mkdir(parents=True, exist_ok=True)
                         fn.touch()
                 elif isinstance(info, list) and all(isinstance(x, dict) for x in info):
                     for x in info:

@@ -26,6 +26,9 @@ inputs:
             {% if value.separator %}
             itemSeparator: {{value.separator}}
             {% endif %}
+            {% if value.valueFrom %}
+            valueFrom: {{value.valueFrom}}
+            {% endif %}
         {%endif%}
     {% endfor %}
     {% if rule.input_wildcards %}
