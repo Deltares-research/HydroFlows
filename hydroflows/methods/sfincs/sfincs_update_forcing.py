@@ -37,8 +37,10 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
-    sim_subfolder: str = "simulations"
-    """The subfolder relative to the basemodel where the simulation folders are stored."""
+    output_dir: Path
+    """Output location of updated model relative to current working directory."""
+
+    copy_model: bool = False
 
     sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
@@ -64,8 +66,8 @@ class SfincsUpdateForcing(Method):
         self,
         sfincs_inp: Path,
         event_yaml: Path,
+        output_dir: str,
         event_name: Optional[str] = None,
-        sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a SfincsUpdateForcing instance.
@@ -98,15 +100,13 @@ class SfincsUpdateForcing(Method):
             # event name is the stem of the event file
             event_name = self.input.event_yaml.stem
         self.params: Params = Params(
-            event_name=event_name, sim_subfolder=sim_subfolder, **params
+            event_name=event_name, output_dir=output_dir, **params
         )
 
-        sfincs_out_inp = (
-            self.input.sfincs_inp.parent
-            / self.params.sim_subfolder
-            / self.params.event_name
-            / "sfincs.inp"
-        )
+        if self.params.copy_model and not self.params.output_dir:
+            raise ValueError("Unknown dest. folder for copy operation.")
+
+        sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
     def run(self):
@@ -121,6 +121,11 @@ class SfincsUpdateForcing(Method):
         # update sfincs model with event forcing
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
+        copy_model = self.params.copy_model
         parse_event_sfincs(
-            root, event, out_root, sfincs_config=self.params.sfincs_config
+            root,
+            event,
+            out_root,
+            sfincs_config=self.params.sfincs_config,
+            copy_model=copy_model,
         )
