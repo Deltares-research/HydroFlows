@@ -1,6 +1,7 @@
 """Utility functions for the wflow model."""
 import datetime
 from pathlib import Path
+from shutil import copy, copytree
 
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
@@ -231,3 +232,37 @@ def get_wflow_basemodel_root(wflow_toml: Path) -> Path:
     static_path = config["input"]["path_static"]
     basemodel_root = Path(wflow_toml.parent, static_path).resolve().parent
     return basemodel_root
+
+
+def copy_wflow_model(src: Path, dest: Path) -> None:
+    """Copy WFLOW model files.
+
+    Parameters
+    ----------
+    src : Path
+        Path to source directory.
+    dest : Path
+        Path to destination directory.
+    """
+    with open(src / "wflow_sbm.toml", "rb") as f:
+        config = tomli.load(f)
+
+    fn_list = [
+        Path(v)
+        for v in config["input"].values()
+        if isinstance(v, str) and Path(v).suffix
+    ]
+    print(f"Files to copy: {fn_list}")
+    dir_list = [
+        config["dir_output"],
+        Path(config["state"]["path_input"]).parent,
+        Path(config["state"]["path_output"]).parent,
+    ]
+    print(f"Dirs to copy {dir_list}")
+    for file in fn_list:
+        if Path(src, file).exists():
+            copy(src / file, dest / file)
+    for dir in dir_list:
+        if Path(src, dest).exists():
+            copytree(src / dir, dest / dir)
+    copy(src / "wflow_sbm.toml", dest / "wflow_sbm.toml")

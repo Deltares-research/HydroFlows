@@ -58,8 +58,6 @@ def parse_event_sfincs(
     # check if out_root is a subdirectory of root
     if sfincs_config is None:
         sfincs_config = {}
-    if not copy_model and not out_root.is_relative_to(root):
-        raise ValueError("out_root should be a subdirectory of root")
     if copy_model:
         copy_sfincs_model(src=root, dest=out_root)
 

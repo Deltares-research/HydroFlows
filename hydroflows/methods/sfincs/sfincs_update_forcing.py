@@ -41,6 +41,7 @@ class Params(Parameters):
     """Output location of updated model relative to current working directory."""
 
     copy_model: bool = False
+    """Create full copy of model or create rel paths in model config."""
 
     sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
@@ -80,10 +81,10 @@ class SfincsUpdateForcing(Method):
             The file path to the SFINCS basemodel configuration file (inp).
         event_yaml : Path
             The path to the event description file
+        output_dir : str
+            Output location of updated model
         event_name : str, optional
             The name of the event, by default derived from the event_yaml file name stem.
-        sim_subfolder : Path, optional
-            The subfolder relative to the basemodel where the simulation folders are stored.
         **params
             Additional parameters to pass to the SfincsUpdateForcing instance.
             See :py:class:`sfincs_update_forcing Params <hydroflows.methods.sfincs.sfincs_update_forcing.Params>`.
@@ -107,6 +108,13 @@ class SfincsUpdateForcing(Method):
             raise ValueError("Unknown dest. folder for copy operation.")
 
         sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
+        if not self.params.copy_model and not sfincs_out_inp.is_relative_to(
+            self.input.sfincs_inp
+        ):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
+
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
     def run(self):
