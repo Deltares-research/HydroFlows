@@ -36,16 +36,11 @@ def test_get_gtsm_data(region: Path, tmp_path: Path, global_catalog: Path):
 
 @pytest.mark.slow()
 def test_create_tide_surge_timeseries(
-    waterlevel_timeseries: xr.DataArray, tmp_path: Path
+    temp_waterlevel_timeseries_nc: Path, tmp_path: Path
 ):
-    data_dir = Path(tmp_path, "waterlevel")
-    data_dir.mkdir()
-    waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
-    waterlevel_timeseries.close()
-
     rule = CoastalTidalAnalysis(
-        waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc",
-        data_root=data_dir,
+        waterlevel_nc=temp_waterlevel_timeseries_nc,
+        data_root=Path(tmp_path, "waterlevel"),
     )
 
     rule.run_with_checks()
