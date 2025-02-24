@@ -157,7 +157,7 @@ class WflowUpdateForcing(Method):
             self.input.wflow_toml.parent
         ):
             raise ValueError(
-                f"Output {wflow_out_toml} must be relative to input {self.input.wflow_toml} when not copying model."
+                "Output directory must be relative to input directory when not copying model."
             )
 
         self.output: Output = Output(wflow_out_toml=wflow_out_toml)

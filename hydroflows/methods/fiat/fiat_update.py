@@ -7,6 +7,7 @@ from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.events import EventSet
+from hydroflows.methods.fiat.fiat_utils import copy_fiat_model
 from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -50,8 +51,11 @@ class Params(Parameters):
     sim_name: str
     """The name of the simulation folder."""
 
-    sim_subfolder: str = "simulations"
-    """The subfolder relative to the basemodel where the simulation folders are stored."""
+    output_dir: Path
+    """Output location of updated model relative to current working directory."""
+
+    copy_model: bool = False
+    """Create full copy of model or create rel paths in model config."""
 
     map_type: Literal["water_level", "water_depth"] = "water_level"
     """"The data type of each map specified in the data catalog. A single map type
@@ -83,9 +87,9 @@ class FIATUpdateHazard(ReduceMethod):
         fiat_cfg: Path,
         event_set_yaml: Path,
         hazard_maps: Union[Path, List[Path]],
+        output_dir: str,
         risk: bool = True,
         map_type: Literal["water_level", "water_depth"] = "water_level",
-        sim_subfolder: str = "simulations",
         sim_name: Optional[str] = None,
         **params,
     ):
@@ -102,13 +106,13 @@ class FIATUpdateHazard(ReduceMethod):
             The file path to the FIAT configuration (toml) file.
         event_set_yaml : Path
             The path to the event description file.
+        output_dir : str
+            Output location of updated model
         hazard_maps : Path or List[Path], optional
             The path to the hazard maps. It can be a list of paths, a single path containing a wildcard,
             or a single path to a single hazard map.
         map_type : Literal["water_level", "water_depth"], optional
             The hazard data type
-        sim_subfolder : Path, optional
-            The subfolder relative to the basemodel where the simulation folders are stored.
         sim_name : str, optional
             The name of the simulation folder. If None, the stem of the event set file or the first hazard map is used.
 
@@ -147,7 +151,7 @@ class FIATUpdateHazard(ReduceMethod):
 
         self.params: Params = Params(
             sim_name=sim_name,
-            sim_subfolder=sim_subfolder,
+            output_dir=output_dir,
             map_type=map_type,
             risk=risk,
             **params,
@@ -159,11 +163,7 @@ class FIATUpdateHazard(ReduceMethod):
             )
 
         # output root is the simulation folder
-        fiat_root = (
-            self.input.fiat_cfg.parent
-            / self.params.sim_subfolder
-            / self.params.sim_name
-        )
+        fiat_root = self.params.output_dir / self.params.sim_name
         self.output: Output = Output(
             fiat_hazard=fiat_root / "hazard" / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
@@ -179,8 +179,12 @@ class FIATUpdateHazard(ReduceMethod):
         # Load the existing
         root = self.input.fiat_cfg.parent
         out_root = self.output.fiat_out_cfg.parent
-        if not out_root.is_relative_to(root):
-            raise ValueError("out_root should be a subdirectory of root")
+        if not self.params.copy_model and not out_root.is_relative_to(root):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
+        if self.params.copy_model:
+            copy_fiat_model(root, out_root)
 
         model = FiatModel(
             root=root,
@@ -189,16 +193,19 @@ class FIATUpdateHazard(ReduceMethod):
         model.read()
 
         # Make all paths relative in the config
-        config = {
-            k: make_relative_paths(model.config[k], root, out_root)
-            for k in model.config
-        }
-        config["exposure"]["csv"] = make_relative_paths(
-            model.config["exposure"]["csv"], root, out_root
-        )
-        config["exposure"]["geom"] = make_relative_paths(
-            model.config["exposure"]["geom"], root, out_root
-        )
+        if not self.params.copy_model:
+            config = {
+                k: make_relative_paths(model.config[k], root, out_root)
+                for k in model.config
+            }
+            config["exposure"]["csv"] = make_relative_paths(
+                model.config["exposure"]["csv"], root, out_root
+            )
+            config["exposure"]["geom"] = make_relative_paths(
+                model.config["exposure"]["geom"], root, out_root
+            )
+        else:
+            config = model.config
 
         # READ the hazard catalog
         if self.input.event_set_yaml is not None:
