@@ -97,3 +97,11 @@ class Parameters(BaseModel):
             out_dict[k] = v
 
         return out_dict
+
+    @property
+    def all_fields(self):
+        """Model and extra field names."""
+        all_fields = list(self.model_fields.keys())
+        if self.model_extra:
+            all_fields += list(self.model_extra.keys())
+        return all_fields

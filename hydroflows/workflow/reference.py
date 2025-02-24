@@ -175,7 +175,7 @@ class Ref(object):
         rule_id, component, field = ref_keys[1:]
         method = self.workflow.rules.get_rule(rule_id).method
         parameters: "Parameters" = getattr(method, component)
-        if field not in parameters.model_fields:
+        if field not in parameters.all_fields:
             raise ValueError(
                 f"Invalid reference: {self.ref}. "
                 f"Field {field} not found in rule {rule_id}.{component}."

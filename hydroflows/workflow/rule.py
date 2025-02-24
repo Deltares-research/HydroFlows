@@ -307,7 +307,7 @@ class Rule:
                 continue
             if isinstance(value, Path):
                 value = value.as_posix()
-            if value in output_path_refs.keys():
+            if value in list(output_path_refs.keys()):
                 self.method.input._refs.update({key: output_path_refs[value]})
             # Check if value already exists in conf and update ref if so
             elif value in conf_values:
