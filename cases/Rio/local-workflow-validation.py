@@ -7,7 +7,13 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import catalog, hazard_validation, rainfall, script, sfincs
+from hydroflows.methods import (
+    catalog,
+    hazard_validation,
+    historical_events,
+    script,
+    sfincs,
+)
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -90,10 +96,10 @@ precipitation = script.ScriptMethod(
 )
 w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
 
-historical_event = rainfall.PluvialHistoricalEvents(
+historical_event = historical_events.HistoricalEvents(
     precip_nc=precipitation.output.precip_nc,
     events_dates=w.get_ref("$config.historical_events_dates"),
-    event_root="events/historical",
+    output_dir="events/historical",
     wildcard="pluvial_historical_event",
 )
 w.add_rule(historical_event, rule_id="historical_event")
