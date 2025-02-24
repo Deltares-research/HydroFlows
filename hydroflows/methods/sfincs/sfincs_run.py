@@ -1,6 +1,7 @@
 """SFINCS run method."""
-
+import os
 import platform
+import pwd
 import subprocess
 from pathlib import Path
 from typing import Literal, Optional
@@ -123,10 +124,16 @@ class SfincsRun(Method):
                 raise FileNotFoundError(f"sfincs_exe not found: {sfincs_exe}")
             cmd = [str(sfincs_exe)]
         elif self.params.run_method == "docker":
+            # Get user info to get properly set ownership of files created by container
+            # see: https://unix.stackexchange.com/a/627028
+            uid = os.getuid()
+            user = pwd.getpwuid(uid)
+            gid = user.pw_gid
             cmd = [
                 "docker",
                 "run",
                 f"-v{base_folder}://data",
+                f"-u{uid}:{gid}",
                 "-w",
                 f"/data/{model_root.relative_to(base_folder).as_posix()}",
                 f"deltares/sfincs-cpu:{self.params.docker_tag}",
