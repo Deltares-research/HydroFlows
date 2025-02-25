@@ -61,6 +61,7 @@ class SfincsUpdateForcing(Method):
     _test_kwargs = {
         "sfincs_inp": Path("sfincs.inp"),
         "event_yaml": Path("event1.yaml"),
+        "output_dir": "simulations",
     }
 
     def __init__(

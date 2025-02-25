@@ -80,6 +80,7 @@ class FIATUpdateHazard(ReduceMethod):
         "fiat_cfg": Path("fiat.toml"),
         "event_set_yaml": Path("event_set.yaml"),
         "hazard_maps": Path("hazard_{event}.nc"),
+        "output_dir": "simulations",
     }
 
     def __init__(

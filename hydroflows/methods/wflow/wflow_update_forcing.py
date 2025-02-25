@@ -97,6 +97,7 @@ class WflowUpdateForcing(Method):
         "catalog_path": Path("data_catalog.yml"),
         "start_time": datetime(1990, 1, 1),
         "end_time": datetime(1990, 1, 2),
+        "output_dir": "simulations",
     }
 
     def __init__(
