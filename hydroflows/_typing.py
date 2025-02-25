@@ -54,6 +54,11 @@ WildcardPath = Annotated[
     AfterValidator(_check_path_has_wildcard),
 ]
 
+WildcardStr = Annotated[
+    str,
+    AfterValidator(_check_path_has_wildcard),
+]
+
 EventDatesDict = Annotated[
     Dict[
         str,

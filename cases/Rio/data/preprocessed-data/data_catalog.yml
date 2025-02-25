@@ -1,0 +1,20 @@
+meta:
+  root: rio\data\preprocessed-data
+preprocessed_occupaction_jrc:
+  data_type: GeoDataFrame
+  path: occupancy_pre_processed_translated_occupaction_jrc.gpkg
+  driver: vector
+  filesystem: local
+  crs: 31983
+preprocessed_floor_height:
+  data_type: GeoDataFrame
+  path: finished_floor_height.gpkg
+  driver: vector
+  filesystem: local
+  crs: 31983
+preprocessed_asset_population:
+  data_type: GeoDataFrame
+  path: asset_population.gpkg
+  driver: vector
+  filesystem: local
+  crs: 31983

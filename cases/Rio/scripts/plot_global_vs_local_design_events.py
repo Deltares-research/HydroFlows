@@ -12,26 +12,18 @@ from hydroflows.events import Event
 
 def load_event_files(
     root: Path | str,
-    data_root_folder: str,
-    sim_subfolder: str,
 ):
     """Load event files function."""
     global_design_events_root = os.path.join(
         root,
-        "global_setup_models",
-        data_root_folder,
-        sim_subfolder,
+        "global",
         "events",
-        "rainfall",
     )
 
     local_design_events_root = os.path.join(
         root,
-        "local_setup_models",
-        data_root_folder,
-        sim_subfolder,
+        "local",
         "events",
-        "rainfall",
     )
 
     event_yaml_files_global = glob.glob(
@@ -158,15 +150,13 @@ def plot_global_vs_local_idfs(global_design_events_root, local_design_events_roo
 
 def main():
     """__summary__."""
-    root = "p:/11209169-003-up2030/cases/Rio"
-    data_root_folder = "data"
-    sim_subfolder = "design_events"
+    root = "p:/11209169-003-up2030/cases/rio_new/setups"
 
     (
         global_design_events_root,
         local_design_events_root,
         event_yaml_files_global,
-    ) = load_event_files(root, data_root_folder, sim_subfolder)
+    ) = load_event_files(root)
 
     plot_global_vs_local_hyetographs(
         global_design_events_root, local_design_events_root, event_yaml_files_global
