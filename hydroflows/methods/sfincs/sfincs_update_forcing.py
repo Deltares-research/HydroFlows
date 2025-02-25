@@ -108,8 +108,8 @@ class SfincsUpdateForcing(Method):
             raise ValueError("Unknown dest. folder for copy operation.")
 
         sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
-        if not self.params.copy_model and not sfincs_out_inp.is_relative_to(
-            self.input.sfincs_inp
+        if not self.params.copy_model and not self.params.output_dir.is_relative_to(
+            self.input.sfincs_inp.parent
         ):
             raise ValueError(
                 "Output directory must be relative to input directory when not copying model."

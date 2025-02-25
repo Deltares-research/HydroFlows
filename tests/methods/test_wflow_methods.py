@@ -38,12 +38,18 @@ def test_wflow_build(
 
 
 @pytest.mark.requires_test_data()
-def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
+@pytest.mark.parametrize("copy_model", [True, False])
+def test_wflow_update_forcing(
+    wflow_tmp_model: Path, global_catalog: Path, copy_model: bool
+):
     # required inputs
     wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
     start_time = "2020-02-01"
     end_time = "2020-02-10"
-
+    if copy_model:
+        output_dir = wflow_tmp_model.parent / "sim"
+    else:
+        output_dir = wflow_tmp_model / "sim"
     # additional param
     catalog_path = global_catalog.as_posix()
 
@@ -52,7 +58,11 @@ def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
         start_time=start_time,
         end_time=end_time,
         catalog_path=catalog_path,
+        output_dir=output_dir,
+        copy_model=copy_model,
     )
+
+    assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
 
     rule.run_with_checks()
 

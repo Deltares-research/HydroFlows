@@ -244,6 +244,10 @@ def copy_wflow_model(src: Path, dest: Path) -> None:
     dest : Path
         Path to destination directory.
     """
+    if not dest.exists():
+        print(f"Creating dest folder {dest}")
+        dest.mkdir(parents=True)
+
     with open(src / "wflow_sbm.toml", "rb") as f:
         config = tomli.load(f)
 
@@ -252,17 +256,15 @@ def copy_wflow_model(src: Path, dest: Path) -> None:
         for v in config["input"].values()
         if isinstance(v, str) and Path(v).suffix
     ]
-    print(f"Files to copy: {fn_list}")
     dir_list = [
         config["dir_output"],
         Path(config["state"]["path_input"]).parent,
         Path(config["state"]["path_output"]).parent,
     ]
-    print(f"Dirs to copy {dir_list}")
     for file in fn_list:
         if Path(src, file).exists():
             copy(src / file, dest / file)
     for dir in dir_list:
-        if Path(src, dest).exists():
+        if Path(src, dir).exists():
             copytree(src / dir, dest / dir)
     copy(src / "wflow_sbm.toml", dest / "wflow_sbm.toml")

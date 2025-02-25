@@ -175,7 +175,6 @@ class WflowUpdateForcing(Method):
         if self.input.catalog_path:
             data_libs += [self.input.catalog_path]
         if self.params.copy_model:
-            print(f"Copying model from {root} to {sims_root}")
             copy_wflow_model(src=root, dest=sims_root)
 
         w = WflowModel(

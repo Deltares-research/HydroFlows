@@ -46,18 +46,22 @@ def test_sfincs_build(
 
 
 @pytest.mark.requires_test_data()
-def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path):
+@pytest.mark.parametrize("copy_model", [True, False])
+def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model: bool):
     event_name = "p_event01"
     event_yml = event_set_file.parent / f"{event_name}.yml"
+    if copy_model:
+        output_dir = sfincs_tmp_model.parent / "sim"
+    else:
+        output_dir = sfincs_tmp_model / "sim"
     sf = SfincsUpdateForcing(
         sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
         event_yaml=event_yml.as_posix(),
         event_name=event_name,
-        sim_subfolder="sim",
+        output_dir=output_dir,
+        copy_model=copy_model,
     )
-    assert (
-        sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / event_name / "sfincs.inp"
-    )
+    assert sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
     sf.run_with_checks()
 
 

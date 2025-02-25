@@ -26,11 +26,13 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
 
 
 @pytest.mark.requires_test_data()
+@pytest.mark.parametrize("copy_model", [True, False])
 def test_fiat_update_hazard(
     fiat_tmp_model: Path,
     hazard_map_data: xr.DataArray,
     event_set_file: Path,
     tmp_path: Path,
+    copy_model: bool,
 ):
     # Specify in- and output
     fiat_cfg = Path(fiat_tmp_model) / "settings.toml"
@@ -43,12 +45,25 @@ def test_fiat_update_hazard(
         hazard_map_data.to_netcdf(nc_file)
         hazard_maps.append(nc_file)
 
+    if copy_model:
+        output_dir = fiat_tmp_model.parent / "sim"
+    else:
+        output_dir = fiat_tmp_model / "sim"
+
     # Setup the method.
     rule = FIATUpdateHazard(
         fiat_cfg=fiat_cfg,
         event_set_yaml=event_set_file,
         hazard_maps=hazard_maps,
+        output_dir=output_dir,
+        copy_model=copy_model,
     )
+
+    assert (
+        rule.output.fiat_out_cfg
+        == rule.params.output_dir / rule.params.sim_name / "settings.toml"
+    )
+
     rule.run_with_checks()
 
 

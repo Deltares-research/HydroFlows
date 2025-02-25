@@ -67,6 +67,8 @@ def copy_fiat_model(src: Path, dest: Path) -> None:
     dest : Path
         Path to destination directory.
     """
+    if not dest.exists():
+        dest.mkdir(parents=True)
     with open(src / "settings.toml", "rb") as f:
         config = tomli.load(f)
     with open(src / "spatial_joins.toml", "rb") as f:
