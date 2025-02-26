@@ -2,9 +2,15 @@ import platform
 from pathlib import Path
 
 import pytest
+import xarray as xr
 from hydromt_wflow import WflowModel
 
-from hydroflows.methods.wflow import WflowBuild, WflowRun, WflowUpdateForcing
+from hydroflows.methods.wflow import (
+    WflowBuild,
+    WflowRun,
+    WflowUpdateChangeFactors,
+    WflowUpdateForcing,
+)
 
 
 @pytest.mark.requires_test_data()
@@ -38,6 +44,30 @@ def test_wflow_build(
 
 
 @pytest.mark.requires_test_data()
+def test_wflow_update_factors(
+    tmp_path: Path,
+    cmip6_stats: list,
+    wflow_cached_model: Path,
+):
+    rule = WflowUpdateChangeFactors(
+        change_factor_dataset=Path(
+            cmip6_stats,
+            "change_factor",
+            "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
+        ),
+        wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
+        output_dir=tmp_path,
+    )
+    rule.run_with_checks()
+
+    assert rule.output.wflow_change_factors.is_file()
+    ds = xr.open_dataset(rule.output.wflow_change_factors)
+    assert int(ds["precip"].values.mean() * 100) == 102
+    assert ds["latitude"].size == 200
+    ds = None
+
+
+@pytest.mark.requires_test_data()
 def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
     # required inputs
     wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
@@ -59,17 +89,18 @@ def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
 
 @pytest.mark.slow()
 @pytest.mark.requires_test_data()
-@pytest.mark.parametrize("method", ["docker", "exe", "julia", "apptainer"])
+@pytest.mark.parametrize("method", ["docker", "exe", "julia", "script", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,
     method: str,
     has_wflow_julia: bool,
     wflow_exe: Path,
+    wflow_run_script: Path,
     has_docker: bool,
     has_apptainer: bool,
 ):
     # check if wflow julia is installed
-    if method == "julia" and not has_wflow_julia:
+    if (method == "julia" or method == "script") and not has_wflow_julia:
         pytest.skip("Wflow Julia is not installed.")
     elif method == "exe" and wflow_exe.is_file() is False:
         pytest.skip(f"Wflow executable is not available {wflow_exe}")
@@ -98,6 +129,7 @@ def test_wflow_run(
         julia_num_threads=2,
         run_method=method,
         wflow_bin=wflow_exe,
+        wflow_run_script=wflow_run_script,
     )
     assert wf_run.output.wflow_output_timeseries == wflow_scalar
     wf_run.run_with_checks()

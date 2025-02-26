@@ -7,6 +7,7 @@ from hydroflows._typing import (
     EventDatesDict,
     ListOfFloat,
     ListOfInt,
+    ListOfListOfInt,
     ListOfStr,
     TupleOfInt,
 )
@@ -61,6 +62,25 @@ def test_tuple_of_int():
         ta.validate_python((12, 6, 7))
     with pytest.raises(TypeError):
         ta.validate_python((12, 6), (11, 5))
+
+
+def test_list_of_list_of_int():
+    ta = TypeAdapter(ListOfListOfInt)
+    assert ta.validate_python("[2, 2]") == [[2, 2]]
+    assert ta.validate_python("[2,2]") == [[2, 2]]
+    assert ta.validate_python("[2, 2] [3, 3]") == [[2, 2], [3, 3]]
+    assert ta.validate_python("[22] [3, 3]") == [[22], [3, 3]]
+    assert ta.validate_python("[2, 2, 2]") == [[2, 2, 2]]
+    assert ta.validate_python("(2, 2)") == [[2, 2]]
+    assert ta.validate_python("(2, 2, 2) (33)") == [[2, 2, 2], [33]]
+    assert ta.validate_python("[2, 2.2]") == []
+    assert ta.validate_python("2, 2") == []
+    assert ta.validate_python([[2, 2], [3, 3]]) == [[2, 2], [3, 3]]
+    assert ta.validate_python(((2, 2), (3, 3))) == [[2, 2], [3, 3]]
+    with pytest.raises(ValidationError):
+        assert ta.validate_python([2, 2])
+    with pytest.raises(ValidationError):
+        assert ta.validate_python((2, 2))
 
 
 def test_event_dates_dict():
