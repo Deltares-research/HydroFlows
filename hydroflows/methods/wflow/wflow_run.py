@@ -1,6 +1,4 @@
 """Wflow run method."""
-import os
-import pwd
 import subprocess
 from pathlib import Path
 from typing import Literal, Optional
@@ -8,6 +6,7 @@ from typing import Literal, Optional
 from pydantic import model_validator
 
 from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
+from hydroflows.utils.docker_utils import fetch_docker_uid
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -134,21 +133,20 @@ class WflowRun(Method):
                 wflow_toml,
             ]
         elif self.params.run_method == "docker":
-            # Get user info to get properly set ownership of files created by container
+            # Get user info to properly set ownership of files created by container
             # see: https://unix.stackexchange.com/a/627028
-            uid = os.getuid()
-            user = pwd.getpwuid(uid)
-            gid = user.pw_gid
+            (uid, gid) = fetch_docker_uid()
             command = [
                 "docker",
                 "run",
                 f"-v{base_folder}://data",
-                f"-u{uid}:{gid}",
                 "-e",
                 f"JULIA_NUM_THREADS={nthreads}",
                 f"deltares/wflow:{self.params.docker_tag}",
                 f"//data/{wflow_toml}",
             ]
+            if uid:
+                command[3:3] = [f"-u{uid}:{gid}"]
         elif self.params.run_method == "apptainer":
             command = [
                 "apptainer",

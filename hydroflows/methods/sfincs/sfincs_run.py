@@ -1,7 +1,5 @@
 """SFINCS run method."""
-import os
 import platform
-import pwd
 import subprocess
 from pathlib import Path
 from typing import Literal, Optional
@@ -9,6 +7,7 @@ from typing import Literal, Optional
 from pydantic import model_validator
 
 from hydroflows.methods.sfincs.sfincs_utils import get_sfincs_basemodel_root
+from hydroflows.utils.docker_utils import fetch_docker_uid
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -124,20 +123,20 @@ class SfincsRun(Method):
                 raise FileNotFoundError(f"sfincs_exe not found: {sfincs_exe}")
             cmd = [str(sfincs_exe)]
         elif self.params.run_method == "docker":
-            # Get user info to get properly set ownership of files created by container
+            # Get user info to properly set ownership of files created by container
             # see: https://unix.stackexchange.com/a/627028
-            uid = os.getuid()
-            user = pwd.getpwuid(uid)
-            gid = user.pw_gid
+            (uid, gid) = fetch_docker_uid()
             cmd = [
                 "docker",
                 "run",
                 f"-v{base_folder}://data",
-                f"-u{uid}:{gid}",
+                # f"-u{uid}:{gid}",
                 "-w",
                 f"/data/{model_root.relative_to(base_folder).as_posix()}",
                 f"deltares/sfincs-cpu:{self.params.docker_tag}",
             ]
+            if uid:
+                cmd[3:3] = [f"-u{uid}:{gid}"]
         elif self.params.run_method == "apptainer":
             cmd = [
                 "apptainer",
