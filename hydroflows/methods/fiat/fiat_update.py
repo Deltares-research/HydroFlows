@@ -165,6 +165,14 @@ class FIATUpdateHazard(ReduceMethod):
 
         # output root is the simulation folder
         fiat_root = self.params.output_dir / self.params.sim_name
+
+        if not self.params.copy_model and not self.params.output_dir.is_relative_to(
+            self.input.fiat_cfg.parent
+        ):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
+
         self.output: Output = Output(
             fiat_hazard=fiat_root / "hazard" / "hazard.nc",
             fiat_out_cfg=fiat_root / "settings.toml",
@@ -180,10 +188,7 @@ class FIATUpdateHazard(ReduceMethod):
         # Load the existing
         root = self.input.fiat_cfg.parent
         out_root = self.output.fiat_out_cfg.parent
-        if not self.params.copy_model and not out_root.is_relative_to(root):
-            raise ValueError(
-                "Output directory must be relative to input directory when not copying model."
-            )
+
         if self.params.copy_model:
             copy_fiat_model(root, out_root)
 

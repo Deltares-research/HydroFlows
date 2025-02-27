@@ -45,17 +45,16 @@ def test_fiat_update_hazard(
         hazard_map_data.to_netcdf(nc_file)
         hazard_maps.append(nc_file)
 
-    if copy_model:
-        output_dir = fiat_tmp_model.parent / "sim"
-    else:
-        output_dir = fiat_tmp_model / "sim"
-
+    # Check output dir if subdir of fiat dir
+    output_dir1 = fiat_tmp_model / "sim"
+    # Check output dir if not subdir of fiat dir
+    output_dir2 = fiat_tmp_model.parent / "sim"
     # Setup the method.
     rule = FIATUpdateHazard(
         fiat_cfg=fiat_cfg,
         event_set_yaml=event_set_file,
         hazard_maps=hazard_maps,
-        output_dir=output_dir,
+        output_dir=output_dir1,
         copy_model=copy_model,
     )
 
@@ -63,6 +62,34 @@ def test_fiat_update_hazard(
         rule.output.fiat_out_cfg
         == rule.params.output_dir / rule.params.sim_name / "settings.toml"
     )
+
+    rule.run_with_checks()
+
+    # This should fail when copy model == False
+    if not copy_model:
+        with pytest.raises(
+            ValueError,
+            match="Output directory must be relative to input directory when not copying model.",
+        ):
+            rule = FIATUpdateHazard(
+                fiat_cfg=fiat_cfg,
+                event_set_yaml=event_set_file,
+                hazard_maps=hazard_maps,
+                output_dir=output_dir2,
+                copy_model=copy_model,
+            )
+    else:
+        rule = FIATUpdateHazard(
+            fiat_cfg=fiat_cfg,
+            event_set_yaml=event_set_file,
+            hazard_maps=hazard_maps,
+            output_dir=output_dir2,
+            copy_model=copy_model,
+        )
+        assert (
+            rule.output.fiat_out_cfg
+            == rule.params.output_dir / rule.params.sim_name / "settings.toml"
+        )
 
     rule.run_with_checks()
 

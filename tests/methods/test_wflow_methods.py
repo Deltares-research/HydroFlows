@@ -46,10 +46,10 @@ def test_wflow_update_forcing(
     wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
     start_time = "2020-02-01"
     end_time = "2020-02-10"
-    if copy_model:
-        output_dir = wflow_tmp_model.parent / "sim"
-    else:
-        output_dir = wflow_tmp_model / "sim"
+    # Check output dir if subdir of wflow dir
+    output_dir1 = wflow_tmp_model / "sim"
+    # Check output dir if not subdir of wflow dir
+    output_dir2 = wflow_tmp_model.parent / "sim"
     # additional param
     catalog_path = global_catalog.as_posix()
 
@@ -58,13 +58,39 @@ def test_wflow_update_forcing(
         start_time=start_time,
         end_time=end_time,
         catalog_path=catalog_path,
-        output_dir=output_dir,
+        output_dir=output_dir1,
         copy_model=copy_model,
     )
 
     assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
 
     rule.run_with_checks()
+
+    # This should fail when copy model == False
+    if not copy_model:
+        with pytest.raises(
+            ValueError,
+            match="Output directory must be relative to input directory when not copying model.",
+        ):
+            rule = WflowUpdateForcing(
+                wflow_toml=wflow_toml,
+                start_time=start_time,
+                end_time=end_time,
+                catalog_path=catalog_path,
+                output_dir=output_dir2,
+                copy_model=copy_model,
+            )
+    else:
+        rule = WflowUpdateForcing(
+            wflow_toml=wflow_toml,
+            start_time=start_time,
+            end_time=end_time,
+            catalog_path=catalog_path,
+            output_dir=output_dir1,
+            copy_model=copy_model,
+        )
+        assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
+        rule.run_with_checks()
 
 
 @pytest.mark.slow()
