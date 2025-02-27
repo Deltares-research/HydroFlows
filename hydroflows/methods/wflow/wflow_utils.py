@@ -1,8 +1,9 @@
 """Utility functions for the wflow model."""
 
 import datetime
+from glob import glob
 from pathlib import Path
-from shutil import copy, copytree
+from shutil import copy
 
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
@@ -235,7 +236,7 @@ def get_wflow_basemodel_root(wflow_toml: Path) -> Path:
     return basemodel_root
 
 
-def copy_wflow_model(src: Path, dest: Path) -> None:
+def copy_wflow_model(src: Path, dest: Path, copy_forcing: bool = False) -> None:
     """Copy WFLOW model files.
 
     Parameters
@@ -244,28 +245,23 @@ def copy_wflow_model(src: Path, dest: Path) -> None:
         Path to source directory.
     dest : Path
         Path to destination directory.
+    copy_forcing : bool
+        Toggle copying forcing files, by default False
     """
-    if not dest.exists():
-        print(f"Creating dest folder {dest}")
-        dest.mkdir(parents=True)
+    dest.mkdir(parents=True, exist_ok=True)
 
     with open(src / "wflow_sbm.toml", "rb") as f:
         config = tomli.load(f)
 
     fn_list = [
-        Path(v)
-        for v in config["input"].values()
-        if isinstance(v, str) and Path(v).suffix
+        Path(config["state"]["path_input"]),
+        Path(config["input"]["path_static"]),
     ]
-    dir_list = [
-        config["dir_output"],
-        Path(config["state"]["path_input"]).parent,
-        Path(config["state"]["path_output"]).parent,
-    ]
+    if copy_forcing:
+        fn_list.extend([Path(p) for p in glob(config["input"]["path_forcing"])])
+
     for file in fn_list:
-        if Path(src, file).exists():
+        if (src / file).exists():
             copy(src / file, dest / file)
-    for dir in dir_list:
-        if Path(src, dir).exists():
-            copytree(src / dir, dest / dir)
+
     copy(src / "wflow_sbm.toml", dest / "wflow_sbm.toml")

@@ -8,6 +8,7 @@ import xarray as xr
 from hydromt_wflow import WflowModel
 
 from hydroflows.io import to_netcdf
+from hydroflows.methods.wflow.wflow_utils import copy_wflow_model
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -60,6 +61,9 @@ class Params(Parameters):
     The output directory of the dataset.
     """
 
+    copy_model: bool = False
+    """Create full copy of model or create rel paths in model config."""
+
     resample_method: str = "nearest"
     """Method of resampling the low(er) res dataset."""
 
@@ -107,6 +111,14 @@ class WflowUpdateChangeFactors(Method):
         )
         fname = self.input.change_factor_dataset.stem
         fsuffix = self.input.change_factor_dataset.suffix
+
+        if not self.params.copy_model and not self.params.output_dir.is_relative_to(
+            self.input.wflow_toml.parent
+        ):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
+
         self.output: Output = Output(
             wflow_change_factors=self.params.output_dir
             / f"{fname}_downscaled{fsuffix}",
@@ -115,6 +127,13 @@ class WflowUpdateChangeFactors(Method):
 
     def run(self):
         """Run the downscale dataset method."""
+        if self.params.copy_model:
+            copy_wflow_model(
+                src=self.input.wflow_toml.parent,
+                dest=self.output.wflow_out_toml.parent,
+                copy_forcing=True,
+            )
+
         # Open input files
         ds = xr.open_dataset(self.input.change_factor_dataset, lock=False)
         w = WflowModel(root=self.input.wflow_toml.parent, mode="r+")
@@ -135,15 +154,16 @@ class WflowUpdateChangeFactors(Method):
         # Update the config
         redirect = ["input.path_forcing", "input.path_static"]
         # Redirect paths to forcing and staticmaps
-        for item in redirect:
-            value = w.get_config(item)
-            full_path = Path(value)
-            if not full_path.is_absolute():
-                full_path = Path(self.input.wflow_toml.parent, full_path)
-            else:
-                continue
-            new_path = Path(relpath(full_path, self.output.wflow_out_toml.parent))
-            w.set_config(item, new_path.as_posix())
+        if not self.params.copy_model:
+            for item in redirect:
+                value = w.get_config(item)
+                full_path = Path(value)
+                if not full_path.is_absolute():
+                    full_path = Path(self.input.wflow_toml.parent, full_path)
+                else:
+                    continue
+                new_path = Path(relpath(full_path, self.output.wflow_out_toml.parent))
+                w.set_config(item, new_path.as_posix())
         # Put the downscaled dataset in the toml
         w.set_config("input.path_forcing_scale", self.output.wflow_change_factors.name)
 
