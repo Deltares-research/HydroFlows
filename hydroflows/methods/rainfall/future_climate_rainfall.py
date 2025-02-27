@@ -120,7 +120,7 @@ class FutureClimateRainfall(ExpandMethod):
     def __init__(
         self,
         scenario_name: str,
-        dT: int,
+        dT: float,
         event_set_yaml: Path,
         event_root: Path = Path("data/events/future_rainfall"),
         wildcard: str = "future_event",
