@@ -10,6 +10,9 @@ if TYPE_CHECKING:
 __all__ = ["METHODS"]
 
 __eps__ = {
+    "climate_change_factors": "hydroflows.methods.climate.change_factor:ClimateChangeFactors",
+    "monthly_climatology": "hydroflows.methods.climate.climatology:MonthlyClimatolgy",
+    "merge_gridded_datasets": "hydroflows.methods.raster.merge:MergeGriddedDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
     "fiat_update_hazard": "hydroflows.methods.fiat.fiat_update:FIATUpdateHazard",
@@ -25,6 +28,7 @@ __eps__ = {
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
+    "wflow_update_factors": "hydroflows.methods.wflow.wflow_update_factors:WflowUpdateChangeFactors",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
     "coastal_design_events": "hydroflows.methods.coastal.coastal_design_events:CoastalDesignEvents",
     "coastal_design_events_from_rp_data": "hydroflows.methods.coastal.coastal_design_events_from_rp_data:CoastalDesignEventFromRPData",
