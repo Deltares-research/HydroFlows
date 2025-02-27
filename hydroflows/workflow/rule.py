@@ -64,6 +64,7 @@ class Rule:
         self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
         self._method_instances: List[Method] = []  # list of method instances
         # values of input, output and params fields for all method instances
+        # TODO split to input, output, params
         self._parameters: Dict[str, Dict] = {}
         self._dependency: str | None = None  # rule_id of last occurring dependency
         self._loop_depth: int = 0  # loop depth of the rule
@@ -214,13 +215,15 @@ class Rule:
         if msg:
             raise ValueError(msg)
 
-    def _method_wildcard_instance(self, wildcards: Dict) -> Method:
+    def _create_method_instance(self, wildcards: Dict[str, str | list[str]]) -> Method:
         """Return a new method instance with wildcards replaced by values.
 
         Parameters
         ----------
-        wildcards : Dict
-            The reduce and explode wildcards to replace in the method.
+        wildcards : Dict[str, str | list[str]]
+            The wildcards to replace in the method instance.
+            For explode wildcards, the value should be a single string.
+            For reduce wildcards, the value should be a list of strings.
             Expand wildcards are only on the output and are set in the method.
         """
         # explode kwargs should always be a single value;
@@ -262,11 +265,15 @@ class Rule:
                 # wildcards = {wc: v, ...}
                 kwargs[key] = str(kwargs[key]).format(**wildcards)
         method = self.method.from_kwargs(**kwargs)
+        # for expand methods, set the output to the expanded output
         if isinstance(method, ExpandMethod):
-            method.expand_output_paths()
+            # use __class__ to create a new instance validated output method
+            # the model_copy method does not validate the output fields
+            method.output = method.output.__class__(**method.output_expanded)
         return method
 
-    def wildcard_product(self) -> List[Dict[str, str]]:
+    @property
+    def _wildcard_product(self) -> List[Dict[str, str]]:
         """Return the values of wildcards per method instance."""
         # only explode if there are wildcards on the output
         wildcards = self.wildcards["explode"]
@@ -360,8 +367,8 @@ class Rule:
     def _set_method_instances(self):
         """Set a list with all instances of the method based on the wildcards."""
         self._method_instances = []
-        for wildcard_dict in self.wildcard_product():
-            method = self._method_wildcard_instance(wildcard_dict)
+        for wildcard_dict in self._wildcard_product:
+            method = self._create_method_instance(wildcard_dict)
             self._method_instances.append(method)
 
     def _set_parameters(self):

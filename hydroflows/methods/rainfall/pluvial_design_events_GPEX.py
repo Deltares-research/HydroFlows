@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows._typing import ListOfFloat, ListOfPath, ListOfStr, WildcardPath
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.rainfall.pluvial_design_events import (
     _plot_hyetograph,
@@ -40,11 +40,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEventsGPEX`."""
 
-    event_yaml: Path
+    event_yaml: ListOfPath | WildcardPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    event_csv: Path
+    event_csv: ListOfPath | WildcardPath
     """The path to the event csv timeseries file"""
 
     event_set_yaml: Path

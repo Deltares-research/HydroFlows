@@ -9,7 +9,13 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfInt, ListOfStr
+from hydroflows._typing import (
+    ListOfFloat,
+    ListOfInt,
+    ListOfPath,
+    ListOfStr,
+    WildcardPath,
+)
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -33,11 +39,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEvents`."""
 
-    event_yaml: Path
+    event_yaml: ListOfPath | WildcardPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    event_csv: Path
+    event_csv: ListOfPath | WildcardPath
     """The path to the event csv timeseries file"""
 
     event_set_yaml: Path
@@ -294,6 +300,9 @@ class PluvialDesignEvents(ExpandMethod):
         p_hyetograph = p_hyetograph.reset_coords(drop=True)
 
         events_list = []
+        # for i, wc in enumerate(self.expand_wildcards):
+        #     output_dict = self.
+
         for name, rp in zip(self.params.event_names, p_hyetograph["rps"].values):
             # save p_rp as csv files
             fmt_dict = {self.params.wildcard: name}

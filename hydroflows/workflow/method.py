@@ -14,9 +14,9 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
-from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.wildcards import resolve_wildcards, wildcard_product
 
 __all__ = ["Method"]
 
@@ -255,6 +255,7 @@ class Method(ABC):
                     else:
                         logger.warning(msg)
         # return output paths
+
         return [value for _, value in self._output_paths]
 
     def run_with_checks(self, check_output: bool = True) -> None:
@@ -265,6 +266,7 @@ class Method(ABC):
         check_output : bool, optional
             Check if output files are created, by default True.
         """
+        # TODO warning if wildcards on input / params
         self.check_input_output_paths()
         self.run()
         if check_output:
@@ -297,11 +299,9 @@ class Method(ABC):
     @property
     def _output_paths(self) -> List[Tuple[str, Path]]:
         """Return a list of output key-path tuples."""
-        paths = []
-        for key, value in self.output.model_dump().items():
-            if isinstance(value, Path):
-                paths.append((key, value))
-        return paths
+        return [
+            (key, val) for key, val in self.output.to_dict(filter_types=(Path)).items()
+        ]
 
     def check_output_exists(self):
         """Check if output files exist."""
@@ -344,41 +344,53 @@ class ExpandMethod(Method, ABC):
         return self._expand_wildcards
 
     @property
+    def expand_wildcard_product(self) -> List[Dict[str, str]]:
+        """Return a list of dicts with all possible combinations of wildcard values."""
+        if not hasattr(self, "_expand_wildcard_product"):
+            self._expand_wildcard_product = wildcard_product(self.expand_wildcards)
+        return self._expand_wildcard_product
+
+    @property
+    def output_expanded(self) -> Dict[str, Path | List[Path]]:
+        """Output dict with wildcards in output path evaluated."""
+        if not hasattr(self, "_output_expanded"):
+            self._evaluate_expand_wildcards()
+        return self._output_expanded
+
+    def iter_wildcard_output(
+        self
+    ) -> Generator[Tuple[Dict[str, str], Dict[str, Path]], None, None]:
+        """Return the wildcard output with expanded wildcards for a given wildcard index."""
+        for i, wildcards in enumerate(self.expand_wildcard_product):
+            output = {}
+            for key, value in self.output_expanded.items():
+                if isinstance(value, list):
+                    output[key] = value[i]
+                else:
+                    output[key] = value
+            yield wildcards, output
+
+    def _evaluate_expand_wildcards(self) -> None:
+        """Evaluate wildcards in output paths."""
+        self._output_expanded = {}
+        for key, value in self.output.to_dict(filter_types=(Path)).items():
+            value = resolve_wildcards(value, self.expand_wildcard_product)
+            # if only one value, unpack
+            if len(value) == 1:
+                value = value[0]
+            self._output_expanded[key] = value
+
+    @property
     def _output_paths(self) -> List[Tuple[str, Path]]:
         """Return a list of output key-path tuples."""
         paths = []
-        for key, value in self.output.model_dump().items():
-            if isinstance(value, list) and all([isinstance(p, Path) for p in value]):
-                for item in value:
-                    paths.append((key, item))
-            if not isinstance(value, Path):
-                continue
-            for wc, vlist in self.expand_wildcards.items():
-                if any(get_wildcards(value, [wc])):
-                    for v in vlist:
-                        path = Path(str(value).format(**{wc: v}))
-                        paths.append((key, path))
-                else:
-                    paths.append((key, value))
+        for key, val in self.output_expanded.items():
+            if isinstance(val, list):
+                for path in val:
+                    paths.append((key, path))
+            else:
+                paths.append((key, val))
         return paths
-
-    def expand_output_paths(self) -> None:
-        """Reinitialize Output object with wildcards in output path evaluated."""
-        # Fetch keys, values from output_paths
-        output_paths = self._output_paths
-        keys = [tup[0] for tup in output_paths]
-        vals = [tup[1] for tup in output_paths]
-
-        # dict for storing outputs as {key: [list of values]}
-        out_dict = {}
-
-        # Fill out_dict
-        for key in set(keys):
-            idxs = [idx for (idx, item) in enumerate(keys) if item == key]
-            out_dict[key] = [vals[i] for i in idxs]
-
-        # Reinitialize output object
-        self.output = self.output.model_copy(update=out_dict)
 
 
 class ReduceMethod(Method):

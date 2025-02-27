@@ -6,7 +6,7 @@ from typing import List, Literal, Optional
 
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ListOfPath, ListOfStr, WildcardPath
 from hydroflows.events import Event, EventSet
 from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import ExpandMethod
@@ -28,11 +28,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FutureSLR` method."""
 
-    future_event_yaml: Path
+    future_event_yaml: ListOfPath | WildcardPath
     """The path to the offset event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    future_event_csv: Path
+    future_event_csv: ListOfPath | WildcardPath
     """The path to the offset event csv timeseries file."""
 
     future_event_set_yaml: Path

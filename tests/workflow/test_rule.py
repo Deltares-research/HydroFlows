@@ -128,14 +128,14 @@ def test_validate_wildcards(workflow: Workflow):
     )  # replace output
     err_msg = f"ExpandMethod {name} requires a new expand wildcard on output (Rule test_rule)."
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
+        Rule(method=expand_method, workflow=Workflow(), rule_id="test_rule")
 
     # test with wrong wildcard on input
     expand_method = MockExpandMethod(
         input_file="{w}_test_file", root="", events=["1", "2", "3"], wildcard="w"
     )
     with pytest.raises(ValueError, match=re.escape(err_msg)):
-        Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
+        Rule(method=expand_method, workflow=Workflow(), rule_id="test_rule")
 
     # test reduce method with missing wildcard on input
     name = MockReduceMethod.name
@@ -170,11 +170,11 @@ def test_validate_wildcards(workflow: Workflow):
         Rule(method=test_method, workflow=workflow)
 
 
-def test_method_wildcard_instance(workflow: Workflow):
+def test_create_method_instance(workflow: Workflow):
     # test normal method with no wildcards
     test_method = TestMethod(input_file1="test1", input_file2="test2")
     rule = Rule(method=test_method, workflow=workflow)
-    method = rule._method_wildcard_instance(wildcards={})
+    method = rule._create_method_instance(wildcards={})
     assert method == test_method
 
     # test normal method with explode wildcards
@@ -182,22 +182,22 @@ def test_method_wildcard_instance(workflow: Workflow):
         input_file1="{region}/test1", input_file2="{region}/test2"
     )
     rule = Rule(method=explode_method, workflow=workflow)
-    method = rule._method_wildcard_instance(wildcards={"region": "region1"})
+    method = rule._create_method_instance(wildcards={"region": "region1"})
     assert method.input.input_file1.as_posix() == "region1/test1"
-    method = rule._method_wildcard_instance(wildcards={"region": "xxx"})
+    method = rule._create_method_instance(wildcards={"region": "xxx"})
     assert method.input.input_file1.as_posix() == "xxx/test1"
     with pytest.raises(
         ValueError, match="Explode wildcard 'region' should be a string."
     ):
-        rule._method_wildcard_instance(wildcards={"region": ["1"]})
+        rule._create_method_instance(wildcards={"region": ["1"]})
 
     # test reduce method
     reduce_method = MockReduceMethod(files="test{region}", root="")
     rule = Rule(method=reduce_method, workflow=workflow)
-    method = rule._method_wildcard_instance(wildcards={"region": ["1", "2"]})
+    method = rule._create_method_instance(wildcards={"region": ["1", "2"]})
     assert [file.as_posix() for file in method.input.files] == ["test1", "test2"]
     with pytest.raises(ValueError, match="Reduce wildcard 'region' should be a list."):
-        rule._method_wildcard_instance(wildcards={"region": "1"})
+        rule._create_method_instance(wildcards={"region": "1"})
 
     # test expand method (creates 'w' wildcard on outputs)
     expand_method = MockExpandMethod(
@@ -207,7 +207,7 @@ def test_method_wildcard_instance(workflow: Workflow):
         wildcard="w",
     )
     rule = Rule(method=expand_method, workflow=workflow)
-    method: MockExpandMethod = rule._method_wildcard_instance(wildcards={})
+    method: MockExpandMethod = rule._create_method_instance(wildcards={})
     assert [file.as_posix() for file in method.output.output_file] == [
         "1/file.yml",
         "2/file.yml",
@@ -216,7 +216,7 @@ def test_method_wildcard_instance(workflow: Workflow):
     with pytest.raises(
         ValueError, match="Expand wildcard 'w' should not be in wildcards."
     ):
-        rule._method_wildcard_instance(wildcards={"w": [1, 2, 3]})
+        rule._create_method_instance(wildcards={"w": [1, 2, 3]})
 
     # test expand method with additional explode wildcard
     expand_method = MockExpandMethod(
@@ -226,7 +226,7 @@ def test_method_wildcard_instance(workflow: Workflow):
         wildcard="event",
     )
     rule = Rule(method=expand_method, workflow=workflow)
-    method: MockExpandMethod = rule._method_wildcard_instance(
+    method: MockExpandMethod = rule._create_method_instance(
         wildcards={"region": "region1"}
     )
     assert method.input.input_file.as_posix() == "region1/test_file"
@@ -243,13 +243,13 @@ def test_wildcard_product():
     workflow = Workflow(wildcards={"region": ["region1", "xx"]})
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)
-    wc_product = rule.wildcard_product()
+    wc_product = rule._wildcard_product
     assert wc_product == [{"region": "region1"}, {"region": "xx"}]
 
     # test reduce method
     reduce_method = MockReduceMethod(files="test{region}", root="")
     rule = Rule(method=reduce_method, workflow=workflow)
-    wc_product = rule.wildcard_product()
+    wc_product = rule._wildcard_product
     assert wc_product == [{"region": ["region1", "xx"]}]
 
     # test expand method with explode and expand wildcards
@@ -261,14 +261,14 @@ def test_wildcard_product():
     )
     rule = Rule(method=expand_method, workflow=workflow)
     assert workflow.wildcards.get("event") == ["1", "2", "3"]
-    wc_product = rule.wildcard_product()
+    wc_product = rule._wildcard_product
     assert wc_product == [{"region": "region1"}, {"region": "xx"}]
 
     # test reduce method with expand wildcards
     workflow = Workflow(wildcards={"region": ["region1", "xx"], "event": ["1", "b"]})
     reduce_method = MockReduceMethod(files="{region}/test{event}", root="{region}")
     rule = Rule(method=reduce_method, workflow=workflow)
-    wc_product = rule.wildcard_product()
+    wc_product = rule._wildcard_product
     assert wc_product == [
         {"region": "region1", "event": ["1", "b"]},
         {"region": "xx", "event": ["1", "b"]},

@@ -4,7 +4,7 @@ from typing import List, Union
 import pytest
 import yaml
 
-from hydroflows._typing import WildcardPath
+from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.workflow import Method, Parameters, Workflow
 from hydroflows.workflow.method import ExpandMethod, ReduceMethod
 from hydroflows.workflow.rule import Rule
@@ -68,8 +68,8 @@ class ExpandMethodInput(Parameters):
 
 
 class ExpandMethodOutput(Parameters):
-    output_file: Path
-    output_file2: Path
+    output_file: ListOfPath | WildcardPath
+    output_file2: ListOfPath | WildcardPath
 
 
 class ExpandMethodParams(Parameters):
@@ -105,6 +105,37 @@ class MockExpandMethod(ExpandMethod):
             Path(output_file).parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, "w") as f:
                 f.write("")
+
+
+class DoubleExpandMethodParams(Parameters):
+    root: Path
+    wildcards: dict[str, List[str]]
+
+
+class MockDoubleExpandMethod(ExpandMethod):
+    name: str = "mock_double_expand_method"
+
+    def __init__(
+        self,
+        input_file: Path,
+        root: Path,
+        wildcards: dict[str, List[str]],
+    ) -> None:
+        self.input: ExpandMethodInput = ExpandMethodInput(input_file=input_file)
+        self.params: DoubleExpandMethodParams = DoubleExpandMethodParams(
+            root=root, wildcards=wildcards
+        )
+        wc_keys = list(self.params.wildcards.keys())
+        wc = "{" + "}_{".join(wc_keys) + "}"
+        self.output: ExpandMethodOutput = ExpandMethodOutput(
+            output_file=self.params.root / wc / "file.yml",
+            output_file2=self.params.root / wc / "file2.yml",
+        )
+        for key, values in self.params.wildcards.items():
+            self.set_expand_wildcard(key, values)
+
+    def run(self):
+        pass
 
 
 class ReduceInput(Parameters):

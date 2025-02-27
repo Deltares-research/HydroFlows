@@ -12,7 +12,7 @@ from hydroflows.workflow import (
     Workflow,
     WorkflowConfig,
 )
-from hydroflows.workflow.workflow import Wildcards
+from hydroflows.workflow.wildcards import Wildcards
 from tests.workflow.conftest import (
     MockExpandMethod,
     MockReduceMethod,

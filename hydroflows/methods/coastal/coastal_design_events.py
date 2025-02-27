@@ -10,7 +10,7 @@ import xarray as xr
 from hydromt.stats import eva, get_peak_hydrographs, get_peaks
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows._typing import ListOfFloat, ListOfPath, ListOfStr, WildcardPath
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.workflow.method import ExpandMethod
@@ -35,11 +35,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`CoastalDesginEvents` method."""
 
-    event_yaml: Path
+    event_yaml: ListOfPath | WildcardPath
     """Path to event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    event_csv: Path
+    event_csv: ListOfPath | WildcardPath
     """Path to event timeseries csv file"""
 
     event_set_yaml: Path
