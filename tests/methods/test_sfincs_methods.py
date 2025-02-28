@@ -39,10 +39,27 @@ def test_sfincs_build(
         config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
         catalog_path=str(global_catalog),
+        src_points_output=True,
+        subgrid_output=True,
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
+    assert sfincs_build.output.sfincs_src_points == sfincs_root / "gis" / "src.geojson"
+    assert (
+        sfincs_build.output.sfincs_subgrid_dep
+        == sfincs_root / "subgrid" / "dep_subgrid.tif"
+    )
 
     sfincs_build.run_with_checks()
+
+    with pytest.raises(ValueError, match="The 'src_points_output' parameter must"):
+        SfincsBuild(
+            region=str(region),
+            config=build_cfgs["sfincs_build"],
+            sfincs_root=Path(tmp_path, "model_error"),
+            catalog_path=str(global_catalog),
+            src_points_output=False,
+            subgrid_output=True,
+        ).run_with_checks()
 
 
 @pytest.mark.requires_test_data()
