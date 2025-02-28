@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfPath, ListOfStr, WildcardPath
+from hydroflows._typing import ListOfFloat, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.rainfall.pluvial_design_events import (
     _plot_hyetograph,
@@ -40,11 +40,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`PluvialDesignEventsGPEX`."""
 
-    event_yaml: ListOfPath | WildcardPath
+    event_yaml: Path
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    event_csv: ListOfPath | WildcardPath
+    event_csv: Path
     """The path to the event csv timeseries file"""
 
     event_set_yaml: Path
@@ -271,20 +271,18 @@ class PluvialDesignEventsGPEX(ExpandMethod):
 
         events_list = []
         for name, rp in zip(self.params.event_names, p_hyetograph["tr"].values):
+            output = self.get_output_for_wildcards({self.params.wildcard: name})
             # save p_rp as csv files
-            fmt_dict = {self.params.wildcard: name}
-            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
-            p_hyetograph.sel(tr=rp).to_pandas().round(2).to_csv(forcing_file)
+            p_hyetograph.sel(tr=rp).to_pandas().round(2).to_csv(output["event_csv"])
             # save event description yaml file
-            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "rainfall", "path": forcing_file}],
+                forcings=[{"type": "rainfall", "path": output["event_csv"]}],
                 return_period=rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file})
+            event.to_yaml(output["event_yaml"])
+            events_list.append({"name": name, "path": output["event_yaml"]})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)

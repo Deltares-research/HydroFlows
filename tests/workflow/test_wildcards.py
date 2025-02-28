@@ -66,21 +66,17 @@ def test_wildcard_product():
 
 
 def test_resolve_wildcards():
-    wildcard_list = [
-        {"wildcard1": "value1", "wildcard2": "value3"},
-        {"wildcard1": "value1", "wildcard2": "value4"},
-        {"wildcard1": "value2", "wildcard2": "value3"},
-        {"wildcard1": "value2", "wildcard2": "value4"},
-    ]
-    assert resolve_wildcards("This is a {wildcard1} test.", wildcard_list) == [
+    wildcards = {
+        "wildcard1": ["value1", "value2"],
+        "wildcard2": ["value3", "value4"],
+    }
+    assert resolve_wildcards("This is a {wildcard1} test.", wildcards) == [
         "This is a value1 test.",
-        "This is a value1 test.",
-        "This is a value2 test.",
         "This is a value2 test.",
     ]
 
     assert set(
-        resolve_wildcards("Multiple {wildcard1} and {wildcard2}.", wildcard_list)
+        resolve_wildcards("Multiple {wildcard1} and {wildcard2}.", wildcards)
     ) == set(
         [
             "Multiple value1 and value3.",
@@ -89,17 +85,21 @@ def test_resolve_wildcards():
             "Multiple value2 and value4.",
         ]
     )
-    assert (
-        resolve_wildcards("Unknown {wildcard3} present.", wildcard_list)
-        == ["Unknown {wildcard3} present."] * 4
-    )
 
     # test with Path
     assert resolve_wildcards(
-        Path("path/to/{wildcard1}/{wildcard2}.yml"), wildcard_list
+        Path("path/to/{wildcard1}/{wildcard2}.yml"), wildcards
     ) == [
         Path("path/to/value1/value3.yml"),
         Path("path/to/value1/value4.yml"),
         Path("path/to/value2/value3.yml"),
         Path("path/to/value2/value4.yml"),
     ]
+
+    assert resolve_wildcards(
+        Path("path/to/{wildcard1}/{wildcard2}.yml"),
+        {"wildcard1": "value1", "wildcard2": "value2"},
+    ) == Path("path/to/value1/value2.yml")
+
+    with pytest.raises(KeyError, match="Wildcard values missing for: wildcard3."):
+        resolve_wildcards("Unknown {wildcard3} present.", wildcards)

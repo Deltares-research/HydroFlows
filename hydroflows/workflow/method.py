@@ -16,7 +16,7 @@ from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
 from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.wildcards import resolve_wildcards, wildcard_product
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 __all__ = ["Method"]
 
@@ -255,7 +255,6 @@ class Method(ABC):
                     else:
                         logger.warning(msg)
         # return output paths
-
         return [value for _, value in self._output_paths]
 
     def run_with_checks(self, check_output: bool = True) -> None:
@@ -344,40 +343,17 @@ class ExpandMethod(Method, ABC):
         return self._expand_wildcards
 
     @property
-    def expand_wildcard_product(self) -> List[Dict[str, str]]:
-        """Return a list of dicts with all possible combinations of wildcard values."""
-        if not hasattr(self, "_expand_wildcard_product"):
-            self._expand_wildcard_product = wildcard_product(self.expand_wildcards)
-        return self._expand_wildcard_product
-
-    @property
     def output_expanded(self) -> Dict[str, Path | List[Path]]:
         """Output dict with wildcards in output path evaluated."""
         if not hasattr(self, "_output_expanded"):
             self._evaluate_expand_wildcards()
         return self._output_expanded
 
-    def iter_wildcard_output(
-        self
-    ) -> Generator[Tuple[Dict[str, str], Dict[str, Path]], None, None]:
-        """Return the wildcard output with expanded wildcards for a given wildcard index."""
-        for i, wildcards in enumerate(self.expand_wildcard_product):
-            output = {}
-            for key, value in self.output_expanded.items():
-                if isinstance(value, list):
-                    output[key] = value[i]
-                else:
-                    output[key] = value
-            yield wildcards, output
-
     def _evaluate_expand_wildcards(self) -> None:
         """Evaluate wildcards in output paths."""
         self._output_expanded = {}
         for key, value in self.output.to_dict(filter_types=(Path)).items():
-            value = resolve_wildcards(value, self.expand_wildcard_product)
-            # if only one value, unpack
-            if len(value) == 1:
-                value = value[0]
+            value = resolve_wildcards(value, self.expand_wildcards)
             self._output_expanded[key] = value
 
     @property
@@ -391,6 +367,28 @@ class ExpandMethod(Method, ABC):
             else:
                 paths.append((key, val))
         return paths
+
+    def get_output_for_wildcards(self, wildcards: dict[str, str]) -> dict[str, Path]:
+        """Get the output paths for a specific wildcard configuration.
+
+        Parameters
+        ----------
+        wildcards : dict[str, str]
+            The wildcard configuration.
+            Note that the wildcard values should be single strings.
+
+        Returns
+        -------
+        dict[str, Path]
+            The output paths for the wildcard configuration.
+        """
+        # make sure all wildcard values are strings
+        if not all(isinstance(v, str) for v in wildcards.values()):
+            raise ValueError("All wildcard values should be strings.")
+        output = {}
+        for key, path in self.output.to_dict(filter_types=(Path)).items():
+            output[key] = resolve_wildcards(path, wildcards)
+        return output
 
 
 class ReduceMethod(Method):

@@ -7,7 +7,7 @@ from typing import List, Optional
 import pandas as pd
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ListOfPath, ListOfStr, WildcardPath
+from hydroflows._typing import ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -26,11 +26,11 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FutureClimateRainfall` method."""
 
-    future_event_yaml: ListOfPath | WildcardPath
+    future_event_yaml: Path
     """The path to the scaled event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
-    future_event_csv: ListOfPath | WildcardPath
+    future_event_csv: Path
     """The path to the scaled event csv timeseries file."""
 
     future_event_set_yaml: Path
@@ -188,11 +188,14 @@ class FutureClimateRainfall(ExpandMethod):
         # List to save the scaled events
         future_events_list = []
 
-        for name in self.params.event_names_input:
+        for name, name_out in zip(
+            self.params.event_names_input, self.params.event_names_output
+        ):
+            output = self.get_output_for_wildcards({self.params.wildcard: name_out})
+
             # Load the event
             event: Event = event_set.get_event(name)
-
-            # get precip event
+            # get precip forcing
             if len(event.forcings) > 1:
                 logger.warning(
                     f"Event {name} has more than one forcing. The first rainfall forcing is used."
@@ -200,7 +203,6 @@ class FutureClimateRainfall(ExpandMethod):
                 rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
             else:
                 rainfall = event.forcings[0]
-
             event_df = rainfall.data.copy()
 
             # Apply CC scaling
@@ -208,30 +210,20 @@ class FutureClimateRainfall(ExpandMethod):
 
             # Create a new df to include the time and scaled values
             future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
-
-            filename = f"{event.name}_{self.params.scenario_name}"
-
-            fmt_dict = {self.params.wildcard: filename}
-
-            # write forcing timeseries to csv
-            forcing_file = Path(
-                self.output.future_event_csv.as_posix().format(**fmt_dict)
-            )
-            future_event_df.to_csv(forcing_file, index=True)
+            future_event_df.to_csv(output["future_event_csv"], index=True)
 
             # write event to yaml
-            future_event_file = Path(
-                self.output.future_event_yaml.as_posix().format(**fmt_dict)
-            )
             future_event = Event(
-                name=filename,
-                forcings=[{"type": "rainfall", "path": forcing_file}],
+                name=name_out,
+                forcings=[{"type": "rainfall", "path": output["future_event_csv"]}],
             )
             future_event.set_time_range_from_forcings()
-            future_event.to_yaml(future_event_file)
+            future_event.to_yaml(output["future_event_yaml"])
 
             # append event to list
-            future_events_list.append({"name": filename, "path": future_event_file})
+            future_events_list.append(
+                {"name": name_out, "path": output["future_event_yaml"]}
+            )
 
         # make and save event set yaml file
         future_event_set = EventSet(events=future_events_list)

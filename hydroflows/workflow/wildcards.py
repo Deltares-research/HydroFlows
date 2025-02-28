@@ -1,4 +1,5 @@
 """Workflow wildcards module."""
+
 import itertools
 from logging import getLogger
 from pathlib import Path
@@ -68,8 +69,8 @@ def wildcard_product(wildcards: dict[str, list[str]]) -> list[dict[str, str]]:
 
 
 def resolve_wildcards(
-    s: str | Path, wildcard_list: list[dict[str, str]]
-) -> list[str | Path]:
+    s: str | Path, wildcards: dict[str, list[str] | str]
+) -> list[str | Path] | str | Path:
     """Resolve wildcards in a string or path using a dictionary of values.
 
     With multiple wildcards, all possible combinations of values are created.
@@ -78,26 +79,38 @@ def resolve_wildcards(
     ----------
     s : str | Path
         The string or path to resolve wildcards in.
-    wildcards : list[dict[str, str]]
-        A list of dictionaries with wildcard keys and value.
+    wildcards : dict[str, list[str]]
+        The dictionary of wildcards and values.
     """
     is_path = False
     if isinstance(s, Path):
         is_path = True
         s = s.as_posix()
 
-    # Get the wildcards in the string
-    wildcard_keys = get_wildcards(s)
+    # keep only wildcards in the string
+    wildcards_in_string = get_wildcards(s)
+    # check if all wildcards are in the wildcards dict
+    missing_wildcards = set(wildcards_in_string) - set(wildcards.keys())
+    if missing_wildcards:
+        missing_wildcards_str = ", ".join(missing_wildcards)
+        raise KeyError(f"Wildcard values missing for: {missing_wildcards_str}")
 
-    # If there are no wildcards in the string, return the string as is
+    wildcards = {k: v for k, v in wildcards.items() if k in wildcards_in_string}
+    single_value = all(isinstance(v, str) for v in wildcards.values())
+    # make sure values are lists
+    wildcards = {k: v if isinstance(v, list) else [v] for k, v in wildcards.items()}
+
     resolved_strings = []
-    for wildcard_dict in wildcard_list:
-        wc = {k: v for k, v in wildcard_dict.items() if k in wildcard_keys}
-        if wc:
+    if wildcards:
+        for wc in wildcard_product(wildcards):
             resolved_strings.append(s.format(**wc))
-        else:
-            resolved_strings.append(s)
+    else:
+        resolved_strings.append(s)
 
     if is_path:
         resolved_strings = [Path(p) for p in resolved_strings]
-    return resolved_strings
+
+    if single_value:
+        return resolved_strings[0]
+    else:
+        return resolved_strings

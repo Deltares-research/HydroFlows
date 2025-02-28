@@ -208,11 +208,7 @@ def test_create_method_instance(workflow: Workflow):
     )
     rule = Rule(method=expand_method, workflow=workflow)
     method: MockExpandMethod = rule._create_method_instance(wildcards={})
-    assert [file.as_posix() for file in method.output.output_file] == [
-        "1/file.yml",
-        "2/file.yml",
-        "3/file.yml",
-    ]
+    assert method.output.output_file.as_posix() == "{w}/file.yml"
     with pytest.raises(
         ValueError, match="Expand wildcard 'w' should not be in wildcards."
     ):
@@ -230,12 +226,7 @@ def test_create_method_instance(workflow: Workflow):
         wildcards={"region": "region1"}
     )
     assert method.input.input_file.as_posix() == "region1/test_file"
-    # assert method.output.output_file.as_posix() == "region1/{event}/file.yml"
-    assert [file.as_posix() for file in method.output.output_file] == [
-        "region1/1/file.yml",
-        "region1/2/file.yml",
-        "region1/3/file.yml",
-    ]
+    assert method.output.output_file.as_posix() == "region1/{event}/file.yml"
 
 
 def test_wildcard_product():
@@ -395,25 +386,17 @@ def test_rule_dependency(workflow: Workflow):
     assert workflow.rules["method4"]._dependency == "method1"
 
 
-def test_parameters(workflow: Workflow):
+def test_input_output(workflow: Workflow):
     # Test for rule with no wildcard
     test_method = TestMethod(input_file1="test1", input_file2="test2")
     rule = Rule(method=test_method, workflow=workflow)
-    assert rule._parameters == {
-        "input": {
-            "input_file1": [rule.method.input.input_file1],
-            "input_file2": [rule.method.input.input_file2],
-        },
-        "output": {
-            "output_file1": [rule.method.output.output_file1],
-            "output_file2": [rule.method.output.output_file2],
-        },
-        "params": {
-            "param": [rule.method.params.param],
-            "out_root": [rule.method.input.input_file1.parent],
-            "default_param": [rule.method.params.default_param],
-            "default_param2": [rule.method.params.default_param2],
-        },
+    assert rule._input == {
+        "input_file1": [test_method.input.input_file1],
+        "input_file2": [test_method.input.input_file2],
+    }
+    assert rule._output == {
+        "output_file1": [test_method.output.output_file1],
+        "output_file2": [test_method.output.output_file2],
     }
 
     # Test for rule with explode wildcard
@@ -421,38 +404,27 @@ def test_parameters(workflow: Workflow):
         input_file1="{region}/test1", input_file2="{region}/test2"
     )
     rule = Rule(method=explode_method, workflow=workflow)
-    methods = rule._method_instances
-    assert rule._parameters == {
-        "input": {
-            "input_file1": [method.input.input_file1 for method in methods],
-            "input_file2": [method.input.input_file2 for method in methods],
-        },
-        "output": {
-            "output_file1": [method.output.output_file1 for method in methods],
-            "output_file2": [method.output.output_file2 for method in methods],
-        },
-        "params": {
-            "param": [methods[0].params.param],
-            "out_root": [
-                method.params.out_root for method in methods
-            ],  # has region wildcard
-            "default_param": [methods[0].params.default_param],
-            "default_param2": [methods[0].params.default_param2],
-        },
+    methods: list[TestMethod] = rule._method_instances
+    assert rule._input == {
+        "input_file1": [method.input.input_file1 for method in methods],
+        "input_file2": [method.input.input_file2 for method in methods],
+    }
+    assert rule._output == {
+        "output_file1": [method.output.output_file1 for method in methods],
+        "output_file2": [method.output.output_file2 for method in methods],
     }
 
     # Test for reduce rule
     reduce_method = MockReduceMethod(files="test{region}", root="")
     rule = Rule(method=reduce_method, workflow=workflow)
     # only 1 instance for reduce rules
-    methods = rule._method_instances
-    assert rule._parameters == {
-        "input": {
-            # Evaluated input is already a list, so no extra brackets
-            "files": methods[0].input.files
-        },
-        "output": {"output_file": [methods[0].output.output_file]},
-        "params": {"root": [methods[0].params.root]},
+    methods: list[MockReduceMethod] = rule._method_instances
+    assert rule._input == {
+        # Evaluated input is already a list, so no extra brackets
+        "files": methods[0].input.files
+    }
+    assert rule._output == {
+        "output_file": [methods[0].output.output_file],
     }
 
     # Test for expand rule
@@ -463,23 +435,18 @@ def test_parameters(workflow: Workflow):
         wildcard="event",
     )
     rule = Rule(method=expand_method, workflow=workflow)
-    methods = rule._method_instances
-    assert rule._parameters == {
-        "input": {"input_file": [method.input.input_file for method in methods]},
-        "output": {
-            # _parameters flattens nested list
-            "output_file": list(
-                chain(*[method.output.output_file for method in methods])
-            ),
-            "output_file2": list(
-                chain(*[method.output.output_file2 for method in methods])
-            ),
-        },
-        "params": {
-            "root": [method.params.root for method in methods],
-            "events": [methods[0].params.events],
-            "wildcard": [methods[0].params.wildcard],
-        },
+    methods: list[MockExpandMethod] = rule._method_instances
+    assert rule._input == {
+        "input_file": [method.input.input_file for method in methods]
+    }
+    assert rule._output == {
+        # flattens nested list
+        "output_file": list(
+            chain(*[method.output_expanded["output_file"] for method in methods])
+        ),
+        "output_file2": list(
+            chain(*[method.output_expanded["output_file2"] for method in methods])
+        ),
     }
 
 
@@ -497,7 +464,7 @@ def test_dryrun(caplog, tmp_path):
         rule.dryrun(missing_file_error=True)
     # test dryrun with missing file error and missing file
     input_files = []
-    for file_list in rule._parameters["input"].values():
+    for file_list in rule._input.values():
         input_files.extend(file_list)
     rule.dryrun(missing_file_error=True, input_files=input_files)
     # write input files and test again

@@ -11,6 +11,7 @@ from tqdm.contrib.concurrent import thread_map
 from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 if TYPE_CHECKING:
     from hydroflows.workflow.workflow import Workflow
@@ -18,8 +19,6 @@ if TYPE_CHECKING:
 __all__ = ["Rule"]
 
 logger = logging.getLogger(__name__)
-
-FMT = ["snakemake"]
 
 
 class Rule:
@@ -64,8 +63,8 @@ class Rule:
         self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
         self._method_instances: List[Method] = []  # list of method instances
         # values of input, output and params fields for all method instances
-        # TODO split to input, output, params
-        self._parameters: Dict[str, Dict] = {}
+        self._input: Dict[str, list[Path]] = {}
+        self._output: Dict[str, list[Path]] = {}
         self._dependency: str | None = None  # rule_id of last occurring dependency
         self._loop_depth: int = 0  # loop depth of the rule
 
@@ -80,7 +79,7 @@ class Rule:
         self._create_references_for_method_inputs()
         self._add_method_params_to_config()
         self._set_method_instances()
-        self._set_parameters()
+        self._set_input_output()
         self._detect_dependency()
 
     def __repr__(self) -> str:
@@ -259,17 +258,14 @@ class Rule:
             if key in reduce_fields:
                 # reduce method -> turn values into lists
                 # wildcards = {wc: [v1, v2, ...], ...}
-                kwargs[key] = [str(kwargs[key]).format(**d) for d in wildcards_reduce]
+                kwargs[key] = [
+                    resolve_wildcards(kwargs[key], d) for d in wildcards_reduce
+                ]
             elif key in self._all_wildcard_fields:
                 # explode method
                 # wildcards = {wc: v, ...}
-                kwargs[key] = str(kwargs[key]).format(**wildcards)
+                kwargs[key] = resolve_wildcards(kwargs[key], wildcards)
         method = self.method.from_kwargs(**kwargs)
-        # for expand methods, set the output to the expanded output
-        if isinstance(method, ExpandMethod):
-            # use __class__ to create a new instance validated output method
-            # the model_copy method does not validate the output fields
-            method.output = method.output.__class__(**method.output_expanded)
         return method
 
     @property
@@ -371,41 +367,36 @@ class Rule:
             method = self._create_method_instance(wildcard_dict)
             self._method_instances.append(method)
 
-    def _set_parameters(self):
-        """Set the parameters of the rule.
-
-        The parameters are a dictionary with input, output and params as keys.
-        Each key contains a dictionary with field names as keys and unique values as lists.
-        """
-        parameters = {
-            "input": {},
-            "output": {},
-            "params": {},
-        }
+    def _set_input_output(self):
+        """Set the input and output paths dicts of the rule."""
+        parameters = {"input": {}, "output": {}}
         for method in self._method_instances:
             for name in parameters:
-                for key, value in getattr(method, name):
+                if name == "output" and isinstance(method, ExpandMethod):
+                    obj = method.output_expanded.items()
+                else:
+                    obj = getattr(method, name)
+                for key, value in obj:
                     if key not in parameters[name]:
                         parameters[name][key] = []
-                    if name in ["input", "output"]:
-                        if not isinstance(value, list):
-                            value = [value]
-                        if not isinstance(value[0], Path):
-                            continue
-                        # Removes duplicates
-                        # Using set() does not preserve insertion order, this does and also filters uniques
-                        for val in value:
-                            if val not in parameters[name][key]:
-                                parameters[name][key].append(val)
-                    elif value not in parameters[name][key]:
-                        parameters[name][key].append(value)
+                    if not isinstance(value, list):
+                        value = [value]
+                    if not isinstance(value[0], Path):
+                        continue
+                    # Removes duplicates
+                    # Using set() does not preserve insertion order, this does and also filters uniques
+                    for val in value:
+                        if val not in parameters[name][key]:
+                            parameters[name][key].append(val)
 
-        self._parameters = parameters
+        # set input and output parameters
+        self._input = parameters["input"]
+        self._output = parameters["output"]
 
     def _detect_dependency(self):
         """Find last occuring dependency of self by matching input values to output values of prev rules."""
         # Make list of inputs, convert to set of strings for quick matching
-        inputs = self._parameters["input"]
+        inputs = self._input
         inputs = list(chain(*inputs.values()))
         # order of inputs doesn't matter here so set() is fine
         inputs = set([str(item) for item in inputs])
@@ -413,7 +404,7 @@ class Rule:
         # Init dependency as None
         for rule in reversed(self.workflow.rules):
             # Make list of outputs as strings, outputs always paths anyways
-            outputs = rule._parameters["output"]
+            outputs = rule._output
             outputs = list(chain(*outputs.values()))
             outputs = [str(item) for item in outputs]
 
@@ -436,7 +427,7 @@ class Rule:
         with cwd(self.workflow.root):
             if nruns == 1 or max_workers == 1:
                 for i, method in enumerate(self._method_instances):
-                    msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                    msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                     logger.info(msg)
                     method.run_with_checks()
             else:
@@ -474,7 +465,7 @@ class Rule:
         # set working directory to workflow root
         with cwd(self.workflow.root):
             for i, method in enumerate(self._method_instances):
-                msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                 logger.info(msg)
                 output_files_i = method.dryrun(
                     missing_file_error=missing_file_error, input_files=input_files
