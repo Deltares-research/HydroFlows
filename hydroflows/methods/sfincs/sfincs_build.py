@@ -100,6 +100,8 @@ class SfincsBuild(Method):
         catalog_path: Optional[Path] = None,
         predefined_catalogs: Optional[ListOfStr] = None,
         sfincs_root: Path = Path("models/sfincs"),
+        subgrid_output: bool = False,
+        src_points_output: bool = False,
         **params,
     ) -> None:
         """Create and validate a SfincsBuild instance.
@@ -120,8 +122,12 @@ class SfincsBuild(Method):
             A list containing the predefined data catalog names.
         sfincs_root : Path
             The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
-        res : float, optional
-            Model resolution [m], by default 100.
+        subgrid_output : bool, optional
+            Determines whether the sfincs subgrid depth output should exist, by default False.
+            In case the setup_subgrid method is included in the config file, this parameter should be set to True.
+        src_points_output : bool, optional
+            Determines whether the sfincs river source points should exist, by default False.
+            In case the setup_river_inflow method is included in the config file, this parameter should be set to True.
         **params
             Additional parameters to pass to the SfincsBuild instance.
             See :py:class:`sfincs_build Params <hydroflows.methods.sfincs.sfincs_build.Params>`.
@@ -134,10 +140,16 @@ class SfincsBuild(Method):
         :py:class:`hydromt_sfincs.SfincsModel`
         """
         self.params: Params = Params(
-            sfincs_root=sfincs_root, predefined_catalogs=predefined_catalogs, **params
+            sfincs_root=sfincs_root,
+            predefined_catalogs=predefined_catalogs,
+            subgrid_output=subgrid_output,
+            src_points_output=src_points_output,
+            **params,
         )
         self.input: Input = Input(
-            region=region, config=config, catalog_path=catalog_path
+            region=region,
+            config=config,
+            catalog_path=catalog_path,
         )
         if not self.input.catalog_path and not self.params.predefined_catalogs:
             raise ValueError(
