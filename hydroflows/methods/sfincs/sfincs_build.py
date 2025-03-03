@@ -124,10 +124,9 @@ class SfincsBuild(Method):
             The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
         subgrid_output : bool, optional
             Determines whether the sfincs subgrid depth output should exist, by default False.
-            In case the setup_subgrid method is included in the config file, this parameter should be set to True.
+            In case it is set to True, the setup_subgrid method should be included in the config file.
         src_points_output : bool, optional
             Determines whether the sfincs river source points should exist, by default False.
-            In case the setup_river_inflow method is included in the config file, this parameter should be set to True.
         **params
             Additional parameters to pass to the SfincsBuild instance.
             See :py:class:`sfincs_build Params <hydroflows.methods.sfincs.sfincs_build.Params>`.
@@ -180,16 +179,10 @@ class SfincsBuild(Method):
         # read the configuration
         opt = configread(self.input.config)
 
-        # throw error if the setup_river_inflow is included in the config but the output is set to False
-        if "setup_river_inflow" in opt and self.params.src_points_output == False:
+        # throw error if the setup_subgrid is not included in the config but the output is set to True
+        if "setup_subgrid" not in opt and self.params.subgrid_output == True:
             raise ValueError(
-                "The 'src_points_output' parameter must be set to True in order to use the HydroMT Sfincs 'setup_river_inflow' method."
-            )
-
-        # throw error if the setup_subgrid is included in the config but the output is set to False
-        if "setup_subgrid" in opt and self.params.subgrid_output == False:
-            raise ValueError(
-                "The 'subgrid_output' parameter must be set to True in order to use the HydroMT Sfincs 'setup_subgrid' method."
+                "The 'setup_subgrid' method must be included in the config file in order to set the 'subgrid_output' parameter to True."
             )
 
         # update placeholders in the config
