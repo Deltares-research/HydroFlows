@@ -172,34 +172,27 @@ occupancy_gdf["residents"] = np.where(
 
 # %% Map local occupancy types based on income
 # Combine income csv with spatial sectors
-income_2010_gdf = occupancy_gdf[["V005", "geometry"]]
-
+occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
+    lambda x: np.nan if x is None else x
+)
+occupancy_gdf["V005"] = occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
+    lambda x: float(x.replace(",", ".")) if pd.notna(x) else np.nan
+)
 # either adjust income to inflation or map to 2010 values - not available I think
-income_2010_gdf["V005"] = (
-    income_2010_gdf["V005"] * 2.75
+occupancy_gdf["V005"] = (
+    occupancy_gdf["V005"] * 2.75
 )  # https://www3.bcb.gov.br/CALCIDADAO/publico/corrigirPorIndice.do?method=corrigirPorIndice
 
-# Spatial join BF and income
-bf_income_24_gdf = occupancy_gdf_jrc[["geometry", "primary_object_type"]].sjoin(
-    income_2010_gdf
-)
-
-del bf_income_24_gdf["index_right"]
-bf_income_24_gdf["V005"] = [
-    float(row["V005"].replace(",", ".")) if row["V005"] is not None else row["V005"]
-    for idx, row in bf_income_24_gdf.iterrows()
-]
-
 # Map social class
-occupancy_bf_residential = bf_income_24_gdf[
-    bf_income_24_gdf["primary_object_type"] == "residential"
+occupancy_bf_residential = occupancy_gdf[
+    occupancy_gdf["primary_object_type"] == "residential"
 ]
-occupancy_bf_com_ind = bf_income_24_gdf[
-    bf_income_24_gdf["primary_object_type"] != "residential"
+occupancy_bf_com_ind = occupancy_gdf[
+    occupancy_gdf["primary_object_type"] != "residential"
 ]
 
 for index, row in occupancy_bf_residential.iterrows():
-    if pd.isna(row["V005"]):
+    if pd.isna(row["V005"]) or row["V005"] is None:
         nearest_idx = occupancy_bf_residential.sindex.nearest(
             row["geometry"], return_all=False
         )
@@ -209,7 +202,10 @@ for index, row in occupancy_bf_residential.iterrows():
                     nearest_idx = idx
                     break
         nearest_row = occupancy_bf_residential.iloc[nearest_idx]
-        occupancy_bf_residential.at[index, "V005"] = nearest_row["V005"]
+        occupancy_bf_residential.iloc[
+            index, occupancy_bf_residential.columns.get_loc("V005")
+        ] = nearest_row["V005"]
+
 
 # Apply mapping function
 occupancy_bf_residential["social_class"] = occupancy_bf_residential["V005"].apply(
