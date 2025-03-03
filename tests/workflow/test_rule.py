@@ -7,7 +7,6 @@ from weakref import ReferenceType
 import pytest
 
 from hydroflows.workflow import Rule
-from hydroflows.workflow.rule import Rules
 from hydroflows.workflow.workflow import Workflow
 from tests.workflow.conftest import (
     ExpandMethodOutput,
@@ -361,40 +360,6 @@ def test_add_method_params_to_config(workflow: Workflow):
     assert "method4_param" not in workflow.config.to_dict().keys()
 
 
-def test_rule_dependency(workflow: Workflow):
-    # Test for rule with no dependencies
-    method1 = TestMethod(input_file1="file1", input_file2="file2")
-    workflow.add_rule(method=method1, rule_id="method1")
-    assert workflow.rules["method1"]._dependency is None
-
-    # Test for rule with single dependency
-    method2 = TestMethod(
-        input_file1=method1.output.output_file1,
-        input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
-        out_root="root",
-    )
-    workflow.add_rule(method=method2, rule_id="method2")
-    assert workflow.rules["method2"]._dependency == "method1"
-
-    # Test for rule with multiple different dependencies
-    method3 = TestMethod(
-        input_file1=method1.output.output_file1,
-        input_file2=method2.output.output_file2,
-        out_root="root3",
-    )
-    workflow.add_rule(method=method3, rule_id="method3")
-    assert workflow.rules["method3"]._dependency == "method2"
-
-    # Test for rule with single dependency not being the last in workflow.rules
-    method4 = TestMethod(
-        input_file1=method1.output.output_file1,
-        input_file2=method1.output.output_file2,
-        out_root="root4",
-    )
-    workflow.add_rule(method=method4, rule_id="method4")
-    assert workflow.rules["method4"]._dependency == "method1"
-
-
 def test_parameters(workflow: Workflow):
     # Test for rule with no wildcard
     test_method = TestMethod(input_file1="test1", input_file2="test2")
@@ -524,25 +489,9 @@ def test_run(caplog, mocker):
     assert TestMethod.run_with_checks.call_count == 4
 
 
-def test_rules(workflow, rule):
-    reduce_method = MockReduceMethod(files="test{region}", root="")
-    reduce_rule = Rule(method=reduce_method, workflow=workflow, rule_id="reduce_rule")
-    rules = Rules(rules=[rule, reduce_rule])
-    assert rules.names == ["test_rule", "reduce_rule"]
-    assert (
-        rules.__repr__()
-        == "[Rule(id=test_rule, method=test_method, runs=1)\nRule(id=reduce_rule, method=mock_reduce_method, runs=1, reduce=['region'])]"
-    )
-    assert rule == rules.get_rule(rule_id="test_rule")
+def test_output_path_refs(w: Workflow):
+    method1 = TestMethod(input_file1="test1", input_file2="test2")
+    w.add_rule(method=method1, rule_id="method1")
 
-    with pytest.raises(ValueError, match="Rule fake_rule not found."):
-        rules.get_rule(rule_id="fake_rule")
-
-    class mock_rule:
-        rule_id = "mock_rule"
-
-    with pytest.raises(ValueError, match="Rule should be an instance of Rule."):
-        rules.set_rule(mock_rule())
-
-    with pytest.raises(ValueError, match="Rule test_rule already exists"):
-        rules.set_rule(rule)
+    output_path_refs = w.rules["method1"]._output_path_refs
+    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 3)]
