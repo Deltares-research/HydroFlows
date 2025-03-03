@@ -32,3 +32,24 @@ river_bathymetry:
 admin_sentores:
   data_type: GeoDataFrame
   path: admin/Setores_CensitA1rios_2010.gpkg
+vulnerability_curves:
+    path: single_curves
+    data_type: DataFrame
+    driver: csv
+    meta:
+      category: vulnerability
+      description: Folder with regional depth-damage functions for flooding.
+vulnerability_curves_linking:
+    path: damage_functions_linking.csv
+    data_type: DataFrame
+    driver: csv
+    meta:
+      category: vulnerability
+      description: Default linking table for the damage functions (e.g., the residential damage function links to residential buildings).
+damage_values:
+    path: max_pot_damages.csv
+    data_type: DataFrame
+    driver: csv
+    meta:
+      category: vulnerability
+      description: Base damage values, processed into a handy format for HydroMT-FIAT.

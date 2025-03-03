@@ -1,6 +1,6 @@
 meta:
   root: rio\data\preprocessed-data
-preprocessed_occupaction_jrc:
+preprocessed_occupaction:
   data_type: GeoDataFrame
   path: local_occupancy_pre_processed.gpkg
   driver: vector

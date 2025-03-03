@@ -1,6 +1,7 @@
-"""Clip exposure datasets to the region of interest."""
+"""Clip exposure datasets to the region of interest and store model data in output data source folder."""
 # %% imports
 import os
+import shutil
 from pathlib import Path
 
 import geopandas as gpd
@@ -52,4 +53,19 @@ entrances_path = Path(root, "census/numero_porta.gpkg")
 entrances_gdf = gpd.read_file(entrances_path, mask=sectors_gdf)
 entrances_gdf.to_file(out_root / "entrances.gpkg", driver="GPKG")
 
-# %%
+# %% Mapping
+mapping_social_class_path = Path(
+    root.parent, "preprocessed_data/social_class_building_type_mapping.csv"
+)
+shutil.copy(mapping_social_class_path, out_root)
+
+mapping_damage_functions_path = Path(
+    root.parent, "preprocessed_data/damage_functions_linking.csv"
+)
+shutil.copy(mapping_damage_functions_path, out_root)
+# %% local vulnerability and damages
+vulnerability_path = Path(root.parent, "preprocessed_data/single_curves")
+shutil.copytree(vulnerability_path, out_root)
+
+damages_path = Path(root.parent, "preprocessed_data/max_pot_damages.csv")
+shutil.copy(damages_path, out_root)

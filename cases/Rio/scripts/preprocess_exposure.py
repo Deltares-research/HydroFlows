@@ -72,8 +72,11 @@ buildings_gdf.columns = buildings_gdf.columns.str.lower()
 entrances_path = data_source / "entrances.gpkg"
 entrances_gdf = gpd.read_file(entrances_path).to_crs(crs)
 
-# %% prep building data
+# %% load csv data
+social_class_path = data_source / "social_class_building_type_mapping.csv"
+social_class = pd.read_csv(social_class_path)
 
+# %% prep building data
 
 # NOTE that not all buildings have entrances, these are likely unplanned residential buildings
 
@@ -96,10 +99,6 @@ if buildings_gdf.crs != occupancy_gdf.crs:
     )
 
 # TODO: Create strategy to possibly remove duplicate building footprints!
-
-# TODO map topologies to curves - as soon we get the correct curves
-# occupancy_gdf.to_file((data_source / "occupancy_pre_processed_translated_occupaction_local.gpkg"))
-# ...
 
 # fill typology with residential if missing
 dic_occupancy = {
@@ -172,13 +171,8 @@ occupancy_gdf["residents"] = np.where(
 )
 
 # %% Map local occupancy types based on income
-
 # Combine income csv with spatial sectors
-census_2010_gdf = gpd.read_file(
-    r"P:\11209169-003-up2030\cases\rio\data\preprocessed-data\census2010.gpkg"
-)
-
-income_2010_gdf = census_2010_gdf[["V005", "geometry"]]
+income_2010_gdf = occupancy_gdf[["V005", "geometry"]]
 
 # either adjust income to inflation or map to 2010 values - not available I think
 income_2010_gdf["V005"] = (
@@ -229,9 +223,6 @@ new_occupancy = pd.concat(
 new_occupancy = new_occupancy.reset_index(drop=True)
 
 # Map building
-social_class = pd.read_csv(
-    r"P:\11209169-003-up2030\cases\rio\data\preprocessed-data\damages\social_class_building_type_mapping.csv"
-)
 social_class_dict = dict(
     zip(social_class["SOCIALCLASS"], social_class["BUILDINGSTANDARD"])
 )
@@ -249,8 +240,6 @@ for index, row in new_occupancy.iterrows():
 
 # Define file names
 fn_building_footprints = "building_footprints_2d.gpkg"
-# fn_local_dummy = "occupancy_pre_processed_translated_occupaction_local_dummy.gpkg"
-fn_jrc = "occupancy_pre_processed_translated_occupaction_jrc.gpkg"
 fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
@@ -259,21 +248,17 @@ fn_asset_population = "asset_population.gpkg"
 buildings_gdf.to_file(data_source / fn_building_footprints)
 
 ## Save occupancy
-# occupancy_gdf[["geometry", "primary_object_type"]].to_file(
-#     (data_source / fn_local_dummy)
-# )
-occupancy_gdf_jrc[["geometry", "primary_object_type"]].to_file((data_source / fn_jrc))
 new_occupancy[["geometry", "primary_object_type", "secondary_object_type"]].to_file(
     (data_source / fn_local)
 )
 
 # Save Finished Floor Height
 ##convert from cm into meters
-occupancy_gdf["altura"] = occupancy_gdf["altura"] / 100
-occupancy_gdf[["altura", "geometry"]].to_file(data_source / fn_floor_height)
+new_occupancy["altura"] = new_occupancy["altura"] / 100
+new_occupancy[["altura", "geometry"]].to_file(data_source / fn_floor_height)
 
 ## Save population
-occupancy_gdf[["residents", "geometry"]].to_file(
+new_occupancy[["residents", "geometry"]].to_file(
     data_source / fn_asset_population, driver="GPKG"
 )
 
@@ -294,8 +279,8 @@ def create_entry(path, crs):
 
 # Dict
 yaml_dict = {
-    "preprocessed_occupaction_jrc": create_entry(
-        fn_jrc,
+    "preprocessed_occupaction": create_entry(
+        fn_local,
         occupancy_gdf_jrc.crs,
     ),
     "preprocessed_floor_height": create_entry(
@@ -312,5 +297,4 @@ yaml_dict = {
 catalog_path = data_source / "data_catalog.yml"
 with open(catalog_path, "w") as yaml_file:
     yaml.dump(yaml_dict, yaml_file, default_flow_style=False, sort_keys=False)
-
 # %%

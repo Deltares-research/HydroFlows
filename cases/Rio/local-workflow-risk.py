@@ -75,8 +75,8 @@ w.add_rule(sfincs_build, rule_id="sfincs_build")
 # Preprocess local FIAT data scripts (clip exposure & preprocess clipped exposure)
 
 # Clip exposure datasets to the region of interest.
-fiat_clip_exp = script.ScriptMethod(
-    script=Path(pwd, "scripts", "clip_exposure.py"),
+fiat_prep_exp = script.ScriptMethod(
+    script=Path(pwd, "scripts", "prepare_exposure_files.py"),
     # Note that the output paths/names are hardcoded in the scipt
     # These names are used in the hydromt_fiat config
     input={
@@ -88,17 +88,28 @@ fiat_clip_exp = script.ScriptMethod(
             pwd, "data/preprocessed-data/building_footprints.gpkg"
         ),
         "entrances": Path(pwd, "data/preprocessed-data/entrances.gpkg"),
+        "mapping_social_class": Path(
+            pwd, "data/preprocessed-data/social_class_building_type_mapping.csv"
+        ),
+        "mapping_damage_curves": Path(
+            pwd, "data/preprocessed-data/damage_functions_linking.csv"
+        ),
+        "vulnerability_curves": next(
+            iter(Path(pwd, "data/preprocessed-data/single_curves/").glob("*.csv")), None
+        ),
+        "max_pot_damages": Path(pwd, "data/preprocessed-data/max_pot_damages.csv"),
     },
 )
-w.add_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
+w.add_rule(fiat_prep_exp, rule_id="fiat_prep_exposure")
 
 # Preprocess clipped exposure
 fiat_preprocess_clip_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_exposure.py"),
     input={
-        "census": fiat_clip_exp.output.census,
-        "building_footprints": fiat_clip_exp.output.building_footprints,
-        "entrances": fiat_clip_exp.output.entrances,
+        "census": fiat_prep_exp.output.census,
+        "building_footprints": fiat_prep_exp.output.building_footprints,
+        "entrances": fiat_prep_exp.output.entrances,
+        "mapping_social_class": fiat_prep_exp.output.mapping_social_class,
     },
     output={
         "preprocessed_data_catalog": Path(
