@@ -9,7 +9,6 @@ from hydromt_sfincs import SfincsModel
 
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
-from hydroflows.methods.flood_adapt.translate_FIAT import translate_model
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -122,12 +121,6 @@ class SetupFloodAdapt(Method):
 
     def run(self):
         """Run the SetupFloodAdapt method."""
-        # prepare fiat model
-        translate_model(
-            os.path.dirname(self.input.fiat_cfg),
-            Path(self.params.output_dir, "fiat"),
-        )
-
         # prepare and copy sfincs model
         shutil.copytree(
             os.path.dirname(self.input.sfincs_inp),

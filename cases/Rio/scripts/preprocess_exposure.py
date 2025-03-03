@@ -10,6 +10,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import yaml
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -40,6 +41,24 @@ def convert_to_2d(geometry):
         )  # Use geometry.geoms here
     else:
         return geometry
+
+
+def map_social_class(income):
+    """Map the social class to the income."""
+    if income < 2403.04:
+        return "DE"
+    elif income > 2403.04 and income < 3980.38:
+        return "C2"
+    elif income > 3980.38 and income < 7017.64:
+        return "C1"
+    elif income > 7017.64 and income < 12683.34:
+        return "B2"
+    elif income > 12683.34 and income < 26811.68:
+        return "B1"
+    elif income > 26811.68:
+        return "A"
+    else:
+        return ""
 
 
 # %% load clipped data
@@ -152,12 +171,87 @@ occupancy_gdf["residents"] = np.where(
     0.0,  # Default value for other rows
 )
 
+# %% Map local occupancy types based on income
+
+# Combine income csv with spatial sectors
+census_2010_gdf = gpd.read_file(
+    r"P:\11209169-003-up2030\cases\rio\data\preprocessed-data\census2010.gpkg"
+)
+
+income_2010_gdf = census_2010_gdf[["V005", "geometry"]]
+
+# either adjust income to inflation or map to 2010 values - not available I think
+income_2010_gdf["V005"] = (
+    income_2010_gdf["V005"] * 2.75
+)  # https://www3.bcb.gov.br/CALCIDADAO/publico/corrigirPorIndice.do?method=corrigirPorIndice
+
+# Spatial join BF and income
+bf_income_24_gdf = occupancy_gdf_jrc[["geometry", "primary_object_type"]].sjoin(
+    income_2010_gdf
+)
+
+del bf_income_24_gdf["index_right"]
+bf_income_24_gdf["V005"] = [
+    float(row["V005"].replace(",", ".")) if row["V005"] is not None else row["V005"]
+    for idx, row in bf_income_24_gdf.iterrows()
+]
+
+# Map social class
+occupancy_bf_residential = bf_income_24_gdf[
+    bf_income_24_gdf["primary_object_type"] == "residential"
+]
+occupancy_bf_com_ind = bf_income_24_gdf[
+    bf_income_24_gdf["primary_object_type"] != "residential"
+]
+
+for index, row in occupancy_bf_residential.iterrows():
+    if pd.isna(row["V005"]):
+        nearest_idx = occupancy_bf_residential.sindex.nearest(
+            row["geometry"], return_all=False
+        )
+        if isinstance(nearest_idx, (list, np.ndarray)):
+            for idx in nearest_idx:
+                if pd.notna(occupancy_bf_residential.iloc[idx]["V005"][0]):
+                    nearest_idx = idx
+                    break
+        nearest_row = occupancy_bf_residential.iloc[nearest_idx]
+        occupancy_bf_residential.at[index, "V005"] = nearest_row["V005"]
+
+# Apply mapping function
+occupancy_bf_residential["social_class"] = occupancy_bf_residential["V005"].apply(
+    map_social_class
+)
+occupancy_bf_com_ind["V005"] = None
+
+new_occupancy = pd.concat(
+    [occupancy_bf_residential, occupancy_bf_com_ind], ignore_index=True
+)
+new_occupancy = new_occupancy.reset_index(drop=True)
+
+# Map building
+social_class = pd.read_csv(
+    r"P:\11209169-003-up2030\cases\rio\data\preprocessed-data\damages\social_class_building_type_mapping.csv"
+)
+social_class_dict = dict(
+    zip(social_class["SOCIALCLASS"], social_class["BUILDINGSTANDARD"])
+)
+
+new_occupancy["secondary_object_type"] = new_occupancy["social_class"].map(
+    social_class_dict
+)
+
+for index, row in new_occupancy.iterrows():
+    if row["primary_object_type"] == "commercial":
+        new_occupancy.at[index, "secondary_object_type"] = "commercial"
+    elif row["primary_object_type"] == "industrial":
+        new_occupancy.at[index, "secondary_object_type"] = "industrial"
 # %% save data
 
 # Define file names
 fn_building_footprints = "building_footprints_2d.gpkg"
 # fn_local_dummy = "occupancy_pre_processed_translated_occupaction_local_dummy.gpkg"
 fn_jrc = "occupancy_pre_processed_translated_occupaction_jrc.gpkg"
+fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
 
@@ -169,6 +263,9 @@ buildings_gdf.to_file(data_source / fn_building_footprints)
 #     (data_source / fn_local_dummy)
 # )
 occupancy_gdf_jrc[["geometry", "primary_object_type"]].to_file((data_source / fn_jrc))
+new_occupancy[["geometry", "primary_object_type", "secondary_object_type"]].to_file(
+    (data_source / fn_local)
+)
 
 # Save Finished Floor Height
 ##convert from cm into meters
