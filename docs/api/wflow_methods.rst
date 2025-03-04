@@ -16,6 +16,17 @@ Wflow build model
    wflow_build.Params
    wflow_build.Output
 
+Wflow update change factors
+---------------------------
+
+.. autosummary::
+    :toctree: ../_generated
+
+    wflow_update_factors.WflowUpdateChangeFactors
+    wflow_update_factors.Input
+    wflow_update_factors.Params
+    wflow_update_factors.Output
+
 Wflow update forcing
 --------------------
 

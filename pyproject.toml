@@ -82,7 +82,7 @@ test = [
   "hydroflows[extra]",      # needed for testing snake file
 ]
 models = [
-  "delft_fiat>=0.2.1",  # Delft fiat
+  "delft_fiat==0.2.0",  # Delft fiat
   "juliaup"             # julia package manager to install julia & wflow
 ]
 
@@ -189,7 +189,7 @@ snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
 graphviz = "*" # conda-forge to get dot executable
 
 [tool.pixi.feature.models.dependencies]
-delft_fiat = ">=0.2.1"
+delft_fiat = "==0.2.0"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"

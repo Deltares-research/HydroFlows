@@ -8,7 +8,6 @@ import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
-from pydantic import FilePath
 
 from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
@@ -38,7 +37,7 @@ class Input(Parameters):
     for constructing a FIAT model.
     """
 
-    config: FilePath = CFG_DIR / "fiat_build.yml"
+    config: Path = CFG_DIR / "fiat_build.yml"
     """The path to the configuration file (.yml) that defines the settings
     to build a FIAT model. In this file the different model components
     that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
@@ -173,7 +172,7 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         # Setup the model
         root = self.params.fiat_root
-        #
+        # Setup logger
         logger = setuplog("fiat_build", log_level="DEBUG")
 
         data_libs = [FIAT_DATA_PATH]
