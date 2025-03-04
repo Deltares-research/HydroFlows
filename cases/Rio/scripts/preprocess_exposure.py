@@ -142,9 +142,9 @@ occupancy_gdf_jrc["primary_object_type"] = (
 
 # %% prep population data
 
-occupancy_gdf = gpd.sjoin(occupancy_gdf, census_gdf, how="left", predicate="within")
+occupancy_gdf = gpd.sjoin(occupancy_gdf_jrc, census_gdf, how="left", predicate="within")
 
-res_buildings = occupancy_gdf["primary_object_type"] == "Residential"
+res_buildings = occupancy_gdf["primary_object_type"] == "residential"
 
 # per cod_setor total area of building footprints
 building_area_per_sector = (
@@ -202,10 +202,7 @@ for index, row in occupancy_bf_residential.iterrows():
                     nearest_idx = idx
                     break
         nearest_row = occupancy_bf_residential.iloc[nearest_idx]
-        occupancy_bf_residential.iloc[
-            index, occupancy_bf_residential.columns.get_loc("V005")
-        ] = nearest_row["V005"]
-
+        occupancy_bf_residential.at[index, "V005"] = nearest_row["V005"]
 
 # Apply mapping function
 occupancy_bf_residential["social_class"] = occupancy_bf_residential["V005"].apply(
@@ -287,7 +284,7 @@ def create_entry(path, crs=None, datatype: str = "vector"):
 yaml_dict = {
     "preprocessed_occupaction": create_entry(
         fn_local,
-        occupancy_gdf_jrc.crs,
+        occupancy_gdf.crs,
     ),
     "preprocessed_floor_height": create_entry(
         fn_floor_height,

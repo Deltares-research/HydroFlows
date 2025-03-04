@@ -23,6 +23,7 @@ setup_exposure_buildings:
   occupancy_type: preprocessed_occupaction
   keep_unclassified: True
   max_potential_damage: damage_values
+  linking_column: secondary_object_type
   ground_floor_height: preprocessed_floor_height
   gfh_attribute_name: altura
   unit: m
@@ -39,8 +40,8 @@ setup_exposure_population:
   impacted_population_fn: preprocessed_asset_population
   attribute_name: residents
 
-setup_aggregation_areas:
-   aggregation_area_fn: "aggregation_neighbourhood.gpkg"
-   attribute_names: "Nome_do_bairro"
-   label_names: "Neighbourhood"
-   file_names: "census_neighbourhoods"
+#setup_aggregation_areas:
+#   aggregation_area_fn: rio/data/preprocessed-data/aggregation_neighbourhood.gpkg
+#   attribute_names: "Nome_do_bairro"
+#   label_names: "Neighbourhood"
+#   file_names: "census_neighbourhoods"
