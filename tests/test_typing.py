@@ -7,6 +7,7 @@ from hydroflows._typing import (
     EventDatesDict,
     ListOfFloat,
     ListOfInt,
+    ListOfListOfInt,
     ListOfStr,
     TupleOfInt,
 )
@@ -63,17 +64,43 @@ def test_tuple_of_int():
         ta.validate_python((12, 6), (11, 5))
 
 
+def test_list_of_list_of_int():
+    ta = TypeAdapter(ListOfListOfInt)
+    assert ta.validate_python("[2, 2]") == [[2, 2]]
+    assert ta.validate_python("[2,2]") == [[2, 2]]
+    assert ta.validate_python("[2, 2] [3, 3]") == [[2, 2], [3, 3]]
+    assert ta.validate_python("[22] [3, 3]") == [[22], [3, 3]]
+    assert ta.validate_python("[2, 2, 2]") == [[2, 2, 2]]
+    assert ta.validate_python("(2, 2)") == [[2, 2]]
+    assert ta.validate_python("(2, 2, 2) (33)") == [[2, 2, 2], [33]]
+    assert ta.validate_python("[2, 2.2]") == []
+    assert ta.validate_python("2, 2") == []
+    assert ta.validate_python([[2, 2], [3, 3]]) == [[2, 2], [3, 3]]
+    assert ta.validate_python(((2, 2), (3, 3))) == [[2, 2], [3, 3]]
+    with pytest.raises(ValidationError):
+        assert ta.validate_python([2, 2])
+    with pytest.raises(ValidationError):
+        assert ta.validate_python((2, 2))
+
+
 def test_event_dates_dict():
     ta = TypeAdapter(EventDatesDict)
 
-    dates = {
-        "p_event1": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
-        "p_event2": {"startdate": "2030-03-04 09:00", "enddate": "2005-03-07 17:00"},
+    event_dates = {
+        "p_event1": {
+            "startdate": "2005-03-04 09:00",
+            "enddate": "2005-03-07 17:00",
+            "type": "rainfall",
+        },
+        "p_event2": {
+            "startdate": "2030-03-04 09:00",
+            "enddate": "2030-03-07 17:00",
+        },
     }
 
-    validated_python = ta.validate_python(dates)
-    validated_json = ta.validate_python(json.dumps(dates))
-    validated_json2 = ta.validate_python(f"{dates}")
+    validated_python = ta.validate_python(event_dates)
+    validated_json = ta.validate_python(json.dumps(event_dates))
+    validated_json2 = ta.validate_python(f"{event_dates}")
 
     assert validated_python == validated_json
     assert validated_python == validated_json2
@@ -84,7 +111,7 @@ def test_event_dates_dict():
             {
                 "p_event2": {
                     "startdate": "2030-03-04 09:00",
-                    "enTdate": "2005-03-07 17:00",
+                    "enTdate": "2030-03-07 17:00",
                 }
             }
         )

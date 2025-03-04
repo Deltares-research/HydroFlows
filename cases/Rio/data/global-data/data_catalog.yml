@@ -1,0 +1,119 @@
+esa_worldcover:
+  data_type: RasterDataset
+  path: esa_worldcover.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: landuse
+    source_license: CC BY 4.0
+    source_url: https://doi.org/10.5281/zenodo.5571936
+    source_version: v100
+  crs: 4326
+fabdem:
+  data_type: RasterDataset
+  path: fabdem.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: CC BY-NC-SA 4.0
+    paper_ref: Hawker et al. (2022)
+    source_license: CC BY-NC-SA 4.0
+    source_url: https://data.bris.ac.uk/data/dataset/25wfy0f9ukoge2gs7a5mqpq2j7
+    source_version: 1.0
+  crs: 4326
+gebco:
+  data_type: RasterDataset
+  path: gebco.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.5285/a29c5465-b138-234d-e053-6c86abc040b9
+    paper_ref: Weatherall et al (2020)
+    source_license: https://www.gebco.net/data_and_products/gridded_bathymetry_data/#a1
+    source_url: https://www.bodc.ac.uk/data/open_download/gebco/gebco_2020/geotiff/
+    source_version: 2020
+    unit: m+MSL
+  crs: 4326
+jrc_damage_values:
+  data_type: DataFrame
+  path: jrc/JRC_base_damage_values.csv
+  driver: csv
+  meta:
+    category: vulnerability
+    description: Base damage values from the JRC publicated Excel from the tab "MaxDamage-Data",
+      processed into a handy format for HydroMT-FIAT.
+    source_url: https://publications.jrc.ec.europa.eu/repository/handle/JRC105688
+    paper_ref: Huizinga, J., De Moel, H. and Szewczyk, W., Global flood depth-damage
+      functions - Methodology and the database with guidelines, EUR 28552 EN, Publications
+      Office of the European Union, Luxembourg, 2017, ISBN 978-92-79-67781-6, doi:10.2760/16510,
+      JRC105688.
+    paper_doi: https://dx.doi.org/10.2760/16510
+jrc_vulnerability_curves:
+  data_type: DataFrame
+  path: jrc/JRC_damage_functions.csv
+  driver: csv
+  meta:
+    category: vulnerability
+    description: JRC depth-damage functions for flooding, processed into a handy format
+      for HydroMT-FIAT.
+    source_url: https://publications.jrc.ec.europa.eu/repository/handle/JRC105688
+    paper_ref: Huizinga, J., De Moel, H. and Szewczyk, W., Global flood depth-damage
+      functions - Methodology and the database with guidelines, EUR 28552 EN, Publications
+      Office of the European Union, Luxembourg, 2017, ISBN 978-92-79-67781-6, doi:10.2760/16510,
+      JRC105688.
+    paper_doi: https://dx.doi.org/10.2760/16510
+jrc_vulnerability_curves_linking:
+  data_type: DataFrame
+  path: jrc/JRC_damage_functions_linking.csv
+  driver: csv
+  meta:
+    category: vulnerability
+    description: Default linking table for the JRC damage functions (e.g., the residential
+      damage function links to residential buildings).
+merit_hydro:
+  data_type: RasterDataset
+  path: merit_hydro/{variable}.tif
+  driver: raster
+  filesystem: local
+  meta:
+    category: topography
+    paper_doi: 10.1029/2019WR024873
+    paper_ref: Yamazaki et al. (2019)
+    source_license: CC-BY-NC 4.0 or ODbL 1.0
+    source_url: http://hydro.iis.u-tokyo.ac.jp/~yamadai/MERIT_Hydro
+    source_version: 1.0
+  crs: 4326
+osm_coastlines:
+  data_type: GeoDataFrame
+  path: osm_coastlines.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: geography
+    notes: OpenStreetMap coastlines water polygons, last updated 2020-01-09T05:29
+    source_author: OpenStreetMap
+    source_license: ODbL
+    source_url: https://osmdata.openstreetmap.de/data/coastlines.html
+    source_version: 1.0
+  crs: 4326
+osm_landareas:
+  data_type: GeoDataFrame
+  path: osm_landareas.gpkg
+  driver: vector
+  filesystem: local
+  meta:
+    category: geography
+    notes: OpenStreetMap coastlines land polygons, last updated 2020-01-09T05:29
+    source_author: OpenStreetMap
+    source_license: ODbL
+    source_url: https://osmdata.openstreetmap.de/data/coastlines.html
+    source_version: 1.0
+  crs: 4326
+osm_water:
+  data_type: GeoDataFrame
+  path: OSM/OSM_waterway_filtered.gpkg
+osm_water_poly:
+  data_type: GeoDataFrame
+  path: OSM/OSM_water_poly.gpkg

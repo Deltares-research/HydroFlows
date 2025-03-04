@@ -21,6 +21,16 @@ def str_to_list(v: str) -> list[str]:
     return [v.strip("'\" ") for v in vlist]
 
 
+def str_to_list_nested(v: str) -> list[list]:
+    """Split a list of lists into individual lists."""
+    # Set the pattern
+    regex = r"[\[|\(](\w+(,\s*\w+)*)[\]|\)]"
+    # Split based on the pattern
+    vlist = [m.group(1) or m.group(2) or m.group(0) for m in re.finditer(regex, v)]
+    # Format the nested lists with the above function
+    return [str_to_list(item) for item in vlist]
+
+
 def str_to_tuple(v: str) -> tuple[str, str]:
     """Convert a comma and space-separated string to a tuple."""
     # remove whitespace and () at the beginning and end

@@ -36,19 +36,6 @@ Pluvial design events GPEX
    pluvial_design_events_GPEX.Params
    pluvial_design_events_GPEX.Output
 
-
-Pluvial historical events
--------------------------
-
-.. autosummary::
-   :toctree: ../_generated
-
-   pluvial_historical_events.PluvialHistoricalEvents
-   pluvial_historical_events.Input
-   pluvial_historical_events.Params
-   pluvial_historical_events.Output
-
-
 Future climate rainfall
 -----------------------
 

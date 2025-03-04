@@ -1,12 +1,13 @@
 """Wflow run method."""
-
 import subprocess
 from pathlib import Path
 from typing import Literal, Optional
 
 from pydantic import model_validator
 
+from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
 from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
+from hydroflows.utils.docker_utils import fetch_docker_uid
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -38,12 +39,15 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`WflowRun`."""
 
-    run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe"
+    run_method: Literal["exe", "docker", "julia", "script", "apptainer"] = "exe"
     """How to run wflow. Options are 'exe' for running the executable directly (only on Windows),
     'docker' or 'apptainer' for running the model in a container."""
 
     wflow_bin: Optional[Path] = None
     """The path to the wflow executable."""
+
+    wflow_run_script: Optional[Path] = None
+    """Path to a script in which wflow is called."""
 
     julia_num_threads: int = 4
     """The number of the threads to be used from Julia."""
@@ -60,6 +64,25 @@ class Params(Parameters):
             )
         return self
 
+    @model_validator(mode="after")
+    def check_wflow_run_script(self):
+        """Check the Wflow script run path."""
+        method = self.run_method == "script"
+        if not method:
+            return self
+        if self.wflow_run_script is None:
+            raise ValueError("No script provided to run wflow from.")
+        if self.wflow_run_script.is_file():
+            return self
+        prefab = Path(SCRIPTS_DIR, self.wflow_run_script)
+        if not prefab.is_file():
+            raise ValueError(
+                f"Valid path to a julia script is required, \
+when executing via 'script'. {self.wflow_run_script} is not a valid path."
+            )
+        self.wflow_run_script = prefab
+        return self
+
 
 class WflowRun(Method):
     """Rule for running a Wflow model."""
@@ -74,7 +97,7 @@ class WflowRun(Method):
     def __init__(
         self,
         wflow_toml: Path,
-        run_method: Literal["exe", "docker", "julia", "apptainer"] = "exe",
+        run_method: Literal["exe", "docker", "julia", "apptainer", "script"] = "exe",
         wflow_bin: Optional[Path] = None,
         **params,
     ) -> "WflowRun":
@@ -84,7 +107,7 @@ class WflowRun(Method):
         ----------
         wflow_toml : Path
             The file path to the Wflow (toml) configuration file.
-        run_method : Literal["exe", "docker", "apptainer"]
+        run_method : Literal["exe", "docker", "julia", "apptainer", "script"]
             How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
             'docker' or 'apptainer' for running the model in a container.
         wflow_bin : Path
@@ -132,7 +155,18 @@ class WflowRun(Method):
                 "using Wflow; Wflow.run()",
                 wflow_toml,
             ]
+        elif self.params.run_method == "script":
+            command = [
+                "julia",
+                "-t",
+                nthreads,
+                self.params.wflow_run_script.as_posix(),
+                wflow_toml,
+            ]
         elif self.params.run_method == "docker":
+            # Get user info to properly set ownership of files created by container
+            # see: https://unix.stackexchange.com/a/627028
+            (uid, gid) = fetch_docker_uid()
             command = [
                 "docker",
                 "run",
@@ -142,6 +176,8 @@ class WflowRun(Method):
                 f"deltares/wflow:{self.params.docker_tag}",
                 f"//data/{wflow_toml}",
             ]
+            if uid:
+                command[3:3] = [f"-u{uid}:{gid}"]
         elif self.params.run_method == "apptainer":
             command = [
                 "apptainer",
