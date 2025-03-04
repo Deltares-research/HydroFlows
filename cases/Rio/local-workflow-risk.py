@@ -33,6 +33,7 @@ config = WorkflowConfig(
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
+    subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
     fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
@@ -68,6 +69,7 @@ sfincs_build = sfincs.SfincsBuild(
     config=w.get_ref("$config.hydromt_sfincs_config"),
     catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
+    subgrid_output=w.get_ref("$config.subgrid_output"),
 )
 w.add_rule(sfincs_build, rule_id="sfincs_build")
 
