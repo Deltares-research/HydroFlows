@@ -57,9 +57,7 @@ class Params(Parameters):
     """
 
     output_dir: Path
-    """
-    The output directory of the dataset.
-    """
+    """Output location relative to the workflow root. The updated model will be stored in <output_dir>."""
 
     copy_model: bool = False
     """Create full copy of model or create rel paths in model config."""

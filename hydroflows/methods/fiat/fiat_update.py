@@ -52,7 +52,7 @@ class Params(Parameters):
     """The name of the simulation folder."""
 
     output_dir: Path
-    """Output location of updated model relative to current working directory."""
+    """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<sim_name>."""
 
     copy_model: bool = False
     """Create full copy of model or create rel paths in model config."""
