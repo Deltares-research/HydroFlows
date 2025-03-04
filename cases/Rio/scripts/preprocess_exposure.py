@@ -239,7 +239,9 @@ fn_building_footprints = "building_footprints_2d.gpkg"
 fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
-
+fn_damage_values = "max_pot_damages.csv"
+fn_vulnerability_curves_linking = "damage_functions_linking.csv"
+fn_vulnerability_curves = "single_curves"
 # Save bf
 buildings_gdf.to_file(data_source / fn_building_footprints)
 
@@ -262,15 +264,24 @@ new_occupancy[["residents", "geometry"]].to_file(
 # %%
 # Create a dictionary
 # Helper function to create entries
-def create_entry(path, crs):
+def create_entry(path, crs, datatype: str = "vector"):
     """Create a dictionary entry representing a GeoDataFrame."""
-    return {
-        "data_type": "GeoDataFrame",
-        "path": path,
-        "driver": "vector",
-        "filesystem": "local",
-        "crs": crs.to_epsg() if crs else None,
-    }
+    if datatype == "vector":
+        return {
+            "data_type": "GeoDataFrame",
+            "path": path,
+            "driver": "vector",
+            "filesystem": "local",
+            "crs": crs.to_epsg() if crs else None,
+        }
+    elif datatype == "csv":
+        return {
+            "data_type": "DataFrame",
+            "path": path,
+            "driver": "csv",
+            "filesystem": "local",
+            "crs": crs.to_epsg() if crs else None,
+        }
 
 
 # Dict
@@ -286,6 +297,13 @@ yaml_dict = {
     "preprocessed_asset_population": create_entry(
         fn_asset_population,
         occupancy_gdf.crs,
+    ),
+    "damage_values": create_entry(fn_damage_values, occupancy_gdf.crs, "csv"),
+    "vulnerability_curves_linking": create_entry(
+        fn_vulnerability_curves_linking, occupancy_gdf.crs, "csv"
+    ),
+    "vulnerability_curves": create_entry(
+        fn_vulnerability_curves, occupancy_gdf.crs, "csv"
     ),
 }
 

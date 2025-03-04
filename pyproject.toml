@@ -18,7 +18,7 @@ dependencies = [
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt_fiat>=0.5.1, <1.0", # hydromt plugin for FIAT models
+  "hydromt_fiat>=0.5.3, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
