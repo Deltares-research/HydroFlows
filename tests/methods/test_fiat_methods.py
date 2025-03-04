@@ -127,9 +127,7 @@ def test_fiat_run(
 
 
 @pytest.mark.requires_test_data()
-def test_fiat_visualize_risk_event(
-    fiat_tmp_model_all: Path,
-):
+def test_fiat_visualize_risk_event(fiat_tmp_model_all: Path, tmp_path: Path):
     fiat_output = Path(
         fiat_tmp_model_all / "simulations" / "pluvial_events" / "output" / "output.csv"
     )
@@ -140,37 +138,32 @@ def test_fiat_visualize_risk_event(
     )
 
     # Visualize output
+    output_dir = tmp_path / "fiat_visualize"
     rule = FIATVisualize(
         fiat_output_csv=fiat_output,
         fiat_cfg=fiat_cfg,
         spatial_joins_cfg=fiat_spatial_joins,
+        output_dir=output_dir,
     )
     rule.run_with_checks()
-    output_files = os.listdir(fiat_output.parent)
 
-    # Assert all infometrics and infographic files are in output folder
-    file_extensions = []
-    for file in output_files:
-        file_extensions.append(os.path.splitext(file)[-1])
-
-    assert ".geojson" in file_extensions
-    assert ".html" in file_extensions
-    assert ".csv" in file_extensions
-    assert ".png" in file_extensions
-
-    # Assert total and aggregated metrics output exists
-    infometrics = [
-        i for i in output_files if i.startswith("Infometrics") and i.endswith(".csv")
-    ]
-    assert len(infometrics) == 2
+    # check if non-listed aggregation files are in output folder
+    # (total metrics are already checked as these are listed in FiatVisualize.output)
+    output_files = [Path(filename).name for filename in os.listdir(output_dir)]
+    assert "Infometrics_pluvial_events_default_aggregation.csv" in output_files
+    assert "default_aggregation_total_damages_pluvial_events.geojson" in output_files
+    assert (
+        "default_aggregation_total_damages_pluvial_events_ExpectedAnnualDamages.png"
+        in output_files
+    )
 
     # Assert expected output metrics are in csv infometrics
     with open((base_fiat_model / "spatial_joins.toml"), "r") as f:
         spatial_joins = toml.load(f)
     aggregation = spatial_joins["aggregation_areas"][0]["name"]
-
-    for file in infometrics:
-        infometric_file = pd.read_csv(Path(fiat_output.parent / file))
+    infometric_files = [fn for fn in os.listdir(output_dir) if fn.endswith(".csv")]
+    for file in infometric_files:
+        infometric_file = pd.read_csv(Path(output_dir / file))
         if aggregation in file:
             assert infometric_file.columns.str.contains("TotalDamageRP").any()
             assert infometric_file.columns.str.contains("ExpectedAnnualDamages").any()
