@@ -53,22 +53,29 @@ entrances_path = Path(root, "census/numero_porta.gpkg")
 entrances_gdf = gpd.read_file(entrances_path, mask=sectors_gdf)
 entrances_gdf.to_file(out_root / "entrances.gpkg", driver="GPKG")
 
+# %% aggregation areas
+aggregation_path = Path(root.parent, "preprocessed_data/aggregation_neighbourhood.gpkg")
+aggregation_gdf = gpd.read_file(aggregation_path, mask=sectors_gdf)
+aggregation_gdf.to_file(out_root / "aggregation_neighbourhood.gpkg", driver="GPKG")
+
 # %% Mapping
 mapping_social_class_path = Path(
     root.parent, "preprocessed_data/social_class_building_type_mapping.csv"
 )
-shutil.copy(mapping_social_class_path, out_root)
+mapping_social_class_df = pd.read_csv(mapping_social_class_path)
+mapping_social_class_df.to_csv(out_root / "social_class_building_type_mapping.csv")
+
 
 mapping_damage_functions_path = Path(
     root.parent, "preprocessed_data/damage_functions_linking.csv"
 )
-shutil.copy(mapping_damage_functions_path, out_root)
+mapping_damage_functions_df = pd.read_csv(mapping_damage_functions_path)
+mapping_damage_functions_df.to_csv(out_root / "damage_functions_linking.csv")
+
 # %% local vulnerability and damages
 vulnerability_path = Path(root.parent, "preprocessed_data/single_curves")
 shutil.copytree(vulnerability_path, out_root)
 
 damages_path = Path(root.parent, "preprocessed_data/max_pot_damages.csv")
-shutil.copy(damages_path, out_root)
-
-aggregation_path = Path(root.parent, "preprocessed_data/aggregation_neighbourhood.gpkg")
-shutil.copy(damages_path, out_root)
+damages_path_df = pd.read_csv(damages_path)
+damages_path_df.to_csv(out_root / "max_pot_damages.csv")
