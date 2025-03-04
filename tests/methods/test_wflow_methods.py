@@ -44,11 +44,12 @@ def test_wflow_build(
 
 
 @pytest.mark.requires_test_data()
+@pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_factors(
-    tmp_path: Path,
-    cmip6_stats: list,
-    wflow_cached_model: Path,
+    tmp_path: Path, cmip6_stats: list, wflow_cached_model: Path, copy_model: bool
 ):
+    output_dir1 = wflow_cached_model / "sims"
+    output_dir2 = tmp_path / "sims"
     rule = WflowUpdateChangeFactors(
         change_factor_dataset=Path(
             cmip6_stats,
@@ -56,7 +57,8 @@ def test_wflow_update_factors(
             "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
         ),
         wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
-        output_dir=tmp_path,
+        output_dir=output_dir1,
+        copy_model=copy_model,
     )
     rule.run_with_checks()
 
@@ -66,14 +68,54 @@ def test_wflow_update_factors(
     assert ds["latitude"].size == 200
     ds = None
 
+    if not copy_model:
+        with pytest.raises(
+            ValueError,
+            match="Output directory must be relative to input directory when not copying model.",
+        ):
+            rule = WflowUpdateChangeFactors(
+                change_factor_dataset=Path(
+                    cmip6_stats,
+                    "change_factor",
+                    "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
+                ),
+                wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
+                output_dir=output_dir2,
+                copy_model=copy_model,
+            )
+    else:
+        rule = WflowUpdateChangeFactors(
+            change_factor_dataset=Path(
+                cmip6_stats,
+                "change_factor",
+                "change_NOAA-GFDL_GFDL-ESM4_ssp585_2090-2100.nc",
+            ),
+            wflow_toml=Path(wflow_cached_model, "wflow_sbm.toml"),
+            output_dir=output_dir2,
+            copy_model=copy_model,
+        )
+        rule.run_with_checks()
+
+        assert rule.output.wflow_change_factors.is_file()
+        ds = xr.open_dataset(rule.output.wflow_change_factors)
+        assert int(ds["precip"].values.mean() * 100) == 102
+        assert ds["latitude"].size == 200
+        ds = None
+
 
 @pytest.mark.requires_test_data()
-def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
+@pytest.mark.parametrize("copy_model", [True, False])
+def test_wflow_update_forcing(
+    wflow_tmp_model: Path, global_catalog: Path, copy_model: bool
+):
     # required inputs
     wflow_toml = Path(wflow_tmp_model, "wflow_sbm.toml")
     start_time = "2020-02-01"
     end_time = "2020-02-10"
-
+    # Check output dir if subdir of wflow dir
+    output_dir1 = wflow_tmp_model / "sim"
+    # Check output dir if not subdir of wflow dir
+    output_dir2 = wflow_tmp_model.parent / "sim"
     # additional param
     catalog_path = global_catalog.as_posix()
 
@@ -82,9 +124,39 @@ def test_wflow_update_forcing(wflow_tmp_model: Path, global_catalog: Path):
         start_time=start_time,
         end_time=end_time,
         catalog_path=catalog_path,
+        output_dir=output_dir1,
+        copy_model=copy_model,
     )
 
+    assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
+
     rule.run_with_checks()
+
+    # This should fail when copy model == False
+    if not copy_model:
+        with pytest.raises(
+            ValueError,
+            match="Output directory must be relative to input directory when not copying model.",
+        ):
+            rule = WflowUpdateForcing(
+                wflow_toml=wflow_toml,
+                start_time=start_time,
+                end_time=end_time,
+                catalog_path=catalog_path,
+                output_dir=output_dir2,
+                copy_model=copy_model,
+            )
+    else:
+        rule = WflowUpdateForcing(
+            wflow_toml=wflow_toml,
+            start_time=start_time,
+            end_time=end_time,
+            catalog_path=catalog_path,
+            output_dir=output_dir1,
+            copy_model=copy_model,
+        )
+        assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
+        rule.run_with_checks()
 
 
 @pytest.mark.slow()
