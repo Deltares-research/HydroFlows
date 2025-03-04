@@ -1,11 +1,11 @@
 """Module/ Rule for building FIAT models."""
 
-import os
 import shutil
 from pathlib import Path
 from typing import Optional
 
 import cartopy.crs as ccrs
+import contextily as ctx
 import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -218,6 +218,7 @@ class FIATVisualize(Method):
             df_results=pd.read_csv(self.input.fiat_output_csv),
             metrics_path=self.output.fiat_infometrics,
             write_aggregate=None,
+            overwrite=True,
         )
 
         # Write aggregated metrics
@@ -225,6 +226,7 @@ class FIATVisualize(Method):
             df_results=pd.read_csv(self.input.fiat_output_csv),
             metrics_path=self.output.fiat_infometrics,
             write_aggregate="all",
+            overwrite=True,
         )
         aggregation_areas = get_aggregation_areas(self.input.spatial_joins_cfg)
 
@@ -239,6 +241,8 @@ class FIATVisualize(Method):
         )
 
         # Write the infographic
+        if self.output.fiat_infographics.exists():
+            self.output.fiat_infographics.unlink()
         InforgraphicFactory.create_infographic_file_writer(
             infographic_mode=mode,
             scenario_name=self.params.scenario_name,
@@ -311,16 +315,16 @@ def create_output_map(
         Path to the PNG file containing a map of the aggregated damages.
     """
     # Create aggregated output
-    fn_aggregated_metrics = infometrics_output.parent
+    aggregated_metrics_dir = infometrics_output.parent
     for aggregation_area in aggregation_areas:
         name = aggregation_area["name"]
         fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
         gdf_aggregation = gpd.read_file(Path(spatial_joins_cfg.parent / fn))
         metrics_fn = Path(
-            fn_aggregated_metrics
-            / [f for f in os.listdir(fn_aggregated_metrics) if name in f][0]
+            aggregated_metrics_dir, f"Infometrics_{event_name}_{name}.csv"
         )
+
         metrics = pd.read_csv(metrics_fn, index_col=0).iloc[4:, 0:]
         metrics = metrics.sort_values(metrics.columns[0])
         metrics.reset_index(inplace=True, drop=True)
@@ -334,15 +338,14 @@ def create_output_map(
                 gdf_new_aggr[column] = metrics_float
 
         gdf_new_aggr.to_file(
-            Path(fn_aggregated_metrics / f"{name}_total_damages_{event_name}.geojson")
+            Path(aggregated_metrics_dir / f"{name}_total_damages_{event_name}.geojson")
         )
 
         create_total_damage_figure(
             region=Path(spatial_joins_cfg.parent / "geoms" / "region.geojson"),
             gpd_aggregated_damages=gdf_new_aggr,
-            output_path=Path(
-                fn_aggregated_metrics / f"{name}_total_damages_{event_name}"
-            ),
+            output_dir=aggregated_metrics_dir,
+            file_prefix=f"{name}_total_damages_{event_name}",
             aggr_names=aggregation_areas,
             damage_unit=damage_unit,
         )
@@ -358,7 +361,7 @@ def create_output_map(
         roads = exposure_csv[exposure_roads]
         gdf_roads_output = gdf_roads.merge(roads, how="left", on="object_id")
         gdf_roads_output.to_file(
-            Path(fn_aggregated_metrics / f"Impact_roads_{event_name}.geojson")
+            Path(aggregated_metrics_dir / f"Impact_roads_{event_name}.geojson")
         )
 
 
@@ -593,7 +596,8 @@ def add_road_infometrics(config_metrics: dict) -> dict:
 def create_total_damage_figure(
     region: Path,
     gpd_aggregated_damages: gpd.GeoDataFrame,
-    output_path: Path,
+    output_dir: Path,
+    file_prefix: str,
     aggr_names: list,
     damage_unit: str = "$",
 ):
@@ -606,18 +610,13 @@ def create_total_damage_figure(
         The file path to the region file.
     gpd_aggregated_damages : gpd.GeoDataFrame
         The GeoDataFrame of the aggregated damages.
-    output_path : Path
-        The file path to store the output file.
+    output_dir : Path
+        The directory to store the output file.
     aggr_names: list
     damage_unit: str
         The currency of the damages. Default is set to USD$.
 
     """
-    try:
-        import contextily as ctx
-    except ImportError:
-        pass
-
     web_crs = "EPSG:3857"
     aggr_labels = []
     [aggr_labels.append(aggr["field_name"]) for aggr in aggr_names]
@@ -651,21 +650,11 @@ def create_total_damage_figure(
             scheme="quantiles",
             k=5,
             legend=True,
-            legend_kwds={"loc": "lower left"},
+            legend_kwds={"loc": "lower left", "title": f"{column} {damage_unit}"},
             edgecolor="black",  # Add black lines for the grid
             linewidth=0.5,
             ax=ax,
         )
-
-        sm = plt.cm.ScalarMappable(
-            cmap="Reds",
-            norm=plt.Normalize(
-                vmin=gpd_aggregated_damages[column].min(),
-                vmax=gpd_aggregated_damages[column].max(),
-            ),
-        )
-        cbar = fig.colorbar(sm, ax=ax, shrink=0.75, orientation="vertical")
-        cbar.set_label(f"{column} {damage_unit}")
 
         # Add a region plot in case there is one
         region_gdf.plot(
@@ -676,4 +665,8 @@ def create_total_damage_figure(
             alpha=0.3,
             label="Region",
         )
-        fig.savefig(f"{output_path}_{column}", dpi=150, bbox_inches="tight")
+        fig.savefig(
+            Path(output_dir, f"{file_prefix}_{column}.png"),
+            dpi=225,
+            bbox_inches="tight",
+        )
