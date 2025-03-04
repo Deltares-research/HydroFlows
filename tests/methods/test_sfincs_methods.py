@@ -3,6 +3,8 @@ import platform
 from pathlib import Path
 
 import pytest
+import yaml
+from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 
 from hydroflows.events import Event
@@ -39,10 +41,35 @@ def test_sfincs_build(
         config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
         catalog_path=str(global_catalog),
+        src_points_output=True,
+        subgrid_output=True,
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
+    assert sfincs_build.output.sfincs_src_points == sfincs_root / "gis" / "src.geojson"
+    assert (
+        sfincs_build.output.sfincs_subgrid_dep
+        == sfincs_root / "subgrid" / "dep_subgrid.tif"
+    )
 
     sfincs_build.run_with_checks()
+
+    config = configread(build_cfgs["sfincs_build"])
+    config.pop("setup_subgrid")
+    temp_config = tmp_path / "temp_config.yml"
+
+    with temp_config.open("w") as f:
+        yaml.dump(
+            config, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+        )
+
+    with pytest.raises(ValueError, match="The 'setup_subgrid' method must"):
+        SfincsBuild(
+            region=str(region),
+            config=temp_config,
+            sfincs_root=tmp_path / "model_error",
+            catalog_path=str(global_catalog),
+            subgrid_output=True,
+        ).run_with_checks()
 
 
 @pytest.mark.requires_test_data()
