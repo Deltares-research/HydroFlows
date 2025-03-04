@@ -69,3 +69,6 @@ shutil.copytree(vulnerability_path, out_root)
 
 damages_path = Path(root.parent, "preprocessed_data/max_pot_damages.csv")
 shutil.copy(damages_path, out_root)
+
+aggregation_path = Path(root.parent, "preprocessed_data/aggregation_neighbourhood.gpkg")
+shutil.copy(damages_path, out_root)
