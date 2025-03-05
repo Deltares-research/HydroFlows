@@ -42,9 +42,6 @@ class Output(Parameters):
     The file path to the flood adaptation model.
     """
 
-    fiat_out_cfg: Path
-    """The path to the translated FIAT model configuration."""
-
     sfincs_out_inp: Path
     """The path to the copied sfincs model configuration."""
 
@@ -109,7 +106,6 @@ class SetupFloodAdapt(Method):
 
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
-            fiat_out_cfg=Path(self.params.output_dir, "fiat", "settings.toml"),
             sfincs_out_inp=Path(self.params.output_dir, "sfincs", "sfincs.inp"),
         )
         if self.input.event_set_yaml is not None:
