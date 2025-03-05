@@ -1,0 +1,42 @@
+[Categories]
+    [Categories.Residential]
+        Name = "Residential"
+        Color = "#D5DEE1"
+    [Categories.Commercial]
+        Name = "Commercial"
+        Color = "#88A2AA"
+    [Categories.Industrial]
+        Name = "Industrial"
+        Color = "#2F4343"
+
+[Other]
+    [Other.Expected_Damages]
+        title = "Expected annual damages"
+        image = "{image_path}/money.png"
+        image_scale = 1.3
+        title_font_size = 25
+        numbers_font_size = 20
+        height = 300
+
+    [Other.Flooded]
+        title = "Number of homes with a high chance of being flooded in a 30-year period"
+        image = "{image_path}/house.png"
+        image_scale = 0.7
+        title_font_size = 25
+        numbers_font_size = 20
+        height = 300
+
+    [Other.Return_Periods]
+        title = "Number of buildings inundated by more than 0.2 m"
+        font_size = 25
+        image_scale = 0.2
+        numbers_font = 15
+        subtitle_font = 22
+        legend_font = 20
+        plot_height = 300
+
+    [Other.Info]
+        text="""Thresholds:<br>
+                Impacted: >= 0.25 feet<br>"""
+        image="https://openclipart.org/image/800px/302413"
+        scale=0.1

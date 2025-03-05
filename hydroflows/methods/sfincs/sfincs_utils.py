@@ -1,6 +1,7 @@
 """SFINCS model utility functions."""
 
 from pathlib import Path
+from shutil import copy
 from typing import Dict, Literal, Optional, cast
 
 import geopandas as gdf
@@ -31,7 +32,11 @@ def _check_forcing_locs(
 
 
 def parse_event_sfincs(
-    root: Path, event: Event, out_root: Path, sfincs_config: Optional[Dict] = None
+    root: Path,
+    event: Event,
+    out_root: Path,
+    sfincs_config: Optional[Dict] = None,
+    copy_model: bool = False,
 ) -> None:
     """Parse event and update SFINCS model with event forcing.
 
@@ -47,12 +52,14 @@ def parse_event_sfincs(
         The path to the output directory where the updated SFINCS model will be saved.
     sfincs_config : dict, optional
         The SFINCS simulation config settings to update sfincs_inp, by default {}.
+    copy_model : bool
+        Toggle copying static model files, by default False.
     """
     # check if out_root is a subdirectory of root
     if sfincs_config is None:
         sfincs_config = {}
-    if not out_root.is_relative_to(root):
-        raise ValueError("out_root should be a subdirectory of root")
+    if copy_model:
+        copy_sfincs_model(src=root, dest=out_root)
 
     # Init sfincs and update root, config
     sf = SfincsModel(root=root, mode="r", write_gis=False)
@@ -76,7 +83,10 @@ def parse_event_sfincs(
         sf.config.update(sfincs_config)
 
     # Set forcings, update config with relative paths
-    config = make_relative_paths(sf.config, root, out_root)
+    if out_root.is_relative_to(root) and not copy_model:
+        config = make_relative_paths(sf.config, root, out_root)
+    else:
+        config = sf.config
     for forcing in event.forcings:
         match forcing.type:
             case "water_level":
@@ -103,6 +113,32 @@ def parse_event_sfincs(
     # Write forcing and config only
     sf.write_forcing()
     sf.write_config()
+
+
+def copy_sfincs_model(src: Path, dest: Path) -> None:
+    """Copy SFINCS model files.
+
+    Parameters
+    ----------
+    src : Path
+        Path to source directory.
+    dest : Path
+        Path to destination directory.
+    """
+    inp = SfincsInput.from_file(src / "sfincs.inp")
+    config = inp.to_dict()
+
+    if not dest.exists():
+        dest.mkdir(parents=True)
+
+    for key, value in config.items():
+        # skip dep file if subgrid file is present
+        if "dep" in key and "sbgfile" in config:
+            continue
+        if "file" in key:
+            copy(src / value, dest / value)
+
+    copy(src / "sfincs.inp", dest / "sfincs.inp")
 
 
 def get_sfincs_basemodel_root(sfincs_inp: Path) -> Path:

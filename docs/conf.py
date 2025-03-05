@@ -163,7 +163,7 @@ intersphinx_mapping = {
     "geopandas": ("https://geopandas.org/en/stable", None),
     "xarray": ("https://xarray.pydata.org/en/stable", None),
     "hydromt": ("https://deltares.github.io/hydromt/latest/", None),
-    "hydromt_wflow": ("https://deltares.github.io/hydromt_wflow/latest/", None),
+    "hydromt_wflow": ("https://deltares.github.io/hydromt_wflow/stable/", None),
     "hydromt_sfincs": ("https://deltares.github.io/hydromt_sfincs/latest/", None),
     "hydromt_fiat": ("https://deltares.github.io/hydromt_fiat/latest/", None),
 }
