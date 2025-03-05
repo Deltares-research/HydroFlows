@@ -5,8 +5,17 @@ from typing import Optional
 
 import tomli
 import tomli_w
-from flood_adapt import object_model
 from flood_adapt import unit_system as us
+from flood_adapt.object_model.hazard.event.event_factory import EventFactory
+from flood_adapt.object_model.hazard.event.event_set import EventSet, EventSetModel
+from flood_adapt.object_model.hazard.event.template_event import EventModel
+from flood_adapt.object_model.hazard.forcing.discharge import DischargeConstant
+from flood_adapt.object_model.hazard.forcing.rainfall import RainfallCSV, RainfallTrack
+from flood_adapt.object_model.hazard.forcing.waterlevels import (
+    WaterlevelCSV,
+    WaterlevelModel,
+)
+from flood_adapt.object_model.hazard.forcing.wind import WindConstant, WindTrack
 from pydantic import BaseModel
 
 
@@ -188,7 +197,7 @@ class OldEvent(BaseModel):
 def convert_event(
     old_event: dict,
     old_event_dir: Path,
-) -> object_model.hazard.event.template_event.EventModel:
+) -> EventModel:
     """
     Convert an old event configuration dictionary into a new EventModel instance.
 
@@ -207,7 +216,7 @@ def convert_event(
 
     Returns
     -------
-    object_model.hazard.event.template_event.EventModel
+    EventModel
         The converted EventModel instance.
     """
     to_convert = OldEvent(**old_event).model_dump()
@@ -221,7 +230,7 @@ def convert_event(
     forcings = {}
     if wind := to_convert.get("wind"):
         if wind["source"] == Source.CONSTANT:
-            _wind = object_model.hazard.forcing.wind.WindConstant(
+            _wind = WindConstant(
                 speed=wind["wind_speed"],
                 direction=wind["wind_direction"],
             )
@@ -229,23 +238,21 @@ def convert_event(
         elif wind["source"] == Source.NONE:
             pass
         elif wind["source"] == Source.TRACK:
-            _wind = object_model.hazard.forcing.wind.WindTrack()
+            _wind = WindTrack()
         else:
             raise ValueError(f"other wind found: {wind}")
 
     if rainfall := to_convert.get("rainfall"):
         if rainfall["source"] == Source.TIMESERIES:
-            _rainfall = object_model.hazard.forcing.rainfall.RainfallCSV(
-                path=old_event_dir / rainfall["timeseries_file"]
-            )
+            _rainfall = RainfallCSV(path=old_event_dir / rainfall["timeseries_file"])
         elif rainfall["source"] == Source.TRACK:
-            _rainfall = object_model.hazard.forcing.rainfall.RainfallTrack()
+            _rainfall = RainfallTrack()
         else:
             raise ValueError(f"other rainfall found: {rainfall}")
         forcings.update({"RAINFALL": [_rainfall]})
 
     if river := to_convert.get("river"):
-        _river = object_model.hazard.forcing.discharge.DischargeConstant(
+        _river = DischargeConstant(
             river=river_from_charleston(),
             discharge=river[0]["constant_discharge"],
         )
@@ -253,12 +260,10 @@ def convert_event(
 
     if tide := to_convert.get("tide"):
         if tide["source"] == Source.TIMESERIES:
-            _waterlevel = object_model.hazard.forcing.waterlevels.WaterlevelCSV(
-                path=old_event_dir / tide["timeseries_file"]
-            )
+            _waterlevel = WaterlevelCSV(path=old_event_dir / tide["timeseries_file"])
             forcings.update({"WATERLEVEL": [_waterlevel]})
         elif tide["source"] == Source.MODEL:
-            _waterlevel = object_model.hazard.forcing.waterlevels.WaterlevelModel()
+            _waterlevel = WaterlevelModel()
             forcings.update({"WATERLEVEL": [_waterlevel]})
         else:
             raise ValueError("other source tide or surge found")
@@ -270,7 +275,7 @@ def convert_event(
     if to_convert.get("template") == "Hurricane":
         attrs["track_name"] = to_convert["name"]
 
-    new_event = object_model.hazard.event.event_factory.EventFactory.load_dict(attrs)
+    new_event = EventFactory.load_dict(attrs)
 
     return new_event
 
@@ -292,11 +297,11 @@ def convert_eventset(old_path: Path, new_path: Path):
 
     Returns
     -------
-    object_model.hazard.event.event_set.EventSet
+    EventSet
         The newly created EventSet instance.
     """
-    new_set = object_model.hazard.event.event_set.EventSet(
-        data=object_model.hazard.event.event_set.EventSetModel(
+    new_set = EventSet(
+        data=EventSetModel(
             name="Probabilistic_set",
             description="Probabilistic set",
             sub_events=read_sub_events(old_path),
@@ -308,9 +313,7 @@ def convert_eventset(old_path: Path, new_path: Path):
     return new_set
 
 
-def read_sub_events(
-    path: Path
-) -> list[object_model.hazard.event.template_event.EventModel]:
+def read_sub_events(path: Path) -> list[EventModel]:
     """
     Read and convert sub-events from a specified directory path into a list of EventModel instances.
 
@@ -326,7 +329,7 @@ def read_sub_events(
 
     Returns
     -------
-    list[object_model.hazard.event.template_event.EventModel]
+    list[EventModel]
         A list of converted EventModel instances.
     """
     old_event_set_file = path / f"{path.name}.toml"
@@ -380,17 +383,17 @@ def read_old_event(path: Path) -> dict:
         return tomli.load(f)
 
 
-def river_from_charleston() -> object_model.interface.config.sfincs.RiverModel:
+def river_from_charleston() -> RiverModel:
     """
     Create a RiverModel instance for the Cooper River.
 
     Returns
     -------
-        object_model.interface.config.sfincs.RiverModel: A RiverModel object
+        RiverModel: A RiverModel object
         initialized with the name "Cooper River", a mean discharge of 5000 cfs,
         and specified x and y coordinates.
     """
-    return object_model.interface.config.sfincs.RiverModel(
+    return RiverModel(
         name="Cooper River",
         mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
         x_coordinate=595546.3,
@@ -400,7 +403,7 @@ def river_from_charleston() -> object_model.interface.config.sfincs.RiverModel:
 
 def try_read_new_event(path: Path):
     """Try to read an EventModel from a file and return it if successful."""
-    return object_model.hazard.event.event_factory.EventFactory.load_file(path)
+    return EventFactory.load_file(path)
 
 
 def copy_trackfiles(old_path: Path, new_path: Path):
@@ -441,30 +444,26 @@ def update_track_names(path: Path):
         tomli_w.dump(event_set, f)
 
 
-# if __name__ == "__main__":
-#    # Update these paths to the correct paths on your machine
-#    Settings(
-#        DATABASE_ROOT=Path("C:/Users/blom_lk/dev/Workspace_FloodAdapt/Database"),
-#        DATABASE_NAME="charleston_test",
-#    )
+if __name__ == "__main__":
+    # Update these paths to the correct paths on your machine
+    # Settings(
+    #    DATABASE_ROOT=Path("C:/Users/blom_lk/dev/Workspace_FloodAdapt/Database"),
+    #    DATABASE_NAME="charleston_test",
+    # )
 
-#    old_path = Path(old_path
-#    )
-#    new_path = Path(new_path
-#    )
+    old_path = Path(r"C:\Users\rautenba\repos\HydroFlows")
+    new_path = Path(r"C:\Users\rautenba\repos\HydroFlows")
 
-#    convert_eventset(old_path=old_path, new_path=new_path)
+    convert_eventset(old_path=old_path, new_path=new_path)
 
-# do this manually for now
-#    copy_trackfiles(old_path=old_path, new_path=new_path)
-#    update_track_names(new_path)
+    # do this manually for now
+    copy_trackfiles(old_path=old_path, new_path=new_path)
+    update_track_names(new_path)
 
-#    new_set = object_model.hazard.event.event_set.EventSet.load_file(
-#        new_path / f"{new_path.name}.toml"
-#    )
-#    assert new_set
+    new_set = EventSet.load_file(new_path / f"{new_path.name}.toml")
+    assert new_set
 
-#    db = api.static.read_database(
-#        Settings().database_path.parent, Settings().database_path.name
-#    )
-#    db.events.save(new_set)
+    # db = api.static.read_database(
+    #    Settings().database_path.parent, Settings().database_path.name
+    # )
+    # db.events.save(new_set)
