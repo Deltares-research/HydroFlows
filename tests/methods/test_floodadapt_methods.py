@@ -97,7 +97,7 @@ def test_translate_fiat_model(fiat_tmp_model: Path, tmp_path: Path):
         "Max Potential Damage: Content",
         "Damage Function: Structure",
         "Damage Function: Content",
-        "Aggregation Label: default_aggregation",
+        "aggregation_label:default_aggregation",
     ]
     assert set(required_columns) == set(exposure.columns)
 
