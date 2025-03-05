@@ -12,7 +12,10 @@ import tomli_w
 from pydantic import BaseModel
 
 from hydroflows.events import EventSet
-from hydroflows.methods.flood_adapt.convert_eventsets import OldEvent
+from hydroflows.methods.flood_adapt.convert_eventsets import (
+    convert_event,
+    convert_eventset,
+)
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
 # run the event in the FloodAdapt model. This folder must be placed into the Floodadapt input/events folder.
@@ -41,8 +44,8 @@ class FloodAdaptEvent(BaseModel):
     mode: str = "single_event"
     """Mode of each event. Default set to "single event"."""
 
-    template: str = "Historical_nearshore"
-    """FloodAdapt event template for each event. Default set to "Historical_nearshore."""
+    template: str = "Historical"
+    """FloodAdapt event template for each event. Default set to "Historical"."""
 
     timing: str = "historical"
     """Timing of the event. Default set to "historical"."""
@@ -356,8 +359,12 @@ def translate_events(
         }
 
         # Write final toml or dict.
-        OldEvent.convert_event(floodadapt_config, fn_floodadapt)
         with open(
             os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w"
         ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
+    # Convert event
+    if len(events.events) > 1:
+        convert_eventset(fn_floodadapt, r"C:\Users\rautenba\repos\HydroFlows")
+    else:
+        convert_event(fa_event.attrs, event_fn)
