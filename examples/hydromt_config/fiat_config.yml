@@ -14,7 +14,7 @@ setup_exposure_buildings:
   occupancy_type: OSM
   max_potential_damage: jrc_damage_values
   ground_floor_height: 0
-  unit: m
+  unit: meters
   extraction_method: centroid
   damage_types: ["structure", "content"]
   country: "Italy"
@@ -25,7 +25,7 @@ setup_aggregation_areas:
   res_y: 500
 
 setup_exposure_roads:
-  roads_fn: "OSM"
+  roads_fn: OSM
   road_types: ["motorway", "primary", "secondary", "tertiary"]
   road_damage: null
-  unit: "meters"
+  unit: meters
