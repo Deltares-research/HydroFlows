@@ -104,7 +104,7 @@ class ScriptMethod(Method):
         self.output: ScriptOutput = ScriptOutput.model_validate(output)
         self.params: ScriptParams = ScriptParams.model_validate(params)
 
-    def run(self):
+    def _run(self):
         """Run the python script."""
         # add input, params and output as json argument
         cmd = ["python", self.input.script.as_posix(), self.json_kwargs]

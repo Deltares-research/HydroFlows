@@ -106,7 +106,7 @@ class GetGTSMData(Method):
             bnd_locations=bnd_locations,
         )
 
-    def run(self):
+    def _run(self):
         """Run GetGTSMData method."""
         region = gpd.read_file(self.input.region).to_crs(4326)
         dc = DataCatalog(data_libs=self.input.gtsm_catalog)

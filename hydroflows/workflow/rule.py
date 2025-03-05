@@ -67,8 +67,8 @@ class Rule:
 
         # placeholders
         self._wildcard_fields: Dict[str, List] = {}  # wildcard - fieldname dictionary
-        self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
-        self._loop_depth: int = 0  # loop depth of the rule (based on explode wildcards)
+        self._wildcards: Dict[str, List] = {}  # repeat, expand, reduce wildcards
+        self._loop_depth: int = 0  # loop depth of the rule (based on repeat wildcards)
         self._method_instances: List[Method] = []  # list of method instances
         # values of input, output and params fields for all method instances
         self._parameters: Dict[str, Dict] = {}
@@ -117,7 +117,7 @@ class Rule:
         """Return the wildcards of the rule per wildcard type.
 
         Wildcards are saved for three types, based on whether these
-        "expand" (1:n), "reduce" (n:1) and "explode" (n:n) the method.
+        "expand" (1:n), "reduce" (n:1) and "repeat" (n:n) the method.
         """
         return self._wildcards
 
@@ -186,11 +186,11 @@ class Rule:
                     # raise warning if wildcard is not known
                     logger.warning(f"Wildcard {wc} not found in workflow wildcards.")
 
-        # organize wildcards in expand, reduce and explode
+        # organize wildcards in expand, reduce and repeat
         wc_in = set(wildcards["input"] + wildcards["params"])
         wc_out = set(wildcards["output"])
         wildcards_dict = {
-            "explode": list(wc_in & wc_out),
+            "repeat": list(wc_in & wc_out),
             "expand": list(wc_out - wc_in),
             "reduce": list(wc_in - wc_out),
         }
@@ -198,7 +198,7 @@ class Rule:
         # set the wildcard properties
         self._wildcards = wildcards_dict
         self._wildcard_fields = wildcard_fields
-        self._loop_depth = len(self.wildcards["explode"])
+        self._loop_depth = len(self.wildcards["repeat"])
 
     def _validate_wildcards(self) -> None:
         """Validate wildcards based on method type."""
@@ -222,13 +222,13 @@ class Rule:
         Parameters
         ----------
         wildcards : Dict
-            The reduce and explode wildcards to replace in the method.
+            The reduce and repeat wildcards to replace in the method.
             Expand wildcards are only on the output and are set in the method.
         """
-        # explode kwargs should always be a single value;
-        for wc in self.wildcards["explode"]:
+        # repeat kwargs should always be a single value;
+        for wc in self.wildcards["repeat"]:
             if not isinstance(wildcards[wc], str):
-                raise ValueError({f"Explode wildcard '{wc}' should be a string."})
+                raise ValueError({f"Repeat wildcard '{wc}' should be a string."})
         # reduce should be lists;
         for wc in self.wildcards["reduce"]:
             if not isinstance(wildcards[wc], list):
@@ -260,7 +260,7 @@ class Rule:
                 # wildcards = {wc: [v1, v2, ...], ...}
                 kwargs[key] = [str(kwargs[key]).format(**d) for d in wildcards_reduce]
             elif key in self._all_wildcard_fields:
-                # explode method
+                # repeat method
                 # wildcards = {wc: v, ...}
                 kwargs[key] = str(kwargs[key]).format(**wildcards)
         method = self.method.from_kwargs(**kwargs)
@@ -270,8 +270,8 @@ class Rule:
 
     def wildcard_product(self) -> List[Dict[str, str]]:
         """Return the values of wildcards per method instance."""
-        # only explode if there are wildcards on the output
-        wildcards = self.wildcards["explode"]
+        # only repeat if there are wildcards on the output
+        wildcards = self.wildcards["repeat"]
         wc_values = [self.workflow.wildcards.get(wc) for wc in wildcards]
         # drop None from list of values; this occurs when the workflow is not fully initialized yet
         wc_values = [v for v in wc_values if v is not None]
@@ -432,13 +432,13 @@ class Rule:
                 for i, method in enumerate(self._method_instances):
                     msg = f"Running {self.rule_id} {i+1}/{nruns}"
                     logger.info(msg)
-                    method.run_with_checks()
+                    method.run()
             else:
                 tqdm_kwargs = {}
                 if max_workers is not None:
                     tqdm_kwargs.update(max_workers=max_workers)
                 thread_map(
-                    lambda method: method.run_with_checks(),
+                    lambda method: method.run(),
                     self._method_instances,
                     **tqdm_kwargs,
                 )

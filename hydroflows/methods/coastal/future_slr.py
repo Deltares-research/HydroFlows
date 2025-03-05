@@ -181,7 +181,7 @@ class FutureSLR(ExpandMethod):
 
         self.set_expand_wildcard(wildcard, self.params.event_names_output)
 
-    def run(self):
+    def _run(self):
         """Run the FutureClimateSLR method."""
         event_set = EventSet.from_yaml(self.input.event_set_yaml)
 

@@ -26,7 +26,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
 
     assert len(p_events.params.event_names) == len(rps)
 
-    p_events.run_with_checks()
+    p_events.run()
 
     # TODO separate this into a new test function?
     # read data back and check if all event paths are absolute and existing, length is correct
@@ -60,7 +60,7 @@ def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path
 
     assert len(p_events.params.event_names) == len(rps)
 
-    p_events.run_with_checks()
+    p_events.run()
 
 
 def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
@@ -72,7 +72,7 @@ def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
         end_date="2023-12-31",
     )
     assert get_era5.output.precip_nc == tmp_path / "data" / "era5.nc"
-    get_era5.run_with_checks()
+    get_era5.run()
 
     da = xr.open_dataarray(get_era5.output.precip_nc)
     assert da["time"].min() == pd.Timestamp("2023-11-01")
@@ -91,7 +91,7 @@ def test_future_climate_rainfall(
         event_root=out_root,
     )
 
-    rule.run_with_checks()
+    rule.run()
 
     fn_scaled_event_set = rule.output.future_event_set_yaml
     scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)

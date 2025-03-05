@@ -215,7 +215,7 @@ class PluvialDesignEvents(ExpandMethod):
         # set wildcards and its expand values
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
-    def run(self):
+    def _run(self):
         """Run the Pluvial design events method."""
         da = xr.open_dataarray(self.input.precip_nc)
         time_dim = self.params.time_dim

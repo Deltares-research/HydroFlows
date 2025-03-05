@@ -67,7 +67,7 @@ def test_ref_is_expand_field():
         events=["1", "2", "3"],
         wildcard="w",
     )
-    workflow.add_rule(method=expand_method, rule_id="test_rule")
+    workflow.create_rule(method=expand_method, rule_id="test_rule")
     ref = Ref("$rules.test_rule.input.input_file", workflow)
     assert not ref.is_expand_field
 
@@ -85,7 +85,7 @@ def test_get_str_value():
         events=["1", "2", "3"],
         wildcard="w",
     )
-    workflow.add_rule(method=expand_method, rule_id="test_rule")
+    workflow.create_rule(method=expand_method, rule_id="test_rule")
     ref = Ref("$rules.test_rule.output.output_file", workflow=workflow)
     assert ref.get_str_value(quote_str=False) == "{w}/file.yml"
 
@@ -118,7 +118,7 @@ def test_set_resolve_rule_ref(workflow):
         events=["1", "2", "3"],
         wildcard="w",
     )
-    workflow.add_rule(method=expand_method, rule_id="test_rule")
+    workflow.create_rule(method=expand_method, rule_id="test_rule")
     ref = "$rules.test_rule.output.output_file3"
     err_msg = (
         f"Invalid reference: {ref}. "

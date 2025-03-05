@@ -83,7 +83,7 @@ class GetERA5Rainfall(Method):
             precip_nc=self.params.data_root / self.params.filename
         )
 
-    def run(self):
+    def _run(self):
         """Run the GetERA5Rainfall method."""
         # read the region polygon file
         gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region)

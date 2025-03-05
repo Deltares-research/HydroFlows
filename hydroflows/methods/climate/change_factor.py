@@ -147,7 +147,7 @@ class ClimateChangeFactors(ExpandMethod):
             values=self.formatted_wildcards,
         )
 
-    def run(self):
+    def _run(self):
         """Run the climate factors gridded method."""
         for wc in self.formatted_wildcards:
             # NOTE Expected change is absolute [°C] for temperature and dew point temperature,

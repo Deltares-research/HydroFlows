@@ -18,7 +18,7 @@ class MockMethod:
     def from_kwargs(cls, method, **kwargs):
         return cls(**kwargs)
 
-    def run_with_checks(self):
+    def run(self):
         return "Mocked Method run called"
 
 

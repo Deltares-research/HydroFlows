@@ -81,12 +81,21 @@ class Workflow:
         self._root = Path(root)
         self._root.mkdir(parents=True, exist_ok=True)
 
-    def add_rule(self, method: Method, rule_id: Optional[str] = None) -> None:
-        """Add a rule to the workflow."""
+    def create_rule(self, method: Method, rule_id: Optional[str] = None) -> Rule:
+        """Create a rule based on a method.
+
+        Parameters
+        ----------
+        method : Method
+            The method to create the rule from.
+        rule_id : str, optional
+            The rule id, by default None.
+        """
         rule = Rule(method, self, rule_id)
         self.rules.set_rule(rule)
+        return rule
 
-    def add_rule_from_kwargs(
+    def create_rule_from_kwargs(
         self, method: str, kwargs: Dict[str, str], rule_id: Optional[str] = None
     ) -> None:
         """Add a rule for method 'name' with keyword-arguments 'kwargs'.
@@ -106,7 +115,7 @@ class Workflow:
                 kwargs[key] = self.get_ref(value)
         # instantiate the method and add the rule
         m = Method.from_kwargs(name=str(method), **kwargs)
-        self.add_rule(m, rule_id)
+        self.create_rule(m, rule_id)
 
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
@@ -129,7 +138,7 @@ class Workflow:
                 raise ValueError(f"Rule {i+1} invalid: not a dictionary.")
             if "method" not in rule.keys():
                 raise ValueError(f"Rule {i+1} invalid: 'method' name missing.")
-            workflow.add_rule_from_kwargs(**rule)
+            workflow.create_rule_from_kwargs(**rule)
         return workflow
 
     def to_snakemake(

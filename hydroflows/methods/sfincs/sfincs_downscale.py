@@ -105,7 +105,7 @@ class SfincsDownscale(Method):
             hazard_tif=Path(output_root, f"hmax_{self.params.event_name}.tif")
         )
 
-    def run(self):
+    def _run(self):
         """Run the downscaling from SFINCS waterlevels to a flood depth map."""
         # unpack input, output and params
         root = self.input.sfincs_map.parent

@@ -56,7 +56,7 @@ class TestMethod(Method):
             output_file2=self.params.out_root / "output2",
         )
 
-    def run(self):
+    def _run(self):
         with open(self.output.output_file1, "w") as f:
             f.write("")
         with open(self.output.output_file2, "w") as f:
@@ -99,7 +99,7 @@ class MockExpandMethod(ExpandMethod):
         )
         self.set_expand_wildcard(wildcard, self.params.events)
 
-    def run(self):
+    def _run(self):
         self.check_input_output_paths(False)
         for _, output_file in self._output_paths:
             Path(output_file).parent.mkdir(parents=True, exist_ok=True)
@@ -129,7 +129,7 @@ class MockReduceMethod(ReduceMethod):
             output_file=self.params.root / "output_file.yml"
         )
 
-    def run(self):
+    def _run(self):
         data = {
             "inputs": self.input.files,
         }

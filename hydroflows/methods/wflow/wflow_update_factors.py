@@ -123,7 +123,7 @@ class WflowUpdateChangeFactors(Method):
             wflow_out_toml=self.params.output_dir / "wflow_sbm.toml",
         )
 
-    def run(self):
+    def _run(self):
         """Run the downscale dataset method."""
         if self.params.copy_model:
             copy_wflow_model(

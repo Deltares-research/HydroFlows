@@ -115,7 +115,7 @@ class JinjaSnakeRule:
         expand_lst = []
         for wc in get_wildcards(val, wildcards):
             expand_lst.append(f"{wc}={wc.upper()}")
-        escape_wc = list(set(self.rule.wildcards["explode"]) - set(wildcards))
+        escape_wc = list(set(self.rule.wildcards["repeat"]) - set(wildcards))
         for wc in get_wildcards(val, escape_wc):
             # escape wildcard in the value which is not expanded
             val = val.replace("{" + wc + "}", "{{" + wc + "}}")

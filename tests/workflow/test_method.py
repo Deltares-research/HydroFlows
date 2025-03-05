@@ -91,7 +91,7 @@ def test_run_with_checks(tmp_path):
     test_method = create_test_method(
         root=tmp_path,
     )
-    test_method.run_with_checks()
+    test_method.run()
 
 
 def test_check_input_output_paths(tmp_path, caplog):

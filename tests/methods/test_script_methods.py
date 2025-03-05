@@ -119,7 +119,7 @@ def test_script_method_snakemake(tmp_path: Path):
         input={"input1": Path("input.txt")},
         params={"param1": "value1", "param2": 2},
     )
-    workflow.add_rule(method, rule_id="test_rule")
+    workflow.create_rule(method, rule_id="test_rule")
     workflow.to_snakemake(Path(tmp_path, "Snakefile"))
     # test snakemake file
     with open(tmp_path / "input.txt", "w") as f:

@@ -151,7 +151,7 @@ class FIATVisualize(Method):
             / f"{self.params.scenario_name}_metrics.html",
         )
 
-    def run(self):
+    def _run(self):
         """Run the FIATVisualize method."""
         # Get return periods
         config = toml.load(self.input.fiat_cfg)

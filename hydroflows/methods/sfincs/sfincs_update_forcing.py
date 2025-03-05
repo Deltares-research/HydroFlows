@@ -118,7 +118,7 @@ class SfincsUpdateForcing(Method):
 
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
-    def run(self):
+    def _run(self):
         """Run the SfincsUpdateForcing method."""
         # fetch event from event yaml file
         event: Event = Event.from_yaml(self.input.event_yaml)

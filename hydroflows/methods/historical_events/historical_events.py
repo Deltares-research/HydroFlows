@@ -179,7 +179,7 @@ class HistoricalEvents(ExpandMethod):
 
         self.set_expand_wildcard(wildcard, list(self.params.events_dates.keys()))
 
-    def run(self):
+    def _run(self):
         """Run the HistoricalEvents method."""
         # Possible input files and their corresponding index dimensions
         event_files = {}

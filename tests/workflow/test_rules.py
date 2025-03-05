@@ -36,7 +36,7 @@ def test_rules(workflow, rule):
 def test_rule_dependency(workflow: Workflow):
     # Test for rule with no dependencies
     method1 = TestMethod(input_file1="file1", input_file2="file2")
-    workflow.add_rule(method=method1, rule_id="method1")
+    workflow.create_rule(method=method1, rule_id="method1")
     assert workflow.rules.dependency_map.get("method1") == []
 
     # Test for rule with single dependency
@@ -45,7 +45,7 @@ def test_rule_dependency(workflow: Workflow):
         input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
         out_root="root",
     )
-    workflow.add_rule(method=method2, rule_id="method2")
+    workflow.create_rule(method=method2, rule_id="method2")
     assert workflow.rules.dependency_map.get("method2") == ["method1"]
 
     # Test for rule with multiple different dependencies
@@ -54,7 +54,7 @@ def test_rule_dependency(workflow: Workflow):
         input_file2=method2.output.output_file2,
         out_root="root3",
     )
-    workflow.add_rule(method=method3, rule_id="method3")
+    workflow.create_rule(method=method3, rule_id="method3")
     assert workflow.rules.dependency_map.get("method3") == ["method1", "method2"]
 
     # Test for rule with single dependency not being the last in workflow.rules
@@ -63,7 +63,7 @@ def test_rule_dependency(workflow: Workflow):
         input_file2=method1.output.output_file2,
         out_root="root4",
     )
-    workflow.add_rule(method=method4, rule_id="method4")
+    workflow.create_rule(method=method4, rule_id="method4")
     assert workflow.rules.dependency_map.get("method4") == ["method1"]
 
     # test result_rules (rules that are not dependencies of any other rule)
@@ -72,27 +72,27 @@ def test_rule_dependency(workflow: Workflow):
 
 def test_rules_order(workflow: Workflow):
     method1 = TestMethod(input_file1="file1", input_file2="file2")
-    workflow.add_rule(method=method1, rule_id="method1")
+    workflow.create_rule(method=method1, rule_id="method1")
 
     method2 = TestMethod(
         input_file1=method1.output.output_file1,
         input_file2=workflow.get_ref("$rules.method1.output.output_file2"),
         out_root="root",
     )
-    workflow.add_rule(method=method2, rule_id="method2")
+    workflow.create_rule(method=method2, rule_id="method2")
 
     method3 = TestMethod(
         input_file1=method1.output.output_file1,
         input_file2=method2.output.output_file2,
         out_root="root3",
     )
-    workflow.add_rule(method=method3, rule_id="method3")
+    workflow.create_rule(method=method3, rule_id="method3")
 
     method4 = TestMethod(
         input_file1=method1.output.output_file1,
         input_file2=method1.output.output_file2,
         out_root="root4",
     )
-    workflow.add_rule(method=method4, rule_id="method4")
+    workflow.create_rule(method=method4, rule_id="method4")
 
     assert workflow.rules.names == ["method1", "method4", "method2", "method3"]

@@ -59,7 +59,7 @@ merged_catalog_global_local = catalog.MergeCatalogs(
     catalog_path2=w.get_ref("$config.catalog_path_local"),
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_local_global.yml"),
 )
-w.add_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
+w.create_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
 
 # %%
 # Sfincs build
@@ -71,7 +71,7 @@ sfincs_build = sfincs.SfincsBuild(
     plot_fig=w.get_ref("$config.plot_fig"),
     subgrid_output=w.get_ref("$config.subgrid_output"),
 )
-w.add_rule(sfincs_build, rule_id="sfincs_build")
+w.create_rule(sfincs_build, rule_id="sfincs_build")
 
 # %%
 # Preprocess local FIAT data scripts (clip exposure & preprocess clipped exposure)
@@ -92,7 +92,7 @@ fiat_clip_exp = script.ScriptMethod(
         "entrances": Path(pwd, "data/preprocessed-data/entrances.gpkg"),
     },
 )
-w.add_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
+w.create_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
 
 # Preprocess clipped exposure
 fiat_preprocess_clip_exp = script.ScriptMethod(
@@ -108,7 +108,7 @@ fiat_preprocess_clip_exp = script.ScriptMethod(
         ),
     },
 )
-w.add_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
+w.create_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
 
 # %%
 # Merge the preprocessed data catalog with the merged global and local data catalog
@@ -117,7 +117,7 @@ merged_catalog_all = catalog.MergeCatalogs(
     catalog_path2=fiat_preprocess_clip_exp.output.preprocessed_data_catalog,
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_all.yml"),
 )
-w.add_rule(merged_catalog_all, rule_id="merge_all_catalogs")
+w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
 
 # %%
 # Fiat build
@@ -128,7 +128,7 @@ fiat_build = fiat.FIATBuild(
     catalog_path=merged_catalog_all.output.merged_catalog_path,
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
-w.add_rule(fiat_build, rule_id="fiat_build")
+w.create_rule(fiat_build, rule_id="fiat_build")
 
 # %%
 # Preprocess local precipitation data and get design events
@@ -142,7 +142,7 @@ precipitation = script.ScriptMethod(
         )
     },
 )
-w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
+w.create_rule(precipitation, rule_id="preprocess_local_rainfall")
 
 # Derive desing pluvial events for the current conditions based on the preprocessed local precipitation
 pluvial_events = rainfall.PluvialDesignEvents(
@@ -151,7 +151,7 @@ pluvial_events = rainfall.PluvialDesignEvents(
     wildcard="pluvial_design_events",
     event_root="events/design",
 )
-w.add_rule(pluvial_events, rule_id="pluvial_design_events")
+w.create_rule(pluvial_events, rule_id="pluvial_design_events")
 
 # %%
 # Update the sfincs model with pluvial events
@@ -159,7 +159,7 @@ sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
 )
-w.add_rule(sfincs_update, rule_id="sfincs_update")
+w.create_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
@@ -167,7 +167,7 @@ sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
-w.add_rule(sfincs_run, rule_id="sfincs_run")
+w.create_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
@@ -177,14 +177,14 @@ sfincs_down = sfincs.SfincsDownscale(
     depth_min=w.get_ref("$config.depth_min"),
     output_root="output/hazard",
 )
-w.add_rule(sfincs_down, rule_id="sfincs_downscale")
+w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Postprocesses SFINCS results
 sfincs_post = sfincs.SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
-w.add_rule(sfincs_post, rule_id="sfincs_post")
+w.create_rule(sfincs_post, rule_id="sfincs_post")
 
 # %%
 # Update and run FIAT for the event set
@@ -197,14 +197,14 @@ fiat_update = fiat.FIATUpdateHazard(
     hazard_maps=sfincs_post.output.sfincs_zsmax,
     risk=w.get_ref("$config.risk"),
 )
-w.add_rule(fiat_update, rule_id="fiat_update")
+w.create_rule(fiat_update, rule_id="fiat_update")
 
 # Run FIAT
 fiat_run = fiat.FIATRun(
     fiat_cfg=fiat_update.output.fiat_out_cfg,
     fiat_exe=w.get_ref("$config.fiat_exe"),
 )
-w.add_rule(fiat_run, rule_id="fiat_run")
+w.create_rule(fiat_run, rule_id="fiat_run")
 
 # %%
 # Setup FloodAdapt
@@ -214,7 +214,7 @@ floodadapt_build = flood_adapt.SetupFloodAdapt(
     event_set_yaml=pluvial_events.output.event_set_yaml,
     output_dir="models/flood_adapt_builder",
 )
-w.add_rule(floodadapt_build, rule_id="floodadapt_build")
+w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 
 # %%
 # run workflow

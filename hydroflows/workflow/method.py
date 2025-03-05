@@ -14,7 +14,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
-from hydroflows.utils.parsers import get_wildcards
+from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -50,7 +50,7 @@ class Method(ABC):
     ## ABSTRACT METHODS
 
     @abstractmethod
-    def run(self) -> None:
+    def _run(self) -> None:
         """Implement the rule logic here.
 
         This method is called when executing the rule.
@@ -257,7 +257,7 @@ class Method(ABC):
         # return output paths
         return [value for _, value in self._output_paths]
 
-    def run_with_checks(self, check_output: bool = True) -> None:
+    def run(self, check_output: bool = True) -> None:
         """Run the method with input/output checks.
 
         Parameters
@@ -266,7 +266,7 @@ class Method(ABC):
             Check if output files are created, by default True.
         """
         self.check_input_output_paths()
-        self.run()
+        self._run()
         if check_output:
             self.check_output_exists()
 
@@ -283,9 +283,14 @@ class Method(ABC):
         """
         for key, value in self.input.model_dump().items():
             if isinstance(value, Path):
+                if has_wildcards(value):
+                    raise ValueError(
+                        f"The method {self.name} has unresolved wildcards in input paths. "
+                        "Please create a rule to resolve these wildcards and run the rule."
+                    )
                 if not value.is_file():
                     msg = f"Input file {self.name}.input.{key} not found: {value}"
-                    if not missing_file_error:  # create dummy file
+                    if not missing_file_error:
                         logger.warning(msg)
                     else:
                         raise FileNotFoundError(msg)
