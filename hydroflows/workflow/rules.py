@@ -55,7 +55,7 @@ class Rules:
         """Return a list of all rules that are no a dependency of other rules."""
         all_dependencies = set(chain(*self.dependency_map.values()))
         all_rules = set(self.names)
-        return list(all_rules - all_dependencies)
+        return sorted(all_rules - all_dependencies)
 
     def _detect_dependencies_rule(self, rule: Rule) -> list[str]:
         """Find all dependencies of rule_id by matching input values to output values of prev rules.
