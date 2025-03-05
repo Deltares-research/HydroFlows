@@ -74,7 +74,7 @@ w.add_rule(fiat_build, rule_id="fiat_build")
 # Get ERA5 data
 pluvial_data = rainfall.GetERA5Rainfall(
     region=sfincs_build.output.sfincs_region,
-    data_root=Path(pwd, "data/global-data"),
+    output_dir=Path(pwd, "data/global-data"),
     start_date=w.get_ref("$config.start_date"),
     end_date=w.get_ref("$config.end_date"),
 )

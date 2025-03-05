@@ -51,13 +51,13 @@ HydroFlows is designed to create workflows using python scripts and parse these 
 The example below shows how two methods can be chained together in a workflow and parsed to Snakemake.
 More information on how to use HydroFlows including several examples can be found in the online user documentation.
 
-.. code-block:: python
+.. ipython:: python
 
    from hydroflows import Workflow
    from hydroflows.methods import sfincs
 
    # create a workflow
-   wf = Workflow(root="~/my_workflow_root", name="my_workflow")
+   wf = Workflow(root="./my_workflow_root", name="my_workflow")
 
    # initialize a method and add it to the workflow
    sfincs_build = sfincs.SfincsBuild(
@@ -77,7 +77,7 @@ More information on how to use HydroFlows including several examples can be foun
    wf.add_rule(sfincs_run, rule_id="sfincs_run")
 
    # parse the workflow to Snakemake
-   # this will save a ~/my_workflow_root/Snakefile
+   # this will save a ./my_workflow_root/Snakefile
    wf.to_snakemake()
 
 
@@ -135,13 +135,14 @@ To update the lock file and your environment after changes to the dependencies, 
 Acknowledgements
 ================
 
-This library was created as part of the HE-UP2030_.
+This library was created as part of the Horizon Europe :ref:`UP2030 <https://up2030-he.eu/>_` (Grant Agreement Number 101096405)
+and :ref:`InterTwin <https://www.intertwin.eu/>_` (Grant Agreement Number 101058386) projects.
 
 
 License
 =======
 
-FIXME: TBD
+MIT license, see the `LICENSE <LICENSE>`_ file for details.
 
 
 .. _snakemake: https://snakemake.readthedocs.io/en/stable/
@@ -152,7 +153,6 @@ FIXME: TBD
 .. _Delft-FIAT: https://deltares.github.io/Delft-FIAT/
 .. _HydroMT: https://deltares.github.io/hydromt/
 .. _FloodAdapt: https://deltares-research.github.io/FloodAdapt/
-.. _HE-UP2030 project: https://up2030-he.eu/
 .. _pixi: https://pixi.sh/latest/
 .. _mamba: https://mamba.readthedocs.io/en/latest/
 .. _conda: https://docs.conda.io/en/latest/

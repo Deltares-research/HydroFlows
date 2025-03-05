@@ -11,3 +11,4 @@
 .. _mamba: https://mamba.readthedocs.io/en/latest/
 .. _conda: https://docs.conda.io/en/latest/
 .. _miniforge: https://conda-forge.org/download/
+.. _pydantic: https://docs.pydantic.dev/latest/

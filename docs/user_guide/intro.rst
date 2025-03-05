@@ -3,7 +3,7 @@
 User guide
 ==========
 
-HydroFlows currently consists of two main components: the workflow framework and the method library.
+HydroFlows currently consists of two main components: the workflow framework and the methods library.
 The workflow framework is used to create workflows using python scripts and parse these to a workflow engine like Snakemake_.
 The method library contains a collection of methods that can be used as building blocks in a workflow.
 

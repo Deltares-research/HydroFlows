@@ -18,8 +18,9 @@ Each of these steps in shown in the diagram below and discussed in the following
 .. toctree::
    :maxdepth: 2
 
+   terminology
    define_method
    compose_workflow
    execute_workflow
    parse_to_engine
-   cli
+   add_own_methods

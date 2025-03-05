@@ -7,5 +7,4 @@
    :hidden:
 
    user_guide/intro.rst
-   api/index.rst
    dev_guide/intro.rst
