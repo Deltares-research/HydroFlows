@@ -355,6 +355,7 @@ def translate_events(
         }
 
         # Write final toml or dict.
+        # convert_event(floodadapt_config, fn_floodadapt)
         with open(
             os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w"
         ) as toml_file:
