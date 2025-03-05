@@ -9,6 +9,7 @@ from typing import Union
 import pandas as pd
 import toml
 import tomli_w
+from flood_adapt import Settings
 from pydantic import BaseModel
 
 from hydroflows.events import EventSet
@@ -364,7 +365,15 @@ def translate_events(
         ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
     # Convert event
+    # Set up Database
+    Settings(
+        DATABASE_ROOT=Path(r"C:\Users\rautenba\repos\Database"),
+        DATABASE_NAME="charleston_test",
+        SYSTEM_FOLDER=Path(r"C:\Users\rautenba\repos\Database\system"),
+    )
     if len(events.events) > 1:
-        convert_eventset(fn_floodadapt, r"C:\Users\rautenba\repos\HydroFlows")
+        convert_eventset(
+            Path(fn_floodadapt), Path(r"C:\Users\rautenba\repos\HydroFlows")
+        )
     else:
-        convert_event(fa_event.attrs, event_fn)
+        convert_event(fa_event.attrs, Path(event_fn))

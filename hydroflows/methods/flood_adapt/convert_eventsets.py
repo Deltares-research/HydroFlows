@@ -239,6 +239,7 @@ def convert_event(
             pass
         elif wind["source"] == Source.TRACK:
             _wind = WindTrack()
+        #### In the wind class add all the forcing
         else:
             raise ValueError(f"other wind found: {wind}")
 
@@ -247,6 +248,7 @@ def convert_event(
             _rainfall = RainfallCSV(path=old_event_dir / rainfall["timeseries_file"])
         elif rainfall["source"] == Source.TRACK:
             _rainfall = RainfallTrack()
+        #### In the rainfallclass add all the forcing
         else:
             raise ValueError(f"other rainfall found: {rainfall}")
         forcings.update({"RAINFALL": [_rainfall]})
@@ -442,28 +444,3 @@ def update_track_names(path: Path):
 
     with open(path / f"{path.name}.toml", "wb") as f:
         tomli_w.dump(event_set, f)
-
-
-if __name__ == "__main__":
-    # Update these paths to the correct paths on your machine
-    # Settings(
-    #    DATABASE_ROOT=Path("C:/Users/blom_lk/dev/Workspace_FloodAdapt/Database"),
-    #    DATABASE_NAME="charleston_test",
-    # )
-
-    old_path = Path(r"C:\Users\rautenba\repos\HydroFlows")
-    new_path = Path(r"C:\Users\rautenba\repos\HydroFlows")
-
-    convert_eventset(old_path=old_path, new_path=new_path)
-
-    # do this manually for now
-    copy_trackfiles(old_path=old_path, new_path=new_path)
-    update_track_names(new_path)
-
-    new_set = EventSet.load_file(new_path / f"{new_path.name}.toml")
-    assert new_set
-
-    # db = api.static.read_database(
-    #    Settings().database_path.parent, Settings().database_path.name
-    # )
-    # db.events.save(new_set)
