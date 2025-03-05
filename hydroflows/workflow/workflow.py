@@ -1,6 +1,10 @@
-"""Submodule containing the Workflow class.
+"""HydroFlows Workflow class.
 
-Which is the main class for defining workflows in hydroflows.
+This class is responsible for:
+- main entry point for users to define workflows.
+- storing and accessing rules, wildcards, and configuration.
+- parsing workflows to a workflow engine.
+- running workflows.
 """
 
 import logging
@@ -16,7 +20,8 @@ from hydroflows import __version__
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
-from hydroflows.workflow.rule import Rule, Rules
+from hydroflows.workflow.rule import Rule
+from hydroflows.workflow.rules import Rules
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 logger = logging.getLogger(__name__)
@@ -213,30 +218,6 @@ class Workflow:
                 missing_file_error=missing_file_error, input_files=input_files
             )
             input_files = list(set(input_files + output_files))
-
-    @property
-    def _output_path_refs(self) -> Dict[str, str]:
-        """Retrieve output path references of all rules in the workflow.
-
-        Returns
-        -------
-        Dict[str, str]
-            Dictionary containing the output path as the key and the reference as the value
-        """
-        output_paths = {}
-        for rule in self.rules:
-            if not rule:
-                continue
-            for key, value in rule.method.output:
-                if isinstance(value, Path):
-                    value = value.as_posix()
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.output.{key} is not a Path object (but {type(value)})"
-                    )
-                    continue
-                output_paths[value] = f"$rules.{rule.rule_id}.output.{key}"
-        return output_paths
 
 
 class Wildcards(BaseModel):

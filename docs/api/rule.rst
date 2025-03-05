@@ -8,4 +8,4 @@ a ``Rules`` instance
    :toctree: ../_generated
 
    rule.Rule
-   rule.Rules
+   rules.Rules
