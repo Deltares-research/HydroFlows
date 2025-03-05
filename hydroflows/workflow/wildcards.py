@@ -82,13 +82,17 @@ def resolve_wildcards(
     wildcards : dict[str, list[str]]
         The dictionary of wildcards and values.
     """
+    # keep only wildcards in the string
+    wildcards_in_string = get_wildcards(s)
+
+    if not wildcards_in_string:
+        return s
+
     is_path = False
     if isinstance(s, Path):
         is_path = True
         s = s.as_posix()
 
-    # keep only wildcards in the string
-    wildcards_in_string = get_wildcards(s)
     # check if all wildcards are in the wildcards dict
     missing_wildcards = set(wildcards_in_string) - set(wildcards.keys())
     if missing_wildcards:
@@ -101,11 +105,8 @@ def resolve_wildcards(
     wildcards = {k: v if isinstance(v, list) else [v] for k, v in wildcards.items()}
 
     resolved_strings = []
-    if wildcards:
-        for wc in wildcard_product(wildcards):
-            resolved_strings.append(s.format(**wc))
-    else:
-        resolved_strings.append(s)
+    for wc in wildcard_product(wildcards):
+        resolved_strings.append(s.format(**wc))
 
     if is_path:
         resolved_strings = [Path(p) for p in resolved_strings]

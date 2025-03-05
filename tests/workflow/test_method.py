@@ -194,3 +194,29 @@ def test_expand_output_paths_outputs(tmp_path):
         Path("root_dir/2_3/file.yml"),
         Path("root_dir/2_4/file.yml"),
     ]
+
+
+def test_get_output_for_wildcards():
+    method = MockExpandMethod(input_file="test", root="root_dir", events=["1", "2"])
+    output = method.get_output_for_wildcards(wildcards={"wildcard": "1"})
+    assert output == {
+        "output_file": Path("root_dir/1/file.yml"),
+        "output_file2": Path("root_dir/1/file2.yml"),
+    }
+
+    # test error
+    with pytest.raises(ValueError, match="All wildcard values should be strings."):
+        method.get_output_for_wildcards(wildcards={"wildcard1": ["1"]})
+
+    method2 = MockDoubleExpandMethod(
+        input_file="test",
+        root="root_dir",
+        wildcards={"wildcard1": ["1", "2"], "wildcard2": ["3", "4"]},
+    )
+    output = method2.get_output_for_wildcards(
+        wildcards={"wildcard1": "1", "wildcard2": "3"}
+    )
+    assert output == {
+        "output_file": Path("root_dir/1_3/file.yml"),
+        "output_file2": Path("root_dir/1_3/file2.yml"),
+    }

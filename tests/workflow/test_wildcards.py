@@ -103,3 +103,8 @@ def test_resolve_wildcards():
 
     with pytest.raises(KeyError, match="Wildcard values missing for: wildcard3."):
         resolve_wildcards("Unknown {wildcard3} present.", wildcards)
+
+    # test without wildcards
+    assert (
+        resolve_wildcards("No wildcards present.", wildcards) == "No wildcards present."
+    )

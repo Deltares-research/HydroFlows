@@ -7,6 +7,7 @@ from weakref import ReferenceType
 import pytest
 
 from hydroflows.workflow import Rule
+from hydroflows.workflow.method import Method
 from hydroflows.workflow.rule import Rules
 from hydroflows.workflow.workflow import Workflow
 from tests.workflow.conftest import (
@@ -20,7 +21,41 @@ from tests.workflow.conftest import (
 def test_rule_init(rule: Rule, workflow: Workflow):
     assert rule.rule_id == "test_rule"
     assert isinstance(rule._workflow_ref, ReferenceType)
-    assert rule._workflow_ref() == workflow
+    assert rule.workflow == workflow
+
+
+def test_rule_properties(rule: Rule):
+    assert isinstance(rule.method, Method)
+    assert rule.n_runs == 1
+    assert rule.wildcards == {"explode": [], "expand": [], "reduce": []}
+    assert rule.wildcard_fields == {}
+    assert len(rule._method_instances) == 1
+    assert rule.input == {
+        "input_file1": [Path("test_file1")],
+        "input_file2": [Path("test_file2")],
+    }
+    assert rule.output == {
+        "output_file1": [Path("output1")],
+        "output_file2": [Path("output2")],
+    }
+
+
+def test_rule_properties_expand(workflow: Workflow):
+    # test expand method with explode and expand wildcards
+    expand_method = MockExpandMethod(
+        input_file="{region}/test_file",
+        root="{region}",
+        events=["1", "2", "3"],
+        wildcard="w",
+    )
+    rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
+    assert rule.wildcards == {"explode": ["region"], "expand": ["w"], "reduce": []}
+    assert rule.wildcard_fields == {
+        "region": ["input_file", "output_file", "output_file2", "root"],
+        "w": ["output_file", "output_file2"],
+    }
+    assert rule.n_runs == 2
+    assert len(rule._method_instances) == 2
 
 
 def test_rule_repr_(rule: Rule):
@@ -39,22 +74,6 @@ def test_rule_to_dict(rule: Rule):
         "param": "$config.test_rule_param",
     }
     assert rule_dict["rule_id"] == "test_rule"
-
-
-def test_detect_wildcards_explode_expand(workflow: Workflow):
-    # test expand method with explode and expand wildcards
-    expand_method = MockExpandMethod(
-        input_file="{region}/test_file",
-        root="{region}",
-        events=["1", "2", "3"],
-        wildcard="w",
-    )
-    rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
-    assert rule._wildcards == {"explode": ["region"], "expand": ["w"], "reduce": []}
-    assert rule._wildcard_fields == {
-        "region": ["input_file", "output_file", "output_file2", "root"],
-        "w": ["output_file", "output_file2"],
-    }
 
 
 def test_detect_wildcards_reduce(workflow: Workflow):

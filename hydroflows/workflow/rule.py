@@ -128,9 +128,14 @@ class Rule:
         return self._method_instances
 
     @property
-    def parameters(self) -> Dict[str, Dict]:
-        """Return a dictionary with input, output and params fields for all method instances."""
-        return self._parameters
+    def input(self) -> Dict[str, list[Path]]:
+        """Return the input paths of the rule per field."""
+        return self._input
+
+    @property
+    def output(self) -> Dict[str, list[Path]]:
+        """Return the output paths of the rule per field."""
+        return self._output
 
     @property
     def dependency(self) -> str | None:
