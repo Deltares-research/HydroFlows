@@ -72,6 +72,7 @@ class Rule:
         self._method_instances: List[Method] = []  # list of method instances
         # values of input, output and params fields for all method instances
         self._parameters: Dict[str, Dict] = {}
+        self._output_refs: Dict[str, str] = {}  # output path references
 
         # add expand wildcards to workflow wildcards
         if isinstance(self.method, ExpandMethod):
@@ -294,8 +295,7 @@ class Rule:
         Dict[str, str]
             Dictionary containing the output path as the key and the reference as the value
         """
-        if not hasattr(self, "_output_refs"):
-            self._output_refs = {}
+        if not self._output_refs:
             for key, value in self.method.output:
                 if isinstance(value, Path):
                     value = value.as_posix()
