@@ -62,6 +62,11 @@ class Output(Parameters):
     fiat_cfg: Path
     """The file path to the FIAT configuration (toml) file."""
 
+    spatial_joins_cfg: Path
+    """The file path to the FIAT spatial joins configuration (toml) file."""
+
+    ## TODO check if spatial_joins_cfg is created based on config file
+
 
 class Params(Parameters):
     """Parameters for the :py:class:`FIATBuild`.
@@ -147,7 +152,10 @@ class FIATBuild(Method):
             raise ValueError(
                 "A data catalog must be specified either via catalog_path or predefined_catalogs."
             )
-        self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
+        self.output: Output = Output(
+            fiat_cfg=self.params.fiat_root / "settings.toml",
+            spatial_joins_cfg=self.params.fiat_root / "spatial_joins.toml",
+        )
 
     def run(self):
         """Run the FIATBuild method."""
