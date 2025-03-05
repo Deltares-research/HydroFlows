@@ -9,10 +9,10 @@ from typing import Union
 import pandas as pd
 import toml
 import tomli_w
-from convert_eventsets import convert_event
 from pydantic import BaseModel
 
 from hydroflows.events import EventSet
+from hydroflows.methods.flood_adapt.convert_eventsets import OldEvent
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
 # run the event in the FloodAdapt model. This folder must be placed into the Floodadapt input/events folder.
@@ -356,7 +356,7 @@ def translate_events(
         }
 
         # Write final toml or dict.
-        convert_event(floodadapt_config, fn_floodadapt)
+        OldEvent.convert_event(floodadapt_config, fn_floodadapt)
         with open(
             os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w"
         ) as toml_file:
