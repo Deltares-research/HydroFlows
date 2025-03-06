@@ -59,7 +59,7 @@ def test_fa_setup(
         event_set_yaml=event_set_file,
         output_dir=tmp_path.joinpath("flood_adapt"),
     )
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.requires_test_data()

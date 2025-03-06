@@ -166,7 +166,7 @@ class MonthlyClimatolgy(Method):
             climatology=self.params.output_dir / file_name,
         )
 
-    def run(self) -> None:
+    def _run(self) -> None:
         """Run the gridded climate statistics method."""
         # Prepare the time horizon dictionary
         horizons = [[str(i) for i in item] for item in self.params.horizon]

@@ -167,7 +167,7 @@ class CoastalDesignEventFromRPData(ExpandMethod):
         # set wildcards and its expand values
         self.set_expand_wildcard(self.params.wildcard, self.params.event_names)
 
-    def run(self):
+    def _run(self):
         """Run CoastalEventsFromRPData method."""
         da_surge = xr.open_dataarray(self.input.surge_timeseries)
         da_tide = xr.open_dataarray(self.input.tide_timeseries)

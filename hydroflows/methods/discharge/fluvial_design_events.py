@@ -197,7 +197,7 @@ class FluvialDesignEvents(ExpandMethod):
         # set wildcard
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
-    def run(self):
+    def _run(self):
         """Run the FluvialDesignEvents method."""
         root = self.output.event_set_yaml.parent
 

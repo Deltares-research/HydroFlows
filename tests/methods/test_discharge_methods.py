@@ -15,4 +15,4 @@ def test_fluvial_design_hydro(tmp_disch_time_series_nc: Path, tmp_path: Path):
         var_name="Q",
     )
     assert "{q_event}" in str(m.output.event_csv)
-    m.run_with_checks()
+    m.run()

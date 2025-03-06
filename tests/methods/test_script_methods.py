@@ -80,17 +80,20 @@ def test_script_method_run(tmp_path: Path):
     script_path = tmp_path / "valid_script.py"
     write_script(script_path)
     # create method
-    output = script_path.parent / "output.json"
+    output = tmp_path / "output.json"
     method = ScriptMethod(
         script=script_path,
         output={"json_path": output},
-        input=[Path("input1.txt"), Path("input2.txt")],
+        input=[Path(tmp_path, "input1.txt"), Path(tmp_path, "input2.txt")],
         params={"param1": "value1", "param2": 2},
     )
+    # write input files
+    for _, file in method.input:
+        file.touch()
     # test params, input and output
     assert method.input.script == script_path
     assert method.params.param1 == "value1"
-    assert method.input.input2 == Path("input2.txt")
+    assert method.input.input2 == Path(tmp_path, "input2.txt")
     assert method.output.json_path == output
     # run method and check if output file exists and contains the correct data
     method.run()
@@ -100,7 +103,7 @@ def test_script_method_run(tmp_path: Path):
     assert data == json.loads(method.json_kwargs)
 
     # test optional input and params
-    output2 = script_path.parent / "output2.json"
+    output2 = tmp_path / "output2.json"
     method2 = ScriptMethod(script=script_path, output={"json_path": output2})
     method2.run()
     assert output2.is_file()
@@ -119,7 +122,7 @@ def test_script_method_snakemake(tmp_path: Path):
         input={"input1": Path("input.txt")},
         params={"param1": "value1", "param2": 2},
     )
-    workflow.add_rule(method, rule_id="test_rule")
+    workflow.create_rule(method, rule_id="test_rule")
     workflow.to_snakemake(Path(tmp_path, "Snakefile"))
     # test snakemake file
     with open(tmp_path / "input.txt", "w") as f:

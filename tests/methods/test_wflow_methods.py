@@ -36,7 +36,7 @@ def test_wflow_build(
         plot_fig=plot_fig,
     )
 
-    rule.run_with_checks()
+    rule.run()
 
     # FIXME: add params gauges, then uncomment this
     # fn_geoms = Path(fn_wflow_toml.parent, "staticgeoms", "gauges_locs.geojson")
@@ -60,7 +60,7 @@ def test_wflow_update_factors(
         output_dir=output_dir1,
         copy_model=copy_model,
     )
-    rule.run_with_checks()
+    rule.run()
 
     assert rule.output.wflow_change_factors.is_file()
     ds = xr.open_dataset(rule.output.wflow_change_factors)
@@ -94,7 +94,7 @@ def test_wflow_update_factors(
             output_dir=output_dir2,
             copy_model=copy_model,
         )
-        rule.run_with_checks()
+        rule.run()
 
         assert rule.output.wflow_change_factors.is_file()
         ds = xr.open_dataset(rule.output.wflow_change_factors)
@@ -130,7 +130,7 @@ def test_wflow_update_forcing(
 
     assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
 
-    rule.run_with_checks()
+    rule.run()
 
     # This should fail when copy model == False
     if not copy_model:
@@ -156,7 +156,7 @@ def test_wflow_update_forcing(
             copy_model=copy_model,
         )
         assert rule.output.wflow_out_toml == rule.params.output_dir / "wflow_sbm.toml"
-        rule.run_with_checks()
+        rule.run()
 
 
 @pytest.mark.slow()
@@ -204,4 +204,4 @@ def test_wflow_run(
         wflow_run_script=wflow_run_script,
     )
     assert wf_run.output.wflow_output_timeseries == wflow_scalar
-    wf_run.run_with_checks()
+    wf_run.run()

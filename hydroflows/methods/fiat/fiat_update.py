@@ -178,7 +178,7 @@ class FIATUpdateHazard(ReduceMethod):
             fiat_out_cfg=fiat_root / "settings.toml",
         )
 
-    def run(self):
+    def _run(self):
         """Run the FIATUpdateHazard method."""
         # make sure hazard maps is a list
         hazard_maps = self.input.hazard_maps

@@ -56,7 +56,7 @@ sfincs_build = sfincs.SfincsBuild(
     plot_fig=w.get_ref("$config.plot_fig"),
     subgrid_output=w.get_ref("$config.subgrid_output"),
 )
-w.add_rule(sfincs_build, rule_id="sfincs_build")
+w.create_rule(sfincs_build, rule_id="sfincs_build")
 
 # %%
 # Fiat build
@@ -67,7 +67,7 @@ fiat_build = fiat.FIATBuild(
     catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
-w.add_rule(fiat_build, rule_id="fiat_build")
+w.create_rule(fiat_build, rule_id="fiat_build")
 
 # %%
 # Pluvial events (get data + derive events)
@@ -78,7 +78,7 @@ pluvial_data = rainfall.GetERA5Rainfall(
     start_date=w.get_ref("$config.start_date"),
     end_date=w.get_ref("$config.end_date"),
 )
-w.add_rule(pluvial_data, rule_id="pluvial_data")
+w.create_rule(pluvial_data, rule_id="pluvial_data")
 
 # Derive desing pluvial events based on the downloaded (ERA5) data
 pluvial_events = rainfall.PluvialDesignEvents(
@@ -87,7 +87,7 @@ pluvial_events = rainfall.PluvialDesignEvents(
     wildcard="pluvial_design_events",
     event_root="events/design",
 )
-w.add_rule(pluvial_events, rule_id="pluvial_design_events")
+w.create_rule(pluvial_events, rule_id="pluvial_design_events")
 
 # %%
 # Update the sfincs model with pluvial events
@@ -95,7 +95,7 @@ sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
 )
-w.add_rule(sfincs_update, rule_id="sfincs_update")
+w.create_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
@@ -103,7 +103,7 @@ sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
-w.add_rule(sfincs_run, rule_id="sfincs_run")
+w.create_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
@@ -113,14 +113,14 @@ sfincs_down = sfincs.SfincsDownscale(
     depth_min=w.get_ref("$config.depth_min"),
     output_root="output/hazard",
 )
-w.add_rule(sfincs_down, rule_id="sfincs_downscale")
+w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Postprocesses SFINCS results (zsmax variable to the global zsmax on a regular grid for FIAT)
 sfincs_post = sfincs.SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
-w.add_rule(sfincs_post, rule_id="sfincs_post")
+w.create_rule(sfincs_post, rule_id="sfincs_post")
 
 # %%
 # Update FIAT hazard
@@ -131,14 +131,14 @@ fiat_update = fiat.FIATUpdateHazard(
     hazard_maps=sfincs_post.output.sfincs_zsmax,
     risk=w.get_ref("$config.risk"),
 )
-w.add_rule(fiat_update, rule_id="fiat_update")
+w.create_rule(fiat_update, rule_id="fiat_update")
 
 # Run FIAT
 fiat_run = fiat.FIATRun(
     fiat_cfg=fiat_update.output.fiat_out_cfg,
     fiat_exe=w.get_ref("$config.fiat_exe"),
 )
-w.add_rule(fiat_run, rule_id="fiat_run")
+w.create_rule(fiat_run, rule_id="fiat_run")
 
 # %%
 # Setup FloodAdapt with the models above and the design events
@@ -148,7 +148,7 @@ floodadapt_build = flood_adapt.SetupFloodAdapt(
     event_set_yaml=pluvial_events.output.event_set_yaml,
     output_dir="models/flood_adapt_builder",
 )
-w.add_rule(floodadapt_build, rule_id="floodadapt_build")
+w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 
 # %%
 # run workflow

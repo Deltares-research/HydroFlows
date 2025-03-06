@@ -193,7 +193,7 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         # set wildcards and its expand values
         self.set_expand_wildcard(wildcard, self.params.event_names)
 
-    def run(self):
+    def _run(self):
         """Run the PluvialDesignEventsGPEX method."""
         # read the region polygon file
         gdf: gpd.GeoDataFrame = gpd.read_file(self.input.region)
