@@ -244,20 +244,17 @@ class CoastalDesignEvents(ExpandMethod):
         root = self.output.event_set_yaml.parent
         events_list = []
         for name, rp in zip(self.params.event_names, self.params.rps):
-            # save event forcing file
-            fmt_dict = {self.params.wildcard: name}
-            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
+            output = self.get_output_for_wildcards({self.params.wildcard: name})
             h_hydrograph.sel(rps=rp).transpose().to_pandas().round(2).to_csv(
-                forcing_file
+                output["event_csv"]
             )
             # save event description file
-            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
                 forcings=[
                     {
                         "type": "water_level",
-                        "path": forcing_file,
+                        "path": output["event_csv"],
                         "locs_path": self.input.bnd_locations,
                         "locs_id_col": locs_col_id,
                     }
@@ -265,8 +262,8 @@ class CoastalDesignEvents(ExpandMethod):
                 probability=1 / rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file})
+            event.to_yaml(output["event_yaml"])
+            events_list.append({"name": name, "path": output["event_yaml"]})
 
         event_catalog = EventSet(events=events_list)
         event_catalog.to_yaml(self.output.event_set_yaml)

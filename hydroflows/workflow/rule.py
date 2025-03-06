@@ -18,6 +18,7 @@ from tqdm.contrib.concurrent import thread_map
 from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 if TYPE_CHECKING:
     from hydroflows.workflow.workflow import Workflow
@@ -25,8 +26,6 @@ if TYPE_CHECKING:
 __all__ = ["Rule"]
 
 logger = logging.getLogger(__name__)
-
-FMT = ["snakemake"]
 
 
 class Rule:
@@ -70,8 +69,10 @@ class Rule:
         self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
         self._loop_depth: int = 0  # loop depth of the rule (based on explode wildcards)
         self._method_instances: List[Method] = []  # list of method instances
-        # values of input, output and params fields for all method instances
-        self._parameters: Dict[str, Dict] = {}
+        self._input: Dict[str, list[Path]] = {}  # input paths for all method instances
+        self._output: Dict[
+            str, list[Path]
+        ] = {}  # output paths for all method instances
         self._output_refs: Dict[str, str] = {}  # output path references
 
         # add expand wildcards to workflow wildcards
@@ -84,8 +85,8 @@ class Rule:
         self._validate_wildcards()
         # get method instances and in- and output paths
         self._set_method_instances()
-        self._set_parameters()
-        # detect rule dependencies and update config
+        self._set_input_output()
+        # add references to other rule outputs and config
         self._create_references_for_method_inputs()
         self._add_method_params_to_config()
 
@@ -135,9 +136,14 @@ class Rule:
         return self._method_instances
 
     @property
-    def parameters(self) -> Dict[str, Dict]:
-        """Return a dictionary with input, output and params fields for all method instances."""
-        return self._parameters
+    def input(self) -> Dict[str, list[Path]]:
+        """Return the input paths of the rule per field."""
+        return self._input
+
+    @property
+    def output(self) -> Dict[str, list[Path]]:
+        """Return the output paths of the rule per field."""
+        return self._output
 
     @property
     def _all_wildcard_fields(self) -> List[str]:
@@ -216,13 +222,15 @@ class Rule:
         if msg:
             raise ValueError(msg)
 
-    def _method_wildcard_instance(self, wildcards: Dict) -> Method:
+    def _create_method_instance(self, wildcards: Dict[str, str | list[str]]) -> Method:
         """Return a new method instance with wildcards replaced by values.
 
         Parameters
         ----------
-        wildcards : Dict
-            The reduce and explode wildcards to replace in the method.
+        wildcards : Dict[str, str | list[str]]
+            The wildcards to replace in the method instance.
+            For explode wildcards, the value should be a single string.
+            For reduce wildcards, the value should be a list of strings.
             Expand wildcards are only on the output and are set in the method.
         """
         # explode kwargs should always be a single value;
@@ -258,17 +266,18 @@ class Rule:
             if key in reduce_fields:
                 # reduce method -> turn values into lists
                 # wildcards = {wc: [v1, v2, ...], ...}
-                kwargs[key] = [str(kwargs[key]).format(**d) for d in wildcards_reduce]
+                kwargs[key] = [
+                    resolve_wildcards(kwargs[key], d) for d in wildcards_reduce
+                ]
             elif key in self._all_wildcard_fields:
                 # explode method
                 # wildcards = {wc: v, ...}
-                kwargs[key] = str(kwargs[key]).format(**wildcards)
+                kwargs[key] = resolve_wildcards(kwargs[key], wildcards)
         method = self.method.from_kwargs(**kwargs)
-        if isinstance(method, ExpandMethod):
-            method.expand_output_paths()
         return method
 
-    def wildcard_product(self) -> List[Dict[str, str]]:
+    @property
+    def _wildcard_product(self) -> List[Dict[str, str]]:
         """Return the values of wildcards per method instance."""
         # only explode if there are wildcards on the output
         wildcards = self.wildcards["explode"]
@@ -381,24 +390,20 @@ class Rule:
     def _set_method_instances(self):
         """Set a list with all instances of the method based on the wildcards."""
         self._method_instances = []
-        for wildcard_dict in self.wildcard_product():
-            method = self._method_wildcard_instance(wildcard_dict)
+        for wildcard_dict in self._wildcard_product:
+            method = self._create_method_instance(wildcard_dict)
             self._method_instances.append(method)
 
-    def _set_parameters(self):
-        """Set the parameters of the rule.
-
-        The parameters are a dictionary with input, output and params as keys.
-        Each key contains a dictionary with field names as keys and unique values as lists.
-        """
-        parameters = {
-            "input": {},
-            "output": {},
-            "params": {},
-        }
+    def _set_input_output(self):
+        """Set the input and output paths dicts of the rule."""
+        parameters = {"input": {}, "output": {}}
         for method in self._method_instances:
             for name in parameters:
-                for key, value in getattr(method, name):
+                if name == "output" and isinstance(method, ExpandMethod):
+                    obj = method.output_expanded.items()
+                else:
+                    obj = getattr(method, name)
+                for key, value in obj:
                     if key not in parameters[name]:
                         parameters[name][key] = []
                     if name in ["input", "output"]:
@@ -414,7 +419,8 @@ class Rule:
                     elif value not in parameters[name][key]:
                         parameters[name][key].append(value)
 
-        self._parameters = parameters
+        self._input = parameters["input"]
+        self._output = parameters["output"]
 
     ## RUN METHODS
     def run(self, max_workers=1) -> None:
@@ -430,7 +436,7 @@ class Rule:
         with cwd(self.workflow.root):
             if nruns == 1 or max_workers == 1:
                 for i, method in enumerate(self._method_instances):
-                    msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                    msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                     logger.info(msg)
                     method.run_with_checks()
             else:
@@ -468,7 +474,7 @@ class Rule:
         # set working directory to workflow root
         with cwd(self.workflow.root):
             for i, method in enumerate(self._method_instances):
-                msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                 logger.info(msg)
                 output_files_i = method.dryrun(
                     missing_file_error=missing_file_error, input_files=input_files
