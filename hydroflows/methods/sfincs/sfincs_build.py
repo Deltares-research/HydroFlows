@@ -6,7 +6,6 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
-from pydantic import Field, FilePath, model_validator
 
 from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
@@ -25,7 +24,7 @@ class Input(Parameters):
     for constructing a SFINCS model.
     """
 
-    config: FilePath = CFG_DIR / "sfincs_build.yml"
+    config: Path = CFG_DIR / "sfincs_build.yml"
     """
     The path to the configuration file (.yml) that defines the settings
     to build a SFINCS model. In this file the different model components
@@ -54,21 +53,6 @@ class Output(Parameters):
     sfincs_src_points: Optional[Path] = None
     """The path to the derived river source points GeoJSON file."""
 
-    input: Input = Field(exclude=True)
-
-    @model_validator(mode="after")
-    def _optional_outputs(self):
-        # read the configuration
-        opt = configread(self.input.config)
-        # set optional output paths based on config
-        if "setup_subgrid" in opt:
-            self.sfincs_subgrid_dep = (
-                self.sfincs_inp.parent / "subgrid" / "dep_subgrid.tif"
-            )
-        if "setup_river_inflow" in opt:
-            self.sfincs_src_points = self.sfincs_inp.parent / "gis" / "src.geojson"
-        return self
-
 
 class Params(Parameters):
     """Parameters for the :py:class:`SfincsBuild`.
@@ -91,6 +75,12 @@ class Params(Parameters):
     derived SFINCS base maps.
     """
 
+    subgrid_output: bool = False
+    """Determines whether the sfincs subgrid depth output should exist."""
+
+    src_points_output: bool = False
+    """Determines whether the sfincs river source points should exist."""
+
 
 class SfincsBuild(Method):
     """Rule for building SFINCS model."""
@@ -110,6 +100,8 @@ class SfincsBuild(Method):
         catalog_path: Optional[Path] = None,
         predefined_catalogs: Optional[ListOfStr] = None,
         sfincs_root: Path = Path("models/sfincs"),
+        subgrid_output: bool = False,
+        src_points_output: bool = False,
         **params,
     ) -> None:
         """Create and validate a SfincsBuild instance.
@@ -130,8 +122,11 @@ class SfincsBuild(Method):
             A list containing the predefined data catalog names.
         sfincs_root : Path
             The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
-        res : float, optional
-            Model resolution [m], by default 100.
+        subgrid_output : bool, optional
+            Determines whether the sfincs subgrid depth output should exist, by default False.
+            In case it is set to True, the setup_subgrid method should be included in the config file.
+        src_points_output : bool, optional
+            Determines whether the sfincs river source points should exist, by default False.
         **params
             Additional parameters to pass to the SfincsBuild instance.
             See :py:class:`sfincs_build Params <hydroflows.methods.sfincs.sfincs_build.Params>`.
@@ -144,25 +139,51 @@ class SfincsBuild(Method):
         :py:class:`hydromt_sfincs.SfincsModel`
         """
         self.params: Params = Params(
-            sfincs_root=sfincs_root, predefined_catalogs=predefined_catalogs, **params
+            sfincs_root=sfincs_root,
+            predefined_catalogs=predefined_catalogs,
+            subgrid_output=subgrid_output,
+            src_points_output=src_points_output,
+            **params,
         )
         self.input: Input = Input(
-            region=region, config=config, catalog_path=catalog_path
+            region=region,
+            config=config,
+            catalog_path=catalog_path,
         )
         if not self.input.catalog_path and not self.params.predefined_catalogs:
             raise ValueError(
                 "A data catalog must be specified either via catalog_path or predefined_catalogs."
             )
+
+        optional_outputs = {}
+        if self.params.subgrid_output:
+            optional_outputs.update(
+                sfincs_subgrid_dep=self.params.sfincs_root
+                / "subgrid"
+                / "dep_subgrid.tif"
+            )
+
+        if self.params.src_points_output:
+            optional_outputs.update(
+                sfincs_src_points=self.params.sfincs_root / "gis" / "src.geojson"
+            )
+
         self.output: Output = Output(
             sfincs_inp=self.params.sfincs_root / "sfincs.inp",
             sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",
-            input=self.input,
+            **optional_outputs,
         )
 
     def run(self):
         """Run the SfincsBuild method."""
         # read the configuration
         opt = configread(self.input.config)
+
+        # throw error if the setup_subgrid is not included in the config but the output is set to True
+        if "setup_subgrid" not in opt and self.params.subgrid_output == True:
+            raise ValueError(
+                "The 'setup_subgrid' method must be included in the config file in order to set the 'subgrid_output' parameter to True."
+            )
 
         # update placeholders in the config
         opt["setup_grid_from_region"].update(region={"geom": str(self.input.region)})

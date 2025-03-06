@@ -143,6 +143,15 @@ def fiat_cached_model() -> Path:
     return path
 
 
+@pytest.fixture
+def fiat_tmp_model_all(tmp_path: Path, fiat_cached_model: Path) -> Path:
+    """Return the path of the fiat model in temp directory."""
+    tmp_root = tmp_path / "fiat_tmp_model"
+    shutil.copytree(fiat_cached_model, tmp_root)
+    assert Path(tmp_root, "settings.toml").is_file()
+    return tmp_root
+
+
 @pytest.fixture()
 def fiat_tmp_model(tmp_path: Path, fiat_cached_model: Path) -> Path:
     """Return the path of the fiat model in temp directory."""

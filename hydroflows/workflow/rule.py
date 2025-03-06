@@ -1,10 +1,17 @@
-"""HydroFlows Rule class."""
+"""HydroFlows Rule class.
+
+This class is responsible for:
+- detecting and validating wildcards in the method.
+- creating method instances based on the wildcards.
+- parsing input, and output paths of the rule (i.e. for all method instances).
+- running the rule (i.e. running all method instances).
+"""
 
 import logging
 import weakref
-from itertools import chain, product
+from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from tqdm.contrib.concurrent import thread_map
 
@@ -29,8 +36,7 @@ class Rule:
     The rule is responsible for detecting wildcards and expanding them based on
     the workflow wildcards.
 
-    There is only one rule class to rule all methods, as the method is the one
-    that defines the input, output and parameters of the rule.
+    There is one common rule class to rule all methods.
     """
 
     def __init__(
@@ -62,11 +68,11 @@ class Rule:
         # placeholders
         self._wildcard_fields: Dict[str, List] = {}  # wildcard - fieldname dictionary
         self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
+        self._loop_depth: int = 0  # loop depth of the rule (based on explode wildcards)
         self._method_instances: List[Method] = []  # list of method instances
         # values of input, output and params fields for all method instances
         self._parameters: Dict[str, Dict] = {}
-        self._dependency: str | None = None  # rule_id of last occurring dependency
-        self._loop_depth: int = 0  # loop depth of the rule
+        self._output_refs: Dict[str, str] = {}  # output path references
 
         # add expand wildcards to workflow wildcards
         if isinstance(self.method, ExpandMethod):
@@ -76,11 +82,12 @@ class Rule:
         # detect and validate wildcards
         self._detect_wildcards()
         self._validate_wildcards()
-        self._create_references_for_method_inputs()
-        self._add_method_params_to_config()
+        # get method instances and in- and output paths
         self._set_method_instances()
         self._set_parameters()
-        self._detect_dependency()
+        # detect rule dependencies and update config
+        self._create_references_for_method_inputs()
+        self._add_method_params_to_config()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -131,11 +138,6 @@ class Rule:
     def parameters(self) -> Dict[str, Dict]:
         """Return a dictionary with input, output and params fields for all method instances."""
         return self._parameters
-
-    @property
-    def dependency(self) -> str | None:
-        """Return the rule_id of the last occurring dependency."""
-        return self._dependency
 
     @property
     def _all_wildcard_fields(self) -> List[str]:
@@ -284,9 +286,28 @@ class Rule:
 
         return wc_product
 
+    @property
+    def _output_path_refs(self) -> Dict[str, str]:
+        """Retrieve output path references of rule method.
+
+        Returns
+        -------
+        Dict[str, str]
+            Dictionary containing the output path as the key and the reference as the value
+        """
+        if not self._output_refs:
+            for key, value in self.method.output:
+                if isinstance(value, Path):
+                    value = value.as_posix()
+                    self._output_refs[value] = f"$rules.{self.rule_id}.output.{key}"
+        return self._output_refs
+
     def _create_references_for_method_inputs(self):
         """Create references for method inputs based on output paths of previous rules."""
-        output_path_refs = self.workflow._output_path_refs
+        # chain all output_path_refs of previous rules together
+        output_path_refs = {}
+        for rule in self.workflow.rules:
+            output_path_refs.update(rule._output_path_refs)
         # unpack existing config
         conf_keys = self.workflow.config.keys
         conf_values = self.workflow.config.values
@@ -325,7 +346,7 @@ class Rule:
                 self.method.input._refs.update({key: config_ref})
 
     def _add_method_params_to_config(self) -> None:
-        """Add method parameters to the config and update the method params refs."""
+        """Add method params to the config and update the method params refs."""
         # unpack existing config
         conf_keys = self.workflow.config.keys
         conf_values = self.workflow.config.values
@@ -395,26 +416,6 @@ class Rule:
 
         self._parameters = parameters
 
-    def _detect_dependency(self):
-        """Find last occuring dependency of self by matching input values to output values of prev rules."""
-        # Make list of inputs, convert to set of strings for quick matching
-        inputs = self._parameters["input"]
-        inputs = list(chain(*inputs.values()))
-        # order of inputs doesn't matter here so set() is fine
-        inputs = set([str(item) for item in inputs])
-
-        # Init dependency as None
-        for rule in reversed(self.workflow.rules):
-            # Make list of outputs as strings, outputs always paths anyways
-            outputs = rule._parameters["output"]
-            outputs = list(chain(*outputs.values()))
-            outputs = [str(item) for item in outputs]
-
-            # Find if inputs, outputs share any element
-            if not inputs.isdisjoint(outputs):
-                self._dependency = rule.rule_id
-                break
-
     ## RUN METHODS
     def run(self, max_workers=1) -> None:
         """Run the rule.
@@ -474,78 +475,3 @@ class Rule:
                 )
                 output_files.extend(output_files_i)
         return output_files
-
-
-class Rules:
-    """Rules class.
-
-    Rules are dynamically stored as attributes of the Rules class for easy access.
-    The order of rules is stored in the rules attribute.
-    """
-
-    def __init__(self, rules: Optional[List[Rule]] = None) -> None:
-        self.names: List[str] = []
-        """Ordered list of rule IDs."""
-
-        if rules:
-            for rule in rules:
-                self.set_rule(rule)
-
-    def __repr__(self) -> str:
-        """Return the representation of the rules."""
-        rules_repr = "\n".join([str(self.get_rule(name)) for name in self.names])
-        return f"[{rules_repr}]"
-
-    def set_rule(self, rule: Rule) -> None:
-        """Set rule."""
-        rule_id = rule.rule_id
-        self.__setitem__(rule_id, rule)
-
-    def get_rule(self, rule_id: str) -> Rule:
-        """Get rule based on rule_id."""
-        return self.__getitem__(rule_id)
-
-    @property
-    def ordered_rules(self) -> List[Rule]:
-        """Return a list of all rules."""
-        return [self[rule_id] for rule_id in self.names]
-
-    def _get_new_rule_index(self, rule: Rule) -> int:
-        """Determine where the rule should be added in the list."""
-        if rule.dependency is not None:
-            ind = self.names.index(rule.dependency) + 1
-            # If there is already a rule in that position, break tie based on loop_depth with highest loop depth last
-            if ind != len(self.names) and rule._loop_depth > self[ind]._loop_depth:
-                ind += 1
-        # If rule input does not depend on others, put at beginning after other rules with no input dependencies.
-        else:
-            ind = len([rule for rule in self.ordered_rules if rule.dependency is None])
-        return ind
-
-    # method for getting a rule using numerical index,
-    # i.e. rules[0] and rules['rule_id'] are both valid
-    def __getitem__(self, key: Union[int, str]) -> Rule:
-        if isinstance(key, int) and key < len(self.names):
-            key = self.names[key]
-        if key not in self.names:
-            raise ValueError(f"Rule {key} not found.")
-        rule: Rule = getattr(self, key)
-        return rule
-
-    def __setitem__(self, key: str, rule: Rule) -> None:
-        if not isinstance(rule, Rule):
-            raise ValueError("Rule should be an instance of Rule.")
-        if hasattr(self, key):
-            raise ValueError(f"Rule {key} already exists.")
-        setattr(self, key, rule)
-        ind = self._get_new_rule_index(rule)
-        self.names.insert(ind, key)
-
-    def __iter__(self) -> Iterator[Rule]:
-        return iter([self[rule_id] for rule_id in self.names])
-
-    def __next__(self) -> Rule:
-        return next(self)
-
-    def __len__(self) -> int:
-        return len(self.names)
