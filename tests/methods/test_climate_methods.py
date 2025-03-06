@@ -24,7 +24,7 @@ def test_monthly_climatology(
         horizon=[[2000, 2010]],
         output_dir=tmp_path,
     )
-    rule.run_with_checks()
+    rule.run()
 
     assert rule.output.climatology.is_file()
     ds = xr.open_dataset(rule.output.climatology)
@@ -40,7 +40,7 @@ def test_monthly_climatology(
         horizon=[[2090, 2100]],
         output_dir=tmp_path,
     )
-    rule2.run_with_checks()
+    rule2.run()
 
     assert rule2.output.climatology.is_file()
     ds = xr.open_dataset(rule2.output.climatology)
@@ -63,7 +63,7 @@ def test_climate_change_factors(tmp_path: Path, cmip6_stats: Path):
         horizon=[[2090, 2100]],
         output_dir=tmp_path,
     )
-    rule.run_with_checks()
+    rule.run()
 
     file = Path(
         rule.output.change_factors.as_posix().format(

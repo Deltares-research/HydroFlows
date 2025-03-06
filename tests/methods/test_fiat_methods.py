@@ -25,7 +25,7 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
         fiat_root=fiat_root,
         predefined_catalogs=predefined_catalogs,
     )
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.requires_test_data()
@@ -66,7 +66,7 @@ def test_fiat_update_hazard(
         == rule.params.output_dir / rule.params.sim_name / "settings.toml"
     )
 
-    rule.run_with_checks()
+    rule.run()
 
     # This should fail when copy model == False
     if not copy_model:
@@ -94,7 +94,7 @@ def test_fiat_update_hazard(
             == rule.params.output_dir / rule.params.sim_name / "settings.toml"
         )
 
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.requires_test_data()
@@ -121,7 +121,7 @@ def test_fiat_run(
     )
     # Setup the method
     rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
-    rule.run_with_checks()
+    rule.run()
 
     assert fiat_cfg.exists()
 
@@ -145,7 +145,7 @@ def test_fiat_visualize_risk_event(fiat_tmp_model_all: Path, tmp_path: Path):
         spatial_joins_cfg=fiat_spatial_joins,
         output_dir=output_dir,
     )
-    rule.run_with_checks()
+    rule.run()
 
     # check if non-listed aggregation files are in output folder
     # (total metrics are already checked as these are listed in FiatVisualize.output)

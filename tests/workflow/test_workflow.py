@@ -12,7 +12,7 @@ from hydroflows.workflow import (
     Workflow,
     WorkflowConfig,
 )
-from hydroflows.workflow.workflow import Wildcards
+from hydroflows.workflow.wildcards import Wildcards
 from tests.workflow.conftest import (
     MockExpandMethod,
     MockReduceMethod,
@@ -39,21 +39,21 @@ def create_workflow_with_mock_methods(
         wildcard="event",
     )
 
-    w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
+    w.create_rule(method=mock_expand_method, rule_id="mock_expand_rule")
 
     mock_method = TestMethod(
         input_file1=mock_expand_method.output.output_file,
         input_file2=mock_expand_method.output.output_file2,
     )
 
-    w.add_rule(mock_method, rule_id="mock_rule")
+    w.create_rule(mock_method, rule_id="mock_rule")
 
     mock_reduce_method = MockReduceMethod(
         files=mock_method.output.output_file1,
         root="out_{region}",
     )
 
-    w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
+    w.create_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     return w
 
 
@@ -64,14 +64,14 @@ def test_workflow_init(workflow: Workflow):
 
 
 def test_workflow_repr(workflow: Workflow, mock_expand_method):
-    workflow.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
+    workflow.create_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     repr_str = workflow.__repr__()
     assert "region1" in repr_str
     assert "region2" in repr_str
     assert "mock_expand_rule" in repr_str
 
 
-def test_workflow_add_rule(workflow: Workflow, tmp_path):
+def test_workflow_create_rule(workflow: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(workflow)
     assert len(w.rules) == 3
     assert isinstance(w.rules[0], Rule)
@@ -84,7 +84,7 @@ def test_workflow_rule_from_kwargs(workflow: Workflow, mocker, mock_expand_metho
     mocked_Method = mocker.patch("hydroflows.workflow.Method.from_kwargs")
     mocked_Method.return_value = mock_expand_method
     kwargs = {"rps": "$config.rps"}
-    workflow.add_rule_from_kwargs(
+    workflow.create_rule_from_kwargs(
         method="mock_expand_method", kwargs=kwargs, rule_id="mock_rule"
     )
     # TODO add check on input._ref dict if references are there
@@ -211,10 +211,10 @@ def test_workflow_run(tmp_path: Path):
         wildcard="event",
     )
 
-    w.add_rule(method=mock_expand_method, rule_id="mock_expand_rule")
+    w.create_rule(method=mock_expand_method, rule_id="mock_expand_rule")
     mock_reduce_method = MockReduceMethod(
         files=w.get_ref("$rules.mock_expand_rule.output.output_file"),
         root=root,
     )
-    w.add_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
+    w.create_rule(method=mock_reduce_method, rule_id="mock_reduce_rule")
     w.run()

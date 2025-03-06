@@ -132,7 +132,7 @@ def method(
         if dry_run:
             method.dryrun(missing_file_error=True)
         else:
-            method.run_with_checks()
+            method.run()
     except Exception as e:
         logger.error(e)
         ctx.exit(1)

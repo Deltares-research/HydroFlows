@@ -55,7 +55,7 @@ class Rules:
         """Return a list of all rules that are no a dependency of other rules."""
         all_dependencies = set(chain(*self.dependency_map.values()))
         all_rules = set(self.names)
-        return list(all_rules - all_dependencies)
+        return sorted(all_rules - all_dependencies)
 
     def _detect_dependencies_rule(self, rule: Rule) -> list[str]:
         """Find all dependencies of rule_id by matching input values to output values of prev rules.
@@ -63,7 +63,7 @@ class Rules:
         This method updates dependency_map and returns list with rule_id of dependencies.
         """
         # Make list of inputs, convert to set of strings for quick matching
-        inputs = rule._parameters["input"]
+        inputs = rule.input
         inputs = list(chain(*inputs.values()))
         # order of inputs doesn't matter here so set() is fine
         inputs = set([str(item) for item in inputs])
@@ -72,7 +72,7 @@ class Rules:
         dependency_list: list[str] = []
         for prev_rule in self.ordered_rules:
             # Make list of outputs as strings, outputs always paths anyways
-            outputs = prev_rule._parameters["output"]
+            outputs = prev_rule.output
             outputs = list(chain(*outputs.values()))
             outputs = [str(item) for item in outputs]
 

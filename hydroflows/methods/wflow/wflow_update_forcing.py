@@ -163,7 +163,7 @@ class WflowUpdateForcing(Method):
 
         self.output: Output = Output(wflow_out_toml=wflow_out_toml)
 
-    def run(self):
+    def _run(self):
         """Run the WflowUpdateForcing method."""
         logger = setuplog("update", log_level=20)
 
