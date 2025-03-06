@@ -86,7 +86,7 @@ def test_detect_wildcards_reduce(workflow: Workflow):
     assert rule._wildcard_fields == {"region": ["files"]}
 
 
-def test_detect_wildcards_explode(workflow: Workflow):
+def test_detect_wildcards_repeat(workflow: Workflow):
     # test normal method with repeat wildcards
     test_method = TestMethod(
         input_file1="{region}/test_file1", input_file2="{region}/test_file2"
@@ -111,7 +111,7 @@ def test_detect_wildcards_none(workflow: Workflow):
     assert rule._wildcards == {"repeat": [], "expand": [], "reduce": []}
 
 
-def test_detect_wildcards_params_explode(workflow: Workflow):
+def test_detect_wildcards_params_repeat(workflow: Workflow):
     # test normal method with expand wildcards on a param field
     test_method = TestMethod(
         input_file1="testfile1", input_file2="testfile2", out_root="{region}"
@@ -123,7 +123,7 @@ def test_detect_wildcards_params_explode(workflow: Workflow):
     }
 
 
-def test_detect_wildcards_params_explode_expand(workflow: Workflow):
+def test_detect_wildcards_params_repeat_expand(workflow: Workflow):
     # test expand method with repeat on a param field
     expand_method = MockExpandMethod(
         input_file="test_file",
@@ -196,10 +196,10 @@ def test_create_method_instance(workflow: Workflow):
     assert method == test_method
 
     # test normal method with repeat wildcards
-    explode_method = TestMethod(
+    repeat_method = TestMethod(
         input_file1="{region}/test1", input_file2="{region}/test2"
     )
-    rule = Rule(method=explode_method, workflow=workflow)
+    rule = Rule(method=repeat_method, workflow=workflow)
     method = rule._create_method_instance(wildcards={"region": "region1"})
     assert method.input.input_file1.as_posix() == "region1/test1"
     method = rule._create_method_instance(wildcards={"region": "xxx"})
@@ -384,10 +384,10 @@ def test_input_output(workflow: Workflow):
     }
 
     # Test for rule with repeat wildcard
-    explode_method = TestMethod(
+    repeat_method = TestMethod(
         input_file1="{region}/test1", input_file2="{region}/test2"
     )
-    rule = Rule(method=explode_method, workflow=workflow)
+    rule = Rule(method=repeat_method, workflow=workflow)
     methods: list[TestMethod] = rule._method_instances
     assert rule._input == {
         "input_file1": [method.input.input_file1 for method in methods],

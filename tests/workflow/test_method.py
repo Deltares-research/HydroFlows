@@ -93,7 +93,7 @@ def test_dryrun_missing_file_error(tmp_path, caplog):
     assert "input_file1" in caplog.text
 
 
-def test_run_with_checks(tmp_path):
+def test_run(tmp_path):
     test_method = create_test_method(
         root=tmp_path,
     )

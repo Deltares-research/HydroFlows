@@ -71,7 +71,7 @@ def test_workflow_repr(workflow: Workflow, mock_expand_method):
     assert "mock_expand_rule" in repr_str
 
 
-def test_workflow_add_rule(workflow: Workflow, tmp_path):
+def test_workflow_create_rule(workflow: Workflow, tmp_path):
     w = create_workflow_with_mock_methods(workflow)
     assert len(w.rules) == 3
     assert isinstance(w.rules[0], Rule)
