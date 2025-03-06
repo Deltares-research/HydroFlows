@@ -9,7 +9,7 @@ from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
 from hydroflows._typing import ListOfStr
-from hydroflows.methods.wflow.wflow_utils import shift_time
+from hydroflows.methods.wflow.wflow_utils import copy_wflow_model, shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -51,8 +51,11 @@ class Params(Parameters):
     end_time: datetime
     """The end time of the period for which we want to generate forcing."""
 
-    sim_subfolder: str
-    """"The subfolder relative to the basemodel where the simulation folders are stored."""
+    output_dir: Path
+    """Output location relative to the workflow root. The updated model will be stored in <output_dir>."""
+
+    copy_model: bool = False
+    """Create full copy of model or create rel paths in model config."""
 
     timestep: int = 86400  # in seconds
     """The timestep for generated forcing in seconds."""
@@ -94,6 +97,7 @@ class WflowUpdateForcing(Method):
         "catalog_path": Path("data_catalog.yml"),
         "start_time": datetime(1990, 1, 1),
         "end_time": datetime(1990, 1, 2),
+        "output_dir": "simulations",
     }
 
     def __init__(
@@ -101,9 +105,9 @@ class WflowUpdateForcing(Method):
         wflow_toml: Path,
         start_time: datetime,
         end_time: datetime,
+        output_dir: str,
         catalog_path: Optional[Path] = None,
         predefined_catalogs: Optional[ListOfStr] = None,
-        sim_subfolder: str = "simulations/default",
         **params,
     ):
         """Create and validate a WflowUpdateForcing instance.
@@ -117,15 +121,15 @@ class WflowUpdateForcing(Method):
             The file path to the Wflow basemodel configuration file (toml).
         start_time : datetime
             The start time of the period for which we want to generate forcing.
-        end_time:datetime
+        end_time : datetime
             The end time of the period for which we want to generate forcing
+        output_dir : str
+            Output location of updated model
         catalog_path: Optional[Path], optional
             The path to the data catalog file (.yml) that contains the data sources
             specified in the config file. If None (default), a predefined data catalog should be provided.
         predefined_catalogs : Optional[ListOfStr], optional
             A list containing the predefined data catalog names.
-        sim_subfolder : str, optional
-            The subfolder relative to the basemodel where the simulation folders are stored.
         **params
             Additional parameters to pass to the WflowUpdateForcing instance.
             See :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`.
@@ -140,8 +144,8 @@ class WflowUpdateForcing(Method):
         self.params: Params = Params(
             start_time=start_time,
             end_time=end_time,
+            output_dir=output_dir,
             predefined_catalogs=predefined_catalogs,
-            sim_subfolder=sim_subfolder,
             **params,
         )
         self.input: Input = Input(wflow_toml=wflow_toml, catalog_path=catalog_path)
@@ -149,22 +153,30 @@ class WflowUpdateForcing(Method):
             raise ValueError(
                 "A data catalog must be specified either via catalog_path or predefined_catalogs."
             )
-        wflow_out_toml = (
-            self.input.wflow_toml.parent / self.params.sim_subfolder / "wflow_sbm.toml"
-        )
+        wflow_out_toml = self.params.output_dir / "wflow_sbm.toml"
+        if not self.params.copy_model and not self.params.output_dir.is_relative_to(
+            self.input.wflow_toml.parent
+        ):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
+
         self.output: Output = Output(wflow_out_toml=wflow_out_toml)
 
-    def run(self):
+    def _run(self):
         """Run the WflowUpdateForcing method."""
         logger = setuplog("update", log_level=20)
 
         root = self.input.wflow_toml.parent
+        sims_root = self.output.wflow_out_toml.parent
 
         data_libs = []
         if self.params.predefined_catalogs:
             data_libs += self.params.predefined_catalogs
         if self.input.catalog_path:
             data_libs += [self.input.catalog_path]
+        if self.params.copy_model:
+            copy_wflow_model(src=root, dest=sims_root)
 
         w = WflowModel(
             root=root,
@@ -199,15 +211,12 @@ class WflowUpdateForcing(Method):
             chunksize=100,
         )
 
-        if self.output.wflow_out_toml.is_relative_to(root):
-            rel_dir = Path(os.path.relpath(root, self.output.wflow_out_toml.parent))
+        if self.params.copy_model:
+            rel_dir = Path(".")
         else:
-            rel_dir = root
+            rel_dir = Path(os.path.relpath(root, self.output.wflow_out_toml.parent))
 
         w.set_config("input.path_static", str(rel_dir / "staticmaps.nc"))
-
-        # write to new root
-        sims_root = self.output.wflow_out_toml.parent
 
         w.set_root(
             root=sims_root,

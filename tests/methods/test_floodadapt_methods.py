@@ -59,7 +59,7 @@ def test_fa_setup(
         event_set_yaml=event_set_file,
         output_dir=tmp_path.joinpath("flood_adapt"),
     )
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.requires_test_data()
@@ -97,7 +97,7 @@ def test_translate_fiat_model(fiat_tmp_model: Path, tmp_path: Path):
         "Max Potential Damage: Content",
         "Damage Function: Structure",
         "Damage Function: Content",
-        "Aggregation Label: default_aggregation",
+        "aggregation_label:default_aggregation",
     ]
     assert set(required_columns) == set(exposure.columns)
 

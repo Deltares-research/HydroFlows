@@ -1,0 +1,49 @@
+setup_global_settings:
+  keep_temp_files: True
+
+setup_output:
+  output_dir: output
+  output_csv_name: output.csv
+  output_vector_name: spatial.gpkg
+
+setup_vulnerability:
+  vulnerability_fn: jrc_vulnerability_curves
+  vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
+  unit: m
+  continent: South America
+
+setup_population_vulnerability:
+  vertical_unit: "m" # unit of the inundation depth
+  threshold_value: 0.4 # depth at which people would be fully affected
+  min_hazard_value: 0
+  max_hazard_value: 10 # per building, e.g. 10 people per building
+  step_hazard_value: 0.1 # resolution of the damage curve and the interpolation between the values
+
+setup_exposure_buildings:
+  asset_locations: preprocessed_occupaction_jrc
+  occupancy_type: preprocessed_occupaction_jrc
+  keep_unclassified: True
+  max_potential_damage: jrc_damage_values
+  ground_floor_height: preprocessed_floor_height
+  gfh_attribute_name: altura
+  unit: m
+  ground_elevation: rio/setups/local/models/sfincs/subgrid/dep_subgrid.tif
+  damage_types: [structure, content]
+  country: Brazil
+  eur_to_us_dollar: True
+
+# setup_exposure_roads:
+#   roads_fn: "OSM"
+#   road_types: ["motorway", "primary", "secondary", "tertiary"]
+#   road_damage: null
+#   unit: "meters"
+
+setup_exposure_population:
+  impacted_population_fn: preprocessed_asset_population
+  attribute_name: residents
+
+# setup_aggregation_areas:
+#   aggregation_area_fn: "aggregation_neighbourhood.gpkg"
+#   attribute_names: "Nome_do_bairro"
+#   label_names: "Neighbourhood"
+#   file_names: "census_neighbourhoods"

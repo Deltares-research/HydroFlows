@@ -29,4 +29,4 @@ def test_floodmarks_validation(
         == out_root / "validation_scores_floodmarks.csv"
     )
 
-    rule.run_with_checks()
+    rule.run()

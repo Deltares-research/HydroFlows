@@ -82,8 +82,10 @@ class JinjaSnakeRule:
         return {key: self._parse_variable(val) for key, val in result.items()}
 
     @property
-    def rule_all_input(self) -> str:
-        """Get the rule all input (output paths with expand)."""
+    def rule_all_input(self) -> str | None:
+        """Get single output path for result rule, or None if not result rule."""
+        if self.rule_id not in self.rule.workflow.rules.result_rules:
+            return None
         result = self.method.output.to_dict(
             mode="json",
             filter_types=Path,
@@ -113,7 +115,7 @@ class JinjaSnakeRule:
         expand_lst = []
         for wc in get_wildcards(val, wildcards):
             expand_lst.append(f"{wc}={wc.upper()}")
-        escape_wc = list(set(self.rule.wildcards["explode"]) - set(wildcards))
+        escape_wc = list(set(self.rule.wildcards["repeat"]) - set(wildcards))
         for wc in get_wildcards(val, escape_wc):
             # escape wildcard in the value which is not expanded
             val = val.replace("{" + wc + "}", "{{" + wc + "}}")

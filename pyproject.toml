@@ -13,12 +13,13 @@ authors = [
 ]
 dependencies = [
   "cartopy",                  # plotting
+  "contextily",               # basemaps
   "click",                    # CLI
-  "fiat-toolbox",
+  "fiat-toolbox>=0.1.16",    # toolbox for post-processing delft fiat output
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt_fiat>=0.5.1, <1.0", # hydromt plugin for FIAT models
+  "hydromt-fiat>=0.5.3, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
   "jinja2",                   # templating
@@ -83,7 +84,7 @@ test = [
   "hydroflows[extra]",      # needed for testing snake file
 ]
 models = [
-  "delft_fiat>=0.2.1",  # Delft fiat
+  "delft_fiat==0.2.0",  # Delft fiat
   "juliaup"             # julia package manager to install julia & wflow
 ]
 
@@ -186,7 +187,7 @@ snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
 graphviz = {version = "*", channel= "conda-forge" }  # conda-forge to get dot executable
 
 [tool.pixi.feature.models.dependencies]
-delft_fiat = ">=0.2.1"
+delft_fiat = "==0.2.0"
 
 [tool.pixi.feature.py311.dependencies]
 python = "3.11.*"

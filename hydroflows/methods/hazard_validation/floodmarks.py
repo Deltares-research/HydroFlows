@@ -19,6 +19,7 @@ from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
+__all__ = ["FloodmarksValidation"]
 logger = logging.getLogger(__name__)
 
 
@@ -173,7 +174,7 @@ class FloodmarksValidation(Method):
             validation_scores_csv=self.params.out_root / self.params.filename,
         )
 
-    def run(self):
+    def _run(self):
         """Run the FloodmarksValidation method."""
         # Read the floodmarks and the region files
         gdf = gpd.read_file(self.input.floodmarks_geom)
@@ -366,13 +367,7 @@ def _plot_scores(
     """Plot scores."""
     import cartopy.crs as ccrs
     import cartopy.io.img_tiles as cimgt
-
-    try:
-        import contextily as ctx
-
-        has_cx = True
-    except ImportError:
-        has_cx = False
+    import contextily as ctx
 
     # Set default values for vmin, vmax, cmap, and bins if not provided
     if vmin is None:
@@ -426,7 +421,7 @@ def _plot_scores(
         #  short names for cartopy image tiles
         bmap = {"sat": "QuadtreeTiles", "osm": "OSM"}.get(bmap, bmap)
         bmap_kwargs = {}
-        if has_cx and bmap in list(ctx.providers.flatten()):
+        if bmap in list(ctx.providers.flatten()):
             bmap_kwargs = dict(zoom=zoomlevel, **bmap_kwargs)
             ctx.add_basemap(ax, crs=crs, source=bmap, **bmap_kwargs)
         elif hasattr(cimgt, bmap):
@@ -434,8 +429,6 @@ def _plot_scores(
             ax.add_image(bmap_img, zoomlevel)
         else:
             err = f"Unknown background map: {bmap}"
-            if not has_cx:
-                err += " (note that contextily is not installed)"
             raise ValueError(err)
 
     # Add a region plot in case there is one

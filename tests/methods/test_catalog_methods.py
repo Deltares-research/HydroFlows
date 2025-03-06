@@ -34,7 +34,7 @@ def test_merge_catalogs(global_catalog: Path, tmp_path: Path):
     assert "catalog_path3" in m.input.model_extra
     assert isinstance(m.input.catalog_path3, Path)
 
-    m.run_with_checks()
+    m.run()
 
     dc_out = DataCatalog(merged_catalog)
     assert sources_keys[0] in dc_out.sources

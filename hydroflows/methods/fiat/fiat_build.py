@@ -8,7 +8,6 @@ import hydromt_fiat
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_fiat.fiat import FiatModel
-from pydantic import FilePath
 
 from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
@@ -38,7 +37,7 @@ class Input(Parameters):
     for constructing a FIAT model.
     """
 
-    config: FilePath = CFG_DIR / "fiat_build.yml"
+    config: Path = CFG_DIR / "fiat_build.yml"
     """The path to the configuration file (.yml) that defines the settings
     to build a FIAT model. In this file the different model components
     that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
@@ -62,6 +61,11 @@ class Output(Parameters):
 
     fiat_cfg: Path
     """The file path to the FIAT configuration (toml) file."""
+
+    spatial_joins_cfg: Path
+    """The file path to the FIAT spatial joins configuration (toml) file."""
+
+    ## TODO check if spatial_joins_cfg is created based on config file
 
 
 class Params(Parameters):
@@ -148,9 +152,12 @@ class FIATBuild(Method):
             raise ValueError(
                 "A data catalog must be specified either via catalog_path or predefined_catalogs."
             )
-        self.output: Output = Output(fiat_cfg=self.params.fiat_root / "settings.toml")
+        self.output: Output = Output(
+            fiat_cfg=self.params.fiat_root / "settings.toml",
+            spatial_joins_cfg=self.params.fiat_root / "spatial_joins.toml",
+        )
 
-    def run(self):
+    def _run(self):
         """Run the FIATBuild method."""
         # Read template config
         opt = configread(self.input.config)
@@ -173,7 +180,7 @@ class FIATBuild(Method):
         region_gdf = region_gdf[["geometry"]]
         # Setup the model
         root = self.params.fiat_root
-        #
+        # Setup logger
         logger = setuplog("fiat_build", log_level="DEBUG")
 
         data_libs = [FIAT_DATA_PATH]

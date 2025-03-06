@@ -1,0 +1,38 @@
+setup_grid_from_region:
+  res: 50  # for model resolution [m]
+  crs: utm  # model CRS (must be UTM zone)
+  rotated: False  # allow a rotated grid
+  region:
+    geom: <region>  # placeholder for region vector file
+
+setup_mask_active:
+  mask: <region>  # placeholder for region vector file
+
+setup_mask_bounds:
+  btype: waterlevel
+  include_mask: osm_coastlines  # add buffer on the fly
+  include_mask_buffer: 200 # buffer distance [m]
+
+setup_subgrid:
+  datasets_dep:
+    - elevtn: river_bathymetry
+    - elevtn: local_DTM_1m_clipped
+      mask: admin_sentores
+    - elevtn: local_DEM_5m
+    - elevtn: fabdem
+      mask: osm_landareas
+  datasets_rgh:
+    - lulc: esa_worldcover
+  datasets_riv:
+    - centerlines: osm_water
+      # mask: osm_water_poly
+      rivdph: 2
+      rivwth: 10
+      manning': 0.035
+  write_dep_tif: True
+  nr_subgrid_pixels: 20 # 2.5m resolution
+  nbins: 8
+  nrmax: 4000
+
+setup_config:
+  alpha: 0.1

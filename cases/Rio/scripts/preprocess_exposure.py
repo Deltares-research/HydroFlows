@@ -10,18 +10,17 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import yaml
 from shapely.geometry import MultiPolygon, Polygon
 
 data_source = (
-    Path(os.path.abspath(__file__)).parent.parent
-    / "setup_data"
-    / "hydromt_fiat_exposure"
+    Path(os.path.abspath(__file__)).parent.parent / "data" / "preprocessed-data"
 )  # make a relative path
 
 crs = "EPSG:31983"
 
 # area of interest
-region_path = Path(data_source) / "region.gpkg"
+region_path = Path(data_source.parent) / "region.geojson"
 region = gpd.read_file(region_path).to_crs(crs)
 
 
@@ -155,25 +154,66 @@ occupancy_gdf["residents"] = np.where(
 
 # %% save data
 
+# Define file names
+fn_building_footprints = "building_footprints_2d.gpkg"
+# fn_local_dummy = "occupancy_pre_processed_translated_occupaction_local_dummy.gpkg"
+fn_jrc = "occupancy_pre_processed_translated_occupaction_jrc.gpkg"
+fn_floor_height = "finished_floor_height.gpkg"
+fn_asset_population = "asset_population.gpkg"
+
 # Save bf
-buildings_gdf.to_file(data_source / "building_footprints_2d.gpkg")
+buildings_gdf.to_file(data_source / fn_building_footprints)
 
 ## Save occupancy
-occupancy_gdf[["geometry", "primary_object_type"]].to_file(
-    (data_source / "occupancy_pre_processed_translated_occupaction_local_dummy.gpkg")
-)
-occupancy_gdf_jrc[["geometry", "primary_object_type"]].to_file(
-    (data_source / "occupancy_pre_processed_translated_occupaction_jrc.gpkg")
-)
+# occupancy_gdf[["geometry", "primary_object_type"]].to_file(
+#     (data_source / fn_local_dummy)
+# )
+occupancy_gdf_jrc[["geometry", "primary_object_type"]].to_file((data_source / fn_jrc))
 
 # Save Finished Floor Height
 ##convert from cm into meters
 occupancy_gdf["altura"] = occupancy_gdf["altura"] / 100
-occupancy_gdf[["altura", "geometry"]].to_file(
-    data_source / "finished_floor_height.gpkg"
-)
+occupancy_gdf[["altura", "geometry"]].to_file(data_source / fn_floor_height)
 
 ## Save population
 occupancy_gdf[["residents", "geometry"]].to_file(
-    data_source / "asset_population.gpkg", driver="GPKG"
+    data_source / fn_asset_population, driver="GPKG"
 )
+
+
+# %%
+# Create a dictionary
+# Helper function to create entries
+def create_entry(path, crs):
+    """Create a dictionary entry representing a GeoDataFrame."""
+    return {
+        "data_type": "GeoDataFrame",
+        "path": path,
+        "driver": "vector",
+        "filesystem": "local",
+        "crs": crs.to_epsg() if crs else None,
+    }
+
+
+# Dict
+yaml_dict = {
+    "preprocessed_occupaction_jrc": create_entry(
+        fn_jrc,
+        occupancy_gdf_jrc.crs,
+    ),
+    "preprocessed_floor_height": create_entry(
+        fn_floor_height,
+        occupancy_gdf.crs,
+    ),
+    "preprocessed_asset_population": create_entry(
+        fn_asset_population,
+        occupancy_gdf.crs,
+    ),
+}
+
+# Save the YAML catalog
+catalog_path = data_source / "data_catalog.yml"
+with open(catalog_path, "w") as yaml_file:
+    yaml.dump(yaml_dict, yaml_file, default_flow_style=False, sort_keys=False)
+
+# %%

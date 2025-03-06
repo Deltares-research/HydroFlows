@@ -6,7 +6,6 @@ from typing import Optional
 from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
-from pydantic import FilePath
 
 from hydroflows._typing import ListOfStr
 from hydroflows.cfg import CFG_DIR
@@ -27,7 +26,7 @@ class Input(Parameters):
     the specified region. An example of such a file could be the Sfincs region GeoJSON.
     """
 
-    config: FilePath = CFG_DIR / "wflow_build.yml"
+    config: Path = CFG_DIR / "wflow_build.yml"
     """The path to the configuration file (.yml) that defines the settings
     to build a Wflow model. In this file the different model components
     that are required by the :py:class:`hydromt_wflow.WflowModel` are listed.
@@ -141,7 +140,7 @@ class WflowBuild(Method):
             wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )
 
-    def run(self):
+    def _run(self):
         """Run the WflowBuild method."""
         logger = setuplog("build", log_level=20)
 

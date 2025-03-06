@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 import pandas as pd
@@ -11,11 +10,10 @@ from hydroflows.methods.rainfall import (
     GetERA5Rainfall,
     PluvialDesignEvents,
     PluvialDesignEventsGPEX,
-    PluvialHistoricalEvents,
 )
 
 
-def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
+def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
     rps = [1, 10, 100]
     p_events = PluvialDesignEvents(
         precip_nc=tmp_precip_time_series_nc,
@@ -28,7 +26,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
 
     assert len(p_events.params.event_names) == len(rps)
 
-    p_events.run_with_checks()
+    p_events.run()
 
     # TODO separate this into a new test function?
     # read data back and check if all event paths are absolute and existing, length is correct
@@ -50,7 +48,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
 
 
 @pytest.mark.requires_test_data()
-def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path):
+def test_pluvial_design_events_gpex(region: Path, gpex_data: Path, tmp_path: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
         gpex_nc=str(gpex_data),
@@ -62,7 +60,7 @@ def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path
 
     assert len(p_events.params.event_names) == len(rps)
 
-    p_events.run_with_checks()
+    p_events.run()
 
 
 def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
@@ -74,40 +72,10 @@ def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
         end_date="2023-12-31",
     )
     assert get_era5.output.precip_nc == tmp_path / "data" / "era5.nc"
-    get_era5.run_with_checks()
+    get_era5.run()
 
     da = xr.open_dataarray(get_era5.output.precip_nc)
     assert da["time"].min() == pd.Timestamp("2023-11-01")
-
-
-def test_pluvial_historical_events(
-    tmp_precip_time_series_nc: Path, tmp_path: Path, caplog
-):
-    caplog.set_level(logging.WARNING)
-    events_dates = {
-        # The first event is outside the available time series to test warning coverage.
-        "p_event01": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"},
-        "p_event02": {"startdate": "2005-03-04 09:00", "enddate": "2005-03-07 17:00"},
-        # The last event is partially overlapping the available time series to test warning coverage.
-        "p_event03": {"startdate": "1999-12-20 09:00", "enddate": "2001-01-07 17:00"},
-    }
-
-    p_events = PluvialHistoricalEvents(
-        precip_nc=tmp_precip_time_series_nc,
-        events_dates=events_dates,
-        event_root=Path(tmp_path, "data"),
-    )
-
-    p_events.run_with_checks()
-
-    assert (
-        "Time slice for event 'p_event01' (from 1995-03-04 12:00:00 to 1995-03-05 14:00:00) returns no data."
-        in caplog.text
-    )
-    assert (
-        "The selected series for the event 'p_event03' is shorter than anticipated"
-        in caplog.text
-    )
 
 
 def test_future_climate_rainfall(
@@ -123,7 +91,7 @@ def test_future_climate_rainfall(
         event_root=out_root,
     )
 
-    rule.run_with_checks()
+    rule.run()
 
     fn_scaled_event_set = rule.output.future_event_set_yaml
     scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)

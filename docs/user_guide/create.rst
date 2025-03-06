@@ -18,13 +18,13 @@ Below we describe the most important components, following this example:
   rules. Here an executable and a set of event return periods are defined.
 * ``Workflow``: this is the workflow object, which eventually holds all tasks and connections. You can see that the
   variable `w` contains your workflow instance in this example.
-* ``w.add_rule``: a functionality that adds a rule instance to your workflow. A rule generates output(s) from input(s)
+* ``w.create_rule``: a functionality that adds a rule instance to your workflow. A rule generates output(s) from input(s)
   and parameters with a certain piece of work. Examples here include ``GetERA5Rainfall``, ``PluvialDesignEvents``,
   and so on. It can be anything, for instance preprocessing of gridded forcing records into model specific
   event inputs, generation of a full model from a set of defined static input datasets, running of a model (which may
   have been derived in a predecessing rule), postprocessing of a model result in a nice looking graph or map, etcetera.
 
-If you look carefully at each line with ``add_rule``, and without considering the exact syntax for each rule, you can
+If you look carefully at each line with ``create_rule``, and without considering the exact syntax for each rule, you can
 see that this specific workflow contains the following rules:
 
 * ``get_rainfall``: retrieve rainfall data of the ERA5 reanalysis for a region defined in a geojson file and for a

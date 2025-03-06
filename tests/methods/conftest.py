@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Tuple
 
 import geopandas as gpd
+import hydromt  # noqa: F401
 import numpy as np
 import pandas as pd
 import pytest
@@ -12,6 +13,7 @@ import xarray as xr
 from shapely.geometry import Point
 
 from hydroflows.cfg import CFG_DIR
+from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
 from hydroflows.utils.example_data import fetch_data
 
 EXAMPLE_DIR = Path(Path(__file__).parents[2], "examples")
@@ -78,9 +80,9 @@ def build_cfgs() -> dict:
 
 
 @pytest.fixture(scope="session")
-def region(test_data_dir):
+def region(global_data):
     """Path to the region vector file."""
-    path = test_data_dir / "region.geojson"
+    path = global_data / "region.geojson"
     assert path.is_file()
     return path
 
@@ -100,6 +102,31 @@ def global_catalog(global_data: Path) -> Path:
 
 
 @pytest.fixture(scope="session")
+def cmip6_data() -> Path:
+    """Return the path to the cmip6 data directory."""
+    path = fetch_data("cmip6-data")
+    assert Path(path, "data_catalog.yml").is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
+def cmip6_catalog(cmip6_data: Path):
+    """Return path to data catalog of cmip6 data."""
+    return cmip6_data / "data_catalog.yml"
+
+
+@pytest.fixture(scope="session")
+def cmip6_stats() -> Path:
+    path = fetch_data("cmip6-stats")
+    assert Path(path, "climatology").is_dir()
+    assert Path(path, "change_factor").is_dir()
+    assert Path(
+        path, "climatology", "climatology_NOAA-GFDL_GFDL-ESM4_historical.nc"
+    ).is_file()
+    return path
+
+
+@pytest.fixture(scope="session")
 def merit_hydro_basins(global_data: Path) -> Path:
     """Return the path to the merit hydro basin."""
     merit_file = global_data / "cat_MERIT_Hydro_v07_Basins_v01.gpkg"
@@ -114,6 +141,15 @@ def fiat_cached_model() -> Path:
     path = fetch_data("fiat-model")
     assert Path(path, "settings.toml")
     return path
+
+
+@pytest.fixture
+def fiat_tmp_model_all(tmp_path: Path, fiat_cached_model: Path) -> Path:
+    """Return the path of the fiat model in temp directory."""
+    tmp_root = tmp_path / "fiat_tmp_model"
+    shutil.copytree(fiat_cached_model, tmp_root)
+    assert Path(tmp_root, "settings.toml").is_file()
+    return tmp_root
 
 
 @pytest.fixture()
@@ -202,6 +238,14 @@ def wflow_sim_model(wflow_cached_model: Path, wflow_tmp_model: Path) -> Path:
     return sim_root
 
 
+@pytest.fixture
+def wflow_run_script():
+    """Return path to the julia script."""
+    p = Path(SCRIPTS_DIR, "run_wflow.jl")
+    assert p.is_file()
+    return p
+
+
 @pytest.fixture()
 def gpex_data(global_data: Path) -> Path:
     """Return the path to the GPEX data."""
@@ -244,7 +288,7 @@ def hazard_map_tif(tmp_path: Path, hazard_map_data: xr.DataArray) -> Path:
 @pytest.fixture()
 def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
     # Generating datetime index
-    dates = pd.date_range(start="2000-01-01", end="2009-12-31", freq="h")
+    dates = pd.date_range(start="2001-01-01", end="2009-12-31", freq="h")
 
     # set a seed for reproducibility
     np.random.seed(0)
@@ -259,7 +303,7 @@ def tmp_precip_time_series_nc(tmp_path: Path) -> Path:
         attrs={"long_name": "Total precipitation", "units": "mm"},
     )
 
-    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    fn_time_series_nc = Path(tmp_path, "precip_output_scalar.nc")
     da.to_netcdf(fn_time_series_nc)
 
     return fn_time_series_nc
@@ -287,7 +331,7 @@ def tmp_disch_time_series_nc(tmp_path: Path) -> Path:
 
     da.name = "Q"
 
-    fn_time_series_nc = Path(tmp_path, "output_scalar.nc")
+    fn_time_series_nc = Path(tmp_path, "discharge_output_scalar.nc")
     da.to_netcdf(fn_time_series_nc)
 
     return fn_time_series_nc
@@ -321,20 +365,24 @@ def tmp_floodmark_points(tmp_path: Path) -> Path:
 
 
 @pytest.fixture()
-def waterlevel_timeseries() -> xr.DataArray:
+def temp_waterlevel_timeseries_nc(tmp_path: Path) -> Path:
     dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
 
     np.random.seed(1234)
-    data = np.random.rand(len(dates))
+    data = np.random.rand(len(dates), 1)
 
     da = xr.DataArray(
         data=data,
-        dims=("time"),
-        coords={"time": dates},
-        name="h",
+        dims=("time", "stations"),
+        coords={"time": dates, "stations": ["1"]},
     )
-    da = da.expand_dims(dim={"stations": 1})
-    return da
+
+    da.name = "h"
+
+    fn_time_series_nc = Path(tmp_path, "water_level_output_scalar.nc")
+    da.to_netcdf(fn_time_series_nc)
+
+    return fn_time_series_nc
 
 
 @pytest.fixture()

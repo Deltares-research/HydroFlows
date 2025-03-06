@@ -75,7 +75,7 @@ class SfincsRegion(Method):
 
         self.output: Output = Output(sfincs_region=sfincs_region)
 
-    def run(self):
+    def _run(self):
         """Run the SfincsRegion method."""
         # Read the file with the AOI
         aoi = gpd.read_file(self.input.aoi)

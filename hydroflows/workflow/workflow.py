@@ -1,6 +1,10 @@
-"""Submodule containing the Workflow class.
+"""HydroFlows Workflow class.
 
-Which is the main class for defining workflows in hydroflows.
+This class is responsible for:
+- main entry point for users to define workflows.
+- storing and accessing rules, wildcards, and configuration.
+- parsing workflows to a workflow engine.
+- running workflows.
 """
 
 import logging
@@ -11,7 +15,6 @@ from typing import Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
-from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
@@ -20,7 +23,9 @@ from hydroflows.utils.cwl_utils import map_cwl_types
 from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
-from hydroflows.workflow.rule import Rule, Rules
+from hydroflows.workflow.rule import Rule
+from hydroflows.workflow.rules import Rules
+from hydroflows.workflow.wildcards import Wildcards
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 logger = logging.getLogger(__name__)
@@ -80,12 +85,21 @@ class Workflow:
         self._root = Path(root)
         self._root.mkdir(parents=True, exist_ok=True)
 
-    def add_rule(self, method: Method, rule_id: Optional[str] = None) -> None:
-        """Add a rule to the workflow."""
+    def create_rule(self, method: Method, rule_id: Optional[str] = None) -> Rule:
+        """Create a rule based on a method.
+
+        Parameters
+        ----------
+        method : Method
+            The method to create the rule from.
+        rule_id : str, optional
+            The rule id, by default None.
+        """
         rule = Rule(method, self, rule_id)
         self.rules.set_rule(rule)
+        return rule
 
-    def add_rule_from_kwargs(
+    def create_rule_from_kwargs(
         self, method: str, kwargs: Dict[str, str], rule_id: Optional[str] = None
     ) -> None:
         """Add a rule for method 'name' with keyword-arguments 'kwargs'.
@@ -105,7 +119,7 @@ class Workflow:
                 kwargs[key] = self.get_ref(value)
         # instantiate the method and add the rule
         m = Method.from_kwargs(name=str(method), **kwargs)
-        self.add_rule(m, rule_id)
+        self.create_rule(m, rule_id)
 
     def get_ref(self, ref: str) -> Ref:
         """Get a cross-reference to previously set rule parameters or workflow config."""
@@ -128,7 +142,7 @@ class Workflow:
                 raise ValueError(f"Rule {i+1} invalid: not a dictionary.")
             if "method" not in rule.keys():
                 raise ValueError(f"Rule {i+1} invalid: 'method' name missing.")
-            workflow.add_rule_from_kwargs(**rule)
+            workflow.create_rule_from_kwargs(**rule)
         return workflow
 
     def to_snakemake(
@@ -312,61 +326,3 @@ class Workflow:
                 missing_file_error=missing_file_error, input_files=input_files
             )
             input_files = list(set(input_files + output_files))
-
-    @property
-    def _output_path_refs(self) -> Dict[str, str]:
-        """Retrieve output path references of all rules in the workflow.
-
-        Returns
-        -------
-        Dict[str, str]
-            Dictionary containing the output path as the key and the reference as the value
-        """
-        output_paths = {}
-        for rule in self.rules:
-            if not rule:
-                continue
-            for key, value in rule.method.output:
-                if isinstance(value, Path):
-                    value = value.as_posix()
-                else:
-                    logger.debug(
-                        f"{rule.rule_id}.output.{key} is not a Path object (but {type(value)})"
-                    )
-                    continue
-                output_paths[value] = f"$rules.{rule.rule_id}.output.{key}"
-        return output_paths
-
-
-class Wildcards(BaseModel):
-    """Wildcards class.
-
-    This class is used to define the wildcards for the workflow.
-    """
-
-    wildcards: Dict[str, List[str]] = {}
-    """List of wildcard keys and values."""
-
-    @property
-    def names(self) -> List[str]:
-        """Get the names of the wildcards."""
-        return list(self.wildcards.keys())
-
-    @property
-    def values(self) -> List[List]:
-        """Get the values of the wildcards."""
-        return list(self.wildcards.values())
-
-    def to_dict(self) -> Dict[str, List]:
-        """Convert the wildcards to a dictionary of names and values."""
-        return self.model_dump()["wildcards"]
-
-    def set(self, key: str, values: List[str]):
-        """Add a wildcard."""
-        key = str(key).lower()
-        self.wildcards.update({key: values})
-
-    def get(self, key: str) -> List[str]:
-        """Get the values of a wildcard."""
-        key = str(key).lower()
-        return self.wildcards[key]

@@ -40,8 +40,11 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
-    sim_subfolder: str = "simulations"
-    """The subfolder relative to the basemodel where the simulation folders are stored."""
+    output_dir: Path
+    """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<event_name>."""
+
+    copy_model: bool = False
+    """Create full copy of model or create rel paths in model config."""
 
     sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
@@ -64,14 +67,15 @@ class SfincsUpdateForcing(Method):
     _test_kwargs = {
         "sfincs_inp": Path("sfincs.inp"),
         "event_yaml": Path("event1.yaml"),
+        "output_dir": "simulations",
     }
 
     def __init__(
         self,
         sfincs_inp: Path,
         event_yaml: Path,
+        output_dir: str,
         event_name: Optional[str] = None,
-        sim_subfolder: str = "simulations",
         **params,
     ):
         """Create and validate a SfincsUpdateForcing instance.
@@ -84,10 +88,10 @@ class SfincsUpdateForcing(Method):
             The file path to the SFINCS basemodel configuration file (inp).
         event_yaml : Path
             The path to the event description file
+        output_dir : str
+            Output location of updated model
         event_name : str, optional
             The name of the event, by default derived from the event_yaml file name stem.
-        sim_subfolder : Path, optional
-            The subfolder relative to the basemodel where the simulation folders are stored.
         **params
             Additional parameters to pass to the SfincsUpdateForcing instance.
             See :py:class:`sfincs_update_forcing Params <hydroflows.methods.sfincs.sfincs_update_forcing.Params>`.
@@ -107,18 +111,21 @@ class SfincsUpdateForcing(Method):
             logger.warning("Param out_root will be overwritten.", stacklevel=1)
         params["out_root"] = self.input.sfincs_inp.parent
         self.params: Params = Params(
-            event_name=event_name, sim_subfolder=sim_subfolder, **params
+            event_name=event_name, output_dir=output_dir, **params
         )
+        if self.params.copy_model and not self.params.output_dir:
+            raise ValueError("Unknown dest. folder for copy operation.")
 
-        sfincs_out_inp = (
-            self.params.out_root
-            / self.params.sim_subfolder
-            / self.params.event_name
-            / "sfincs.inp"
-        )
+        sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
+        if not self.params.copy_model and not self.params.output_dir.is_relative_to(
+            self.input.sfincs_inp.parent
+        ):
+            raise ValueError(
+                "Output directory must be relative to input directory when not copying model."
+            )
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
-    def run(self):
+    def _run(self):
         """Run the SfincsUpdateForcing method."""
         # fetch event from event yaml file
         event: Event = Event.from_yaml(self.input.event_yaml)
@@ -130,6 +137,11 @@ class SfincsUpdateForcing(Method):
         # update sfincs model with event forcing
         root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
+        copy_model = self.params.copy_model
         parse_event_sfincs(
-            root, event, out_root, sfincs_config=self.params.sfincs_config
+            root,
+            event,
+            out_root,
+            sfincs_config=self.params.sfincs_config,
+            copy_model=copy_model,
         )

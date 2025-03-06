@@ -83,7 +83,7 @@ class SfincsPostprocess(Method):
             sfincs_zsmax=self.params.output_root / f"zsmax_{event_name}.nc"
         )
 
-    def run(self):
+    def _run(self):
         """Run the postprocessing."""
         # unpack input, output and params
         root = self.input.sfincs_map.parent

@@ -10,13 +10,16 @@ if TYPE_CHECKING:
 __all__ = ["METHODS"]
 
 __eps__ = {
+    "climate_change_factors": "hydroflows.methods.climate.change_factor:ClimateChangeFactors",
+    "monthly_climatology": "hydroflows.methods.climate.climatology:MonthlyClimatolgy",
+    "merge_gridded_datasets": "hydroflows.methods.raster.merge:MergeGriddedDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
     "fiat_update_hazard": "hydroflows.methods.fiat.fiat_update:FIATUpdateHazard",
+    "fiat_visualize": "hydroflows.methods.fiat.fiat_visualize:FIATVisualize",
     "get_ERA5_rainfall": "hydroflows.methods.rainfall.get_ERA5_rainfall:GetERA5Rainfall",
     "pluvial_design_events": "hydroflows.methods.rainfall.pluvial_design_events:PluvialDesignEvents",
     "pluvial_design_events_GPEX": "hydroflows.methods.rainfall.pluvial_design_events_GPEX:PluvialDesignEventsGPEX",
-    "pluvial_historical_events": "hydroflows.methods.rainfall.pluvial_historical_events:PluvialHistoricalEvents",
     "future_climate_rainfall": "hydroflows.methods.rainfall.future_climate_rainfall:FutureClimateRainfall",
     "sfincs_region": "hydroflows.methods.sfincs.sfincs_region:SfincsRegion",
     "sfincs_build": "hydroflows.methods.sfincs.sfincs_build:SfincsBuild",
@@ -26,8 +29,8 @@ __eps__ = {
     "sfincs_update_forcing": "hydroflows.methods.sfincs.sfincs_update_forcing:SfincsUpdateForcing",
     "wflow_build": "hydroflows.methods.wflow.wflow_build:WflowBuild",
     "wflow_run": "hydroflows.methods.wflow.wflow_run:WflowRun",
+    "wflow_update_factors": "hydroflows.methods.wflow.wflow_update_factors:WflowUpdateChangeFactors",
     "wflow_update_forcing": "hydroflows.methods.wflow.wflow_update_forcing:WflowUpdateForcing",
-    "fluvial_historical_events": "hydroflows.methods.discharge.fluvial_historical_events:FluvialHistoricalEvents",
     "coastal_design_events": "hydroflows.methods.coastal.coastal_design_events:CoastalDesignEvents",
     "coastal_design_events_from_rp_data": "hydroflows.methods.coastal.coastal_design_events_from_rp_data:CoastalDesignEventFromRPData",
     "coastal_tidal_analysis": "hydroflows.methods.coastal.coastal_tidal_analysis:CoastalTidalAnalysis",
@@ -39,6 +42,7 @@ __eps__ = {
     "script_method": "hydroflows.methods.script.script_method:ScriptMethod",
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
+    "historical_events": "hydroflows.methods.historical_events.historical_events:HistoricalEvents",
 }
 
 

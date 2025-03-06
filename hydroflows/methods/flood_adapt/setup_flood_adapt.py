@@ -120,7 +120,7 @@ class SetupFloodAdapt(Method):
                 f"{self.input.event_set_yaml.stem}.toml",
             )
 
-    def run(self):
+    def _run(self):
         """Run the SetupFloodAdapt method."""
         # prepare fiat model
         translate_model(

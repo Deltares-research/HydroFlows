@@ -31,24 +31,19 @@ def test_get_gtsm_data(region: Path, tmp_path: Path, global_catalog: Path):
         region=region, gtsm_catalog=global_catalog, data_root=data_dir, **params
     )
 
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.slow()
 def test_create_tide_surge_timeseries(
-    waterlevel_timeseries: xr.DataArray, tmp_path: Path
+    temp_waterlevel_timeseries_nc: Path, tmp_path: Path
 ):
-    data_dir = Path(tmp_path, "waterlevel")
-    data_dir.mkdir()
-    waterlevel_timeseries.to_netcdf(data_dir / "waterlevel_timeseries.nc")
-    waterlevel_timeseries.close()
-
     rule = CoastalTidalAnalysis(
-        waterlevel_timeseries=data_dir / "waterlevel_timeseries.nc",
-        data_root=data_dir,
+        waterlevel_nc=temp_waterlevel_timeseries_nc,
+        data_root=Path(tmp_path, "waterlevel"),
     )
 
-    rule.run_with_checks()
+    rule.run()
 
 
 @pytest.mark.requires_test_data()
@@ -57,7 +52,7 @@ def test_get_coast_rp(region: Path, tmp_path: Path, global_catalog):
 
     rule = GetCoastRP(region=region, coastrp_catalog=global_catalog, data_root=data_dir)
 
-    rule.run_with_checks()
+    rule.run()
 
 
 def test_coastal_design_events(
@@ -81,7 +76,7 @@ def test_coastal_design_events(
         rps=[1, 10, 50],
     )
 
-    rule.run_with_checks()
+    rule.run()
 
 
 def test_coastal_event_from_rp_data(
@@ -110,7 +105,7 @@ def test_coastal_event_from_rp_data(
         event_root=str(data_dir),
     )
 
-    rule.run_with_checks()
+    rule.run()
 
 
 def test_future_climate_sea_level(
@@ -129,7 +124,7 @@ def test_future_climate_sea_level(
         event_root=out_root,
     )
 
-    rule.run_with_checks()
+    rule.run()
 
     fn_scaled_event_set = rule.output.future_event_set_yaml
     scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)

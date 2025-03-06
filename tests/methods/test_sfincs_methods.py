@@ -3,6 +3,8 @@ import platform
 from pathlib import Path
 
 import pytest
+import yaml
+from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 
 from hydroflows.events import Event
@@ -26,7 +28,7 @@ def test_sfincs_region(
         sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
     )
 
-    sfincs_region.run_with_checks()
+    sfincs_region.run()
 
 
 @pytest.mark.requires_test_data()
@@ -39,26 +41,81 @@ def test_sfincs_build(
         config=build_cfgs["sfincs_build"],
         sfincs_root=str(sfincs_root),
         catalog_path=str(global_catalog),
+        src_points_output=True,
+        subgrid_output=True,
     )
     assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
+    assert sfincs_build.output.sfincs_src_points == sfincs_root / "gis" / "src.geojson"
+    assert (
+        sfincs_build.output.sfincs_subgrid_dep
+        == sfincs_root / "subgrid" / "dep_subgrid.tif"
+    )
 
-    sfincs_build.run_with_checks()
+    sfincs_build.run()
+
+    config = configread(build_cfgs["sfincs_build"])
+    config.pop("setup_subgrid")
+    temp_config = tmp_path / "temp_config.yml"
+
+    with temp_config.open("w") as f:
+        yaml.dump(
+            config, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+        )
+
+    with pytest.raises(ValueError, match="The 'setup_subgrid' method must"):
+        SfincsBuild(
+            region=str(region),
+            config=temp_config,
+            sfincs_root=tmp_path / "model_error",
+            catalog_path=str(global_catalog),
+            subgrid_output=True,
+        ).run()
 
 
 @pytest.mark.requires_test_data()
-def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path):
+@pytest.mark.parametrize("copy_model", [True, False])
+def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model: bool):
     event_name = "p_event01"
     event_yml = event_set_file.parent / f"{event_name}.yml"
+    # Check output dir if subdir of sfincs dir
+    output_dir1 = sfincs_tmp_model / "sim"
+    # Check output dir if not subdir of sfincs dir
+    output_dir2 = sfincs_tmp_model.parent / "sim"
     sf = SfincsUpdateForcing(
         sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
         event_yaml=event_yml.as_posix(),
         event_name=event_name,
-        sim_subfolder="sim",
+        output_dir=output_dir1,
+        copy_model=copy_model,
     )
-    assert (
-        sf.output.sfincs_out_inp == sfincs_tmp_model / "sim" / event_name / "sfincs.inp"
-    )
-    sf.run_with_checks()
+    assert sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
+    sf.run()
+
+    # This should fail when copy model == False
+    if not copy_model:
+        with pytest.raises(
+            ValueError,
+            match="Output directory must be relative to input directory when not copying model.",
+        ):
+            sf = SfincsUpdateForcing(
+                sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
+                event_yaml=event_yml.as_posix(),
+                event_name=event_name,
+                output_dir=output_dir2,
+                copy_model=copy_model,
+            )
+    else:
+        sf = SfincsUpdateForcing(
+            sfincs_inp=str(sfincs_tmp_model / "sfincs.inp"),
+            event_yaml=event_yml.as_posix(),
+            event_name=event_name,
+            output_dir=output_dir2,
+            copy_model=copy_model,
+        )
+        assert (
+            sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
+        )
+        sf.run()
 
 
 @pytest.mark.requires_test_data()
@@ -103,7 +160,7 @@ def test_sfincs_run(
         sfincs_inp=str(sfincs_inp), run_method=method, sfincs_exe=sfincs_exe
     )
     assert sf_run.output.sfincs_map == sfincs_map
-    sf_run.run_with_checks()
+    sf_run.run()
 
 
 @pytest.mark.requires_test_data()
@@ -118,7 +175,7 @@ def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     )
     assert sf_post.output.hazard_tif == tmp_hazard_root / "hmax_test.tif"
 
-    sf_post.run_with_checks()
+    sf_post.run()
 
 
 @pytest.mark.requires_test_data()
