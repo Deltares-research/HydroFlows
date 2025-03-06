@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Union
 
 import yaml
 from jinja2 import Environment, PackageLoader
-from pydantic import BaseModel
 
 from hydroflows import __version__
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
@@ -22,6 +21,7 @@ from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule
 from hydroflows.workflow.rules import Rules
+from hydroflows.workflow.wildcards import Wildcards
 from hydroflows.workflow.workflow_config import WorkflowConfig
 
 logger = logging.getLogger(__name__)
@@ -227,37 +227,3 @@ class Workflow:
                 missing_file_error=missing_file_error, input_files=input_files
             )
             input_files = list(set(input_files + output_files))
-
-
-class Wildcards(BaseModel):
-    """Wildcards class.
-
-    This class is used to define the wildcards for the workflow.
-    """
-
-    wildcards: Dict[str, List[str]] = {}
-    """List of wildcard keys and values."""
-
-    @property
-    def names(self) -> List[str]:
-        """Get the names of the wildcards."""
-        return list(self.wildcards.keys())
-
-    @property
-    def values(self) -> List[List]:
-        """Get the values of the wildcards."""
-        return list(self.wildcards.values())
-
-    def to_dict(self) -> Dict[str, List]:
-        """Convert the wildcards to a dictionary of names and values."""
-        return self.model_dump()["wildcards"]
-
-    def set(self, key: str, values: List[str]):
-        """Add a wildcard."""
-        key = str(key).lower()
-        self.wildcards.update({key: values})
-
-    def get(self, key: str) -> List[str]:
-        """Get the values of a wildcard."""
-        key = str(key).lower()
-        return self.wildcards[key]

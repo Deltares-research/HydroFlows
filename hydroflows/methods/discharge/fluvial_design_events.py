@@ -307,25 +307,21 @@ class FluvialDesignEvents(ExpandMethod):
 
         events_list = []
         for name, rp in zip(self.params.event_names, q_hydrograph["rps"].values):
-            fmt_dict = {self.params.wildcard: name}
-            # save q_rp as csv file
-            forcing_file = Path(str(self.output.event_csv).format(**fmt_dict))
-            # q_hydrograph.sel(rps=rp).to_pandas().round(2).to_csv(forcing_file)
+            output = self.get_output_for_wildcards({self.params.wildcard: name})
             q_df = q_hydrograph.sel(rps=rp).to_pandas().reset_index()
             q_df = q_df.rename(
                 dict(zip(q_df.columns, ("time", *da[index_dim].values))), axis=1
             )
-            q_df.to_csv(forcing_file, index=False)
+            q_df.to_csv(output["event_csv"], index=False)
             # save event yaml file
-            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=name,
-                forcings=[{"type": "discharge", "path": forcing_file}],
+                forcings=[{"type": "discharge", "path": output["event_csv"]}],
                 return_period=rp,
             )
             event.set_time_range_from_forcings()
-            event.to_yaml(event_file)
-            events_list.append({"name": name, "path": event_file})
+            event.to_yaml(output["event_yaml"])
+            events_list.append({"name": name, "path": output["event_yaml"]})
 
         # make and save event set yaml file
         event_set = EventSet(events=events_list)
@@ -356,8 +352,8 @@ class FluvialDesignEvents(ExpandMethod):
 def plot_eva(da_peaks, da_params, rps, station, plot_dir):
     fig, ax = plt.subplots(1, 1, figsize=(7, 5))
 
-    extremes_rate = da_peaks.extremes_rate.item()
-    dist = da_params.distribution.item()
+    extremes_rate = da_peaks["extremes_rate"].item()
+    dist = da_params["distribution"].item()
 
     # Plot return values fits
     extremes.plot_return_values(

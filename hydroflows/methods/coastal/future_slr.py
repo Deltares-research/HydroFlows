@@ -188,11 +188,14 @@ class FutureSLR(ExpandMethod):
         # List to save the offset events
         future_events_list = []
 
-        for name in self.params.event_names_input:
+        for name, name_out in zip(
+            self.params.event_names_input, self.params.event_names_output
+        ):
+            output = self.get_output_for_wildcards({self.params.wildcard: name_out})
+
             # Load the event
             event: Event = event_set.get_event(name)
-
-            # get water level event
+            # get water level forcing
             if len(event.forcings) > 1:
                 logger.warning(
                     f"Event {name} has more than one forcing. The first water level forcing is used."
@@ -202,7 +205,6 @@ class FutureSLR(ExpandMethod):
                 ]
             else:
                 water_level = event.forcings[0]
-
             event_df = water_level.data.copy()
 
             # Apply the offset
@@ -210,30 +212,21 @@ class FutureSLR(ExpandMethod):
                 self.params.slr_value, self.params.slr_unit
             )
 
-            filename = f"{event.name}_{self.params.scenario_name}"
-
-            fmt_dict = {self.params.wildcard: filename}
-
             # write forcing timeseries to csv
-            forcing_file = Path(
-                self.output.future_event_csv.as_posix().format(**fmt_dict)
-            )
-            future_event_df.to_csv(forcing_file, index=True)
-
+            future_event_df.to_csv(output["future_event_csv"], index=True)
             # write event to yaml
-            future_event_file = Path(
-                self.output.future_event_yaml.as_posix().format(**fmt_dict)
-            )
-            water_level.path = forcing_file
+            water_level.path = output["future_event_csv"]
             future_event = Event(
-                name=filename,
+                name=name_out,
                 forcings=[water_level],
             )
             future_event.set_time_range_from_forcings()
-            future_event.to_yaml(future_event_file)
+            future_event.to_yaml(output["future_event_yaml"])
 
             # append event to list
-            future_events_list.append({"name": filename, "path": future_event_file})
+            future_events_list.append(
+                {"name": name_out, "path": output["future_event_yaml"]}
+            )
 
         # make and save event set yaml file
         future_event_set = EventSet(events=future_events_list)

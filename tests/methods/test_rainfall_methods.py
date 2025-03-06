@@ -13,7 +13,7 @@ from hydroflows.methods.rainfall import (
 )
 
 
-def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
+def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
     rps = [1, 10, 100]
     p_events = PluvialDesignEvents(
         precip_nc=tmp_precip_time_series_nc,
@@ -48,7 +48,7 @@ def test_pluvial_design_hyeto(tmp_precip_time_series_nc: Path, tmp_path: Path):
 
 
 @pytest.mark.requires_test_data()
-def test_pluvial_design_hyeto_gpex(region: Path, gpex_data: Path, tmp_path: Path):
+def test_pluvial_design_events_gpex(region: Path, gpex_data: Path, tmp_path: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(
         gpex_nc=str(gpex_data),

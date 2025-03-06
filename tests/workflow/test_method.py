@@ -1,8 +1,14 @@
 import logging
 import re
+from pathlib import Path
 
 import pytest
-from conftest import MockExpandMethod, TestMethod, create_test_method
+from conftest import (
+    MockDoubleExpandMethod,
+    MockExpandMethod,
+    TestMethod,
+    create_test_method,
+)
 
 from hydroflows.workflow import Method, Parameters
 
@@ -137,36 +143,80 @@ def test_check_output_exists(tmp_path):
 
 def test_set_expand_wildcards(tmp_path):
     input_file = tmp_path / "test"
-    mock_expand_method = MockExpandMethod(
-        input_file=input_file, root=tmp_path, events=["1", "2"]
-    )
-    assert mock_expand_method._expand_wildcards == {"wildcard": ["1", "2"]}
+    method = MockExpandMethod(input_file=input_file, root=tmp_path, events=["1", "2"])
+    assert method._expand_wildcards == {"wildcard": ["1", "2"]}
 
 
 def test_expand_output_paths(tmp_path):
     input_file = tmp_path / "test"
-    mock_expand_method = MockExpandMethod(
-        input_file=input_file, root=tmp_path, events=["1", "2"]
-    )
-
-    output_paths = mock_expand_method._output_paths
+    method = MockExpandMethod(input_file=input_file, root=tmp_path, events=["1", "2"])
+    output_paths = method._output_paths
     assert len(output_paths) == 4
     assert output_paths[0][1] == tmp_path / "1" / "file.yml"
     assert output_paths[3][1] == tmp_path / "2" / "file2.yml"
-    mock_expand_method = MockExpandMethod(
+
+    method = MockExpandMethod(
         input_file=input_file, root=tmp_path, events=["1", "2", "3", "4"]
     )
-    output_paths = mock_expand_method._output_paths
+    output_paths = method._output_paths
     assert len(output_paths) == 8
+
+    method = MockDoubleExpandMethod(
+        input_file="test",
+        root="root_dir",
+        wildcards={"wildcard1": ["1", "2"], "wildcard2": ["3", "4"]},
+    )
+    output_paths = method._output_paths
+    assert len(output_paths) == 8
+    assert output_paths[0] == ("output_file", Path("root_dir/1_3/file.yml"))
+    assert output_paths[7] == ("output_file2", Path("root_dir/2_4/file2.yml"))
 
 
 def test_expand_output_paths_outputs(tmp_path):
     input_file = tmp_path / "test"
-    mock_expand = MockExpandMethod(
-        input_file=input_file, root=tmp_path, events=["1", "2"]
-    )
-    mock_expand.expand_output_paths()
-    assert mock_expand.output.to_dict() == {
+    method = MockExpandMethod(input_file=input_file, root=tmp_path, events=["1", "2"])
+    output_dict = method.output_expanded
+    assert output_dict == {
         "output_file": [tmp_path / "1" / "file.yml", tmp_path / "2" / "file.yml"],
         "output_file2": [tmp_path / "1" / "file2.yml", tmp_path / "2" / "file2.yml"],
+    }
+    assert hasattr(method, "_output_expanded")
+
+    method = MockDoubleExpandMethod(
+        input_file="test",
+        root="root_dir",
+        wildcards={"wildcard1": ["1", "2"], "wildcard2": ["3", "4"]},
+    )
+    output_dict = method.output_expanded
+    assert output_dict["output_file"] == [
+        Path("root_dir/1_3/file.yml"),
+        Path("root_dir/1_4/file.yml"),
+        Path("root_dir/2_3/file.yml"),
+        Path("root_dir/2_4/file.yml"),
+    ]
+
+
+def test_get_output_for_wildcards():
+    method = MockExpandMethod(input_file="test", root="root_dir", events=["1", "2"])
+    output = method.get_output_for_wildcards(wildcards={"wildcard": "1"})
+    assert output == {
+        "output_file": Path("root_dir/1/file.yml"),
+        "output_file2": Path("root_dir/1/file2.yml"),
+    }
+
+    # test error
+    with pytest.raises(ValueError, match="All wildcard values should be strings."):
+        method.get_output_for_wildcards(wildcards={"wildcard1": ["1"]})
+
+    method2 = MockDoubleExpandMethod(
+        input_file="test",
+        root="root_dir",
+        wildcards={"wildcard1": ["1", "2"], "wildcard2": ["3", "4"]},
+    )
+    output = method2.get_output_for_wildcards(
+        wildcards={"wildcard1": "1", "wildcard2": "3"}
+    )
+    assert output == {
+        "output_file": Path("root_dir/1_3/file.yml"),
+        "output_file2": Path("root_dir/1_3/file2.yml"),
     }

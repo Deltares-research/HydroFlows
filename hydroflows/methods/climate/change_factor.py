@@ -167,8 +167,6 @@ class ClimateChangeFactors(ExpandMethod):
                     change_ds[var].attrs["long_name"] = f"fraction change in {var}"
                     change_ds[var].attrs["units"] = "-"
 
-            to_netcdf(
-                change_ds,
-                file_name=f"change_{self.params.model}_{self.params.scenario}_{wc}.nc",
-                output_dir=self.params.output_dir,
-            )
+            output = self.get_output_for_wildcards({self.params.wildcard: wc})
+            nc_path = output["change_factors"]
+            to_netcdf(change_ds, file_name=nc_path.name, output_dir=nc_path.parent)
