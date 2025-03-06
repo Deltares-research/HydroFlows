@@ -26,7 +26,7 @@ def test_rule_init(rule: Rule, workflow: Workflow):
 def test_rule_properties(rule: Rule):
     assert isinstance(rule.method, Method)
     assert rule.n_runs == 1
-    assert rule.wildcards == {"explode": [], "expand": [], "reduce": []}
+    assert rule.wildcards == {"repeat": [], "expand": [], "reduce": []}
     assert rule.wildcard_fields == {}
     assert len(rule._method_instances) == 1
     assert rule.input == {
@@ -40,7 +40,7 @@ def test_rule_properties(rule: Rule):
 
 
 def test_rule_properties_expand(workflow: Workflow):
-    # test expand method with explode and expand wildcards
+    # test expand method with repeat and expand wildcards
     expand_method = MockExpandMethod(
         input_file="{region}/test_file",
         root="{region}",
@@ -48,7 +48,7 @@ def test_rule_properties_expand(workflow: Workflow):
         wildcard="w",
     )
     rule = Rule(method=expand_method, workflow=workflow, rule_id="test_rule")
-    assert rule.wildcards == {"explode": ["region"], "expand": ["w"], "reduce": []}
+    assert rule.wildcards == {"repeat": ["region"], "expand": ["w"], "reduce": []}
     assert rule.wildcard_fields == {
         "region": ["input_file", "output_file", "output_file2", "root"],
         "w": ["output_file", "output_file2"],

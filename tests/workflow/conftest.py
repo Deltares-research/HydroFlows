@@ -134,7 +134,7 @@ class MockDoubleExpandMethod(ExpandMethod):
         for key, values in self.params.wildcards.items():
             self.set_expand_wildcard(key, values)
 
-    def run(self):
+    def _run(self):
         pass
 
 

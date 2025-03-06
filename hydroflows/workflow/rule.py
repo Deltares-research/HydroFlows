@@ -229,7 +229,7 @@ class Rule:
         ----------
         wildcards : Dict[str, str | list[str]]
             The wildcards to replace in the method instance.
-            For explode wildcards, the value should be a single string.
+            For repeat wildcards, the value should be a single string.
             For reduce wildcards, the value should be a list of strings.
             Expand wildcards are only on the output and are set in the method.
         """
