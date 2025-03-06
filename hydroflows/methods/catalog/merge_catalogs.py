@@ -84,7 +84,7 @@ class MergeCatalogs(Method):
         )
         self.output: Output = Output(merged_catalog_path=merged_catalog_path)
 
-    def run(self):
+    def _run(self):
         """Run the MergeCatalogs method."""
         data_libs = [self.input.catalog_path1, self.input.catalog_path2]
         for key in self.input.model_extra:

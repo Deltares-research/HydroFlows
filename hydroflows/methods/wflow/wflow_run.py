@@ -132,7 +132,7 @@ class WflowRun(Method):
             / "output_scalar.nc"
         )
 
-    def run(self):
+    def _run(self):
         """Run the WflowRun method."""
         # Set environment variable JULIA_NUM_THREADS
         nthreads = str(self.params.julia_num_threads)

@@ -117,7 +117,7 @@ class FIATRun(Method):
 
         # TODO check if cfg matches output
 
-    def run(self):
+    def _run(self):
         """Run the FIATRun method."""
         # Get basic info
         cwd = self.input.fiat_cfg.parent

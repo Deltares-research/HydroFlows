@@ -1,16 +1,24 @@
-"""HydroFlows Rule class."""
+"""HydroFlows Rule class.
+
+This class is responsible for:
+- detecting and validating wildcards in the method.
+- creating method instances based on the wildcards.
+- parsing input, and output paths of the rule (i.e. for all method instances).
+- running the rule (i.e. running all method instances).
+"""
 
 import logging
 import weakref
-from itertools import chain, product
+from itertools import product
 from pathlib import Path
-from typing import TYPE_CHECKING, Dict, Iterator, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
 
 from tqdm.contrib.concurrent import thread_map
 
 from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 if TYPE_CHECKING:
     from hydroflows.workflow.workflow import Workflow
@@ -18,8 +26,6 @@ if TYPE_CHECKING:
 __all__ = ["Rule"]
 
 logger = logging.getLogger(__name__)
-
-FMT = ["snakemake"]
 
 
 class Rule:
@@ -29,8 +35,7 @@ class Rule:
     The rule is responsible for detecting wildcards and expanding them based on
     the workflow wildcards.
 
-    There is only one rule class to rule all methods, as the method is the one
-    that defines the input, output and parameters of the rule.
+    There is one common rule class to rule all methods.
     """
 
     def __init__(
@@ -61,12 +66,14 @@ class Rule:
 
         # placeholders
         self._wildcard_fields: Dict[str, List] = {}  # wildcard - fieldname dictionary
-        self._wildcards: Dict[str, List] = {}  # explode, expand, reduce wildcards
+        self._wildcards: Dict[str, List] = {}  # repeat, expand, reduce wildcards
+        self._loop_depth: int = 0  # loop depth of the rule (based on repeat wildcards)
         self._method_instances: List[Method] = []  # list of method instances
-        # values of input, output and params fields for all method instances
-        self._parameters: Dict[str, Dict] = {}
-        self._dependency: str | None = None  # rule_id of last occurring dependency
-        self._loop_depth: int = 0  # loop depth of the rule
+        self._input: Dict[str, list[Path]] = {}  # input paths for all method instances
+        self._output: Dict[
+            str, list[Path]
+        ] = {}  # output paths for all method instances
+        self._output_refs: Dict[str, str] = {}  # output path references
 
         # add expand wildcards to workflow wildcards
         if isinstance(self.method, ExpandMethod):
@@ -76,11 +83,12 @@ class Rule:
         # detect and validate wildcards
         self._detect_wildcards()
         self._validate_wildcards()
+        # get method instances and in- and output paths
+        self._set_method_instances()
+        self._set_input_output()
+        # add references to other rule outputs and config
         self._create_references_for_method_inputs()
         self._add_method_params_to_config()
-        self._set_method_instances()
-        self._set_parameters()
-        self._detect_dependency()
 
     def __repr__(self) -> str:
         """Return the representation of the rule."""
@@ -110,7 +118,7 @@ class Rule:
         """Return the wildcards of the rule per wildcard type.
 
         Wildcards are saved for three types, based on whether these
-        "expand" (1:n), "reduce" (n:1) and "explode" (n:n) the method.
+        "expand" (1:n), "reduce" (n:1) and "repeat" (n:n) the method.
         """
         return self._wildcards
 
@@ -128,14 +136,14 @@ class Rule:
         return self._method_instances
 
     @property
-    def parameters(self) -> Dict[str, Dict]:
-        """Return a dictionary with input, output and params fields for all method instances."""
-        return self._parameters
+    def input(self) -> Dict[str, list[Path]]:
+        """Return the input paths of the rule per field."""
+        return self._input
 
     @property
-    def dependency(self) -> str | None:
-        """Return the rule_id of the last occurring dependency."""
-        return self._dependency
+    def output(self) -> Dict[str, list[Path]]:
+        """Return the output paths of the rule per field."""
+        return self._output
 
     @property
     def _all_wildcard_fields(self) -> List[str]:
@@ -184,11 +192,11 @@ class Rule:
                     # raise warning if wildcard is not known
                     logger.warning(f"Wildcard {wc} not found in workflow wildcards.")
 
-        # organize wildcards in expand, reduce and explode
+        # organize wildcards in expand, reduce and repeat
         wc_in = set(wildcards["input"] + wildcards["params"])
         wc_out = set(wildcards["output"])
         wildcards_dict = {
-            "explode": list(wc_in & wc_out),
+            "repeat": list(wc_in & wc_out),
             "expand": list(wc_out - wc_in),
             "reduce": list(wc_in - wc_out),
         }
@@ -196,7 +204,7 @@ class Rule:
         # set the wildcard properties
         self._wildcards = wildcards_dict
         self._wildcard_fields = wildcard_fields
-        self._loop_depth = len(self.wildcards["explode"])
+        self._loop_depth = len(self.wildcards["repeat"])
 
     def _validate_wildcards(self) -> None:
         """Validate wildcards based on method type."""
@@ -214,19 +222,21 @@ class Rule:
         if msg:
             raise ValueError(msg)
 
-    def _method_wildcard_instance(self, wildcards: Dict) -> Method:
+    def _create_method_instance(self, wildcards: Dict[str, str | list[str]]) -> Method:
         """Return a new method instance with wildcards replaced by values.
 
         Parameters
         ----------
-        wildcards : Dict
-            The reduce and explode wildcards to replace in the method.
+        wildcards : Dict[str, str | list[str]]
+            The wildcards to replace in the method instance.
+            For repeat wildcards, the value should be a single string.
+            For reduce wildcards, the value should be a list of strings.
             Expand wildcards are only on the output and are set in the method.
         """
-        # explode kwargs should always be a single value;
-        for wc in self.wildcards["explode"]:
+        # repeat kwargs should always be a single value;
+        for wc in self.wildcards["repeat"]:
             if not isinstance(wildcards[wc], str):
-                raise ValueError({f"Explode wildcard '{wc}' should be a string."})
+                raise ValueError({f"Repeat wildcard '{wc}' should be a string."})
         # reduce should be lists;
         for wc in self.wildcards["reduce"]:
             if not isinstance(wildcards[wc], list):
@@ -256,20 +266,21 @@ class Rule:
             if key in reduce_fields:
                 # reduce method -> turn values into lists
                 # wildcards = {wc: [v1, v2, ...], ...}
-                kwargs[key] = [str(kwargs[key]).format(**d) for d in wildcards_reduce]
+                kwargs[key] = [
+                    resolve_wildcards(kwargs[key], d) for d in wildcards_reduce
+                ]
             elif key in self._all_wildcard_fields:
-                # explode method
+                # repeat method
                 # wildcards = {wc: v, ...}
-                kwargs[key] = str(kwargs[key]).format(**wildcards)
+                kwargs[key] = resolve_wildcards(kwargs[key], wildcards)
         method = self.method.from_kwargs(**kwargs)
-        if isinstance(method, ExpandMethod):
-            method.expand_output_paths()
         return method
 
-    def wildcard_product(self) -> List[Dict[str, str]]:
+    @property
+    def _wildcard_product(self) -> List[Dict[str, str]]:
         """Return the values of wildcards per method instance."""
-        # only explode if there are wildcards on the output
-        wildcards = self.wildcards["explode"]
+        # only repeat if there are wildcards on the output
+        wildcards = self.wildcards["repeat"]
         wc_values = [self.workflow.wildcards.get(wc) for wc in wildcards]
         # drop None from list of values; this occurs when the workflow is not fully initialized yet
         wc_values = [v for v in wc_values if v is not None]
@@ -284,9 +295,28 @@ class Rule:
 
         return wc_product
 
+    @property
+    def _output_path_refs(self) -> Dict[str, str]:
+        """Retrieve output path references of rule method.
+
+        Returns
+        -------
+        Dict[str, str]
+            Dictionary containing the output path as the key and the reference as the value
+        """
+        if not self._output_refs:
+            for key, value in self.method.output:
+                if isinstance(value, Path):
+                    value = value.as_posix()
+                    self._output_refs[value] = f"$rules.{self.rule_id}.output.{key}"
+        return self._output_refs
+
     def _create_references_for_method_inputs(self):
         """Create references for method inputs based on output paths of previous rules."""
-        output_path_refs = self.workflow._output_path_refs
+        # chain all output_path_refs of previous rules together
+        output_path_refs = {}
+        for rule in self.workflow.rules:
+            output_path_refs.update(rule._output_path_refs)
         # unpack existing config
         conf_keys = self.workflow.config.keys
         conf_values = self.workflow.config.values
@@ -325,7 +355,7 @@ class Rule:
                 self.method.input._refs.update({key: config_ref})
 
     def _add_method_params_to_config(self) -> None:
-        """Add method parameters to the config and update the method params refs."""
+        """Add method params to the config and update the method params refs."""
         # unpack existing config
         conf_keys = self.workflow.config.keys
         conf_values = self.workflow.config.values
@@ -360,24 +390,20 @@ class Rule:
     def _set_method_instances(self):
         """Set a list with all instances of the method based on the wildcards."""
         self._method_instances = []
-        for wildcard_dict in self.wildcard_product():
-            method = self._method_wildcard_instance(wildcard_dict)
+        for wildcard_dict in self._wildcard_product:
+            method = self._create_method_instance(wildcard_dict)
             self._method_instances.append(method)
 
-    def _set_parameters(self):
-        """Set the parameters of the rule.
-
-        The parameters are a dictionary with input, output and params as keys.
-        Each key contains a dictionary with field names as keys and unique values as lists.
-        """
-        parameters = {
-            "input": {},
-            "output": {},
-            "params": {},
-        }
+    def _set_input_output(self):
+        """Set the input and output paths dicts of the rule."""
+        parameters = {"input": {}, "output": {}}
         for method in self._method_instances:
             for name in parameters:
-                for key, value in getattr(method, name):
+                if name == "output" and isinstance(method, ExpandMethod):
+                    obj = method.output_expanded.items()
+                else:
+                    obj = getattr(method, name)
+                for key, value in obj:
                     if key not in parameters[name]:
                         parameters[name][key] = []
                     if name in ["input", "output"]:
@@ -393,27 +419,8 @@ class Rule:
                     elif value not in parameters[name][key]:
                         parameters[name][key].append(value)
 
-        self._parameters = parameters
-
-    def _detect_dependency(self):
-        """Find last occuring dependency of self by matching input values to output values of prev rules."""
-        # Make list of inputs, convert to set of strings for quick matching
-        inputs = self._parameters["input"]
-        inputs = list(chain(*inputs.values()))
-        # order of inputs doesn't matter here so set() is fine
-        inputs = set([str(item) for item in inputs])
-
-        # Init dependency as None
-        for rule in reversed(self.workflow.rules):
-            # Make list of outputs as strings, outputs always paths anyways
-            outputs = rule._parameters["output"]
-            outputs = list(chain(*outputs.values()))
-            outputs = [str(item) for item in outputs]
-
-            # Find if inputs, outputs share any element
-            if not inputs.isdisjoint(outputs):
-                self._dependency = rule.rule_id
-                break
+        self._input = parameters["input"]
+        self._output = parameters["output"]
 
     ## RUN METHODS
     def run(self, max_workers=1) -> None:
@@ -429,15 +436,15 @@ class Rule:
         with cwd(self.workflow.root):
             if nruns == 1 or max_workers == 1:
                 for i, method in enumerate(self._method_instances):
-                    msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                    msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                     logger.info(msg)
-                    method.run_with_checks()
+                    method.run()
             else:
                 tqdm_kwargs = {}
                 if max_workers is not None:
                     tqdm_kwargs.update(max_workers=max_workers)
                 thread_map(
-                    lambda method: method.run_with_checks(),
+                    lambda method: method.run(),
                     self._method_instances,
                     **tqdm_kwargs,
                 )
@@ -467,85 +474,10 @@ class Rule:
         # set working directory to workflow root
         with cwd(self.workflow.root):
             for i, method in enumerate(self._method_instances):
-                msg = f"Running {self.rule_id} {i+1}/{nruns}"
+                msg = f"Running {self.rule_id} {i + 1}/{nruns}"
                 logger.info(msg)
                 output_files_i = method.dryrun(
                     missing_file_error=missing_file_error, input_files=input_files
                 )
                 output_files.extend(output_files_i)
         return output_files
-
-
-class Rules:
-    """Rules class.
-
-    Rules are dynamically stored as attributes of the Rules class for easy access.
-    The order of rules is stored in the rules attribute.
-    """
-
-    def __init__(self, rules: Optional[List[Rule]] = None) -> None:
-        self.names: List[str] = []
-        """Ordered list of rule IDs."""
-
-        if rules:
-            for rule in rules:
-                self.set_rule(rule)
-
-    def __repr__(self) -> str:
-        """Return the representation of the rules."""
-        rules_repr = "\n".join([str(self.get_rule(name)) for name in self.names])
-        return f"[{rules_repr}]"
-
-    def set_rule(self, rule: Rule) -> None:
-        """Set rule."""
-        rule_id = rule.rule_id
-        self.__setitem__(rule_id, rule)
-
-    def get_rule(self, rule_id: str) -> Rule:
-        """Get rule based on rule_id."""
-        return self.__getitem__(rule_id)
-
-    @property
-    def ordered_rules(self) -> List[Rule]:
-        """Return a list of all rules."""
-        return [self[rule_id] for rule_id in self.names]
-
-    def _get_new_rule_index(self, rule: Rule) -> int:
-        """Determine where the rule should be added in the list."""
-        if rule.dependency is not None:
-            ind = self.names.index(rule.dependency) + 1
-            # If there is already a rule in that position, break tie based on loop_depth with highest loop depth last
-            if ind != len(self.names) and rule._loop_depth > self[ind]._loop_depth:
-                ind += 1
-        # If rule input does not depend on others, put at beginning after other rules with no input dependencies.
-        else:
-            ind = len([rule for rule in self.ordered_rules if rule.dependency is None])
-        return ind
-
-    # method for getting a rule using numerical index,
-    # i.e. rules[0] and rules['rule_id'] are both valid
-    def __getitem__(self, key: Union[int, str]) -> Rule:
-        if isinstance(key, int) and key < len(self.names):
-            key = self.names[key]
-        if key not in self.names:
-            raise ValueError(f"Rule {key} not found.")
-        rule: Rule = getattr(self, key)
-        return rule
-
-    def __setitem__(self, key: str, rule: Rule) -> None:
-        if not isinstance(rule, Rule):
-            raise ValueError("Rule should be an instance of Rule.")
-        if hasattr(self, key):
-            raise ValueError(f"Rule {key} already exists.")
-        setattr(self, key, rule)
-        ind = self._get_new_rule_index(rule)
-        self.names.insert(ind, key)
-
-    def __iter__(self) -> Iterator[Rule]:
-        return iter([self[rule_id] for rule_id in self.names])
-
-    def __next__(self) -> Rule:
-        return next(self)
-
-    def __len__(self) -> int:
-        return len(self.names)

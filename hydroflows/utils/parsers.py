@@ -48,7 +48,9 @@ def str_to_tuple(v: str) -> tuple[str, str]:
     return tuple(clean_list)
 
 
-def get_wildcards(s, known_wildcards: Optional[List[str | Path]] = None) -> List[str]:
+def get_wildcards(
+    s: str | Path, known_wildcards: Optional[List[str]] = None
+) -> List[str]:
     """Return a list of wildcards in the form of `{*}` from a string.
 
     Parameters

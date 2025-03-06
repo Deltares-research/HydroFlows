@@ -179,7 +179,7 @@ class HistoricalEvents(ExpandMethod):
 
         self.set_expand_wildcard(wildcard, list(self.params.events_dates.keys()))
 
-    def run(self):
+    def _run(self):
         """Run the HistoricalEvents method."""
         # Possible input files and their corresponding index dimensions
         event_files = {}
@@ -216,14 +216,12 @@ class HistoricalEvents(ExpandMethod):
         # Loop through the events and save the event csv/yaml files and the event set
         events_list = []
         for event_name, dates in self.params.events_dates.items():
+            output = self.get_output_for_wildcards({self.params.wildcard: event_name})
             event_start_time = dates["startdate"]
             event_end_time = dates["enddate"]
 
             forcings_list = []
-
-            fmt_dict = {self.params.wildcard: event_name}
-            event_yml = Path(self.output.event_yaml.as_posix().format(**fmt_dict))
-
+            event_file = output["event_yaml"]
             for event_type, da_driver in da_dict.items():
                 event_data = da_driver.sel(time=slice(event_start_time, event_end_time))
                 if event_data.size == 0:
@@ -254,13 +252,12 @@ class HistoricalEvents(ExpandMethod):
                         )
 
                 forcing_file = Path(
-                    event_yml.parent, f"{event_yml.stem}_{event_type}.csv"
+                    event_file.parent, f"{event_file.stem}_{event_type}.csv"
                 )
                 event_data.to_pandas().round(2).to_csv(forcing_file)
                 forcings_list.append({"type": event_type, "path": forcing_file})
 
             # save event description yaml file
-            event_file = Path(str(self.output.event_yaml).format(**fmt_dict))
             event = Event(
                 name=event_name,
                 forcings=forcings_list,

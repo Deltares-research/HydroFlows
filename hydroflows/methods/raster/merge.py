@@ -128,7 +128,7 @@ class MergeGriddedDatasets(ReduceMethod):
             merged_dataset=self.params.output_dir / self.params.output_name
         )
 
-    def run(self):
+    def _run(self):
         """Run the merge datasets method."""
         merged_ds = merge_raster_datasets(
             self.input.datasets,

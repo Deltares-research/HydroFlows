@@ -32,7 +32,7 @@ def test_historical_events(
         output_dir=Path(tmp_path, "multiple_forcings"),
     )
 
-    hist_events_multiple.run_with_checks()
+    hist_events_multiple.run()
 
     assert (
         "Time slice for event 'historical_event01' (for driver rainfall from 2000-01-02 00:00:00 to 2000-01-04 02:00:00) returns no data."
@@ -46,8 +46,8 @@ def test_historical_events(
         output_dir=Path(tmp_path, "single_forcing"),
     )
 
-    hist_events_single.run_with_checks()
+    hist_events_single.run()
 
     # Testing pydantic validation error for no input timeseries
     with pytest.raises(ValueError, match="At least one of the input files"):
-        HistoricalEvents(events_dates=events_dates).run_with_checks()
+        HistoricalEvents(events_dates=events_dates).run()

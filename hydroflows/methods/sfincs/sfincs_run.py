@@ -108,7 +108,7 @@ class SfincsRun(Method):
             sfincs_map=self.input.sfincs_inp.parent / "sfincs_map.nc"
         )
 
-    def run(self) -> None:
+    def _run(self) -> None:
         """Run the SfincsRun method."""
         # make sure model_root is an absolute path
         model_root = self.input.sfincs_inp.parent.resolve()

@@ -28,7 +28,7 @@ def test_sfincs_region(
         sfincs_region=Path(tmp_path, "data", "sfincs_region.geojson"),
     )
 
-    sfincs_region.run_with_checks()
+    sfincs_region.run()
 
 
 @pytest.mark.requires_test_data()
@@ -51,7 +51,7 @@ def test_sfincs_build(
         == sfincs_root / "subgrid" / "dep_subgrid.tif"
     )
 
-    sfincs_build.run_with_checks()
+    sfincs_build.run()
 
     config = configread(build_cfgs["sfincs_build"])
     config.pop("setup_subgrid")
@@ -69,7 +69,7 @@ def test_sfincs_build(
             sfincs_root=tmp_path / "model_error",
             catalog_path=str(global_catalog),
             subgrid_output=True,
-        ).run_with_checks()
+        ).run()
 
 
 @pytest.mark.requires_test_data()
@@ -89,7 +89,7 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
         copy_model=copy_model,
     )
     assert sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
-    sf.run_with_checks()
+    sf.run()
 
     # This should fail when copy model == False
     if not copy_model:
@@ -115,7 +115,7 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
         assert (
             sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
         )
-        sf.run_with_checks()
+        sf.run()
 
 
 @pytest.mark.requires_test_data()
@@ -160,7 +160,7 @@ def test_sfincs_run(
         sfincs_inp=str(sfincs_inp), run_method=method, sfincs_exe=sfincs_exe
     )
     assert sf_run.output.sfincs_map == sfincs_map
-    sf_run.run_with_checks()
+    sf_run.run()
 
 
 @pytest.mark.requires_test_data()
@@ -175,7 +175,7 @@ def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     )
     assert sf_post.output.hazard_tif == tmp_hazard_root / "hmax_test.tif"
 
-    sf_post.run_with_checks()
+    sf_post.run()
 
 
 @pytest.mark.requires_test_data()

@@ -71,7 +71,7 @@ merged_catalog_global_local = catalog.MergeCatalogs(
     catalog_path2=w.get_ref("$config.catalog_path_local"),
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_local_global.yml"),
 )
-w.add_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
+w.create_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs")
 
 # %%
 # Sfincs build
@@ -83,7 +83,7 @@ sfincs_build = sfincs.SfincsBuild(
     plot_fig=w.get_ref("$config.plot_fig"),
     subgrid_output=w.get_ref("$config.subgrid_output"),
 )
-w.add_rule(sfincs_build, rule_id="sfincs_build")
+w.create_rule(sfincs_build, rule_id="sfincs_build")
 
 # %%
 # Preprocess local precipitation data and get the historical event for validation, i.e January's 2024
@@ -96,7 +96,7 @@ precipitation = script.ScriptMethod(
         )
     },
 )
-w.add_rule(precipitation, rule_id="preprocess_local_rainfall")
+w.create_rule(precipitation, rule_id="preprocess_local_rainfall")
 
 historical_event = historical_events.HistoricalEvents(
     precip_nc=precipitation.output.precip_nc,
@@ -104,7 +104,7 @@ historical_event = historical_events.HistoricalEvents(
     output_dir="events/historical",
     wildcard="pluvial_historical_event",
 )
-w.add_rule(historical_event, rule_id="historical_event")
+w.create_rule(historical_event, rule_id="historical_event")
 
 # %%
 # Update the sfincs model with pluvial events
@@ -112,7 +112,7 @@ sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=historical_event.output.event_yaml,
 )
-w.add_rule(sfincs_update, rule_id="sfincs_update")
+w.create_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
@@ -120,7 +120,7 @@ sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
-w.add_rule(sfincs_run, rule_id="sfincs_run")
+w.create_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
@@ -130,7 +130,7 @@ sfincs_down = sfincs.SfincsDownscale(
     depth_min=w.get_ref("$config.depth_min"),
     output_root="output/hazard",
 )
-w.add_rule(sfincs_down, rule_id="sfincs_downscale")
+w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Validate the downscaled inundation map against floodmarks
@@ -145,7 +145,7 @@ floodmark_validation = hazard_validation.FloodmarksValidation(
     cmap=w.get_ref("$config.cmap"),
     region=sfincs_build.output.sfincs_region,
 )
-w.add_rule(floodmark_validation, rule_id="floodmark_validation")
+w.create_rule(floodmark_validation, rule_id="floodmark_validation")
 
 # %%
 # run workflow
