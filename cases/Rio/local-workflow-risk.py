@@ -105,7 +105,7 @@ fiat_clip_exp = script.ScriptMethod(
 w.create_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
 
 # Preprocess clipped exposure
-fiat_preprocess_clip_ex = script.ScriptMethod(
+fiat_preprocess_clip_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_exposure.py"),
     input={
         "census": fiat_clip_exp.output.census,
@@ -119,13 +119,13 @@ fiat_preprocess_clip_ex = script.ScriptMethod(
         ),
     },
 )
-w.create_rule(fiat_preprocess_clip_ex, rule_id="fiat_preprocess_exposure")
+w.create_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
 
 # %%
 # Merge the preprocessed data catalog with the merged global and local data catalog
 merged_catalog_all = catalog.MergeCatalogs(
     catalog_path1=merged_catalog_global_local.output.merged_catalog_path,
-    catalog_path2=fiat_preprocess_clip_ex.output.preprocessed_data_catalog,
+    catalog_path2=fiat_preprocess_clip_exp.output.preprocessed_data_catalog,
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_all.yml"),
 )
 w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
