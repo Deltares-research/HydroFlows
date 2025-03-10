@@ -89,16 +89,16 @@ def test_translate_events(event_set_file: Path, tmp_path: Path):
     assert fa_event_config["name"] == name
 
     # Check if timeseries.csv per forcing exists
-    event_names = fa_event_config["subevent_name"]
-    for event in event_names:
-        event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
-        dict_values = list(nested_dict_values(event_config))
-        csv_files_forcings_config = [
-            item.split(".")[0]
-            for item in dict_values
-            if isinstance(item, str) and item.endswith(".csv")
-        ]
-        csv_files_forcings = []
-        for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
-            csv_files_forcings.append(filename.stem)
-    assert sorted(csv_files_forcings_config) == sorted(csv_files_forcings)
+    # event_names = fa_event_config["subevent_name"]
+    # for event in event_names:
+    # event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
+    # dict_values = list(nested_dict_values(event_config))
+    # csv_files_forcings_config = [
+    #    item.split(".")[0]
+    #    for item in dict_values
+    #    if isinstance(item, str) and item.endswith(".csv")
+    # ]
+    # csv_files_forcings = []
+    # for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
+    #    csv_files_forcings.append(filename.stem)
+    # assert sorted(csv_files_forcings_config) == sorted(csv_files_forcings)

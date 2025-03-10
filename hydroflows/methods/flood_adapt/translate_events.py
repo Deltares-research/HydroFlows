@@ -127,7 +127,9 @@ class FloodAdaptEvent(BaseModel):
         df_stations = pd.read_csv(filepath)
         all_stations = {}
         if len(df_stations.columns) == 2:
-            all_stations["station"] = df_stations
+            all_stations[df_stations.columns[1]] = df_stations.iloc[
+                0:, 1
+            ]  # df_stations
             return all_stations
         else:
             # Write individual files
@@ -275,8 +277,8 @@ def translate_events(
                 csv_station_timeseries_discharge = fa_event.read_csv_stations(
                     forcing_sources.discharge
                 )
-                for key in csv_station_timeseries_discharge.items():
-                    rivers.timeseries_file = f"{key}.csv"
+                for key in csv_station_timeseries_discharge:
+                    rivers.timeseries_file = f"{key}_discharge.csv"
                     river.append(rivers.model_dump())
                 fa_event.river = river
 

@@ -3,19 +3,24 @@ from enum import Enum
 from pathlib import Path
 from typing import Optional
 
+import pandas as pd
 import tomli
 import tomli_w
 from flood_adapt import unit_system as us
 from flood_adapt.object_model.hazard.event.event_factory import EventFactory
 from flood_adapt.object_model.hazard.event.event_set import EventSet, EventSetModel
 from flood_adapt.object_model.hazard.event.template_event import EventModel
-from flood_adapt.object_model.hazard.forcing.discharge import DischargeConstant
-from flood_adapt.object_model.hazard.forcing.rainfall import RainfallCSV, RainfallTrack
+from flood_adapt.object_model.hazard.forcing.discharge import (
+    DischargeConstant,
+    DischargeCSV,
+)
+from flood_adapt.object_model.hazard.forcing.rainfall import RainfallCSV
 from flood_adapt.object_model.hazard.forcing.waterlevels import (
     WaterlevelCSV,
     WaterlevelModel,
 )
-from flood_adapt.object_model.hazard.forcing.wind import WindConstant, WindTrack
+from flood_adapt.object_model.hazard.forcing.wind import WindConstant
+from flood_adapt.object_model.interface.config.sfincs import RiverModel
 from pydantic import BaseModel
 
 
@@ -52,7 +57,7 @@ class TimeModel(BaseModel):
     end_time: str
 
 
-class RiverModel(BaseModel):
+class RiverModels(BaseModel):
     """
     A model representing a river system configuration.
 
@@ -164,7 +169,7 @@ class OldEvent(BaseModel):
         The time model associated with the event.
     mode : str
         The mode of the event.
-    river : Optional[list[RiverModel]]
+    river : Optional[list[RiverModels]]
         A list of river models associated with the event, if any.
     wind : Optional[WindModel]
         The wind model associated with the event, if any.
@@ -186,7 +191,7 @@ class OldEvent(BaseModel):
     time: TimeModel
     mode: str
 
-    river: Optional[list[RiverModel]] = None
+    river: Optional[list[RiverModels]] = None
     wind: Optional[WindModel] = None
     rainfall: Optional[RainfallModel] = None
     tide: Optional[TideModel] = None
@@ -237,27 +242,46 @@ def convert_event(
             forcings.update({"WIND": [_wind]})
         elif wind["source"] == Source.NONE:
             pass
-        elif wind["source"] == Source.TRACK:
-            _wind = WindTrack()
-        #### In the wind class add all the forcing
+        #### In the wind class add all the forcing - can be a time series??
         else:
             raise ValueError(f"other wind found: {wind}")
 
     if rainfall := to_convert.get("rainfall"):
         if rainfall["source"] == Source.TIMESERIES:
             _rainfall = RainfallCSV(path=old_event_dir / rainfall["timeseries_file"])
-        elif rainfall["source"] == Source.TRACK:
-            _rainfall = RainfallTrack()
-        #### In the rainfallclass add all the forcing
+            forcings.update({"RAINFALL": [_rainfall]})
+        elif rainfall["source"] == Source.NONE:
+            pass
         else:
-            raise ValueError(f"other rainfall found: {rainfall}")
-        forcings.update({"RAINFALL": [_rainfall]})
+            raise ValueError(f"other wind found: {rainfall}")
 
     if river := to_convert.get("river"):
-        _river = DischargeConstant(
-            river=river_from_charleston(),
-            discharge=river[0]["constant_discharge"],
-        )
+        if river[0]["constant_discharge"] is not None:
+            _river = DischargeConstant(
+                river=RiverModel(
+                    name="Cooper River",  # TODO dummy name. This information should be saved by hydroflows
+                    mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
+                    x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
+                    y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                ),
+                discharge=river[0]["constant_discharge"],
+            )
+        else:
+            discharge_csv = pd.read_csv(old_event_dir / river[0]["timeseries_file"])
+            mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
+            _river = DischargeCSV(
+                river=RiverModel(
+                    name="Cooper River",  # TODO dummy name
+                    mean_discharge=us.UnitfulDischarge(
+                        value=mean_discharge, units="m3/s"
+                    ),
+                    x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
+                    y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                ),
+                path=old_event_dir / river[0]["timeseries_file"],
+                units="m3/s",  # TODO check if this is always the unit
+            )
+
         forcings.update({"DISCHARGE": [_river]})
 
     if tide := to_convert.get("tide"):
