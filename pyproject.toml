@@ -83,7 +83,7 @@ test = [
   "hydroflows[extra]",      # needed for testing snake file
 ]
 models = [
-  "delft_fiat==0.2.0",  # Delft fiat
+  "delft_fiat==0.2.1",  # Delft fiat
   "juliaup"             # julia package manager to install julia & wflow
 ]
 
