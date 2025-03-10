@@ -115,7 +115,7 @@ class SetupFloodAdapt(Method):
                 f"{self.input.event_set_yaml.stem}.toml",
             )
 
-    def run(self):
+    def _run(self):
         """Run the SetupFloodAdapt method."""
         # prepare and copy sfincs model
         shutil.copytree(

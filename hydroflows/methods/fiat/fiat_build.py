@@ -157,7 +157,7 @@ class FIATBuild(Method):
             spatial_joins_cfg=self.params.fiat_root / "spatial_joins.toml",
         )
 
-    def run(self):
+    def _run(self):
         """Run the FIATBuild method."""
         # Read template config
         opt = configread(self.input.config)

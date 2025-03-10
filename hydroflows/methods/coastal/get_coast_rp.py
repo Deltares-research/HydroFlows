@@ -84,7 +84,7 @@ class GetCoastRP(Method):
         rps_fn = self.params.data_root / "waterlevel_rps.nc"
         self.output: Output = Output(rps_nc=rps_fn)
 
-    def run(self) -> None:
+    def _run(self) -> None:
         """Run GetCoastRP Method."""
         region = gpd.read_file(self.input.region)
         dc = DataCatalog(data_libs=self.input.coastrp_catalog)

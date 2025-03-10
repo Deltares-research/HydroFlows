@@ -174,7 +174,7 @@ class FloodmarksValidation(Method):
             validation_scores_csv=self.params.out_root / self.params.filename,
         )
 
-    def run(self):
+    def _run(self):
         """Run the FloodmarksValidation method."""
         # Read the floodmarks and the region files
         gdf = gpd.read_file(self.input.floodmarks_geom)

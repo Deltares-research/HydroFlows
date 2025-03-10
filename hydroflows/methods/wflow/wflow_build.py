@@ -140,7 +140,7 @@ class WflowBuild(Method):
             wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
         )
 
-    def run(self):
+    def _run(self):
         """Run the WflowBuild method."""
         logger = setuplog("build", log_level=20)
 

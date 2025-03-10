@@ -83,7 +83,7 @@ class CoastalTidalAnalysis(Method):
             tide_timeseries=tide_out, surge_timeseries=surge_out
         )
 
-    def run(self) -> None:
+    def _run(self) -> None:
         """Run CoastalTidalAnalysis method."""
         # Open waterlevel data
         h = xr.open_dataarray(self.input.waterlevel_nc)
