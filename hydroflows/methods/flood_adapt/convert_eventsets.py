@@ -257,32 +257,55 @@ def convert_event(
 
     if river := to_convert.get("river"):
         if river[0]["constant_discharge"] is not None:
-            _river = DischargeConstant(
-                river=RiverModel(
-                    name="Cooper River",  # TODO dummy name. This information should be saved by hydroflows
-                    mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
-                    x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
-                    y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
-                ),
-                discharge=river[0]["constant_discharge"],
-            )
-        else:
-            discharge_csv = pd.read_csv(old_event_dir / river[0]["timeseries_file"])
-            mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
-            _river = DischargeCSV(
-                river=RiverModel(
-                    name="Cooper River",  # TODO dummy name
-                    mean_discharge=us.UnitfulDischarge(
-                        value=mean_discharge, units="m3/s"
+            _river = [
+                DischargeConstant(
+                    river=RiverModel(
+                        name="Cooper River",  # TODO dummy name. This information should be saved by hydroflows
+                        mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
+                        x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
+                        y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
                     ),
-                    x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
-                    y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
-                ),
-                path=old_event_dir / river[0]["timeseries_file"],
-                units="m3/s",  # TODO check if this is always the unit
-            )
+                    discharge=river[0]["constant_discharge"],
+                )
+            ]
+        else:
+            if len(river) == 1:
+                discharge_csv = pd.read_csv(old_event_dir / river[0]["timeseries_file"])
+                mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
+                _river = [
+                    DischargeCSV(
+                        river=RiverModel(
+                            name="Cooper River",  # TODO dummy name
+                            mean_discharge=us.UnitfulDischarge(
+                                value=mean_discharge, units="m3/s"
+                            ),
+                            x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
+                            y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                        ),
+                        path=old_event_dir / river[0]["timeseries_file"],
+                        units="m3/s",  # TODO check if this is always the unit
+                    )
+                ]
+            else:
+                _river = []
+                for i in river:
+                    discharge_csv = pd.read_csv(old_event_dir / i["timeseries_file"])
+                    mean_discharge = int(discharge_csv.iloc[0:, 0].mean())
+                    _i = DischargeCSV(
+                        river=RiverModel(
+                            name="Cooper River",  # TODO dummy name
+                            mean_discharge=us.UnitfulDischarge(
+                                value=mean_discharge, units="m3/s"
+                            ),
+                            x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
+                            y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                        ),
+                        path=old_event_dir / i["timeseries_file"],
+                        units="m3/s",  # TODO check if this is always the unit
+                    )
+                    _river.append(_i)
 
-        forcings.update({"DISCHARGE": [_river]})
+        forcings.update({"DISCHARGE": _river})
 
     if tide := to_convert.get("tide"):
         if tide["source"] == Source.TIMESERIES:

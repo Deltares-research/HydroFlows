@@ -278,7 +278,7 @@ def translate_events(
                     forcing_sources.discharge
                 )
                 for key in csv_station_timeseries_discharge:
-                    rivers.timeseries_file = f"{key}_discharge.csv"
+                    rivers.timeseries_file = f"{key}.csv"
                     river.append(rivers.model_dump())
                 fa_event.river = river
 
