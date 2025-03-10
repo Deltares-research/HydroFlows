@@ -78,7 +78,7 @@ w.create_rule(sfincs_build, rule_id="sfincs_build")
 
 # Clip exposure datasets to the region of interest.
 fiat_clip_exp = script.ScriptMethod(
-    script=Path(pwd, "scripts", "clip_exposure_files.py"),
+    script=Path(pwd, "scripts", "clip_exposure.py"),
     # Note that the output paths/names are hardcoded in the scipt
     # These names are used in the hydromt_fiat config
     input={
