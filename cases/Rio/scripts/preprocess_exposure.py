@@ -262,7 +262,7 @@ new_occupancy[["residents", "geometry"]].to_file(
 # Create a dictionary
 # Helper function to create entries
 def create_entry(path, crs=None, datatype: str = "vector"):
-    """Create a dictionary entry representing a GeoDataFrame."""
+    """Create a dictionary entry representing a GeoDataFrame or a DataFrame."""
     if datatype == "vector":
         return {
             "data_type": "GeoDataFrame",

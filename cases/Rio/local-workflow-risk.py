@@ -77,7 +77,7 @@ w.create_rule(sfincs_build, rule_id="sfincs_build")
 # Preprocess local FIAT data scripts (clip exposure & preprocess clipped exposure)
 
 # Clip exposure datasets to the region of interest.
-fiat_prep_exp = script.ScriptMethod(
+fiat_clip_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "clip_exposure_files.py"),
     # Note that the output paths/names are hardcoded in the scipt
     # These names are used in the hydromt_fiat config
@@ -102,16 +102,16 @@ fiat_prep_exp = script.ScriptMethod(
         "max_pot_damages": Path(pwd, "data/preprocessed-data/max_pot_damages.csv"),
     },
 )
-w.create_rule(fiat_prep_exp, rule_id="fiat_clip_exposure")
+w.create_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
 
 # Preprocess clipped exposure
-fiat_preprocess_clip_exp = script.ScriptMethod(
+fiat_preprocess_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_exposure.py"),
     input={
-        "census": fiat_prep_exp.output.census,
-        "building_footprints": fiat_prep_exp.output.building_footprints,
-        "entrances": fiat_prep_exp.output.entrances,
-        "mapping_social_class": fiat_prep_exp.output.mapping_social_class,
+        "census": fiat_clip_exp.output.census,
+        "building_footprints": fiat_clip_exp.output.building_footprints,
+        "entrances": fiat_clip_exp.output.entrances,
+        "mapping_social_class": fiat_clip_exp.output.mapping_social_class,
     },
     output={
         "preprocessed_data_catalog": Path(
@@ -119,16 +119,17 @@ fiat_preprocess_clip_exp = script.ScriptMethod(
         ),
     },
 )
-w.create_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
+w.create_rule(fiat_preprocess_exp, rule_id="fiat_preprocess_exposure")
 
 # %%
 # Merge the preprocessed data catalog with the merged global and local data catalog
 merged_catalog_all = catalog.MergeCatalogs(
     catalog_path1=merged_catalog_global_local.output.merged_catalog_path,
-    catalog_path2=fiat_preprocess_clip_exp.output.preprocessed_data_catalog,
+    catalog_path2=fiat_preprocess_exp.output.preprocessed_data_catalog,
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_all.yml"),
 )
 w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
+
 
 # %%
 # Fiat build
