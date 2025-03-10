@@ -3,7 +3,7 @@ catalog_path_local: c:/Users/rautenba/repos/HydroFlows/cases/Rio/data/local-data
 depth_min: 0.05
 end_date: '2023-12-31'
 fiat_build_fiat_root: models/fiat
-fiat_prep_exposure_script: c:/Users/rautenba/repos/HydroFlows/cases/Rio/scripts/prepare_exposure_files.py
+fiat_clip_exposure_script: c:/Users/rautenba/repos/HydroFlows/cases/Rio/scripts/clip_exposure_files.py
 fiat_exe: c:/Users/rautenba/repos/HydroFlows/cases/Rio/bin/fiat_v0.2.1/fiat.exe
 fiat_preprocess_exposure_script: c:/Users/rautenba/repos/HydroFlows/cases/Rio/scripts/preprocess_exposure.py
 floodadapt_build_output_dir: models/flood_adapt_builder

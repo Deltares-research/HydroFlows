@@ -86,9 +86,9 @@ rule sfincs_build:
         sfincs_root="{params.sfincs_root}" \
         """
 
-rule fiat_prep_exposure:
+rule fiat_clip_exposure:
     input:
-        script=config["fiat_prep_exposure_script"],
+        script=config["fiat_clip_exposure_script"],
         region=rules.sfincs_build.output.sfincs_region,
     output:
         census="c:/Users/rautenba/repos/HydroFlows/cases/Rio/data/preprocessed-data/census2010.gpkg",
