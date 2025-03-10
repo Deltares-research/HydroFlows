@@ -66,7 +66,7 @@ More information on how to use HydroFlows including several examples can be foun
       config="config/hydromt_sfincs.yml",
       catalog_path="data/data_catalog.yml",
    )
-   wf.add_rule(sfincs_build, rule_id="sfincs_build")
+   wf.create_rule(sfincs_build, rule_id="sfincs_build")
 
    # initialize a second method and add it to the workflow
    sfincs_run = sfincs.SfincsRun(
@@ -74,7 +74,7 @@ More information on how to use HydroFlows including several examples can be foun
       run_method="exe",
       sfincs_exe="bin/sfincs/sfincs.exe"
    )
-   wf.add_rule(sfincs_run, rule_id="sfincs_run")
+   wf.create_rule(sfincs_run, rule_id="sfincs_run")
 
    # parse the workflow to Snakemake
    # this will save a ./my_workflow_root/Snakefile

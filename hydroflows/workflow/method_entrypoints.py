@@ -43,6 +43,10 @@ __eps__ = {
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
     "historical_events": "hydroflows.methods.historical_events.historical_events:HistoricalEvents",
+    "combine_dummy_events": "hydroflows.methods.dummy.combine_dummy_events:CombineDummyEvents",
+    "prepare_dummy_events": "hydroflows.methods.dummy.prepare_dummy_events:PrepareDummyEvents",
+    "run_dummy_event": "hydroflows.methods.dummy.run_dummy_event:RunDummyEvent",
+    "postprocess_dummy_event": "hydroflows.methods.dummy.postprocess_dummy_event:PostprocessDummyEvent",
 }
 
 

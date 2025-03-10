@@ -23,4 +23,4 @@ Each of these steps in shown in the diagram below and discussed in the following
    compose_workflow
    execute_workflow
    parse_to_engine
-   add_own_methods
+   add_own_method

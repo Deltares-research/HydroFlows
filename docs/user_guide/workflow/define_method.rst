@@ -1,14 +1,14 @@
 .. _define_method:
 
-Define methods
-==============
+Define a method
+===============
 
 Using predefined methods
 ------------------------
 
 Methods are the building blocks of a :term:`workflow` in HydroFlows.
-Methods define the ``input``, ``output``, and ``params`` (parameters) of a step in the workflow.
-The input and output attributes contain only file paths to the input and output files.
+Methods define the ``input``, ``output``, and ``params`` of a step in the workflow.
+The input and output attributes contain only paths to the input and output files.
 The params attribute contains the parameters of the method, which can be used to control
 the behavior of the method.
 
@@ -24,20 +24,23 @@ After initialization the method output files can be explored using the `output` 
 These output files can directly used as input for other methods in the workflow,
 see :ref:`compose_workflow` section.
 
+In the example below we initialize a method which is created for demonstration purposes only.
+Printing the method shows all input, output and params fields of the method.
+
 .. ipython:: python
 
-    from hydroflows.methods.sfincs import SfincsBuild
+    from hydroflows.methods.dummy import RunDummyEvent
 
     # initialize a method
-    sfincs_build = SfincsBuild(
-        region="data/region.shp",
-        sfincs_root="models/sfincs",
-        config="config/hydromt_sfincs.yml",
-        catalog_path="data/data_catalog.yml",
+    method = RunDummyEvent(
+        event_csv="events/event1.csv",
+        settings_toml="settings.toml",
+        output_dir="model/event1",
+        model_exe="bin/model.exe"
     )
 
-    # explore the output files
-    sfincs_build.output
+    # explore the method input, output and params
+    print(method)
 
 Usually, the method is run as part of a :ref:`workflow` or :ref:`rule` and executed from the
 workflow root directory, see :ref:`execute_workflow` and :ref:`parse_to_engine` sections.
@@ -53,14 +56,32 @@ Expand and reduce methods
 There are two special types of methods that can be used to create multiple output files from a single
 set of input files (expand) or to create a single output file from multiple input files (reduce).
 These methods are called `ExpandMethod` and `ReduceMethod` and are subclasses of the `Method` class.
-The `ExpandMethod` class generates one or more :ref:`wildcards` on the output files which can be used
-in subsequent rules to expand the workflow over multiple output files.
+The `ExpandMethod` class generates one or more :term:`wildcards` on the output files which can be used
+in subsequent rules to expand the workflow over multiple output files. These can be explored by
+printing the method as in the example below.
+
+
+.. ipython:: python
+
+    from hydroflows.methods.dummy import PrepareDummyEvents
+
+    # initialize a method
+    method = PrepareDummyEvents(
+        timeseries_csv="data/timeseries.csv",
+        output_dir="output",
+        rps=[1,5,10,50,100],
+    )
+
+    # Note the method type and expand_wildcards
+    print(method)
+
 
 Using python scripts as methods
 -------------------------------
 
-Python scripts can directly be added to a workflow using the :class:`~hydroflows.methods.script.ScriptMethod` class.
-Note that this class does not provide any validation of the input, output, or parameters as their types are not known.
+To make full use of the HydroFlows methods, these should be implemented following the HydroFlows ``Method`` api, see also :ref:`add_own_methods` section.
+However, python scripts can directly be added to a workflow using the :class:`~hydroflows.methods.script.ScriptMethod` class.
+This class does not provide any validation of the input, output, or parameters as their types are not known.
 The `ScriptMethod` class is useful for adding simple scripts to a workflow that do not necessarily need validation.
 
 .. ipython:: python
@@ -75,12 +96,16 @@ The `ScriptMethod` class is useful for adding simple scripts to a workflow that 
     )
 
     # explore the output files
-    script_method.output
-
-To develop your own methods which do get validated, users should use the HydroFlows :class:`hydroflows.workflow.Method` class.
-For more information on how to create your own methods, see the :ref:`add_own_methods` section.
+    print(script_method)
 
 .. Note::
     The `ScriptMethod` class currently only works well for scripts with hardcoded input and output files and no parameters.
     In combination with the `SnakeMake` engine, the `ScriptMethod` class can be used to pass the input, output, and params
     to the script using the global `snakemake` object, see the :ref:`snakemake` documentation for more information.
+
+
+Define a custom method
+----------------------
+
+To make full use of the HydroFlows methods, these should be implemented following the HydroFlows ``Method`` api.
+More information on how to create a custom method can be found in the :ref:`add_own_methods` section.
