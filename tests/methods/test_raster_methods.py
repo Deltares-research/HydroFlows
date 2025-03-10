@@ -36,7 +36,7 @@ def test_merge_gridded_datasets(tmp_path: Path, cmip6_stats: Path):
         output_name="merged_ssp585_2090-2100.nc",
         output_dir=tmp_path,
     )
-    rule.run_with_checks()
+    rule.run()
 
     assert rule.output.merged_dataset.is_file()
     ds = xr.open_dataset(rule.output.merged_dataset)

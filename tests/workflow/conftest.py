@@ -56,7 +56,7 @@ class TestMethod(Method):
             output_file2=self.params.out_root / "output2",
         )
 
-    def run(self):
+    def _run(self):
         with open(self.output.output_file1, "w") as f:
             f.write("")
         with open(self.output.output_file2, "w") as f:
@@ -99,12 +99,43 @@ class MockExpandMethod(ExpandMethod):
         )
         self.set_expand_wildcard(wildcard, self.params.events)
 
-    def run(self):
+    def _run(self):
         self.check_input_output_paths(False)
         for _, output_file in self._output_paths:
             Path(output_file).parent.mkdir(parents=True, exist_ok=True)
             with open(output_file, "w") as f:
                 f.write("")
+
+
+class DoubleExpandMethodParams(Parameters):
+    root: Path
+    wildcards: dict[str, List[str]]
+
+
+class MockDoubleExpandMethod(ExpandMethod):
+    name: str = "mock_double_expand_method"
+
+    def __init__(
+        self,
+        input_file: Path,
+        root: Path,
+        wildcards: dict[str, List[str]],
+    ) -> None:
+        self.input: ExpandMethodInput = ExpandMethodInput(input_file=input_file)
+        self.params: DoubleExpandMethodParams = DoubleExpandMethodParams(
+            root=root, wildcards=wildcards
+        )
+        wc_keys = list(self.params.wildcards.keys())
+        wc = "{" + "}_{".join(wc_keys) + "}"
+        self.output: ExpandMethodOutput = ExpandMethodOutput(
+            output_file=self.params.root / wc / "file.yml",
+            output_file2=self.params.root / wc / "file2.yml",
+        )
+        for key, values in self.params.wildcards.items():
+            self.set_expand_wildcard(key, values)
+
+    def _run(self):
+        pass
 
 
 class ReduceInput(Parameters):
@@ -129,7 +160,7 @@ class MockReduceMethod(ReduceMethod):
             output_file=self.params.root / "output_file.yml"
         )
 
-    def run(self):
+    def _run(self):
         data = {
             "inputs": self.input.files,
         }

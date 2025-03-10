@@ -174,7 +174,7 @@ class SfincsBuild(Method):
             **optional_outputs,
         )
 
-    def run(self):
+    def _run(self):
         """Run the SfincsBuild method."""
         # read the configuration
         opt = configread(self.input.config)

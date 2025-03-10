@@ -14,9 +14,10 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
-from hydroflows.utils.parsers import get_wildcards
+from hydroflows.utils.parsers import has_wildcards
 from hydroflows.workflow.method_entrypoints import METHODS
 from hydroflows.workflow.method_parameters import Parameters
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 __all__ = ["Method"]
 
@@ -50,7 +51,7 @@ class Method(ABC):
     ## ABSTRACT METHODS
 
     @abstractmethod
-    def run(self) -> None:
+    def _run(self) -> None:
         """Implement the rule logic here.
 
         This method is called when executing the rule.
@@ -257,7 +258,7 @@ class Method(ABC):
         # return output paths
         return [value for _, value in self._output_paths]
 
-    def run_with_checks(self, check_output: bool = True) -> None:
+    def run(self, check_output: bool = True) -> None:
         """Run the method with input/output checks.
 
         Parameters
@@ -265,8 +266,9 @@ class Method(ABC):
         check_output : bool, optional
             Check if output files are created, by default True.
         """
+        # TODO warning if wildcards on input / params
         self.check_input_output_paths()
-        self.run()
+        self._run()
         if check_output:
             self.check_output_exists()
 
@@ -283,9 +285,14 @@ class Method(ABC):
         """
         for key, value in self.input.model_dump().items():
             if isinstance(value, Path):
+                if has_wildcards(value):
+                    raise ValueError(
+                        f"The method {self.name} has unresolved wildcards in input paths. "
+                        "Please create a rule to resolve these wildcards and run the rule."
+                    )
                 if not value.is_file():
                     msg = f"Input file {self.name}.input.{key} not found: {value}"
-                    if not missing_file_error:  # create dummy file
+                    if not missing_file_error:
                         logger.warning(msg)
                     else:
                         raise FileNotFoundError(msg)
@@ -297,11 +304,9 @@ class Method(ABC):
     @property
     def _output_paths(self) -> List[Tuple[str, Path]]:
         """Return a list of output key-path tuples."""
-        paths = []
-        for key, value in self.output.model_dump().items():
-            if isinstance(value, Path):
-                paths.append((key, value))
-        return paths
+        return [
+            (key, val) for key, val in self.output.to_dict(filter_types=(Path)).items()
+        ]
 
     def check_output_exists(self):
         """Check if output files exist."""
@@ -344,41 +349,52 @@ class ExpandMethod(Method, ABC):
         return self._expand_wildcards
 
     @property
+    def output_expanded(self) -> Dict[str, Path | List[Path]]:
+        """Output dict with wildcards in output path evaluated."""
+        if not hasattr(self, "_output_expanded"):
+            self._evaluate_expand_wildcards()
+        return self._output_expanded
+
+    def _evaluate_expand_wildcards(self) -> None:
+        """Evaluate wildcards in output paths."""
+        self._output_expanded = {}
+        for key, value in self.output.to_dict(filter_types=(Path)).items():
+            value = resolve_wildcards(value, self.expand_wildcards)
+            self._output_expanded[key] = value
+
+    @property
     def _output_paths(self) -> List[Tuple[str, Path]]:
         """Return a list of output key-path tuples."""
         paths = []
-        for key, value in self.output.model_dump().items():
-            if isinstance(value, list) and all([isinstance(p, Path) for p in value]):
-                for item in value:
-                    paths.append((key, item))
-            if not isinstance(value, Path):
-                continue
-            for wc, vlist in self.expand_wildcards.items():
-                if any(get_wildcards(value, [wc])):
-                    for v in vlist:
-                        path = Path(str(value).format(**{wc: v}))
-                        paths.append((key, path))
-                else:
-                    paths.append((key, value))
+        for key, val in self.output_expanded.items():
+            if isinstance(val, list):
+                for path in val:
+                    paths.append((key, path))
+            else:
+                paths.append((key, val))
         return paths
 
-    def expand_output_paths(self) -> None:
-        """Reinitialize Output object with wildcards in output path evaluated."""
-        # Fetch keys, values from output_paths
-        output_paths = self._output_paths
-        keys = [tup[0] for tup in output_paths]
-        vals = [tup[1] for tup in output_paths]
+    def get_output_for_wildcards(self, wildcards: dict[str, str]) -> dict[str, Path]:
+        """Get the output paths for a specific wildcard configuration.
 
-        # dict for storing outputs as {key: [list of values]}
-        out_dict = {}
+        Parameters
+        ----------
+        wildcards : dict[str, str]
+            The wildcard configuration.
+            Note that the wildcard values should be single strings.
 
-        # Fill out_dict
-        for key in set(keys):
-            idxs = [idx for (idx, item) in enumerate(keys) if item == key]
-            out_dict[key] = [vals[i] for i in idxs]
-
-        # Reinitialize output object
-        self.output = self.output.model_copy(update=out_dict)
+        Returns
+        -------
+        dict[str, Path]
+            The output paths for the wildcard configuration.
+        """
+        # make sure all wildcard values are strings
+        if not all(isinstance(v, str) for v in wildcards.values()):
+            raise ValueError("All wildcard values should be strings.")
+        output = {}
+        for key, path in self.output.to_dict(filter_types=(Path)).items():
+            output[key] = resolve_wildcards(path, wildcards)
+        return output
 
 
 class ReduceMethod(Method):
