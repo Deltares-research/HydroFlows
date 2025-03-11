@@ -73,7 +73,9 @@ entrances_path = data_source / "entrances.gpkg"
 entrances_gdf = gpd.read_file(entrances_path).to_crs(crs)
 
 # %% load csv data
-social_class_path = data_source / "social_class_building_type_mapping.csv"
+social_class_path = (
+    data_source.parent / "loca-data" / "social_class_building_type_mapping.csv"
+)
 social_class = pd.read_csv(social_class_path)
 
 # %% prep building data
@@ -236,9 +238,7 @@ fn_building_footprints = "building_footprints_2d.gpkg"
 fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
-fn_damage_values = "max_pot_damages.csv"
-fn_vulnerability_curves_linking = "damage_functions_linking.csv"
-fn_vulnerability_curves = "single_curves"
+
 # Save bf
 buildings_gdf.to_file(data_source / fn_building_footprints)
 
@@ -294,11 +294,6 @@ yaml_dict = {
         fn_asset_population,
         occupancy_gdf.crs,
     ),
-    "damage_values": create_entry(fn_damage_values, datatype="csv"),
-    "vulnerability_curves_linking": create_entry(
-        fn_vulnerability_curves_linking, datatype="csv"
-    ),
-    "vulnerability_curves": create_entry(fn_vulnerability_curves, datatype="csv"),
 }
 
 # Save the YAML catalog

@@ -18,18 +18,3 @@ preprocessed_asset_population:
   driver: vector
   filesystem: local
   crs: 31983
-damage_values:
-  data_type: DataFrame
-  path: preprocessed-data/max_pot_damages.csv
-  driver: csv
-  filesystem: local
-vulnerability_curves:
-  data_type: DataFrame
-  path: preprocessed-data/single_curves
-  driver: csv
-  filesystem: local
-vulnerability_curves_linking:
-  data_type: DataFrame
-  path: preprocessed-data/damage_functions_linking.csv
-  driver: csv
-  filesystem: locals
