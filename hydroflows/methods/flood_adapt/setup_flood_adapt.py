@@ -2,7 +2,9 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Optional
 
+import geopandas as gpd
 import toml
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
@@ -57,6 +59,11 @@ class Params(Parameters):
     The directory where the output files will be saved.
     """
 
+    river_coordinates: Optional[dict]
+    """
+    Dictionary of river names and coordinates, by default None
+    """
+
 
 class SetupFloodAdapt(Method):
     """Rule for setting up the input for the FloodAdapt Database Builder."""
@@ -75,6 +82,7 @@ class SetupFloodAdapt(Method):
         fiat_cfg: Path,
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
+        river_coordinates: Optional[Path] = None,
     ):
         """Create and validate a SetupFloodAdapt instance.
 
@@ -88,6 +96,8 @@ class SetupFloodAdapt(Method):
             The file path to the HydroFlows event set yaml file.
         output_dir: Path, optional
             The folder where the output is stored, by default "flood_adapt_builder".
+        river_coordinates: Optional[Path]
+            The file path to the sfincs_build output src point geojson by default None
         **params
             Additional parameters to pass to the GetERA5Rainfall instance.
 
@@ -102,7 +112,9 @@ class SetupFloodAdapt(Method):
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
         )
-        self.params: Params = Params(output_dir=output_dir)
+        self.params: Params = Params(
+            output_dir=output_dir, river_coordinates=river_coordinates
+        )
 
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
@@ -157,9 +169,19 @@ class SetupFloodAdapt(Method):
 
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
+            # Create dict of river names and coordinates
+            if self.params.river_coordinates is not None:
+                src_points = gpd.read_file(self.params.river_coordinates)
+                river_coordinates = (
+                    src_points.set_index("index")[["geometry"]]
+                    .apply(lambda row: (row.geometry.x, row.geometry.y), axis=1)
+                    .to_dict()
+                )
+
             translate_events(
                 self.input.event_set_yaml,
                 Path(self.params.output_dir),
+                river_coordinates,
             )
 
             # Create FloodAdapt Database Builder config

@@ -4,7 +4,7 @@ import logging
 import os
 import pathlib
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import toml
@@ -112,7 +112,7 @@ class FloodAdaptEvent(BaseModel):
         Read a CSV file containing station data and returns a list of stations.
 
         The CSV file is expected to have either two columns or more. The first column must be the timestamp of the timeseries.
-        If the CSV file contains more than one station, individual DataFrames for each station are returned with keys in the format "station_{column_name}".
+        If the CSV file contains more than one station, individual DataFrames for each station are returned with keys in the format "column_name".
 
         Parameters
         ----------
@@ -136,7 +136,7 @@ class FloodAdaptEvent(BaseModel):
             df_stations.set_index(df_stations.columns[0], inplace=True, drop=True)
             for column in df_stations.columns:
                 df_station = df_stations[column]
-                all_stations[f"station_{column}"] = df_station
+                all_stations[column] = df_station
             return all_stations
 
 
@@ -172,6 +172,7 @@ def translate_events(
     root: Union[str, Path] = None,
     fa_events: Union[str, Path] = None,
     description: str = "This is a hydroflows event set",
+    river_coordinates: Optional[dict] = None,
 ):
     """
     Translate HydroFlows events to floodAdapt events.
@@ -182,6 +183,8 @@ def translate_events(
         Path to the root folder of the events, by default None
     fa_events : Union[str, Path]
         Folder to write the floodadapt events to, by default None
+    river_coordinates: Optional[dict]
+        Dictionary of river names and coordinates, by default None
     """
     # Create output directory
     fn_floodadapt = Path.joinpath(fa_events, root.stem)
@@ -377,6 +380,7 @@ def translate_events(
             Path(
                 r"C:\Users\rautenba\repos\Database\charleston_test\input\events\Probabilistic_set"
             ),
+            river_coordinates,
         )
     else:
-        convert_event(fa_event.attrs, Path(event_fn))
+        convert_event(fa_event.attrs, Path(event_fn), river_coordinates)

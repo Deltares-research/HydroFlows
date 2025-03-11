@@ -207,6 +207,7 @@ class OldEvent(BaseModel):
 def convert_event(
     old_event: dict,
     old_event_dir: Path,
+    river_coordinates: Optional[dict] = None,
 ) -> EventModel:
     """
     Convert an old event configuration dictionary into a new EventModel instance.
@@ -223,6 +224,8 @@ def convert_event(
         A dictionary containing the old event configuration.
     old_event_dir : Path
         The directory path where event-related files are stored.
+    river_coordinates: Optional[dict]
+        Dictionary of river names and coordinates, by default None
 
     Returns
     -------
@@ -262,30 +265,54 @@ def convert_event(
 
     if river := to_convert.get("river"):
         if river[0]["constant_discharge"] is not None:
-            _river = [
-                DischargeConstant(
-                    river=RiverModel(
-                        name="Cooper River",  # TODO dummy name. This information should be saved by hydroflows
-                        mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
-                        x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
-                        y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
-                    ),
-                    discharge=river[0]["constant_discharge"],
-                )
-            ]
+            if len(river) == 1:
+                station_name = river[0]["timeseries_file"].split(".csv")[0]
+                _river = [
+                    DischargeConstant(
+                        river=RiverModel(
+                            name=station_name,
+                            mean_discharge=us.UnitfulDischarge(
+                                value=river[0]["constant_discharge"], units="cfs"
+                            ),  # check for unit
+                            x_coordinate=river_coordinates[int(station_name)][0],
+                            y_coordinate=river_coordinates[int(station_name)][1],
+                        ),
+                        discharge=river[0]["constant_discharge"],
+                    )
+                ]
+            else:
+                _river = []
+                for i in river:
+                    station_name = i["timeseries_file"].split(".csv")[0]
+                    discharge = i["constant_discharge"]
+                    _i = [
+                        DischargeConstant(
+                            river=RiverModel(
+                                name=station_name,
+                                mean_discharge=us.UnitfulDischarge(
+                                    value=discharge, units="cfs"
+                                ),  # Check for unit
+                                x_coordinate=river_coordinates[int(station_name)][0],
+                                y_coordinate=river_coordinates[int(station_name)][1],
+                            ),
+                            discharge=discharge,
+                        )
+                    ]
+                _river.append(_i)
         else:
             if len(river) == 1:
                 discharge_csv = pd.read_csv(old_event_dir / river[0]["timeseries_file"])
                 mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
+                station_name = river[0]["timeseries_file"].split(".csv")[0]
                 _river = [
                     DischargeCSV(
                         river=RiverModel(
-                            name="Cooper River",  # TODO dummy name
+                            name=station_name,
                             mean_discharge=us.UnitfulDischarge(
                                 value=mean_discharge, units="m3/s"
                             ),
-                            x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
-                            y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                            x_coordinate=river_coordinates[int(station_name)][0],
+                            y_coordinate=river_coordinates[int(station_name)][1],
                         ),
                         path=old_event_dir / river[0]["timeseries_file"],
                         units="m3/s",  # TODO check if this is always the unit
@@ -296,14 +323,15 @@ def convert_event(
                 for i in river:
                     discharge_csv = pd.read_csv(old_event_dir / i["timeseries_file"])
                     mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
+                    station_name = i["timeseries_file"].split(".csv")[0]
                     _i = DischargeCSV(
                         river=RiverModel(
-                            name="Cooper River",  # TODO dummy name
+                            name=station_name,
                             mean_discharge=us.UnitfulDischarge(
                                 value=mean_discharge, units="m3/s"
                             ),
-                            x_coordinate=595546.3,  # TODO dummy coordinates. This information should be saved by hydroflows
-                            y_coordinate=3675590.6,  # TODO dummy coordinates. This information should be saved by hydroflows
+                            x_coordinate=river_coordinates[int(station_name)][0],
+                            y_coordinate=river_coordinates[int(station_name)][1],
                         ),
                         path=old_event_dir / i["timeseries_file"],
                         units="m3/s",  # TODO check if this is always the unit
@@ -334,7 +362,11 @@ def convert_event(
     return new_event
 
 
-def convert_eventset(old_path: Path, new_path: Path):
+def convert_eventset(
+    old_path: Path,
+    new_path: Path,
+    river_coordinates: Optional[dict] = None,
+):
     """
     Convert an old event set to a new format and save it to a specified path.
 
@@ -348,6 +380,8 @@ def convert_eventset(old_path: Path, new_path: Path):
         The directory path containing the old event set configuration files.
     new_path : Path
         The directory path where the new event set will be saved.
+    river_coordinates: Optional[dict]
+        Dictionary of river names and coordinates, by default None
 
     Returns
     -------
@@ -358,16 +392,18 @@ def convert_eventset(old_path: Path, new_path: Path):
         data=EventSetModel(
             name="Probabilistic_set",
             description="Probabilistic set",
-            sub_events=read_sub_events(old_path)[0],
+            sub_events=read_sub_events(old_path, river_coordinates)[0],
         ),
-        sub_events=read_sub_events(old_path)[1],
+        sub_events=read_sub_events(old_path, river_coordinates)[1],
     )
     new_path.mkdir(exist_ok=True, parents=True)
     new_set.save(new_path / f"{new_path.name}.toml")
     return new_set
 
 
-def read_sub_events(path: Path) -> tuple[list[EventModel], list[IEvent]]:
+def read_sub_events(
+    path: Path, river_coordinates: dict = None
+) -> tuple[list[EventModel], list[IEvent]]:
     """
     Read and convert sub-events from a specified directory path into a list of EventModel instances.
 
@@ -387,6 +423,8 @@ def read_sub_events(path: Path) -> tuple[list[EventModel], list[IEvent]]:
         A list of converted EventModel instances.
     list[IEvent]
         A list of converted subevents IEvent objects.
+    river_coordinates: Optional[dict]
+        Dictionary of river names and coordinates, by default None
     """
     old_event_set_file = path / f"{path.name}.toml"
     with open(old_event_set_file, "rb") as f:
@@ -400,7 +438,7 @@ def read_sub_events(path: Path) -> tuple[list[EventModel], list[IEvent]]:
         sub_event_path = path / sub_event / f"{sub_event}.toml"
 
         old_event = read_old_event(sub_event_path)
-        new_event = convert_event(old_event, sub_event_path.parent)
+        new_event = convert_event(old_event, sub_event_path.parent, river_coordinates)
         new_event_object = EventFactory.load_dict(new_event.attrs)
         new_event_objects.append(new_event_object)
         new_event = SubEventModel(name=new_event.attrs.name, frequency=frequency)
@@ -423,24 +461,6 @@ def read_old_event(path: Path) -> dict:
     """  # noqa: D401
     with open(path, "rb") as f:
         return tomli.load(f)
-
-
-def river_from_charleston() -> RiverModel:
-    """
-    Create a RiverModel instance for the Cooper River.
-
-    Returns
-    -------
-        RiverModel: A RiverModel object
-        initialized with the name "Cooper River", a mean discharge of 5000 cfs,
-        and specified x and y coordinates.
-    """
-    return RiverModel(
-        name="Cooper River",
-        mean_discharge=us.UnitfulDischarge(value=5000, units="cfs"),
-        x_coordinate=595546.3,
-        y_coordinate=3675590.6,
-    )
 
 
 def try_read_new_event(path: Path):

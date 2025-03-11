@@ -1,6 +1,7 @@
 """Testing for Setup FloodAdapt rules."""
 from pathlib import Path
 
+import geopandas as gpd
 import pytest
 import toml
 
@@ -61,7 +62,9 @@ def test_fa_setup(
 
 
 @pytest.mark.requires_test_data()
-def test_translate_events(event_set_file: Path, tmp_path: Path):
+def test_translate_events(
+    event_set_file: Path, tmp_path: Path, sfincs_cached_model: Path
+):
     """
     Test the translate_events function.
 
@@ -77,9 +80,22 @@ def test_translate_events(event_set_file: Path, tmp_path: Path):
     event_set_file : Path
         The path to the temporary event set.
     """
-    fn_output = tmp_path.joinpath("fa_event_set")
+    fn_output = Path(
+        r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\testeventtranslate"
+    ).joinpath("fa_event_set")  # tmp_path.joinpath("fa_event_set")
     name = event_set_file.stem
-    events.translate_events(event_set_file, fn_output, name)
+    src_points = gpd.read_file(sfincs_cached_model / "gis" / "src.geojson")
+    river_coordinates = (
+        src_points.set_index("index")[["geometry"]]
+        .apply(lambda row: (row.geometry.x, row.geometry.y), axis=1)
+        .to_dict()
+    )
+    river_coordinates[2] = (
+        river_coordinates[1][0],
+        river_coordinates[1][1],
+    )  # Coordinates of the river
+
+    events.translate_events(event_set_file, fn_output, name, river_coordinates)
 
     assert fn_output.joinpath(name, f"{name}.toml").exists()
 
