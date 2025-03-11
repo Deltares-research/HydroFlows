@@ -33,7 +33,7 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
 def test_fiat_update_hazard(
     fiat_tmp_model: Path,
     hazard_map_data: xr.DataArray,
-    event_set_file: Path,
+    event_set_file_pluvial: Path,
     tmp_path: Path,
     copy_model: bool,
 ):
@@ -55,7 +55,7 @@ def test_fiat_update_hazard(
     # Setup the method.
     rule = FIATUpdateHazard(
         fiat_cfg=fiat_cfg,
-        event_set_yaml=event_set_file,
+        event_set_yaml=event_set_file_pluvial,
         hazard_maps=hazard_maps,
         output_dir=output_dir1,
         copy_model=copy_model,
@@ -76,7 +76,7 @@ def test_fiat_update_hazard(
         ):
             rule = FIATUpdateHazard(
                 fiat_cfg=fiat_cfg,
-                event_set_yaml=event_set_file,
+                event_set_yaml=event_set_file_pluvial,
                 hazard_maps=hazard_maps,
                 output_dir=output_dir2,
                 copy_model=copy_model,
@@ -84,7 +84,7 @@ def test_fiat_update_hazard(
     else:
         rule = FIATUpdateHazard(
             fiat_cfg=fiat_cfg,
-            event_set_yaml=event_set_file,
+            event_set_yaml=event_set_file_pluvial,
             hazard_maps=hazard_maps,
             output_dir=output_dir2,
             copy_model=copy_model,

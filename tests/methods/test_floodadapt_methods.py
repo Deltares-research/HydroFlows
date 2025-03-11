@@ -32,7 +32,10 @@ def nested_dict_values(d):
 
 @pytest.mark.requires_test_data()
 def test_fa_setup(
-    fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path, tmp_path: Path
+    fiat_tmp_model: Path,
+    sfincs_tmp_model: Path,
+    event_set_file_pluvial: Path,
+    tmp_path: Path,
 ):
     # Setup the rule
     """
@@ -48,22 +51,22 @@ def test_fa_setup(
         The path to a temporary directory containing a FIAT model.
     sfincs_tmp_model : Path
         The path to a temporary directory containing a SFINCS model.
-    event_set_file : Path
-        The path to a file containing an event set, in the format expected by
+    event_set_file_pluvial : Path
+        The path to a file containing an pluvial event set, in the format expected by
         HydroFlows.
     """
     rule = SetupFloodAdapt(
         fiat_cfg=Path(fiat_tmp_model, "settings.toml"),
         sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
-        event_set_yaml=event_set_file,
+        event_set_yaml=event_set_file_pluvial,
         output_dir=tmp_path.joinpath("flood_adapt"),
     )
     rule.run()
 
 
 @pytest.mark.requires_test_data()
-def test_translate_events(
-    event_set_file: Path, tmp_path: Path, sfincs_cached_model: Path
+def test_translate_events_fluvial(
+    event_set_file_fluvial: Path, tmp_path: Path, sfincs_cached_model: Path
 ):
     """
     Test the translate_events function.
@@ -77,13 +80,13 @@ def test_translate_events(
 
     Parameters
     ----------
-    event_set_file : Path
-        The path to the temporary event set.
+    event_set_file_fluvial : Path
+        The path to the temporary fluvial event set.
     """
     fn_output = Path(
         r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\testeventtranslate"
-    ).joinpath("fa_event_set")  # tmp_path.joinpath("fa_event_set")
-    name = event_set_file.stem
+    ).joinpath("fa_event_set_fluvial")  # tmp_path.joinpath("fa_event_set")
+    name = event_set_file_fluvial.stem
     src_points = gpd.read_file(sfincs_cached_model / "gis" / "src.geojson")
     river_coordinates = (
         src_points.set_index("index")[["geometry"]]
@@ -95,7 +98,7 @@ def test_translate_events(
         river_coordinates[1][1],
     )  # Coordinates of the river
 
-    events.translate_events(event_set_file, fn_output, name, river_coordinates)
+    events.translate_events(event_set_file_fluvial, fn_output, name, river_coordinates)
 
     assert fn_output.joinpath(name, f"{name}.toml").exists()
 
@@ -118,3 +121,34 @@ def test_translate_events(
     # for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
     #    csv_files_forcings.append(filename.stem)
     # assert sorted(csv_files_forcings_config) == sorted(csv_files_forcings)
+
+
+@pytest.mark.requires_test_data()
+def test_translate_events_pluvial(
+    event_set_file_pluvial: Path, tmp_path: Path, sfincs_cached_model: Path
+):
+    """
+    Test the translate_events function.
+
+    This function tests that the translate_events function can translate a probabilistic
+    event set into the format expected by FloodAdapt.
+
+    It checks that the required columns are present in the exposure CSV file, that the
+    exposure data exists, that the vulnerability data exists, and that the output data
+    folder exists.
+
+    Parameters
+    ----------
+    event_set_file_pluvial : Path
+        The path to the temporary pluvial event set.
+    """
+    fn_output = Path(
+        r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\testeventtranslate"
+    ).joinpath("fa_event_set_pluvial")  # tmp_path.joinpath("fa_event_set")
+    name = event_set_file_pluvial.stem
+
+    events.translate_events(
+        event_set_file_pluvial,
+        fn_output,
+        name,
+    )
