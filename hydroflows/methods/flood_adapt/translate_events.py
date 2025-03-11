@@ -3,6 +3,7 @@
 import logging
 import os
 import pathlib
+import shutil
 from pathlib import Path
 from typing import Optional, Union
 
@@ -187,7 +188,7 @@ def translate_events(
         Dictionary of river names and coordinates, by default None
     """
     # Create output directory
-    fn_floodadapt = Path.joinpath(fa_events, root.stem)
+    fn_floodadapt = Path.joinpath(fa_events / "old", root.stem)
     fn_floodadapt.parent.mkdir(parents=True, exist_ok=True)
 
     # Get events
@@ -368,19 +369,20 @@ def translate_events(
         ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
     # Convert event
-    # Set up Database
+    # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.)
     Settings(
-        DATABASE_ROOT=Path(r"C:\Users\rautenba\repos\Database"),
-        DATABASE_NAME="charleston_test",
-        SYSTEM_FOLDER=Path(r"C:\Users\rautenba\repos\Database\system"),
+        DATABASE_ROOT=Path(Path.cwd() / "examples" / "Database"),
+        DATABASE_NAME="rio_test",
+        SYSTEM_FOLDER=Path(Path.cwd() / "examples" / "Database" / "system"),
     )
     if len(events.events) > 1:
         convert_eventset(
             Path(fn_floodadapt),
-            Path(
-                r"C:\Users\rautenba\repos\Database\charleston_test\input\events\Probabilistic_set"
-            ),
+            Path(fa_events),
             river_coordinates,
         )
     else:
         convert_event(fa_event.attrs, Path(event_fn), river_coordinates)
+
+    # Remove old translation folder
+    shutil.rmtree(fn_floodadapt)
