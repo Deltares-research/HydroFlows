@@ -42,13 +42,13 @@ Printing the method shows all input, output and params fields of the method.
     # explore the method input, output and params
     print(method)
 
-Usually, the method is run as part of a :ref:`workflow` or :ref:`rule` and executed from the
+Usually, the method is run as part of a :term:`workflow` or :term:`rule` and executed from the
 workflow root directory, see :ref:`execute_workflow` and :ref:`parse_to_engine` sections.
 It is however also possible to run the method directly using the `run` method of the method class.
-This is only possible if all inputs are available and no :ref:`wildcards` are present in the input
+This is only possible if all inputs are available and no :term:`wildcards` are present in the input
 or params attributes. In this case the method is executed from the current working directory.
 
-.. _expand_reduce_methods::
+.. _expand_reduce_methods:
 
 Expand and reduce methods
 -------------------------
@@ -75,6 +75,7 @@ printing the method as in the example below.
     # Note the method type and expand_wildcards
     print(method)
 
+.. _python_script:
 
 Using python scripts as methods
 -------------------------------
@@ -101,7 +102,7 @@ The `ScriptMethod` class is useful for adding simple scripts to a workflow that 
 .. Note::
     The `ScriptMethod` class currently only works well for scripts with hardcoded input and output files and no parameters.
     In combination with the `SnakeMake` engine, the `ScriptMethod` class can be used to pass the input, output, and params
-    to the script using the global `snakemake` object, see the :ref:`snakemake` documentation for more information.
+    to the script using the global `snakemake` object, see the snakemake_ documentation for more information.
 
 
 Define a custom method

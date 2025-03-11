@@ -44,51 +44,17 @@ As the workflows are fully automated these can easily be replaced by local data 
 The final outcomes of the HydroFlows flood risk workflows are flood hazard and risk maps and statistics.
 In addition a FloodAdapt_ instance can be created from the build models and event sets.
 
-How to use HydroFlows
----------------------
+Getting Started
+===============
 
-HydroFlows is designed to create workflows using python scripts and parse these to a workflow engine like snakemake.
-The example below shows how two methods can be chained together in a workflow and parsed to Snakemake.
-More information on how to use HydroFlows including several examples can be found in the online user documentation.
-
-.. ipython:: python
-
-   from hydroflows import Workflow
-   from hydroflows.methods import sfincs
-
-   # create a workflow
-   wf = Workflow(root="./my_workflow_root", name="my_workflow")
-
-   # initialize a method and add it to the workflow
-   sfincs_build = sfincs.SfincsBuild(
-      region="data/region.shp",
-      sfincs_root="models/sfincs",
-      config="config/hydromt_sfincs.yml",
-      catalog_path="data/data_catalog.yml",
-   )
-   wf.create_rule(sfincs_build, rule_id="sfincs_build")
-
-   # initialize a second method and add it to the workflow
-   sfincs_run = sfincs.SfincsRun(
-      sfincs_inp=sfincs_build.output.sfincs_inp,
-      run_method="exe",
-      sfincs_exe="bin/sfincs/sfincs.exe"
-   )
-   wf.create_rule(sfincs_run, rule_id="sfincs_run")
-
-   # parse the workflow to Snakemake
-   # this will save a ./my_workflow_root/Snakefile
-   wf.to_snakemake()
-
-
-How to install
-==============
+How to install HydroFlows
+-------------------------
 
 To install HydroFlows, you can use either pixi_ or conda_.
 The package is not yet available on PyPi or conda-forge, so you need to install it from the GitHub repository.
 
 Using conda (for users)
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 We suggest using mamba_ as a faster alternative to conda, which is included in the miniforge_ Python distribution.
 To install HydroFlows using conda, you first need to clone the repository,
@@ -105,7 +71,7 @@ and finally install HydroFlows:
    pip install .
 
 Using pixi (for developers)
----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Pixi offers a project-centric approach for python environments and run commands.
 Using the pixi.lock file the environment is reproducible and can be shared with others.
@@ -132,11 +98,47 @@ To update the lock file and your environment after changes to the dependencies, 
    pixi update
 
 
+How to use HydroFlows
+---------------------
+
+HydroFlows is designed to create workflows using python scripts and parse these to a workflow engine like snakemake.
+The example below shows how two methods can be chained together in a workflow and parsed to Snakemake.
+More information on how to use HydroFlows including several examples can be found in the online user documentation.
+
+.. code-block:: python
+
+   from hydroflows import Workflow
+   from hydroflows.methods import sfincs
+
+   # create a workflow
+   wf = Workflow(root="./my_workflow_root", name="my_workflow")
+
+   # initialize a method and add it to the workflow
+   sfincs_build = sfincs.SfincsBuild(
+      region="data/region.shp",
+      sfincs_root="models/sfincs",
+      config="config/hydromt_sfincs.yml",
+      catalog_path="data/data_catalog.yml",
+   )
+   wf.create_rule(sfincs_build, rule_id="sfincs_build")
+
+   # initialize a second method and add it to the workflow
+   sfincs_run = sfincs.SfincsRun(
+      sfincs_inp=sfincs_build.output.sfincs_inp,
+      run_method="exe",
+      sfincs_exe="bin/sfincs/sfincs.exe"
+   )
+   wf.create_rule(sfincs_run, rule_id="sfincs_run")
+
+   # parse the workflow to Snakemake, this will save a ./my_workflow_root/Snakefile
+   wf.to_snakemake()
+
+
 Acknowledgements
 ================
 
-This library was created as part of the Horizon Europe :ref:`UP2030 <https://up2030-he.eu/>_` (Grant Agreement Number 101096405)
-and :ref:`InterTwin <https://www.intertwin.eu/>_` (Grant Agreement Number 101058386) projects.
+This library was created as part of the Horizon Europe UP2030_ (Grant Agreement Number 101096405)
+and InterTwin_ (Grant Agreement Number 101058386) projects.
 
 
 License
@@ -157,3 +159,5 @@ MIT license, see the `LICENSE <LICENSE>`_ file for details.
 .. _mamba: https://mamba.readthedocs.io/en/latest/
 .. _conda: https://docs.conda.io/en/latest/
 .. _miniforge: https://conda-forge.org/download/
+.. _UP2030: https://up2030-he.eu/
+.. _InterTwin: https://www.intertwin.eu/

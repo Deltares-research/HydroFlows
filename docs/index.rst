@@ -8,3 +8,4 @@
 
    user_guide/intro.rst
    dev_guide/intro.rst
+   api/index.rst

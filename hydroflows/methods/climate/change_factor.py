@@ -3,10 +3,12 @@
 from pathlib import Path
 
 from hydroflows._typing import ListOfListOfInt
-from hydroflows.io import to_netcdf
 from hydroflows.methods.climate.grid_utils import get_expected_change_grid
+from hydroflows.utils.io import to_netcdf
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["ClimateChangeFactors", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -73,7 +75,34 @@ class Params(Parameters):
 
 
 class ClimateChangeFactors(ExpandMethod):
-    """Method to derive climate model change factors."""
+    """Create gridded climate change factors from monthly climatology.
+
+    Parameters
+    ----------
+    hist_climatology : Path
+        Path to the file with historical climate climatology.
+    future_climatology : Path
+        Path to the file with future climate climatology.
+    model : str
+        Model name of the climate model (e.g. 'NOAA-GFDL_GFDL-ESM4', 'INM_INM-CM5-0').
+        Depends on the climate source.
+    scenario : str
+        Scenario name of the climate model (e.g. historical, ssp245, ssp585).
+        Depends on the climate source.
+    horizon : ListOfListOfInt
+        The horizon of the future scenario (e.g. [[2090, 2100]]).
+    output_dir : Path
+        The output directory of the change factor dataset.
+    **params
+        Additional parameters to pass to the ClimateChangeFactors instance.
+        See :py:class:`change_factor Params <hydroflows.methods.climate.change_factor.Params>`.
+
+    See Also
+    --------
+    :py:class:`change_factor Input <hydroflows.methods.climate.change_factor.Input>`
+    :py:class:`change_factor Output <hydroflows.methods.climate.change_factor.Output>`
+    :py:class:`change_factor Params <hydroflows.methods.climate.change_factor.Params>`
+    """
 
     name: str = "climate_change_factors"
 
@@ -96,34 +125,6 @@ class ClimateChangeFactors(ExpandMethod):
         output_dir: Path = Path("data", "climatology"),
         **params,
     ) -> None:
-        """Create gridded climate change factors from monthly climatology.
-
-        Parameters
-        ----------
-        hist_climatology : Path
-            Path to the file with historical climate climatology.
-        future_climatology : Path
-            Path to the file with future climate climatology.
-        model : str
-            Model name of the climate model (e.g. 'NOAA-GFDL_GFDL-ESM4', 'INM_INM-CM5-0').
-            Depends on the climate source.
-        scenario : str
-            Scenario name of the climate model (e.g. historical, ssp245, ssp585).
-            Depends on the climate source.
-        horizon : ListOfListOfInt
-            The horizon of the future scenario (e.g. [[2090, 2100]]).
-        output_dir : Path
-            The output directory of the change factor dataset.
-        **params
-            Additional parameters to pass to the ClimateChangeFactors instance.
-            See :py:class:`change_factor Params <hydroflows.methods.climate.change_factor.Params>`.
-
-        See Also
-        --------
-        :py:class:`change_factor Input <~hydroflows.methods.climate.change_factor.Input>`
-        :py:class:`change_factor Output <~hydroflows.methods.climate.change_factor.Output>`
-        :py:class:`change_factor Params <~hydroflows.methods.climate.change_factor.Params>`
-        """
         self.params: Params = Params(
             model=model,
             scenario=scenario,

@@ -1,4 +1,4 @@
-"""Module/ Rule for building FIAT models."""
+"""Build a FIAT model from scratch using hydromt_fiat."""
 
 from pathlib import Path
 from typing import Optional
@@ -15,7 +15,7 @@ from hydroflows.methods.fiat.fiat_utils import new_column_headers
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["FIATBuild"]
+__all__ = ["FIATBuild", "Input", "Output", "Params"]
 
 FIAT_DATA_PATH = Path(
     Path(hydromt_fiat.__file__).parent,
@@ -88,7 +88,37 @@ class Params(Parameters):
 
 
 class FIATBuild(Method):
-    """Rule for building FIAT."""
+    """Build a FIAT model from scratch using hydromt_fiat.
+
+    Parameters
+    ----------
+    region : Path
+        The file path to the geometry file that defines the region of interest
+        for constructing a FIAT model.
+    config : Path
+        The path to the configuration file (.yml) that defines the settings
+        to build a FIAT model. In this file the different model components
+        that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
+    catalog_path: Optional[Path], optional
+        The path to the data catalog file (.yml) that contains the data sources
+        specified in the config file. If None (default), a predefined data catalog should be provided.
+    predefined_catalogs : Optional[ListOfStr], optional
+        A list containing the predefined data catalog names.
+    fiat_root : Path
+        The path to the root directory where the FIAT model will be created, by default "models/fiat".
+    ground_elevation : Optional[Path], optional
+        Path to the DEM file with to set ground elevation data, by default None.
+    **params
+        Additional parameters to pass to the FIATBuild instance.
+        See :py:class:`fiat_build Params <hydroflows.methods.fiat.sfincs_build.Params>`.
+
+    See Also
+    --------
+    :py:class:`fiat_build Input <~hydroflows.methods.fiat.fiat_build.Input>`,
+    :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`,
+    :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
+    :py:class:`hydromt_fiat.fiat.FIATModel`
+    """
 
     name: str = "fiat_build"
 
@@ -108,37 +138,6 @@ class FIATBuild(Method):
         ground_elevation: Optional[Path] = None,
         **params,
     ) -> None:
-        """Create and validate a FIATBuild instance.
-
-        Parameters
-        ----------
-        region : Path
-            The file path to the geometry file that defines the region of interest
-            for constructing a FIAT model.
-        config : Path
-            The path to the configuration file (.yml) that defines the settings
-            to build a FIAT model. In this file the different model components
-            that are required by the :py:class:`hydromt_fiat.fiat.FiatModel` are listed.
-        catalog_path: Optional[Path], optional
-            The path to the data catalog file (.yml) that contains the data sources
-            specified in the config file. If None (default), a predefined data catalog should be provided.
-        predefined_catalogs : Optional[ListOfStr], optional
-            A list containing the predefined data catalog names.
-        fiat_root : Path
-            The path to the root directory where the FIAT model will be created, by default "models/fiat".
-        ground_elevation : Optional[Path], optional
-            Path to the DEM file with to set ground elevation data, by default None.
-        **params
-            Additional parameters to pass to the FIATBuild instance.
-            See :py:class:`fiat_build Params <hydroflows.methods.fiat.sfincs_build.Params>`.
-
-        See Also
-        --------
-        :py:class:`fiat_build Input <~hydroflows.methods.fiat.fiat_build.Input>`,
-        :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`,
-        :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
-        :py:class:`hydromt_fiat.fiat.FIATModel`
-        """
         self.params: Params = Params(
             fiat_root=fiat_root, predefined_catalogs=predefined_catalogs, **params
         )

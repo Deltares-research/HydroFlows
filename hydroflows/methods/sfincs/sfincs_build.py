@@ -1,4 +1,4 @@
-"""SFINCS build methods."""
+"""Build a SFINCS model from scratch using hydromt_sfincs."""
 
 from pathlib import Path
 from typing import Optional
@@ -12,7 +12,7 @@ from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsBuild"]
+__all__ = ["SfincsBuild", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -83,7 +83,40 @@ class Params(Parameters):
 
 
 class SfincsBuild(Method):
-    """Rule for building SFINCS model."""
+    """Build a SFINCS model from scratch using hydromt_sfincs.
+
+    Parameters
+    ----------
+    region : Path
+        The file path to the geometry file that defines the region of interest
+        for constructing a SFINCS model.
+    config : Path
+        The path to the configuration file (.yml) that defines the settings
+        to build a SFINCS model. In this file the different model components
+        that are required by the :py:class:`hydromt_sfincs.sfincs.SfincsModel` are listed.
+    catalog_path: Optional[Path], optional
+        The path to the data catalog file (.yml) that contains the data sources
+        specified in the config file. If None (default), a predefined data catalog should be provided.
+    predefined_catalogs : Optional[ListOfStr], optional
+        A list containing the predefined data catalog names.
+    sfincs_root : Path
+        The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
+    subgrid_output : bool, optional
+        Determines whether the sfincs subgrid depth output should exist, by default False.
+        In case it is set to True, the setup_subgrid method should be included in the config file.
+    src_points_output : bool, optional
+        Determines whether the sfincs river source points should exist, by default False.
+    **params
+        Additional parameters to pass to the SfincsBuild instance.
+        See :py:class:`sfincs_build Params <hydroflows.methods.sfincs.sfincs_build.Params>`.
+
+    See Also
+    --------
+    :py:class:`sfincs_build Input <~hydroflows.methods.sfincs.sfincs_build.Input>`
+    :py:class:`sfincs_build Output <~hydroflows.methods.sfincs.sfincs_build.Output>`
+    :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
+    :py:class:`hydromt_sfincs.SfincsModel`
+    """
 
     name: str = "sfincs_build"
 
@@ -104,40 +137,6 @@ class SfincsBuild(Method):
         src_points_output: bool = False,
         **params,
     ) -> None:
-        """Create and validate a SfincsBuild instance.
-
-        Parameters
-        ----------
-        region : Path
-            The file path to the geometry file that defines the region of interest
-            for constructing a SFINCS model.
-        config : Path
-            The path to the configuration file (.yml) that defines the settings
-            to build a SFINCS model. In this file the different model components
-            that are required by the :py:class:`hydromt_sfincs.sfincs.SfincsModel` are listed.
-        catalog_path: Optional[Path], optional
-            The path to the data catalog file (.yml) that contains the data sources
-            specified in the config file. If None (default), a predefined data catalog should be provided.
-        predefined_catalogs : Optional[ListOfStr], optional
-            A list containing the predefined data catalog names.
-        sfincs_root : Path
-            The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
-        subgrid_output : bool, optional
-            Determines whether the sfincs subgrid depth output should exist, by default False.
-            In case it is set to True, the setup_subgrid method should be included in the config file.
-        src_points_output : bool, optional
-            Determines whether the sfincs river source points should exist, by default False.
-        **params
-            Additional parameters to pass to the SfincsBuild instance.
-            See :py:class:`sfincs_build Params <hydroflows.methods.sfincs.sfincs_build.Params>`.
-
-        See Also
-        --------
-        :py:class:`sfincs_build Input <~hydroflows.methods.sfincs.sfincs_build.Input>`
-        :py:class:`sfincs_build Output <~hydroflows.methods.sfincs.sfincs_build.Output>`
-        :py:class:`sfincs_build Params <~hydroflows.methods.sfincs.sfincs_build.Params>`
-        :py:class:`hydromt_sfincs.SfincsModel`
-        """
         self.params: Params = Params(
             sfincs_root=sfincs_root,
             predefined_catalogs=predefined_catalogs,

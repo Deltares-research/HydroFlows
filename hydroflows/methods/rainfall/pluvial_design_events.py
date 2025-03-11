@@ -18,7 +18,7 @@ from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["PluvialDesignEvents"]
+__all__ = ["PluvialDesignEvents", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -145,7 +145,38 @@ class Params(Parameters):
 
 
 class PluvialDesignEvents(ExpandMethod):
-    """Rule for generating pluvial design events."""
+    """Method for generating pluvial design events from rainfall timeseries.
+
+    Parameters
+    ----------
+    precip_nc : Path
+        The file path to the rainfall time series in NetCDF format.
+    event_root : Path, optional
+        The root folder to save the derived design events, by default "data/events/rainfall".
+    rps : List[float], optional
+        Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
+    event_names : List[str], optional
+        List of event names for the design events, by "p_event{i}", where i is the event number.
+    ev_type: Literal["BM", "POT"]
+        Method to select events/peaks. Valid options are 'BM' (default)
+        for block maxima or 'POT' for Peak over threshold.
+    distribution : str, optional
+        Type of extreme value distribution corresponding with `ev_type`.
+        Options are "gumb" or "gev" for BM, and "exp" or "gpd" for POT.
+        If None (default) is used, "gumb" is selected for BM and "exp" for POT.
+    wildcard : str, optional
+        The wildcard key for expansion over the design events, by default "event".
+    duration : int
+        Duration of the produced design event, by default 48 hours.
+    **params
+        Additional parameters to pass to the PluvialDesignEvents Params instance.
+
+    See Also
+    --------
+    :py:class:`PluvialDesignEvents Input <hydroflows.methods.rainfall.pluvial_design_events.Input>`
+    :py:class:`PluvialDesignEvents Output <hydroflows.methods.rainfall.pluvial_design_events.Output>`
+    :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
+    """
 
     name: str = "pluvial_design_events"
 
@@ -165,38 +196,6 @@ class PluvialDesignEvents(ExpandMethod):
         duration: int = 48,
         **params,
     ) -> None:
-        """Create and validate a PluvialDesignEvents instance.
-
-        Parameters
-        ----------
-        precip_nc : Path
-            The file path to the rainfall time series in NetCDF format.
-        event_root : Path, optional
-            The root folder to save the derived design events, by default "data/events/rainfall".
-        rps : List[float], optional
-            Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
-        event_names : List[str], optional
-            List of event names for the design events, by "p_event{i}", where i is the event number.
-        ev_type: Literal["BM", "POT"]
-            Method to select events/peaks. Valid options are 'BM' (default)
-            for block maxima or 'POT' for Peak over threshold.
-        distribution : str, optional
-            Type of extreme value distribution corresponding with `ev_type`.
-            Options are "gumb" or "gev" for BM, and "exp" or "gpd" for POT.
-            If None (default) is used, "gumb" is selected for BM and "exp" for POT.
-        wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
-        duration : int
-            Duration of the produced design event, by default 48 hours.
-        **params
-            Additional parameters to pass to the PluvialDesignEvents Params instance.
-
-        See Also
-        --------
-        :py:class:`PluvialDesignEvents Input <hydroflows.methods.rainfall.pluvial_design_events.Input>`
-        :py:class:`PluvialDesignEvents Output <hydroflows.methods.rainfall.pluvial_design_events.Output>`
-        :py:class:`PluvialDesignEvents Params <hydroflows.methods.rainfall.pluvial_design_events.Params>`
-        """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
         self.params: Params = Params(

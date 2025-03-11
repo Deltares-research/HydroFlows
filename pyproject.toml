@@ -218,6 +218,7 @@ docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "
 docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends-on = ["examples"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated", "./docs/_examples"] }
 docs-html-clean = { depends-on = ["docs-clean", "docs-html"] }
+docs-html-no-examples = { cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends-on = ["docs-clean"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
 

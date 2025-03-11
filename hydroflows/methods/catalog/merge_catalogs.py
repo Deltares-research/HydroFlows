@@ -8,7 +8,7 @@ from pydantic import ConfigDict, model_validator
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["MergeCatalogs"]
+__all__ = ["MergeCatalogs", "Input", "Output"]
 
 
 class Input(Parameters):
@@ -39,7 +39,25 @@ class Output(Parameters):
 
 
 class MergeCatalogs(Method):
-    """Rule for merging multiple data catalogs into a single catalog."""
+    """Merge multiple data catalogs into one.
+
+    Parameters
+    ----------
+    catalog_path1 : Path
+        The path to the first data catalog file to be merged.
+    catalog_path2: Path
+        The path to the second data catalog file to be merged.
+    merged_catalog_path: Path
+        The path to the (output) merged data catalog file.
+    catalog_paths: Path, Optional
+        Additional catalog files to merge. For example
+        `catalog_path3=Path("path/to/catalog3")`, `catalog_path4=Path("path/to/catalog4")`, etc.
+
+    See Also
+    --------
+    :py:class:`MergeCatalogs Input <hydroflows.methods.catalog.merge_catalogs.Input>`
+    :py:class:`MergeCatalogs Output <hydroflows.methods.catalog.merge_catalogs.Output>`
+    """
 
     name: str = "merge_catalogs"
 
@@ -56,27 +74,6 @@ class MergeCatalogs(Method):
         merged_catalog_path: Path,
         **catalog_paths: dict[str, Path],
     ) -> None:
-        """
-        Create and validate a MergeCatalogs instance.
-
-        Parameters
-        ----------
-        catalog_path1 : Path
-            The path to the first data catalog file to be merged.
-        catalog_path2: Path
-            The path to the second data catalog file to be merged.
-        merged_catalog_path: Path
-            The path to the (output) merged data catalog file.
-        catalog_paths: Path, Optional
-            Additional catalog files to merge. For example
-            `catalog_path3=Path("path/to/catalog3")`, `catalog_path4=Path("path/to/catalog4")`, etc.
-
-        See Also
-        --------
-        :py:class:`MergeCatalogs Input <hydroflows.methods.catalog.MergeCatalogs.Input>`
-        :py:class:`MergeCatalogs Output <hydroflows.methods.catalog.MergeCatalogs.Output>`
-        :py:class:`MergeCatalogs Params <hydroflows.methods.catalog.MergeCatalogs.Params>`
-        """
         self.input: Input = Input(
             catalog_path1=catalog_path1,
             catalog_path2=catalog_path2,

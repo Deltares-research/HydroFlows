@@ -1,4 +1,4 @@
-"""SFINCS region methods."""
+"""Define a SFINCS model region based on hydrological subbasins."""
 
 from pathlib import Path
 
@@ -7,7 +7,7 @@ import geopandas as gpd
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsRegion"]
+__all__ = ["SfincsRegion", "Input", "Output"]
 
 
 class Input(Parameters):
@@ -39,7 +39,23 @@ class Output(Parameters):
 
 
 class SfincsRegion(Method):
-    """Rule for deriving a Sfincs region based on the basins draining into an AOI."""
+    """Define a SFINCS model region based on hydrological subbasins.
+
+    Parameters
+    ----------
+    aoi : Path
+        The file path the geometry file defining the Area of Interest (AOI).
+    subbasins : Path
+        The file path to the geometry file containing hydrological (sub)basins/catchments.
+        Basins intersecting with the Area of Interest (AOI) will be retained.
+    region : Path, optional
+        The file path to the derived sfincs region, by default "sfincs_region.geojson".
+
+    See Also
+    --------
+    :py:class:`SfincsRegion Input <hydroflows.methods.sfincs.sfincs_region.Input>`
+    :py:class:`SfincsRegion Output <hydroflows.methods.sfincs.sfincs_region.Output>`
+    """
 
     name: str = "sfincs_region"
 
@@ -54,23 +70,6 @@ class SfincsRegion(Method):
         aoi: Path,
         sfincs_region: Path = Path("sfincs_region.geojson"),
     ) -> None:
-        """Create and validate a SfincsRegion instance.
-
-        Parameters
-        ----------
-        aoi : Path
-            The file path the geometry file defining the Area of Interest (AOI).
-        subbasins : Path
-            The file path to the geometry file containing hydrological (sub)basins/catchments.
-            Basins intersecting with the Area of Interest (AOI) will be retained.
-        region : Path, optional
-            The file path to the derived sfincs region, by default "sfincs_region.geojson".
-
-        See Also
-        --------
-        :py:class:`SfincsRegion Input <hydroflows.methods.sfincs.sfincs_region.Input>`
-        :py:class:`SfincsRegion Output <hydroflows.methods.sfincs.sfincs_region.Output>`
-        """
         self.input: Input = Input(subbasins=subbasins, aoi=aoi)
 
         self.output: Output = Output(sfincs_region=sfincs_region)

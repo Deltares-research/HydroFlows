@@ -31,9 +31,11 @@ logger = logging.getLogger(__name__)
 class Rule:
     """Rule class.
 
-    A rule is the definition of a method to be run in the context of a workflow..
-    The rule is responsible for detecting wildcards and expanding them based on
-    the workflow wildcards.
+    A rule is a wrapper around a method to be run in the context of a workflow.
+    The rule is responsible for detecting wildcards and evaluating them based on
+    the workflow wildcards. It creates method instances based on the wildcards
+    and evaluates all input and output paths of the rule. The rule can be run
+    and dryrun.
 
     There is one common rule class to rule all methods.
     """

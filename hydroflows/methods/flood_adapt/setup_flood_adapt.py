@@ -1,4 +1,5 @@
-"""Setup FloodAdapt method."""
+"""Prepare FloodAdapt database builder."""
+
 import os
 import shutil
 from pathlib import Path
@@ -13,7 +14,7 @@ from hydroflows.methods.flood_adapt.translate_FIAT import translate_model
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SetupFloodAdapt"]
+__all__ = ["SetupFloodAdapt", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -63,7 +64,27 @@ class Params(Parameters):
 
 
 class SetupFloodAdapt(Method):
-    """Rule for setting up the input for the FloodAdapt Database Builder."""
+    """Method for setting up the input for the FloodAdapt Database Builder.
+
+    Parameters
+    ----------
+    sfincs_inp : Path
+        The file path to the SFINCS base model.
+    fiat_cfg : Path
+        The file path to the FIAT base model.
+    event_set_yaml : Path, optional
+        The file path to the HydroFlows event set yaml file.
+    output_dir: Path, optional
+        The folder where the output is stored, by default "flood_adapt_builder".
+    **params
+        Additional parameters to pass to the GetERA5Rainfall instance.
+
+    See Also
+    --------
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Input>`
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Output>`
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
+    """
 
     name: str = "setup_flood_adapt"
 
@@ -80,27 +101,6 @@ class SetupFloodAdapt(Method):
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
     ):
-        """Create and validate a SetupFloodAdapt instance.
-
-        Parameters
-        ----------
-        sfincs_inp : Path
-            The file path to the SFINCS base model.
-        fiat_cfg : Path
-            The file path to the FIAT base model.
-        event_set_yaml : Path, optional
-            The file path to the HydroFlows event set yaml file.
-        output_dir: Path, optional
-            The folder where the output is stored, by default "flood_adapt_builder".
-        **params
-            Additional parameters to pass to the GetERA5Rainfall instance.
-
-        See Also
-        --------
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Input>`
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Output>`
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.setup_flood_adapt.Params>`
-        """
         self.input: Input = Input(
             sfincs_inp=sfincs_inp,
             fiat_cfg=fiat_cfg,

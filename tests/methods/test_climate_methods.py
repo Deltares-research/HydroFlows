@@ -5,7 +5,7 @@ import xarray as xr
 
 from hydroflows.methods.climate import (
     ClimateChangeFactors,
-    MonthlyClimatolgy,
+    MonthlyClimatology,
 )
 
 
@@ -16,7 +16,7 @@ def test_monthly_climatology(
     cmip6_catalog: Path,
     region: Path,
 ):
-    rule = MonthlyClimatolgy(
+    rule = MonthlyClimatology(
         region,
         catalog_path=cmip6_catalog,
         model="NOAA-GFDL_GFDL-ESM4",
@@ -32,7 +32,7 @@ def test_monthly_climatology(
     assert int(ds.precip.values.mean() * 100) == 377
     ds = None
 
-    rule2 = MonthlyClimatolgy(
+    rule2 = MonthlyClimatology(
         region,
         catalog_path=cmip6_catalog,
         model="NOAA-GFDL_GFDL-ESM4",

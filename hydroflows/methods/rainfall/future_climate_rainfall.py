@@ -1,4 +1,4 @@
-"""Future climate rainfall method."""
+"""Method to deriving future climate rainfall by scaling an historical event using Clausius-Clapeyron (CC)."""
 
 from logging import getLogger
 from pathlib import Path
@@ -13,6 +13,8 @@ from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 logger = getLogger(__name__)
+
+__all__ = ["FutureClimateRainfall", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -106,7 +108,35 @@ class Params(Parameters):
 
 
 class FutureClimateRainfall(ExpandMethod):
-    """Rule for deriving future climate rainfall by scaling an event using Clausius-Clapeyron (CC)."""
+    """Method to deriving future climate rainfall by scaling an historical event using Clausius-Clapeyron (CC).
+
+    Parameters
+    ----------
+    event_set_yaml : Path
+        The file path to the event set YAML file, which includes the events to be scaled
+        for a future climate projection.
+    scenario_name: str
+        Future scenario name for which CC scaling is applied.
+    dT: float
+        Temperature change corresponding to the future climate scenario `scenario_name`,
+        indicating the temperature difference between the year of the event
+        to be scaled and the future climate period of interest.
+    event_root: Path, optional
+        Root folder to save the derived scaled events, by default "data/events/future_rainfall".
+    wildcard: str
+        The wildcard key for expansion over the scaled events, default is "future_event".
+    event_names_input, event_names_output: Optional[List[str]]
+        List of input event names in event_set_yaml and matching output event names for the scaled events.
+        If not provided, event_set_yaml must exist and all events will be scaled.
+    **params
+        Additional parameters to pass to the FutureClimateRainfall Params instance.
+
+    See Also
+    --------
+    :py:class:`FutureClimateRainfall Input <hydroflows.methods.rainfall.future_climate_rainfall.Input>`
+    :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
+    :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
+    """
 
     name: str = "future_climate_rainfall"
 
@@ -128,35 +158,6 @@ class FutureClimateRainfall(ExpandMethod):
         event_names_output: Optional[List[str]] = None,
         **params,
     ) -> None:
-        """Create and validate a FutureClimateRainfall instance.
-
-        Parameters
-        ----------
-        event_set_yaml : Path
-            The file path to the event set YAML file, which includes the events to be scaled
-            for a future climate projection.
-        scenario_name: str
-            Future scenario name for which CC scaling is applied.
-        dT: float
-            Temperature change corresponding to the future climate scenario `scenario_name`,
-            indicating the temperature difference between the year of the event
-            to be scaled and the future climate period of interest.
-        event_root: Path, optional
-            Root folder to save the derived scaled events, by default "data/events/future_rainfall".
-        wildcard: str
-            The wildcard key for expansion over the scaled events, default is "future_event".
-        event_names_input, event_names_output: Optional[List[str]]
-            List of input event names in event_set_yaml and matching output event names for the scaled events.
-            If not provided, event_set_yaml must exist and all events will be scaled.
-        **params
-            Additional parameters to pass to the FutureClimateRainfall Params instance.
-
-        See Also
-        --------
-        :py:class:`FutureClimateRainfall Input <hydroflows.methods.rainfall.future_climate_rainfall.Input>`
-        :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
-        :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
-        """
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         self.params: Params = Params(

@@ -18,7 +18,7 @@ HydroFlows methods can be categorized into two main groups:
 1. **Data Methods** (orange blocks in Figure) - Handle data retrieval and postprocessing for coastal, rainfall, and discharge data, but also visualization (not included in the figure).
 2. **Model-Related Methods** (yellow and green blocks in Figure) - Building (model setup methods; yellow blocks), updating, running, and postprocessing (model methods; green blocks) of the supported models (i.e., SFINCS, Wflow, Delft-FIAT, FloodAdapt).
 
-.. figure:: ../../_static/hydroflows_workflows.svg
+.. figure:: ../../_static/hydroflows_flood_risk.png
     :alt: HydroFlows Workflows
     :align: center
 

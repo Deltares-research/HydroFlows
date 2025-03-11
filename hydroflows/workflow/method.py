@@ -27,8 +27,7 @@ class Method(ABC):
     """Base method for all methods.
 
     The method class defines the structure of a method in a HydroFlow workflow.
-    It should have a name, input, output and params, and implement a run and __init__ method.
-
+    It should have a name, input, output and params, and implement a _run and __init__ method.
     """
 
     # name of the method, should be replaced in subclass
@@ -39,7 +38,6 @@ class Method(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        """Create a new method instance with input, output and params."""
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()

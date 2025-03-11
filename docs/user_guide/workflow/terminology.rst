@@ -6,18 +6,21 @@ Terminology
 .. glossary::
 
     method
-        Methods define the input, output, and params (parameters) of a step in the workflow.
+        Methods define and validate the input, output, and params (parameters) of a step in the workflow.
+        Methods also define the logic of the step, which can be a simple command line call or a complex Python function.
         Methods can be defined by the user or imported from the HydroFlows library.
         The method must have a specific signature to be used in HydroFlows,
         for more information see the :class:`~hydroflows.workflow.Method` class.
 
     workflow
-        A workflow is a sequence of methods that are executed in a specific order.
+        A workflow is a sequence of rules that are executed in a specific order.
         The workflow is defined using the :class:`~hydroflows.workflow.Workflow` class.
 
     rule
-        A rule specifies one (or more in case of expand and repeat wildcards) specific instance(s) of a method in a workflow.
-        A rule is created by adding a method to the workflow using the :meth:`~hydroflows.workflow.Workflow.add_rule` method of the workflow class.
+        A rule is a wrapper around a method to be run in the context of a workflow.
+        The rule is responsible for detecting wildcards and evaluating them based on the workflow wildcards.
+        It creates method instances based on the wildcards and evaluates all input and output paths of the rule.
+        A rule is created by adding a method to the workflow using the :meth:`~hydroflows.workflow.Workflow.create_rule` method of the workflow class.
 
     wildcards
         Wildcards are used to create multiple instances of a method in a rule and allow for parallelization of the workflow.

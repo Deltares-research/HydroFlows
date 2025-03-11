@@ -1,4 +1,4 @@
-"""FIAT run rule/ submodule."""
+"""Method for running a FIAT model."""
 
 import subprocess
 from pathlib import Path
@@ -65,12 +65,26 @@ class Params(Parameters):
 
 
 class FIATRun(Method):
-    """Rule for running a FIAT model.
+    """Method for running a FIAT model.
 
-    This class utilizes the :py:class:`Params <hydroflows.methods.fiat.fiat_run.Params>`,
-    :py:class:`Input <hydroflows.methods.fiat.fiat_run.Input>`, and
-    :py:class:`Output <hydroflows.methods.fiat.fiat_run.Output>` classes to
-    run an existing FIAT model.
+    Parameters
+    ----------
+    fiat_cfg : Path
+        Path to the FIAT config file.
+    run_method : Literal["exe", "python"]
+        How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
+        'python' for running the model in a Python environment.
+    fiat_exe : Path
+        Path to the FIAT executable
+    **params
+        Additional parameters to pass to the FIATRun instance.
+        See :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`.
+
+    See Also
+    --------
+    :py:class:`fiat_run Input <hydroflows.methods.fiat.fiat_run.Input>`
+    :py:class:`fiat_run Output <hydroflows.methods.fiat.fiat_run.Output>`
+    :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`
     """
 
     name: str = "fiat_run"
@@ -87,27 +101,6 @@ class FIATRun(Method):
         fiat_exe: Optional[Path] = None,
         **params,
     ):
-        """Create and validate a fiat_run instance.
-
-        Parameters
-        ----------
-        fiat_cfg : Path
-            Path to the FIAT config file.
-        run_method : Literal["exe", "python"]
-            How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
-            'python' for running the model in a Python environment.
-        fiat_exe : Path
-            Path to the FIAT executable
-        **params
-            Additional parameters to pass to the FIATRun instance.
-            See :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`.
-
-        See Also
-        --------
-        :py:class:`fiat_run Input <hydroflows.methods.fiat.fiat_run.Input>`
-        :py:class:`fiat_run Output <hydroflows.methods.fiat.fiat_run.Output>`
-        :py:class:`fiat_run Params <hydroflows.methods.fiat.fiat_run.Params>`
-        """
         self.params: Params = Params(fiat_exe=fiat_exe, run_method=run_method, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(

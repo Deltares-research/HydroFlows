@@ -28,7 +28,15 @@ logger = logging.getLogger(__name__)
 
 
 class Workflow:
-    """Workflow class."""
+    """Create a workflow instance.
+
+    Parameters
+    ----------
+    config : Dict, optional
+        The configuration of the workflow, by default None.
+    wildcards : Dict, optional
+        The wildcard keys and values of the workflow, by default None.
+    """
 
     def __init__(
         self,
@@ -37,17 +45,6 @@ class Workflow:
         wildcards: Optional[Dict] = None,
         root: Optional[Path] = None,
     ) -> None:
-        """Create a workflow instance.
-
-        Workflow instances are validated and can be parsed to a workflow engine.
-
-        Parameters
-        ----------
-        config : Dict, optional
-            The configuration of the workflow, by default None.
-        wildcards : Dict, optional
-            The wildcard keys and values of the workflow, by default None.
-        """
         if config is None:
             config = {}
         if wildcards is None:

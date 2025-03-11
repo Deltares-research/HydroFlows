@@ -44,9 +44,9 @@ Create workflow rules (basic)
 
 To create a rule, the method it is based on should be initialized first.
 A rule is then created by added it to the workflow using the :meth:`~hydroflows.workflow.Workflow.create_rule`.
-When running this method the following steps are executed in the background:
+When calling ``create_rule`` with a method the following steps are executed in the background:
 
-- The method :term:`wildcards` are evaluated and based on these wildcards, different *method instances* are created
+- The :term:`wildcards` are evaluated and based on detected wildcards, different *method instances* are created
   for all values of the wildcard. This makes it possible to execute the method for multiple input files or parameters in parallel.
 - The method input files are either linked to output files of previous rules or set in the workflow configuration.
 - A check is performed to ensure the output files are unique (not already used in the workflow).

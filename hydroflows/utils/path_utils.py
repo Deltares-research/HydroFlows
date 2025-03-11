@@ -5,7 +5,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from typing import Dict, List, Optional
 
-__all__ = ["make_relative_paths"]
+__all__ = ["cwd", "make_relative_paths", "rel_to_abs_path", "abs_to_rel_path"]
 
 
 @contextmanager

@@ -2,7 +2,6 @@
 
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
-from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule
 from hydroflows.workflow.wildcards import Wildcards
 from hydroflows.workflow.workflow import Workflow
@@ -13,7 +12,6 @@ __all__ = [
     "ExpandMethod",
     "ReduceMethod",
     "Parameters",
-    "Ref",
     "Rule",
     "Wildcards",
     "Workflow",
