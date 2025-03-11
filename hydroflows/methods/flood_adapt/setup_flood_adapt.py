@@ -59,7 +59,7 @@ class Params(Parameters):
     The directory where the output files will be saved.
     """
 
-    river_coordinates: Optional[dict]
+    river_coordinates: Optional[dict] = None
     """
     Dictionary of river names and coordinates, by default None
     """
@@ -172,7 +172,7 @@ class SetupFloodAdapt(Method):
             # Create dict of river names and coordinates
             if self.params.river_coordinates is not None:
                 src_points = gpd.read_file(self.params.river_coordinates)
-                river_coordinates = (
+                self.params.river_coordinates = (
                     src_points.set_index("index")[["geometry"]]
                     .apply(lambda row: (row.geometry.x, row.geometry.y), axis=1)
                     .to_dict()
@@ -181,7 +181,7 @@ class SetupFloodAdapt(Method):
             translate_events(
                 self.input.event_set_yaml,
                 Path(self.params.output_dir),
-                river_coordinates,
+                river_coordinates=self.params.river_coordinates,
             )
 
             # Create FloodAdapt Database Builder config
