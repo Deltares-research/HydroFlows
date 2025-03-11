@@ -7,7 +7,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import fiat, rainfall, sfincs
+from hydroflows.methods import fiat, flood_adapt, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -18,9 +18,7 @@ pwd = Path(__file__).parent
 name = "global"
 setup_root = Path(pwd, "setups", name)
 # Setup the log file
-setuplog(
-    path=setup_root / "hydroflows-logger-risk-climate-strategies.log", level="DEBUG"
-)
+setuplog(path=setup_root / "hydroflows-logger-risk-climate.log", level="DEBUG")
 
 # %%
 # Setup the config file
@@ -30,8 +28,10 @@ config = WorkflowConfig(
     catalog_path=Path(pwd, "data/global-data/data_catalog.yml"),
     plot_fig=True,
     # sfincs settings
+    hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config_default.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
+    subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
     fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
@@ -40,33 +40,34 @@ config = WorkflowConfig(
     rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
+    event_root="events",
 )
 
-# Futute climate rainfall design events settings
-scenarios = ["rcp45", "rcp85"]
-dTs = [1.2, 2.5]
+# Climate rainfall scenarios settings (to be applied on the derived design events)
+# Dictionary where:
+# - Key: Scenario name (e.g., "current", "rcp45", "rcp85")
+# - Value: Corresponding temperature delta (dT) for each scenario
+scenarios_dict = {
+    "current": 0,  # No temperature change for the current scenario
+    "rcp45": 1.2,  # Moderate emissions scenario with +1.2°C
+    "rcp85": 2.5,  # High emissions scenario with +2.5°C
+}
 
-# Wildcard names for current and future conditions events
-wildcard_design_events = ("pluvial_design_events",)
-wildcard_future_events = "future_pluvial_design_events"
-
-# Strategies settings
-strategies = ["default", "reservoirs"]
-strategies_dict = {"strategies": strategies}
 # %%
 # Setup the workflow
-w = Workflow(config=config, name=name, root=setup_root, wildcards=strategies_dict)
+w = Workflow(config=config, name=name, root=setup_root)
 
 # %%
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
-    sfincs_root="models/sfincs_{strategies}",
-    config=Path(setup_root, "hydromt_config/sfincs_config_{strategies}.yml"),
+    sfincs_root="models/sfincs_default",
+    config=w.get_ref("$config.hydromt_sfincs_config"),
     catalog_path=w.get_ref("$config.catalog_path"),
     plot_fig=w.get_ref("$config.plot_fig"),
+    subgrid_output=w.get_ref("$config.subgrid_output"),
 )
-w.add_rule(sfincs_build, rule_id="sfincs_build")
+w.create_rule(sfincs_build, rule_id="sfincs_build")
 
 # %%
 # Fiat build
@@ -77,7 +78,7 @@ fiat_build = fiat.FIATBuild(
     catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
-w.add_rule(fiat_build, rule_id="fiat_build")
+w.create_rule(fiat_build, rule_id="fiat_build")
 
 # %%
 # Pluvial events (get data + derive events)
@@ -88,49 +89,51 @@ pluvial_data = rainfall.GetERA5Rainfall(
     start_date=w.get_ref("$config.start_date"),
     end_date=w.get_ref("$config.end_date"),
 )
-w.add_rule(pluvial_data, rule_id="pluvial_data")
+w.create_rule(pluvial_data, rule_id="get_ERA5_data")
 
 # Derive desing pluvial events based on the downloaded (ERA5) data
-pluvial_events = rainfall.PluvialDesignEvents(
+pluvial_design_events = rainfall.PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard=wildcard_design_events,
-    event_root="events",
+    wildcard="pluvial_design_events",
+    event_root=w.get_ref("$config.event_root"),
 )
-w.add_rule(pluvial_events, rule_id=wildcard_design_events)
+w.create_rule(pluvial_design_events, rule_id="derive_pluvial_design_events")
 
 # %%
-# Futute climate rainfall design events
+# Climate rainfall scenarios events
 
-# loop over scenarios and dTs
-for scenario, dT in zip(scenarios, dTs):
-    future_design_events = rainfall.FutureClimateRainfall(
+# loop over scenarios and scale the derived design events
+for scenario, dT in scenarios_dict.items():
+    scenarios_design_events = rainfall.FutureClimateRainfall(
         scenario_name=scenario,
         event_names_input=["p_event01", "p_event02", "p_event03"],
-        event_set_yaml=pluvial_events.output.event_set_yaml,
+        event_set_yaml=pluvial_design_events.output.event_set_yaml,
         dT=dT,
-        wildcard=f"{wildcard_future_events}_{scenario}",
-        event_root="events",
+        wildcard=f"{scenario}_pluvial_design_events",
+        event_root=w.get_ref("$config.event_root"),
     )
-    w.add_rule(future_design_events, rule_id=f"{wildcard_future_events}_{scenario}")
+    w.create_rule(scenarios_design_events, rule_id=f"pluvial_design_events_{scenario}")
 
 # %%
-# Merge the pluvial events with the future events
-scenarios_wildcards = [f"{wildcard_future_events}_{scenario}" for scenario in scenarios]
+# Collect all scenarios events
+scenarios_wildcards = [
+    f"{scenario}_pluvial_design_events" for scenario in scenarios_dict.keys()
+]
 scenarios_events = []
 for scenario_wildcard in scenarios_wildcards:
     scenarios_events += w.wildcards.get(scenario_wildcard)
 
-all_events = w.wildcards.get(wildcard_design_events) + scenarios_events
-w.wildcards.set("all_events", all_events)
+w.wildcards.set("scenarios_events", scenarios_events)
 
 # %%
 # Update the sfincs model with pluvial events
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
-    event_yaml="events/{all_events}.yml",
+    event_yaml="events/{scenarios_events}.yml",
+    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations",
 )
-w.add_rule(sfincs_update, rule_id="sfincs_update")
+w.create_rule(sfincs_update, rule_id="sfincs_update")
 
 # %%
 # Run the sfincs model
@@ -138,7 +141,7 @@ sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
     sfincs_exe=w.get_ref("$config.sfincs_exe"),
 )
-w.add_rule(sfincs_run, rule_id="sfincs_run")
+w.create_rule(sfincs_run, rule_id="sfincs_run")
 
 # %%
 # Downscale Sfincs output to inundation maps.
@@ -146,17 +149,45 @@ sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output/hazard",
+    output_root="output/hazard_default",
 )
-w.add_rule(sfincs_down, rule_id="sfincs_downscale")
+w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
 # %%
 # Postprocesses SFINCS results (zsmax variable to the global zsmax on a regular grid for FIAT)
 sfincs_post = sfincs.SfincsPostprocess(
     sfincs_map=sfincs_run.output.sfincs_map,
 )
-w.add_rule(sfincs_post, rule_id="sfincs_post")
+w.create_rule(sfincs_post, rule_id="sfincs_post")
 
+# %%
+# Update FIAT hazard
+fiat_update = fiat.FIATUpdateHazard(
+    fiat_cfg=fiat_build.output.fiat_cfg,
+    event_set_yaml=pluvial_design_events.output.event_set_yaml,
+    map_type="water_level",
+    hazard_maps=sfincs_post.output.sfincs_zsmax,
+    risk=w.get_ref("$config.risk"),
+    output_dir=fiat_build.output.fiat_cfg.parent / "simulations",
+)
+w.create_rule(fiat_update, rule_id="fiat_update")
+
+# Run FIAT
+fiat_run = fiat.FIATRun(
+    fiat_cfg=fiat_update.output.fiat_out_cfg,
+    fiat_exe=w.get_ref("$config.fiat_exe"),
+)
+w.create_rule(fiat_run, rule_id="fiat_run")
+
+# %%
+# Setup FloodAdapt with the models above and the design events
+floodadapt_build = flood_adapt.SetupFloodAdapt(
+    sfincs_inp=sfincs_build.output.sfincs_inp,
+    fiat_cfg=fiat_build.output.fiat_cfg,
+    event_set_yaml=pluvial_design_events.output.event_set_yaml,
+    output_dir="models/flood_adapt_builder_default",
+)
+w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 # %%
 # run workflow
 w.dryrun()
@@ -168,7 +199,7 @@ w.to_snakemake("global-workflow-risk-climate.smk")
 # %%
 # (test) run the workflow with snakemake and visualize the directed acyclic graph
 subprocess.run(
-    "snakemake -s global-workflow-risk-climate.smk --configfile global-workflow-risk-climate.config.yml --dag | dot -Tsvg > dag-risk.svg",
+    "snakemake -s global-workflow-risk-climate.smk --configfile global-workflow-risk-climate.config.yml --dag | dot -Tsvg > dag-risk-climate.svg",
     cwd=w.root,
     shell=True,
 ).check_returncode()

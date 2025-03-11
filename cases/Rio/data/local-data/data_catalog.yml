@@ -32,3 +32,9 @@ river_bathymetry:
 admin_sentores:
   data_type: GeoDataFrame
   path: admin/Setores_CensitA1rios_2010.gpkg
+planned_reservoirs:
+  data_type: GeoDataFrame
+  path: master_plan/PDMAP_RESERVOIRS_ACARI.gpkg
+planned_dredging:
+  data_type: RasterDataset
+  path: master_plan/T1BEPRK_T2DESSAS_R02.tif

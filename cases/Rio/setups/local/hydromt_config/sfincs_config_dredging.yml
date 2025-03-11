@@ -1,19 +1,12 @@
 setup_grid_from_region:
-  res: 100  # placeholder for model resolution [m]
+  res: 50  # for model resolution [m]
   crs: utm  # model CRS (must be UTM zone)
   rotated: False  # allow a rotated grid
   region:
     geom: <region>  # placeholder for region vector file
 
-setup_dep:
-  datasets_dep:
-    - elevtn: fabdem
-      mask: osm_landareas
-
 setup_mask_active:
   mask: <region>  # placeholder for region vector file
-  exclude_mask: osm_coastlines
-  drop_area: 10  # drop small areas [km2]
 
 setup_mask_bounds:
   btype: waterlevel
@@ -22,18 +15,24 @@ setup_mask_bounds:
 
 setup_subgrid:
   datasets_dep:
+    - elevtn: planned_dredging
+    - elevtn: local_DTM_1m_clipped
+      mask: admin_sentores
+    - elevtn: local_DEM_5m
     - elevtn: fabdem
       mask: osm_landareas
-    - elevtn: gebco  # add bathymetry; used to avoid extrapolation
   datasets_rgh:
     - lulc: esa_worldcover
-  # TODO prepare river bathymetry dasaset based on grit
-  # datasets_riv:
-  #   - centerlines: grit
-  #     manning': 0.035
+  datasets_riv:
+    - centerlines: osm_water
+      # mask: osm_water_poly
+      rivdph: 2
+      rivwth: 10
+      manning: 0.035
   write_dep_tif: True
-  nr_subgrid_pixels: 4 # 25m resolution
+  nr_subgrid_pixels: 20 # 2.5m resolution
   nbins: 8
+  nrmax: 4000
 
 setup_config:
   alpha: 0.1

@@ -36,7 +36,7 @@ config = WorkflowConfig(
     catalog_path_local=Path(pwd, "data/local-data/data_catalog.yml"),
     plot_fig=True,
     # sfincs settings
-    hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
+    hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config_default.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
     subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
@@ -77,7 +77,7 @@ w.create_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs"
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
-    sfincs_root="models/sfincs",
+    sfincs_root="models/sfincs_default",
     config=w.get_ref("$config.hydromt_sfincs_config"),
     catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
@@ -128,7 +128,7 @@ sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output/hazard",
+    output_root="output/hazard_default",
 )
 w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
