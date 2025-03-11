@@ -8,7 +8,11 @@ import tomli
 import tomli_w
 from flood_adapt import unit_system as us
 from flood_adapt.object_model.hazard.event.event_factory import EventFactory
-from flood_adapt.object_model.hazard.event.event_set import EventSet, EventSetModel
+from flood_adapt.object_model.hazard.event.event_set import (
+    EventSet,
+    EventSetModel,
+    SubEventModel,
+)
 from flood_adapt.object_model.hazard.event.template_event import EventModel
 from flood_adapt.object_model.hazard.forcing.discharge import (
     DischargeConstant,
@@ -20,6 +24,7 @@ from flood_adapt.object_model.hazard.forcing.waterlevels import (
     WaterlevelModel,
 )
 from flood_adapt.object_model.hazard.forcing.wind import WindConstant
+from flood_adapt.object_model.hazard.interface.events import IEvent
 from flood_adapt.object_model.interface.config.sfincs import RiverModel
 from pydantic import BaseModel
 
@@ -353,16 +358,16 @@ def convert_eventset(old_path: Path, new_path: Path):
         data=EventSetModel(
             name="Probabilistic_set",
             description="Probabilistic set",
-            sub_events=read_sub_events(old_path),
-            frequency=read_frequencies(old_path),
-        )
+            sub_events=read_sub_events(old_path)[0],
+        ),
+        sub_events=read_sub_events(old_path)[1],
     )
     new_path.mkdir(exist_ok=True, parents=True)
     new_set.save(new_path / f"{new_path.name}.toml")
     return new_set
 
 
-def read_sub_events(path: Path) -> list[EventModel]:
+def read_sub_events(path: Path) -> tuple[list[EventModel], list[IEvent]]:
     """
     Read and convert sub-events from a specified directory path into a list of EventModel instances.
 
@@ -380,39 +385,27 @@ def read_sub_events(path: Path) -> list[EventModel]:
     -------
     list[EventModel]
         A list of converted EventModel instances.
+    list[IEvent]
+        A list of converted subevents IEvent objects.
     """
     old_event_set_file = path / f"{path.name}.toml"
     with open(old_event_set_file, "rb") as f:
         old_event_set = tomli.load(f)
 
     sub_events = []
-    for sub_event in old_event_set["subevent_name"]:
+    new_event_objects = []
+    for sub_event, frequency in zip(
+        old_event_set["subevent_name"], old_event_set["frequency"]
+    ):
         sub_event_path = path / sub_event / f"{sub_event}.toml"
 
         old_event = read_old_event(sub_event_path)
         new_event = convert_event(old_event, sub_event_path.parent)
-
-        sub_events.append(new_event.attrs.model_dump())
-    return sub_events
-
-
-def read_frequencies(path: Path) -> list[float]:
-    """
-    Read frequency values from a TOML file associated with the given path.
-
-    Parameters
-    ----------
-    path : Path
-        The directory path to th TOML files.
-
-    Returns
-    -------
-        list[float]: A list of frequency values extracted from the TOML file.
-    """
-    old_event_set_file = path / f"{path.name}.toml"
-    with open(old_event_set_file, "rb") as f:
-        old_event_set = tomli.load(f)
-    return old_event_set["frequency"]
+        new_event_object = EventFactory.load_dict(new_event.attrs)
+        new_event_objects.append(new_event_object)
+        new_event = SubEventModel(name=new_event.attrs.name, frequency=frequency)
+        sub_events.append(new_event)
+    return sub_events, new_event_objects
 
 
 def read_old_event(path: Path) -> dict:

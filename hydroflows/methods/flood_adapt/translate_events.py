@@ -373,7 +373,10 @@ def translate_events(
     )
     if len(events.events) > 1:
         convert_eventset(
-            Path(fn_floodadapt), Path(r"C:\Users\rautenba\repos\HydroFlows")
+            Path(fn_floodadapt),
+            Path(
+                r"C:\Users\rautenba\repos\Database\charleston_test\input\events\Probabilistic_set"
+            ),
         )
     else:
         convert_event(fa_event.attrs, Path(event_fn))
