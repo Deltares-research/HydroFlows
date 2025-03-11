@@ -369,7 +369,7 @@ def translate_events(
         ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
     # Convert event
-    # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.)
+    # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.) THIS SHOULD BE FETCH AND THEN USED AS SELF.INPUT
     Settings(
         DATABASE_ROOT=Path(Path.cwd() / "examples" / "Database"),
         DATABASE_NAME="rio_test",
@@ -385,4 +385,4 @@ def translate_events(
         convert_event(fa_event.attrs, Path(event_fn), river_coordinates)
 
     # Remove old translation folder
-    shutil.rmtree(fn_floodadapt)
+    shutil.rmtree(fn_floodadapt.parent)
