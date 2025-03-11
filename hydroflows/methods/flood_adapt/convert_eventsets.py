@@ -290,7 +290,7 @@ def convert_event(
                 _river = []
                 for i in river:
                     discharge_csv = pd.read_csv(old_event_dir / i["timeseries_file"])
-                    mean_discharge = int(discharge_csv.iloc[0:, 0].mean())
+                    mean_discharge = int(discharge_csv.iloc[0:, 1].mean())
                     _i = DischargeCSV(
                         river=RiverModel(
                             name="Cooper River",  # TODO dummy name

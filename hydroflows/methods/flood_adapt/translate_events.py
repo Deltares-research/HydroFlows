@@ -335,9 +335,7 @@ def translate_events(
                 for key, value in csv_station_timeseries_discharge.items():
                     df = value
                     df = df.round(decimals=2)
-                    df.to_csv(
-                        os.path.join(event_fn, f"{key}.csv"), index=False, header=None
-                    )
+                    df.to_csv(os.path.join(event_fn, f"{key}.csv"), header=None)
 
         # Save return period for test set toml
         if len(events.events) > 1:
