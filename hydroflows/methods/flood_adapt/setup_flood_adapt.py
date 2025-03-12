@@ -35,11 +35,6 @@ class Input(Parameters):
     The file path to the event set YAML file.
     """
 
-    database_path: Path | None = None
-    """
-    The file path to an existing FloodAdapt database, needed when events are translated.
-    """
-
 
 class Output(Parameters):
     """Output parameters for the :py:class:`SetupFloodAdapt` method."""
@@ -67,6 +62,11 @@ class Params(Parameters):
     river_coordinates: Optional[dict] = None
     """
     Dictionary of river names and coordinates, by default None
+    """
+
+    database_path: Path | None = None
+    """
+    The file path to an existing FloodAdapt database, needed when events are translated.
     """
 
 
@@ -119,10 +119,11 @@ class SetupFloodAdapt(Method):
             sfincs_inp=sfincs_inp,
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
-            database_path=database_path,
         )
         self.params: Params = Params(
-            output_dir=output_dir, river_coordinates=river_coordinates
+            output_dir=output_dir,
+            river_coordinates=river_coordinates,
+            database_path=database_path,
         )
 
         self.output: Output = Output(
@@ -189,8 +190,8 @@ class SetupFloodAdapt(Method):
 
             translate_events(
                 self.input.event_set_yaml,
-                Path(self.params.output_dir),
-                self.input.database_path,
+                Path(self.params.output_dir, self.input.event_set_yaml.stem),
+                self.params.database_path,
                 river_coordinates=self.params.river_coordinates,
             )
 

@@ -390,8 +390,8 @@ def convert_eventset(
     """
     new_set = EventSet(
         data=EventSetModel(
-            name="Probabilistic_set",
-            description="Probabilistic set",
+            name=new_path.stem,
+            description=new_path.stem,
             sub_events=read_sub_events(old_path, river_coordinates)[0],
         ),
         sub_events=read_sub_events(old_path, river_coordinates)[1],
