@@ -170,8 +170,9 @@ class ForcingSources:
 
 
 def translate_events(
-    root: Union[str, Path] = None,
-    fa_events: Union[str, Path] = None,
+    root: Union[str, Path],
+    fa_events: Union[str, Path],
+    database_path: Path,
     description: str = "This is a hydroflows event set",
     river_coordinates: Optional[dict] = None,
 ):
@@ -184,6 +185,10 @@ def translate_events(
         Path to the root folder of the events, by default None
     fa_events : Union[str, Path]
         Folder to write the floodadapt events to, by default None
+    database_path: str
+        The path to an existing FloodAdapt database
+    description: str
+        A description of the event set
     river_coordinates: Optional[dict]
         Dictionary of river names and coordinates, by default None
     """
@@ -371,9 +376,9 @@ def translate_events(
     # Convert event
     # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.) THIS SHOULD BE FETCH AND THEN USED AS SELF.INPUT
     Settings(
-        DATABASE_ROOT=Path(Path.cwd() / "examples" / "Database"),
+        DATABASE_ROOT=database_path,
         DATABASE_NAME="rio_test",
-        SYSTEM_FOLDER=Path(Path.cwd() / "examples" / "Database" / "system"),
+        SYSTEM_FOLDER=database_path / "system",
     )
     if len(events.events) > 1:
         convert_eventset(

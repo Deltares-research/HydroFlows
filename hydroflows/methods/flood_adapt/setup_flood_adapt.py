@@ -35,6 +35,11 @@ class Input(Parameters):
     The file path to the event set YAML file.
     """
 
+    database_path: Path | None = None
+    """
+    The file path to an existing FloodAdapt database, needed when events are translated.
+    """
+
 
 class Output(Parameters):
     """Output parameters for the :py:class:`SetupFloodAdapt` method."""
@@ -81,6 +86,7 @@ class SetupFloodAdapt(Method):
         sfincs_inp: Path,
         fiat_cfg: Path,
         event_set_yaml: Path | None = None,
+        database_path: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
         river_coordinates: Optional[Path] = None,
     ):
@@ -94,6 +100,8 @@ class SetupFloodAdapt(Method):
             The file path to the FIAT base model.
         event_set_yaml : Path, optional
             The file path to the HydroFlows event set yaml file.
+        database_path : Path, optional
+            The path to an existing FloodAdapt database.
         output_dir: Path, optional
             The folder where the output is stored, by default "flood_adapt_builder".
         river_coordinates: Optional[Path]
@@ -111,6 +119,7 @@ class SetupFloodAdapt(Method):
             sfincs_inp=sfincs_inp,
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
+            database_path=database_path,
         )
         self.params: Params = Params(
             output_dir=output_dir, river_coordinates=river_coordinates
@@ -181,6 +190,7 @@ class SetupFloodAdapt(Method):
             translate_events(
                 self.input.event_set_yaml,
                 Path(self.params.output_dir),
+                self.input.database_path,
                 river_coordinates=self.params.river_coordinates,
             )
 
