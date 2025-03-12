@@ -377,7 +377,7 @@ def translate_events(
     # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.) THIS SHOULD BE FETCH AND THEN USED AS SELF.INPUT
     Settings(
         DATABASE_ROOT=database_path,
-        DATABASE_NAME="rio_test",
+        DATABASE_NAME=database_path.stem,
         SYSTEM_FOLDER=database_path / "system",
     )
     if len(events.events) > 1:
