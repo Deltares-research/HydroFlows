@@ -171,9 +171,8 @@ class ForcingSources:
 
 def translate_events(
     root: Union[str, Path],
-    fa_events: Union[str, Path],
+    output_fa_events: Union[str, Path],
     database_path: Path,
-    description: str = "This is a hydroflows event set",
     river_coordinates: Optional[dict] = None,
 ):
     """
@@ -187,13 +186,11 @@ def translate_events(
         Folder to write the floodadapt events to, by default None
     database_path: str
         The path to an existing FloodAdapt database
-    description: str
-        A description of the event set
     river_coordinates: Optional[dict]
         Dictionary of river names and coordinates, by default None
     """
     # Create output directory
-    fn_floodadapt = Path.joinpath(fa_events / "old", root.stem)
+    fn_floodadapt = Path.joinpath(output_fa_events / "old", root.stem)
     fn_floodadapt.parent.mkdir(parents=True, exist_ok=True)
 
     # Get events
@@ -218,7 +215,6 @@ def translate_events(
         # Create dictionary for floodadapt individual event
         fa_event = FloodAdaptEvent(
             name=file_name,
-            description=description,
         )
 
         # Time
@@ -362,7 +358,6 @@ def translate_events(
 
         floodadapt_config = {
             "name": name_test_set,
-            "description": description,
             "mode": "risk",
             "subevent_name": subevent_name,
             "frequency": rp,
@@ -376,14 +371,14 @@ def translate_events(
     # Convert event
     # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.) THIS SHOULD BE FETCH AND THEN USED AS SELF.INPUT
     Settings(
-        DATABASE_ROOT=database_path,
+        DATABASE_ROOT=database_path.parent,
         DATABASE_NAME=database_path.stem,
-        SYSTEM_FOLDER=database_path / "system",
+        SYSTEM_FOLDER=database_path.parent / "system",
     )
     if len(events.events) > 1:
         convert_eventset(
             Path(fn_floodadapt),
-            Path(fa_events),
+            Path(output_fa_events),
             river_coordinates,
         )
     else:

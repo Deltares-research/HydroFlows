@@ -3,6 +3,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import pytest
+import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
 from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
@@ -82,10 +83,17 @@ def test_translate_events_fluvial(
     event_set_file_fluvial : Path
         The path to the temporary fluvial event set.
     """
+    # Output folder path
     fn_output = Path(
         r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\testeventtranslate"
     ).joinpath("fa_event_set_fluvial")  # tmp_path.joinpath("fa_event_set")
-    name = event_set_file_fluvial.stem
+
+    # Database Path
+    database_path = Path(
+        r"C:\Users\rautenba\repos\Database\charleston_test"
+    )  # TODO: This should be fetch from external database
+
+    # River coordinates
     src_points = gpd.read_file(sfincs_cached_model / "gis" / "src.geojson")
     river_coordinates = (
         src_points.set_index("index")[["geometry"]]
@@ -95,31 +103,30 @@ def test_translate_events_fluvial(
     river_coordinates[2] = (
         river_coordinates[1][0],
         river_coordinates[1][1],
-    )  # Coordinates of the river
+    )
 
-    events.translate_events(event_set_file_fluvial, fn_output, name, river_coordinates)
+    # Translate eventset
+    events.translate_events(
+        event_set_file_fluvial, fn_output, database_path, river_coordinates
+    )
 
-    # assert fn_output.joinpath(name, f"{name}.toml").exists()
+    # Assert eventset config exists
+    assert fn_output.joinpath(f"{fn_output.stem}.toml").exists()
 
-    # fa_event_config = toml.load(fn_output.joinpath(name, f"{name}.toml"))
-    # assert fa_event_config["mode"] == "risk"
-    # assert len(fa_event_config["frequency"]) == len(fa_event_config["subevent_name"])
-    # assert fa_event_config["name"] == name
+    # Assert mode == risk
+    fa_event_config = toml.load(fn_output.joinpath(f"{fn_output.stem}.toml"))
+    assert fa_event_config["mode"] == "risk"
 
-    # Check if timeseries.csv per forcing exists
-    # event_names = fa_event_config["subevent_name"]
-    # for event in event_names:
-    # event_config = toml.load(fn_output.joinpath(name, event, f"{event}.toml"))
-    # dict_values = list(nested_dict_values(event_config))
-    # csv_files_forcings_config = [
-    #    item.split(".")[0]
-    #    for item in dict_values
-    #    if isinstance(item, str) and item.endswith(".csv")
-    # ]
-    # csv_files_forcings = []
-    # for filename in Path(fn_output).joinpath(name, event).glob("*.csv"):
-    #    csv_files_forcings.append(filename.stem)
-    # assert sorted(csv_files_forcings_config) == sorted(csv_files_forcings)
+    # Assert timeseries.csv per forcing exists
+    sub_events = fa_event_config["sub_events"]
+    for event in sub_events:
+        name = event["name"]
+        assert fn_output.joinpath(name).exists()
+        assert fn_output.joinpath(name, f"{name}.toml").exists()
+
+        event_config = toml.load(fn_output.joinpath(name, f"{name}.toml"))
+        assert Path(event_config["forcings"]["DISCHARGE"][0]["path"]).exists()
+        assert Path(event_config["forcings"]["WATERLEVEL"][0]["path"]).exists()
 
 
 @pytest.mark.requires_test_data()
@@ -141,13 +148,36 @@ def test_translate_events_pluvial(
     event_set_file_pluvial : Path
         The path to the temporary pluvial event set.
     """
+    # Output folder path
     fn_output = Path(
         r"C:\Users\rautenba\OneDrive - Stichting Deltares\Documents\test\testeventtranslate"
     ).joinpath("fa_event_set_pluvial")  # tmp_path.joinpath("fa_event_set")
-    name = event_set_file_pluvial.stem
+
+    # Database Path
+    database_path = Path(
+        r"C:\Users\rautenba\repos\Database\charleston_test"
+    )  # TODO: This should be fetch from external database
 
     events.translate_events(
         event_set_file_pluvial,
         fn_output,
-        name,
+        database_path,
     )
+
+    # Assert eventset config exists
+    assert fn_output.joinpath(f"{fn_output.stem}.toml").exists()
+
+    # Assert mode == risk
+    fa_event_config = toml.load(fn_output.joinpath(f"{fn_output.stem}.toml"))
+    assert fa_event_config["mode"] == "risk"
+
+    # Assert timeseries.csv per forcing exists
+    sub_events = fa_event_config["sub_events"]
+    for event in sub_events:
+        name = event["name"]
+        assert fn_output.joinpath(name).exists()
+        assert fn_output.joinpath(name, f"{name}.toml").exists()
+
+        event_config = toml.load(fn_output.joinpath(name, f"{name}.toml"))
+        assert Path(event_config["forcings"]["RAINFALL"][0]["path"]).exists()
+        assert Path(event_config["forcings"]["WATERLEVEL"][0]["path"]).exists()
