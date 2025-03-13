@@ -176,7 +176,7 @@ class FutureClimateRainfall(ExpandMethod):
             future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
             future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
             future_event_set_yaml=Path(self.params.event_root)
-            / f"future_pluvial_events_{self.params.scenario_name}.yml",
+            / f"{self.input.event_set_yaml.stem}_{self.params.scenario_name}.yml",
         )
 
         self.set_expand_wildcard(wildcard, self.params.event_names_output)
@@ -216,6 +216,9 @@ class FutureClimateRainfall(ExpandMethod):
             future_event = Event(
                 name=name_out,
                 forcings=[{"type": "rainfall", "path": output["future_event_csv"]}],
+                return_period=event.return_period,
+                tstart=event.tstart,
+                tstop=event.tstop,
             )
             future_event.set_time_range_from_forcings()
             future_event.to_yaml(output["future_event_yaml"])

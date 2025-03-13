@@ -7,7 +7,8 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
+from hydroflows.methods import catalog, fiat, rainfall, script, sfincs
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -32,7 +33,6 @@ config = WorkflowConfig(
     catalog_path_global=Path(pwd, "data/global-data/data_catalog.yml"),
     catalog_path_local=Path(pwd, "data/local-data/data_catalog.yml"),
     # sfincs settings
-    hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
     sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
     subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
@@ -44,18 +44,21 @@ config = WorkflowConfig(
     rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
+    event_root="events",
 )
 
-# Futute climate rainfall design events settings
-scenarios = ["rcp45", "rcp85"]
-dTs = [1.2, 2.5]
-
-# Wildcard names for current and future conditions events
-wildcard_design_events = "pluvial_design_events"
-wildcard_future_events = "future_pluvial_design_events"
+# Climate rainfall scenarios settings (to be applied on the derived design events)
+# Dictionary where:
+# - Key: Scenario name (e.g., "current", "rcp45", "rcp85")
+# - Value: Corresponding temperature delta (dT) for each scenario
+scenarios_dict = {
+    "present": 0,  # No temperature change for the current scenario (or historical)
+    "rcp45_2050": 1.2,  # Moderate emissions scenario with +1.2°C
+    "rcp85_2050": 2.5,  # High emissions scenario with +2.5°C
+}
 
 # Strategies settings
-strategies = ["default", "reservoirs"]
+strategies = ["default", "reservoirs", "dredging"]
 strategies_dict = {"strategies": strategies}
 
 # %%
@@ -130,11 +133,17 @@ merged_catalog_all = catalog.MergeCatalogs(
 w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
 
 # %%
+
+
 # Fiat build
 fiat_build = fiat.FIATBuild(
-    region=sfincs_build.output.sfincs_region,
-    ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
-    fiat_root="models/fiat_{strategies}",
+    region=resolve_wildcards(
+        sfincs_build.output.sfincs_region, {"strategies": strategies[0]}
+    ),
+    ground_elevation=resolve_wildcards(
+        sfincs_build.output.sfincs_region, {"strategies": strategies[0]}
+    ),
+    fiat_root="models/fiat_default",
     catalog_path=merged_catalog_all.output.merged_catalog_path,
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
@@ -158,41 +167,44 @@ w.create_rule(precipitation, rule_id="preprocess_local_rainfall")
 pluvial_events = rainfall.PluvialDesignEvents(
     precip_nc=precipitation.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard=wildcard_design_events,
-    event_root="events",
+    wildcard="pluvial_design_events",
+    event_root=w.get_ref("$config.event_root"),
 )
-w.create_rule(pluvial_events, rule_id=wildcard_design_events)
+w.create_rule(pluvial_events, rule_id="get_pluvial_design_events")
 
 # %%
-# Futute climate rainfall design events
+# Climate rainfall scenarios events
 
-# loop over scenarios and dTs
-for scenario, dT in zip(scenarios, dTs):
+# loop over scenarios and scale the derived design events
+for scenario, dT in scenarios_dict.items():
     future_design_events = rainfall.FutureClimateRainfall(
         scenario_name=scenario,
         event_names_input=["p_event01", "p_event02", "p_event03"],
         event_set_yaml=pluvial_events.output.event_set_yaml,
         dT=dT,
-        wildcard=f"{wildcard_future_events}_{scenario}",
-        event_root="events",
+        wildcard=f"pluvial_design_events_{scenario}",
+        event_root=w.get_ref("$config.event_root"),
     )
-    w.create_rule(future_design_events, rule_id=f"{wildcard_future_events}_{scenario}")
+    w.create_rule(future_design_events, rule_id=f"pluvial_design_events_{scenario}")
 
 # %%
-# Merge the pluvial events with the future events
-scenarios_wildcards = [f"{wildcard_future_events}_{scenario}" for scenario in scenarios]
+# Collect all scenarios events
+scenarios_wildcards = [
+    f"pluvial_design_events_{scenario}" for scenario in scenarios_dict.keys()
+]
 scenarios_events = []
 for scenario_wildcard in scenarios_wildcards:
     scenarios_events += w.wildcards.get(scenario_wildcard)
 
-all_events = w.wildcards.get(wildcard_design_events) + scenarios_events
-w.wildcards.set("all_events", all_events)
+w.wildcards.set("scenarios_events", scenarios_events)
+w.wildcards.set("scenarios", list(scenarios_dict.keys()))
+
 
 # %%
 # Update the sfincs model with pluvial events
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
-    event_yaml="events/{all_events}.yml",
+    event_yaml="events/{scenarios_events}.yml",
     output_dir=sfincs_build.output.sfincs_inp.parent / "simulations",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
@@ -228,11 +240,12 @@ w.create_rule(sfincs_post, rule_id="sfincs_post")
 # Update hazard
 fiat_update = fiat.FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
-    event_set_yaml=pluvial_events.output.event_set_yaml,
+    event_set_yaml="events/pluvial_design_events_{scenarios}.yml",
     map_type="water_level",
     hazard_maps=sfincs_post.output.sfincs_zsmax,
     risk=w.get_ref("$config.risk"),
-    output_dir=fiat_build.output.fiat_cfg.parent / "simulations",
+    output_dir=fiat_build.output.fiat_cfg.parent
+    / "simulations_{scenarios}_{strategies}",
 )
 w.create_rule(fiat_update, rule_id="fiat_update")
 
@@ -245,13 +258,13 @@ w.create_rule(fiat_run, rule_id="fiat_run")
 
 # %%
 # Setup FloodAdapt
-floodadapt_build = flood_adapt.SetupFloodAdapt(
-    sfincs_inp=sfincs_build.output.sfincs_inp,
-    fiat_cfg=fiat_build.output.fiat_cfg,
-    event_set_yaml=pluvial_events.output.event_set_yaml,
-    output_dir="models/flood_adapt_builder_{strategies}",
-)
-w.create_rule(floodadapt_build, rule_id="floodadapt_build")
+# floodadapt_build = flood_adapt.SetupFloodAdapt(
+#     sfincs_inp=sfincs_build.output.sfincs_inp,
+#     fiat_cfg=fiat_build.output.fiat_cfg,
+#     event_set_yaml=pluvial_events.output.event_set_yaml,
+#     output_dir="models/flood_adapt_builder_{strategies}",
+# )
+# w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 
 # %%
 # run workflow
