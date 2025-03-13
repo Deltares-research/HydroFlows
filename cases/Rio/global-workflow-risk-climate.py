@@ -187,7 +187,7 @@ fiat_visualize_risk = fiat.FIATVisualize(
     fiat_output_csv=fiat_run.output.fiat_out_csv,
     fiat_cfg=fiat_build.output.fiat_cfg,
     spatial_joins_cfg=fiat_build.output.spatial_joins_cfg,
-    output_dir=fiat_build.output.fiat_cfg.parent / "fiat_run_{scenarios}",
+    output_dir=fiat_run.output.fiat_out_csv.parent,
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 # %%

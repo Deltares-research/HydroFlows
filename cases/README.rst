@@ -35,5 +35,7 @@ Rio case structure
     │       ├── Snakefile-validation.smk
     │       └── Snakefile-validation.config.yml
     ├── global-workflow-risk.py
+    ├── global-workflow-risk-climate
     ├── local-workflow-risk.py
+    ├── local-workflow-risk-climate-strategies.py
     └── local-workflow-validation.py

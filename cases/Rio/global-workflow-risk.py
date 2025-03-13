@@ -94,6 +94,7 @@ w.create_rule(pluvial_events, rule_id="pluvial_design_events")
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
+    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
 
@@ -123,6 +124,8 @@ sfincs_post = sfincs.SfincsPostprocess(
 w.create_rule(sfincs_post, rule_id="sfincs_post")
 
 # %%
+# Update, run and visualize FIAT
+
 # Update FIAT hazard
 fiat_update = fiat.FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
@@ -130,6 +133,7 @@ fiat_update = fiat.FIATUpdateHazard(
     map_type="water_level",
     hazard_maps=sfincs_post.output.sfincs_zsmax,
     risk=w.get_ref("$config.risk"),
+    output_dir=fiat_build.output.fiat_cfg.parent / "simulations",
 )
 w.create_rule(fiat_update, rule_id="fiat_update")
 
@@ -139,6 +143,14 @@ fiat_run = fiat.FIATRun(
     fiat_exe=w.get_ref("$config.fiat_exe"),
 )
 w.create_rule(fiat_run, rule_id="fiat_run")
+
+# Visualize FIAT results
+fiat_visualize_risk = fiat.FIATVisualize(
+    fiat_output_csv=fiat_run.output.fiat_out_csv,
+    fiat_cfg=fiat_build.output.fiat_cfg,
+    output_dir=fiat_run.output.fiat_out_csv.parent,
+)
+w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
 # %%
 # Setup FloodAdapt with the models above and the design events
