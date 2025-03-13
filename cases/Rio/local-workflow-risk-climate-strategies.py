@@ -2,7 +2,6 @@
 
 # %%
 # Import packages
-import subprocess
 from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
@@ -52,7 +51,7 @@ config = WorkflowConfig(
 # - Key: Scenario name (e.g., "current", "rcp45", "rcp85")
 # - Value: Corresponding temperature delta (dT) for each scenario
 scenarios_dict = {
-    "present": 0,  # No temperature change for the current scenario (or historical)
+    "present": 0,  # No temperature change for the present (or historical) scenario
     "rcp45_2050": 1.2,  # Moderate emissions scenario with +1.2°C
     "rcp85_2050": 2.5,  # High emissions scenario with +2.5°C
 }
@@ -199,7 +198,6 @@ for scenario_wildcard in scenarios_wildcards:
 w.wildcards.set("scenarios_events", scenarios_events)
 w.wildcards.set("scenarios", list(scenarios_dict.keys()))
 
-
 # %%
 # Update the sfincs model with pluvial events
 sfincs_update = sfincs.SfincsUpdateForcing(
@@ -235,7 +233,7 @@ sfincs_post = sfincs.SfincsPostprocess(
 w.create_rule(sfincs_post, rule_id="sfincs_post")
 
 # %%
-# Update and run FIAT for the event set
+# Update/run FIAT for the event set and visualize the results
 
 # Update hazard
 fiat_update = fiat.FIATUpdateHazard(
@@ -256,6 +254,15 @@ fiat_run = fiat.FIATRun(
 )
 w.create_rule(fiat_run, rule_id="fiat_run")
 
+# Visualize FIAT results
+fiat_visualize_risk = fiat.FIATVisualize(
+    fiat_output_csv=fiat_run.output.fiat_out_csv,
+    fiat_cfg=fiat_build.output.fiat_cfg,
+    spatial_joins_cfg=fiat_build.output.spatial_joins_cfg,
+    output_dir=fiat_build.output.fiat_cfg.parent / "fiat_run_{scenarios}_{strategies}",
+)
+w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
+
 # %%
 # Setup FloodAdapt
 # floodadapt_build = flood_adapt.SetupFloodAdapt(
@@ -273,12 +280,4 @@ w.dryrun()
 # %%
 # to snakemake
 w.to_snakemake("local-workflow-risk-climate-strategies.smk")
-
-# %%
-# (test) run the workflow with snakemake and visualize the directed acyclic graph
-subprocess.run(
-    "snakemake -s local-workflow-risk-climate-strategies.smk --configfilelocal-workflow-risk-climate-strategies.config.yml --dag | dot -Tsvg > dag.svg",
-    cwd=w.root,
-    shell=True,
-).check_returncode()
 # %%

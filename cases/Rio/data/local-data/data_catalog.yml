@@ -24,11 +24,11 @@ local_DTM_1m_clipped:
     notes: Clipped version of the "MDT_Lidar_1m1-001.tif" file.
 river_bathymetry:
   data_type: RasterDataset
-  path: bathymetry/ACARI_BATHYMETRY.tif
+  path: bathymetry/ACARI_BATHYMETRY_MERGED.tif
   driver: raster
   filesystem: local
   meta:
-    notes: The file "ACARI_BATHYMETRY.tif" contains the bathymetry of the Acari River, derived using point locations.
+    notes: The file "ACARI_BATHYMETRY_MERGED.tif" contains the bathymetry of the Acari River, derived using point locations.
 admin_sentores:
   data_type: GeoDataFrame
   path: admin/Setores_CensitA1rios_2010.gpkg
