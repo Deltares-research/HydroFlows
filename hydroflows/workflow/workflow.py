@@ -111,7 +111,7 @@ class Workflow:
             if isinstance(value, str) and value.startswith("$"):
                 kwargs[key] = self.get_ref(value)
         # instantiate the method and add the rule
-        m = Method.from_kwargs(name=str(method), **kwargs)
+        m = Method.from_kwargs(str(method), **kwargs)
         self.create_rule(m, rule_id)
 
     def get_ref(self, ref: str) -> Ref:
