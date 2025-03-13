@@ -3,39 +3,31 @@
 Predefined methods
 ==================
 
-Python script methods
----------------------
+Model methods
+-------------
 
-Python scripts can directly be added to a workflow using the `ScriptMethod` class.
-For usage and limitations see :ref:`python_script`.
-
-.. autosummary::
-   :toctree: ../_generated
-   :template: module-template.rst
-
-   script.script_method
-
-Data pre- and postprocessing methods
-------------------------------------
-
-These methods are used to download, preprocess or postprocess various data sources.
+These methods are used to build, preprocess, run and postprocess models.
+Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT flood impact model are supported.
 
 .. autosummary::
    :toctree: ../_generated
    :template: module-template.rst
 
-   catalog.merge_catalogs
-   climate.climatology
-   climate.change_factor
-   coastal.coastal_tidal_analysis
-   coastal.get_coast_rp
-   coastal.get_gtsm_data
-   hazard_validation.floodmarks
-   rainfall.get_ERA5_rainfall
-   raster.merge
-   flood_adapt.setup_flood_adapt
+   fiat.fiat_build
+   fiat.fiat_update
+   fiat.fiat_run
+   fiat.fiat_visualize
    sfincs.sfincs_region
-
+   sfincs.sfincs_build
+   sfincs.sfincs_update_forcing
+   sfincs.sfincs_run
+   sfincs.sfincs_downscale
+   sfincs.sfincs_postprocess
+   wflow.wflow_build
+   wflow.wflow_update_forcing
+   wflow.wflow_update_factors
+   wflow.wflow_run
+   flood_adapt.setup_flood_adapt
 
 Historical, future and design event methods
 -------------------------------------------
@@ -56,27 +48,33 @@ which are used as input for the hydrodynamic and impact models.
    rainfall.pluvial_design_events
    rainfall.pluvial_design_events_GPEX
 
+Data pre- and postprocessing methods
+------------------------------------
 
-Model methods
--------------
-
-These methods are used to build, preprocess, run and postprocess models.
-Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT flood impact model are supported.
+These methods are used to download, preprocess or postprocess various data sources.
 
 .. autosummary::
    :toctree: ../_generated
    :template: module-template.rst
 
-   fiat.fiat_build
-   fiat.fiat_update
-   fiat.fiat_run
-   fiat.fiat_visualize
-   sfincs.sfincs_build
-   sfincs.sfincs_update_forcing
-   sfincs.sfincs_run
-   sfincs.sfincs_downscale
-   sfincs.sfincs_postprocess
-   wflow.wflow_build
-   wflow.wflow_update_forcing
-   wflow.wflow_update_factors
-   wflow.wflow_run
+   catalog.merge_catalogs
+   climate.climatology
+   climate.change_factor
+   coastal.coastal_tidal_analysis
+   coastal.get_coast_rp
+   coastal.get_gtsm_data
+   hazard_validation.floodmarks
+   rainfall.get_ERA5_rainfall
+   raster.merge
+
+Python script methods
+---------------------
+
+Python scripts can directly be added to a workflow using the `ScriptMethod` class.
+For usage and limitations see :ref:`python_script`.
+
+.. autosummary::
+   :toctree: ../_generated
+   :template: module-template.rst
+
+   script.script_method

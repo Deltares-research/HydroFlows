@@ -153,7 +153,7 @@ class Event(BaseModel):
         event = Event(
             name="event",
             forcings=[{"type": "rainfall", "path": "path/to/data.csv"}],
-            probability=0.5,
+            return_period=2,
         )
     """
 
