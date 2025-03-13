@@ -13,3 +13,4 @@ Example workflows
    ../../_examples/pluvial_fluvial_risk.ipynb
    ../../_examples/pluvial_multiple_regions.ipynb
    ../../_examples/coastal_events.ipynb
+   ../../_examples/climate_discharge.ipynb

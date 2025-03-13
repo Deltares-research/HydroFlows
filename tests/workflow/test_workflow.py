@@ -7,11 +7,11 @@ import pytest
 import yaml
 
 from hydroflows.workflow import (
-    Ref,
     Rule,
     Workflow,
     WorkflowConfig,
 )
+from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.wildcards import Wildcards
 from tests.workflow.conftest import (
     MockExpandMethod,
