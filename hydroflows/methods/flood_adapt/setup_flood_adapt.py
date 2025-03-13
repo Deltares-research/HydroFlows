@@ -169,13 +169,18 @@ class SetupFloodAdapt(Method):
                 sfincs_cfg.write("bndfile = sfincs.bnd\n")
         if Path(sfincs_model, "sfincs.dis").exists():
             Path(sfincs_model, "sfincs.dis").unlink()
-            # TODO: Remove from inp file "disfile"
+            with open(Path(sfincs_model, "sfincs.inp"), "r") as sfincs_cfg:
+                lines = sfincs_cfg.readlines()
+            lines = [line for line in lines if "disfile" not in line]
+            with open(Path(sfincs_model, "sfincs.inp"), "w") as sfincs_cfg:
+                sfincs_cfg.writelines(lines)
+
         if Path(sfincs_model, "simulations").exists():
             shutil.rmtree(Path(sfincs_model, "simulations"))
         if Path(sfincs_model, "figs").exists():
             shutil.rmtree(Path(sfincs_model, "figs"))
 
-        # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
+        # prepare probabilistic set
         if self.input.event_set_yaml is not None:
             # Create dict of river names and coordinates
             if self.params.river_coordinates is not None:
