@@ -1,12 +1,10 @@
 """Testing for Setup FloodAdapt rules."""
 from pathlib import Path
 
-import pandas as pd
 import pytest
 import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
-import hydroflows.methods.flood_adapt.translate_FIAT as fiat
 from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
 
@@ -60,58 +58,6 @@ def test_fa_setup(
         output_dir=tmp_path.joinpath("flood_adapt"),
     )
     rule.run()
-
-
-@pytest.mark.requires_test_data()
-def test_translate_fiat_model(fiat_tmp_model: Path, tmp_path: Path):
-    """
-    Test the translate_fiat_model function.
-
-    This function tests that the translate_fiat_model function can translate a FIAT model
-    into the format expected by FloodAdapt.
-
-    It checks that the required columns are present in the exposure CSV file, that the
-    exposure data exists, that the vulnerability data exists, and that the output data
-    folder exists.
-
-    Parameters
-    ----------
-    fiat_tmp_model : Path
-        The path to the temporary FIAT model.
-    tmp_output_model : Path
-        The path to the temporary translated model.
-    """
-    fn_output = tmp_path.joinpath("translated_fiat_model")
-    fiat.translate_model(fiat_tmp_model, fn_output)
-
-    exposure = pd.read_csv(fn_output.joinpath("exposure", "exposure.csv"))
-
-    required_columns = [
-        "Object ID",
-        "Primary Object Type",
-        "Secondary Object Type",
-        "Extraction Method",
-        "Ground Floor Height",
-        "Ground Elevation",
-        "Max Potential Damage: Structure",
-        "Max Potential Damage: Content",
-        "Damage Function: Structure",
-        "Damage Function: Content",
-        "aggregation_label:default_aggregation",
-    ]
-    assert set(required_columns) == set(exposure.columns)
-
-    # Check if the exposure data exists
-    assert fn_output.joinpath("geoms", "region.geojson").exists()
-
-    # Check if the exposure data exists
-    assert fn_output.joinpath("exposure", "exposure.csv").exists()
-
-    # Check if the vulnerability data exists
-    assert fn_output.joinpath("vulnerability", "vulnerability_curves.csv").exists()
-
-    # Check if the output data folder exists
-    assert fn_output.joinpath("output").exists()
 
 
 @pytest.mark.requires_test_data()
