@@ -174,9 +174,6 @@ class SetupFloodAdapt(Method):
             shutil.rmtree(Path(sfincs_model, "simulations"))
         if Path(sfincs_model, "figs").exists():
             shutil.rmtree(Path(sfincs_model, "figs"))
-        if Path(sfincs_model, "sfincs.src").exists():
-            Path(sfincs_model, "sfincs.src").unlink()
-            # TODO: Remove from inp file "srcfile"
 
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
@@ -227,16 +224,6 @@ def fa_db_config(
     # Add probabilistic set to the config if provided
     if probabilistic_set is not None:
         config["probabilistic_set"] = probabilistic_set
-
-    # create dummy observation point NOTE: This will be solved in FA
-    config["obs_point"] = [
-        {
-            "name": "Dummy Point",
-            "description": "This is a dummy observation point.",
-            "lat": 38.6919,
-            "lon": -76.5318,
-        }
-    ]
 
     with open(Path(fa_root, "fa_build.toml"), "w") as toml_file:
         toml.dump(config, toml_file)
