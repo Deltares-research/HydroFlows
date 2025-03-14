@@ -21,7 +21,7 @@ A FloodAdapt database can be created from SFINCS and Delft-FIAT models and a ``E
 the :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
 
 Model update methods
--------------------
+--------------------
 Once a model is built, the user can update the model with forcing data.
 The **Wflow** model is typically updated with multiple years of meteorological data to derive long time series of discharge.
 The meteorological forcing of the Wflow model can be scaled using gridded monthly climate change factors

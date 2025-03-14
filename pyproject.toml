@@ -17,6 +17,7 @@ dependencies = [
   "click",                    # CLI
   "fiat-toolbox>=0.1.16",    # toolbox for post-processing delft fiat output
   "geopandas>=1.0, <2.0",     # Reading vector data
+  "graphviz",                 # plot graph
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
   "hydromt-fiat>=0.5.3, <1.0", # hydromt plugin for FIAT models
@@ -72,7 +73,6 @@ extra = [
   "papermill",  # execute Jupyter notebooks
   "jupyter",
   "snakemake>=8.20, <9.0",      # Workflow manager
-  "graphviz",
   "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
 ]
 test = [

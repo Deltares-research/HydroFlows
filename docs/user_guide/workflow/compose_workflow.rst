@@ -53,6 +53,12 @@ When calling ``create_rule`` with a method the following steps are executed in t
 - The dependencies of the rule are evaluated.
 - The rule is added to the workflow.
 
+.. Note::
+    You cannot overwrite rules in the workflow or create rules with the same outputs.
+    If you want to modify a rule when creating the workflow in an interactive environment,
+    you should rerun the workflow creation from scratch. Most IPython Notebooks IDEs have A
+    "Run all above" button to rerun the notebook from the beginning.
+
 The following example shows how to create a rule based on a method.
 Here, the `model_exe` parameter is set using a reference to the workflow configuration.
 

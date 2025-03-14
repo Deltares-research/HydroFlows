@@ -22,6 +22,7 @@ from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["PluvialDesignEventsGPEX", "Input", "Output", "Params"]
 
+# TODO: move GPEX to data catalog and generalize to use any IDF dataset
 
 GPEX_RPS = [2, 5, 10, 20, 39, 50, 100]  # subset from the GPEX data up to 100yr rp
 
