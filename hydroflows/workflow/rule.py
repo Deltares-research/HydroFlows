@@ -97,7 +97,7 @@ class Rule:
         repr_dict = {
             "id": self.rule_id,
             "method": self.method.name,
-            "n_runs": self.n_runs,
+            "runs": self.n_runs,
         }
         for key, values in self.wildcards.items():
             if values:
