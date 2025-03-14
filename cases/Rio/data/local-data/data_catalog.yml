@@ -38,3 +38,18 @@ planned_reservoirs:
 planned_dredging:
   data_type: RasterDataset
   path: master_plan/T1BEPRK_T2DESSAS_R02.tif
+damage_values:
+  data_type: DataFrame
+  path: census/damages/max_pot_damages.csv
+  driver: csv
+  filesystem: local
+vulnerability_curves:
+  data_type: DataFrame
+  path: census/vulnerability/single_curves
+  driver: csv
+  filesystem: local
+vulnerability_curves_linking:
+  data_type: DataFrame
+  path: census/vulnerability/damage_functions_linking.csv
+  driver: csv
+  filesystem: locals
