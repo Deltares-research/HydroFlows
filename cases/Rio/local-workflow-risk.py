@@ -90,9 +90,6 @@ fiat_clip_exp = script.ScriptMethod(
             pwd, "data/preprocessed-data/building_footprints.gpkg"
         ),
         "entrances": Path(pwd, "data/preprocessed-data/entrances.gpkg"),
-        "mapping_social_class": Path(
-            pwd, "data/preprocessed-data/social_class_building_type_mapping.csv"
-        ),
     },
 )
 w.create_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
