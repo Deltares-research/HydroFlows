@@ -22,7 +22,7 @@ dependencies = [
   "hydromt-fiat>=0.5.3, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
-  "flood-adapt @ git+https://github.com/Deltares-research/FloodAdapt.git@testversion",       # floodadapt module to translate events
+  "flood-adapt @ git+https://github.com/Deltares-research/FloodAdapt.git@main",       # floodadapt module to translate events
   "jinja2",                   # templating
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
