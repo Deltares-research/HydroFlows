@@ -238,6 +238,7 @@ fn_building_footprints = "building_footprints_2d.gpkg"
 fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
+
 # Save bf
 buildings_gdf.to_file(data_source / fn_building_footprints)
 
