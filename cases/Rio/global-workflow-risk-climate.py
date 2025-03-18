@@ -40,7 +40,6 @@ config = WorkflowConfig(
     rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
-    event_root="events",
 )
 
 # Climate rainfall scenarios settings (to be applied on the derived design events)
@@ -74,7 +73,7 @@ w.create_rule(sfincs_build, rule_id="sfincs_build")
 fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
     ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
-    fiat_root="models/fiat",
+    fiat_root="models/fiat_default",
     catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
@@ -96,7 +95,7 @@ pluvial_design_events = rainfall.PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
     wildcard="pluvial_design_events",
-    event_root=w.get_ref("$config.event_root"),
+    event_root="events/design",
 )
 w.create_rule(pluvial_design_events, rule_id="derive_pluvial_design_events")
 
@@ -111,7 +110,7 @@ for scenario, dT in scenarios_dict.items():
         event_set_yaml=pluvial_design_events.output.event_set_yaml,
         dT=dT,
         wildcard=f"pluvial_design_events_{scenario}",
-        event_root=w.get_ref("$config.event_root"),
+        event_root="events/design_climate_scenarios",
     )
     w.create_rule(scenarios_design_events, rule_id=f"pluvial_design_events_{scenario}")
 

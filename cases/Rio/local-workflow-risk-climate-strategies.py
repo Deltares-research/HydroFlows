@@ -43,7 +43,6 @@ config = WorkflowConfig(
     rps=[5, 10, 100],
     start_date="1990-01-01",
     end_date="2023-12-31",
-    event_root="events",
 )
 
 # Climate rainfall scenarios settings (to be applied on the derived design events)
@@ -133,14 +132,13 @@ w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
 
 # %%
 
-
 # Fiat build
 fiat_build = fiat.FIATBuild(
     region=resolve_wildcards(
         sfincs_build.output.sfincs_region, {"strategies": strategies[0]}
     ),
     ground_elevation=resolve_wildcards(
-        sfincs_build.output.sfincs_region, {"strategies": strategies[0]}
+        sfincs_build.output.sfincs_subgrid_dep, {"strategies": strategies[0]}
     ),
     fiat_root="models/fiat_default",
     catalog_path=merged_catalog_all.output.merged_catalog_path,
@@ -167,7 +165,7 @@ pluvial_events = rainfall.PluvialDesignEvents(
     precip_nc=precipitation.output.precip_nc,
     rps=w.get_ref("$config.rps"),
     wildcard="pluvial_design_events",
-    event_root=w.get_ref("$config.event_root"),
+    event_root="events/design",
 )
 w.create_rule(pluvial_events, rule_id="get_pluvial_design_events")
 
@@ -181,15 +179,15 @@ for scenario, dT in scenarios_dict.items():
         event_names_input=["p_event01", "p_event02", "p_event03"],
         event_set_yaml=pluvial_events.output.event_set_yaml,
         dT=dT,
-        wildcard=f"pluvial_design_events_{scenario}",
-        event_root=w.get_ref("$config.event_root"),
+        wildcard=f"{scenario}_pluvial_design_events",
+        event_root="events/desing_climate_scenarios",
     )
     w.create_rule(future_design_events, rule_id=f"pluvial_design_events_{scenario}")
 
 # %%
 # Collect all scenarios events
 scenarios_wildcards = [
-    f"pluvial_design_events_{scenario}" for scenario in scenarios_dict.keys()
+    f"{scenario}_pluvial_design_events" for scenario in scenarios_dict.keys()
 ]
 scenarios_events = []
 for scenario_wildcard in scenarios_wildcards:
@@ -202,7 +200,7 @@ w.wildcards.set("scenarios", list(scenarios_dict.keys()))
 # Update the sfincs model with pluvial events
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
-    event_yaml="events/{scenarios_events}.yml",
+    event_yaml="events/desing_climate_scenarios/{scenarios_events}.yml",
     output_dir=sfincs_build.output.sfincs_inp.parent / "simulations",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
@@ -238,7 +236,7 @@ w.create_rule(sfincs_post, rule_id="sfincs_post")
 # Update hazard
 fiat_update = fiat.FIATUpdateHazard(
     fiat_cfg=fiat_build.output.fiat_cfg,
-    event_set_yaml="events/pluvial_design_events_{scenarios}.yml",
+    event_set_yaml="events/desing_climate_scenarios/pluvial_design_events_{scenarios}.yml",
     map_type="water_level",
     hazard_maps=sfincs_post.output.sfincs_zsmax,
     risk=w.get_ref("$config.risk"),
@@ -257,9 +255,9 @@ w.create_rule(fiat_run, rule_id="fiat_run")
 # Visualize FIAT results
 fiat_visualize_risk = fiat.FIATVisualize(
     fiat_output_csv=fiat_run.output.fiat_out_csv,
-    fiat_cfg=fiat_build.output.fiat_cfg,
+    fiat_cfg=fiat_update.output.fiat_out_cfg,
     spatial_joins_cfg=fiat_build.output.spatial_joins_cfg,
-    output_dir=fiat_run.output.fiat_out_csv.parent,
+    output_dir="output/risk/risk_{scenarios}_{strategies}",
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 

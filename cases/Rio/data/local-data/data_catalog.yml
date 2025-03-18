@@ -34,7 +34,7 @@ admin_sentores:
   path: admin/Setores_CensitA1rios_2010.gpkg
 planned_reservoirs:
   data_type: GeoDataFrame
-  path: master_plan/PDMAP_RESERVOIRS_ACARI.gpkg
+  path: master_plan/PDMAP_RESERVOIRS_ACARI_polygons.gpkg
 planned_dredging:
   data_type: RasterDataset
   path: master_plan/T1BEPRK_T2DESSAS_R02.tif
@@ -47,9 +47,7 @@ vulnerability_curves:
   data_type: DataFrame
   path: census/vulnerability/single_curves
   driver: csv
-  filesystem: local
 vulnerability_curves_linking:
   data_type: DataFrame
   path: census/vulnerability/damage_functions_linking.csv
   driver: csv
-  filesystem: locals

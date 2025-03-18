@@ -5,6 +5,9 @@ Rio case structure
 .. code-block:: text
 
     rio
+    ├── bin
+    │   ├── fiat_v0.2.1
+    │   └── sfincs_v0.2.1
     ├── data
     │   ├── global-data
     │   │   └── data_catalog.yml
