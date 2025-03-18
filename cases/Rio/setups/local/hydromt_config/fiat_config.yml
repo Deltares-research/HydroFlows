@@ -41,7 +41,7 @@ setup_exposure_population:
   attribute_name: residents
 
 #setup_aggregation_areas:
-#   aggregation_area_fn: rio/data/preprocessed-data/aggregation_neighbourhood.gpkg
+#   aggregation_area_fn: rio/data/local-data/aggregation_neighbourhood.gpkg
 #   attribute_names: "Nome_do_bairro"
 #   label_names: "Neighbourhood"
 #   file_names: "census_neighbourhoods"
