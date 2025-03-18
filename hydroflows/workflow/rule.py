@@ -176,7 +176,8 @@ class Rule:
         wildcards: Dict[str, List] = {"input": [], "output": [], "params": []}
         wildcard_fields: Dict[str, List] = {}
         for sec in wildcards.keys():
-            for field, value in self.method.dict[sec].items():
+            for field, value in getattr(self.method, sec):
+                # skip if value is not a string or path
                 if not isinstance(value, (str, Path)):
                     continue
                 val_wildcards = get_wildcards(value)
