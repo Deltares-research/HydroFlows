@@ -128,7 +128,7 @@ sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output/hazard_default",
+    output_root="output/hazard_historical",
 )
 w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 

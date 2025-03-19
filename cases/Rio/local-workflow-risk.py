@@ -149,7 +149,7 @@ pluvial_events = rainfall.PluvialDesignEvents(
     precip_nc=precipitation.output.precip_nc,
     rps=w.get_ref("$config.rps"),
     wildcard="pluvial_design_events",
-    event_root="events/design",
+    event_root="events/default",
 )
 w.create_rule(pluvial_events, rule_id="pluvial_design_events")
 
