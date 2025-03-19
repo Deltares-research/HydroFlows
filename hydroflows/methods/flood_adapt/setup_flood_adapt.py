@@ -122,6 +122,7 @@ class SetupFloodAdapt(Method):
             os.path.dirname(self.input.fiat_cfg),
             Path(self.params.output_dir, "fiat"),
             dirs_exist_ok=True,
+            ignore=lambda d, c: {x for x in c if x.startswith("simulation")},
         )
         # prepare and copy sfincs model
         shutil.copytree(
