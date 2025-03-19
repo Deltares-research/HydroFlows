@@ -51,3 +51,6 @@ vulnerability_curves_linking:
   data_type: DataFrame
   path: census/vulnerability/damage_functions_linking.csv
   driver: csv
+aggregation_neighbourhood:
+  data_type: GeoDataFrame
+  path: census/aggregation_neighbourhood.gpkg
