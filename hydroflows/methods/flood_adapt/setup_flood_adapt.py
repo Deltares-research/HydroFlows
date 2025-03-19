@@ -130,7 +130,8 @@ class SetupFloodAdapt(Method):
             Path(self.params.output_dir, "sfincs"),
             dirs_exist_ok=True,
         )
-        if not Path(self.params.output_dir, "sfincs", "sfincs.bnd").exists():
+        sfincs_model = Path(self.params.output_dir, "sfincs")
+        if not Path(sfincs_model, "sfincs.bnd").exists():
             sm = SfincsModel(
                 root=self.input.sfincs_inp.parent,
                 mode="r",
@@ -140,28 +141,26 @@ class SetupFloodAdapt(Method):
             sfincs_bnd = []
             sfincs_bnd.append(x[0])
             sfincs_bnd.append(y[0])
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.bnd"), "w"
-            ) as output:
+            with open(Path(sfincs_model, "sfincs.bnd"), "w") as output:
                 for row in sfincs_bnd:
                     output.write(str(row) + " ")
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
-            ) as sfincs_cfg:
+            with open(Path(sfincs_model, "sfincs.inp"), "a") as sfincs_cfg:
                 sfincs_cfg.write("bndfile = sfincs.bnd\n")
 
-        if not Path(self.params.output_dir, "sfincs", "sfincs.bzs").exists():
-            sfincs_bzs = [0, 0]
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.bzs"), "w"
-            ) as output:
-                for row in sfincs_bzs:
-                    output.write(str(row) + " ")
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
-            ) as sfincs_cfg:
-                sfincs_cfg.write("bzsfile = sfincs.bzs\n")
+        # Remove discharge
+        if Path(sfincs_model, "sfincs.dis").exists():
+            Path(sfincs_model, "sfincs.dis").unlink()
+            with open(Path(sfincs_model, "sfincs.inp"), "r") as sfincs_cfg:
+                lines = sfincs_cfg.readlines()
+            lines = [line for line in lines if "disfile" not in line]
+            with open(Path(sfincs_model, "sfincs.inp"), "w") as sfincs_cfg:
+                sfincs_cfg.writelines(lines)
 
+        # Remove simulation and figure folder
+        if Path(sfincs_model, "simulations").exists():
+            shutil.rmtree(Path(sfincs_model, "simulations"))
+        if Path(sfincs_model, "figs").exists():
+            shutil.rmtree(Path(sfincs_model, "figs"))
         # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
         if self.input.event_set_yaml is not None:
             translate_events(
