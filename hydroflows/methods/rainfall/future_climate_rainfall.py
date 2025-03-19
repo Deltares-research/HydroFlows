@@ -174,11 +174,11 @@ class FutureClimateRainfall(ExpandMethod):
         """Run the FutureClimateRainfall method."""
         event_set = EventSet.from_yaml(self.input.event_set_yaml)
 
-        # List to save the scaled events
-        future_events_list = []
-
         # scenario in outer loop because of event set
         for scenario, dT in self.params.scenarios.items():
+            # List to save the scaled events
+            future_events_list = []
+
             for name in self.params.event_names:
                 output = self.get_output_for_wildcards(
                     {
