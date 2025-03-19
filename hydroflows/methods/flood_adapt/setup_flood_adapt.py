@@ -117,6 +117,12 @@ class SetupFloodAdapt(Method):
 
     def _run(self):
         """Run the SetupFloodAdapt method."""
+        # prepare and copy fiat model
+        shutil.copytree(
+            os.path.dirname(self.input.fiat_cfg),
+            Path(self.params.output_dir, "fiat"),
+            dirs_exist_ok=True,
+        )
         # prepare and copy sfincs model
         shutil.copytree(
             os.path.dirname(self.input.sfincs_inp),
