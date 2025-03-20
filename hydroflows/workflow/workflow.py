@@ -8,9 +8,10 @@ This class is responsible for:
 """
 
 import logging
-from itertools import product
+from copy import deepcopy
 from pathlib import Path
 from pprint import pformat
+from shutil import copy
 from typing import Dict, List, Optional, Union
 
 import yaml
@@ -19,8 +20,6 @@ from jinja2 import Environment, PackageLoader
 from hydroflows import __version__
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
-from hydroflows.utils.cwl_utils import map_cwl_types
-from hydroflows.utils.parsers import get_wildcards
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule
@@ -209,45 +208,21 @@ class Workflow:
         template_workflow = template_env.get_template("workflow.cwl.jinja")
         template_rule = template_env.get_template("rule.cwl.jinja")
 
+        # Make a copy of workflow so any changes CWL parser will make to config, refs do not alter original
+        workflow_copy = deepcopy(self)
+        cwl_workflow = JinjaCWLWorkflow(
+            rules=[JinjaCWLRule(r) for r in workflow_copy.rules], dryrun=dryrun
+        )
+
         # Write CWL files for the methods
-        for rule in self.rules:
-            _str = template_rule.render(version=__version__, rule=JinjaCWLRule(rule))
-            with open(f"{cwlfile.parent}/cwl/{rule.method.name}.cwl", "w") as f:
+        for rule in cwl_workflow.rules:
+            _str = template_rule.render(version=__version__, rule=rule)
+            with open(f"{cwlfile.parent}/cwl/{rule.method_name}.cwl", "w") as f:
                 f.write(_str)
-
-        # Set workflow config as inputs and evaluate wildcards
-        input_dict = {}
-        for key, value in self.config:
-            tmp = value
-            if isinstance(value, Path):
-                tmp = value.as_posix()
-            # if has_wildcards(tmp):
-            if "{" in tmp:
-                wildcards = get_wildcards(tmp)
-                wc_values = [self.wildcards.get(wc) for wc in wildcards]
-                wc_tuples = list(product(*wc_values))
-                new_val = [tmp.format(**dict(zip(wildcards, tup))) for tup in wc_tuples]
-                if isinstance(value, Path) or Path(value).suffix:
-                    new_val = [Path(val) for val in new_val]
-            else:
-                new_val = value
-
-            input_dict[key] = map_cwl_types(new_val)
-        for wc in self.wildcards.names:
-            input_dict[wc + "_wc"] = {
-                "type": "string[]",
-                "value": self.wildcards.get(wc),
-            }
-        if dryrun:
-            input_dict["dryrun"] = {"type": "boolean", "value": dryrun}
-            input_dict["touch_output"] = {"type": "boolean", "value": True}
-
-        # Write CWL file for workflow
-        cwl_workflow = JinjaCWLWorkflow([JinjaCWLRule(r) for r in self.rules])
 
         _str = template_workflow.render(
             version=__version__,
-            inputs=input_dict,
+            inputs=cwl_workflow.workflow_input,
             workflow=cwl_workflow,
             dryrun=dryrun,
         )
@@ -255,7 +230,9 @@ class Workflow:
             f.write(_str)
 
         # Write CWL config file
-        config = {key: value["value"] for key, value in input_dict.items()}
+        config = {
+            key: value["value"] for key, value in cwl_workflow.workflow_input.items()
+        }
         with open(configfile, "w") as f:
             yaml.dump(config, f)
 
@@ -277,6 +254,12 @@ class Workflow:
                         if not fn.exists():
                             fn.parent.mkdir(parents=True, exist_ok=True)
                             fn.touch()
+
+        # Copy yml files with nested types
+        yml_root = Path(__file__).parents[1] / "templates"
+        yml_files = yml_root.glob("*.yml")
+        for file in yml_files:
+            copy(file, cwlfile.parent / file.name)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
