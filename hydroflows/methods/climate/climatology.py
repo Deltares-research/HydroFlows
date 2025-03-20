@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import ConfigDict, model_validator
 
-from hydroflows._typing import ListOfListOfInt, ListOfStr
+from hydroflows._typing import FolderPath, ListOfListOfInt, ListOfStr, OutPath
 from hydroflows.io import to_netcdf
 from hydroflows.methods.climate.grid_utils import extract_climate_projections_statistics
 from hydroflows.workflow.method import Method
@@ -25,7 +25,7 @@ class Input(Parameters):
     The Path to the region vector file.
     """
 
-    catalog_path: Path | None
+    catalog_path: FolderPath | None
     """
     The file path to the data catalog. Should contain the the `clim_source` data.
     """
@@ -75,7 +75,7 @@ class Params(Parameters):
     horizon: ListOfListOfInt
     """The horizon of the future scenario (e.g. [[2090, 2100]])."""
 
-    output_dir: Path = Path("data", "climatology")
+    output_dir: OutPath = OutPath("data", "climatology")
     """The output directory of the climatology dataset."""
 
     @model_validator(mode="after")

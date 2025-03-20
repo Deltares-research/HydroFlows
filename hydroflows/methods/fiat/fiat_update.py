@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Union
 
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import ListOfPath, WildcardPath
+from hydroflows._typing import FolderPath, ListOfPath, OutPath, WildcardPath
 from hydroflows.events import EventSet
 from hydroflows.methods.fiat.fiat_utils import copy_fiat_model
 from hydroflows.utils.path_utils import make_relative_paths
@@ -35,7 +35,7 @@ class Output(Parameters):
     fiat_hazard: Path
     """"The path to the generated combined hazard file (NetCDF) containing all rps."""
 
-    fiat_out_cfg: Path
+    fiat_out_cfg: FolderPath
     """The path to the newly created settings file."""
 
 
@@ -51,7 +51,7 @@ class Params(Parameters):
     sim_name: str
     """The name of the simulation folder."""
 
-    output_dir: Path
+    output_dir: OutPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<sim_name>."""
 
     copy_model: bool = False

@@ -14,7 +14,7 @@ import xarray as xr
 from pydantic import PositiveInt
 from shapely.geometry import Point
 
-from hydroflows._typing import ListOfFloat, TupleOfInt
+from hydroflows._typing import ListOfFloat, OutPath, TupleOfInt
 from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -52,7 +52,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`FloodmarksValidation` method."""
 
-    out_root: Path
+    out_root: OutPath
     """Root folder to save the derived validation scores."""
 
     waterlevel_col: str

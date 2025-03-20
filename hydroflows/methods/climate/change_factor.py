@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from hydroflows._typing import ListOfListOfInt
+from hydroflows._typing import ListOfListOfInt, OutPath
 from hydroflows.io import to_netcdf
 from hydroflows.methods.climate.grid_utils import get_expected_change_grid
 from hydroflows.workflow.method import ExpandMethod
@@ -66,7 +66,7 @@ class Params(Parameters):
     Whether or not to convert the change factors from percentages to fractions.
     """
 
-    output_dir: Path
+    output_dir: OutPath
     """
     The output directory of the dataset.
     """

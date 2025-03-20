@@ -7,6 +7,7 @@ import pandas as pd
 import xarray as xr
 from hydromt.data_catalog import DataCatalog
 
+from hydroflows._typing import FolderPath, OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -19,7 +20,7 @@ class Input(Parameters):
     region: Path
     """Path to region geometry file."""
 
-    coastrp_catalog: Path
+    coastrp_catalog: FolderPath
     """Path to full COAST-RP dataset."""
 
 
@@ -33,7 +34,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Params parameters for the :py:class:`GetCoastRP` method."""
 
-    data_root: Path = Path("data/input/forcing_data/waterlevel")
+    data_root: OutPath = OutPath("data/input/forcing_data/waterlevel")
     """The folder root where output is stored."""
 
     catalog_key: str = "coast-rp"
