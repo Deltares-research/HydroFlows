@@ -381,8 +381,7 @@ def translate_events(
             Path(output_fa_events),
             river_coordinates,
         )
+        # Remove old translation folder
+        shutil.rmtree(fn_floodadapt.parent)
     else:
         convert_event(fa_event.attrs, Path(event_fn), river_coordinates)
-
-    # Remove old translation folder
-    shutil.rmtree(fn_floodadapt.parent)
