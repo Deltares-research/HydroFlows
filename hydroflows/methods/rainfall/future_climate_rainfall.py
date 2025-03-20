@@ -92,7 +92,7 @@ class FutureClimateRainfall(ExpandMethod):
     _test_kwargs = {
         "scenarios": {"rcp45_2050": 1.0},
         "event_set_yaml": Path("event_set.yaml"),
-        "event_names_input": ["p_event1", "p_event2"],
+        "event_names": ["p_event1", "p_event2"],
     }
 
     def __init__(
