@@ -104,14 +104,11 @@ class SetupFloodAdapt(Method):
         )
         self.params: Params = Params(output_dir=output_dir)
 
-        sfincs_models = []
-        for item in os.listdir(self.input.sfincs_inp.parent.parent):
-            if item.startswith("sfincs"):
-                sfincs_models.append(item)
-
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
-            sfincs_out_inp=Path(self.params.output_dir, sfincs_models[0], "sfincs.inp"),
+            sfincs_out_inp=Path(
+                self.params.output_dir, self.input.sfincs_inp.parent.stem, "sfincs.inp"
+            ),
         )
 
         if self.input.event_set_yaml is not None:
@@ -137,7 +134,7 @@ class SetupFloodAdapt(Method):
                 sfincs_models.append(item)
         for model in sfincs_models:
             shutil.copytree(
-                os.path.dirname(self.input.sfincs_inp),
+                Path(self.input.sfincs_inp.parent.parent / model),
                 Path(self.params.output_dir, model),
                 dirs_exist_ok=True,
             )
