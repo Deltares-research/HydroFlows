@@ -1,0 +1,6 @@
+name: nested_Directory
+type: array
+label: shorthand for a once nested array of Directories
+items:
+  type: array
+  items: Directory

@@ -1,0 +1,6 @@
+name: nested_string
+type: array
+label: shorthand for a once nested array of strings
+items:
+  type: array
+  items: string
