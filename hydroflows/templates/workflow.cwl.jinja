@@ -10,18 +10,18 @@ requirements:
 
 inputs:
     {% for key,value in inputs.items()%}
+    {% if "[][]" in value.type%}
+    {{key}}: [$import: nested_{{value.type.replace("[][]","")}}.yml]
+    {% else %}
     {{key}}: {{value.type}}
+    {% endif %}
     {% endfor %}
 
 outputs:
 {% for id,info in workflow.output.items()%}
     {{id}}:
 {% if "[][]" in info.type%}
-        type:
-            type: array
-            items:
-                type: array
-                items: {{info.type.replace("[][]","")}}
+        type: [$import: nested_{{info.type.replace("[][]","")}}.yml]
 {% else %}
         type: {{info.type}}
 {% endif %}

@@ -19,7 +19,7 @@ inputs:
     {% for key,value in rule.input.items() %}
     {{key}}:
         type: {{value.type}}
-        {%if "_dir" not in key%}
+        {%if "folderpath" not in value%}
         inputBinding:
             prefix: {{key}}=
             separate: false
