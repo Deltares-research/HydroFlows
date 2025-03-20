@@ -7,7 +7,7 @@ from typing import List, Optional
 import pandas as pd
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import ClimateScenariosDict, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -44,16 +44,11 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`FutureClimateRainfall` method."""
 
-    scenario_name: str
-    """Future scenario name for which CC scaling is applied."""
+    scenarios: ClimateScenariosDict
+    """Future scenario name, e.g. "rcp45_2050", and delta temperature for CC scaling.
 
-    dT: float
-    """Temperature change corresponding to the future climate scenario `scenario_name`
-    Note that this value indicates the temperature difference between the year of the event
-    to be scaled and the future climate period of interest.
-
-    This parameter also represents the projected temperature increase, with an emphasis on hot
-    days, rather than a simple average temperature change. To accurately capture extreme
+    The delta temperature represents the projected temperature increase, with an emphasis on
+    hot days, rather than a simple average temperature change. To accurately capture extreme
     temperature shifts, it is recommended that users consider high quantiles
     (e.g., the 95th percentile) in their analyses.
 
@@ -61,73 +56,53 @@ class Params(Parameters):
     for CMIP5 and CMIP6 models can be taken via:
     `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_"""
 
+    event_root: Path
+    """Root folder to save the derived scaled events."""
+
+    event_names: ListOfStr
+    """List of event names matching event_set_yaml."""
+
     alpha: float = 0.07
     """The rate of change of precipitation with respect to temperature (per degree)
     used in Clausius-Clapeyron (CC) scaling"""
 
-    event_root: Path
-    """Root folder to save the derived scaled events."""
-
-    wildcard: str = "future_event"
+    event_wildcard: str = "future_event"
     """The wildcard key for expansion over the scaled events."""
 
-    event_names_input: Optional[ListOfStr] = None
-    """List of event names to be scaled for future climate projections."""
+    scenario_wildcard: str = "scenario"
+    """The wildcard key for expansion over the scenarios."""
 
-    event_names_output: Optional[ListOfStr] = None
-    """List of event names for the scaled future climate events."""
-
-    input: Input = Field(exclude=True)
-    """Internal variable to link input."""
+    event_set_names: ListOfStr | None = Field(None, exclude=True)
+    """List of event names in event_set_yaml"""
 
     @model_validator(mode="after")
-    def _validate_model(self):
-        # Check if the input event set yaml file exists and check / set event names
-        if self.input.event_set_yaml.is_file():
-            input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
-            event_names = [event["name"] for event in input_event_set.events]
-            if self.event_names_input is not None:
-                if not set(self.event_names_input).issubset(event_names):
-                    not_found = list(set(self.event_names_input) - set(event_names))
-                    raise ValueError(
-                        f"Events {not_found} event_names_input are missing in the event_set_yaml {self.input.event_set_yaml}."
-                    )
-            else:
-                self.event_names_input = event_names
-        # Check if the event_names_output are provided and same length as event_input_name or set them
-        if self.event_names_output is not None:
-            if len(self.event_names_output) != len(self.event_names_input):
-                raise ValueError(
-                    "The number of event_names_output should match the number of event_names_input."
-                )
-        elif self.event_names_input is not None:
-            self.event_names_output = [
-                f"{name}_{self.scenario_name}" for name in self.event_names_input
-            ]
+    def _check_event_names(self):
+        """Check if event_names match event_set_yaml."""
+        if self.event_names is not None and self.event_set_names is not None:
+            if self.event_names and set(self.event_names) != set(self.event_set_names):
+                raise ValueError("event_names do not match event_set_yaml")
+            # use ordered event names from event set
+            self.event_names = self.event_set_names
         return self
 
 
 class FutureClimateRainfall(ExpandMethod):
-    """Method to deriving future climate rainfall by scaling an historical event using Clausius-Clapeyron (CC).
+    """Create and validate a FutureClimateRainfall instance.
 
     Parameters
     ----------
+    scenarios: Dict[str, float]
+        Future scenario name, e.g. "rcp45_2050", and delta temperature for CC scaling.
     event_set_yaml : Path
         The file path to the event set YAML file, which includes the events to be scaled
         for a future climate projection.
-    scenario_name: str
-        Future scenario name for which CC scaling is applied.
-    dT: float
-        Temperature change corresponding to the future climate scenario `scenario_name`,
-        indicating the temperature difference between the year of the event
-        to be scaled and the future climate period of interest.
+    event_names: Optional[List[str]]
+        List of event names in event_set_yaml
+        If not provided, event_set_yaml must exist to get the event names.
     event_root: Path, optional
         Root folder to save the derived scaled events, by default "data/events/future_rainfall".
     wildcard: str
         The wildcard key for expansion over the scaled events, default is "future_event".
-    event_names_input, event_names_output: Optional[List[str]]
-        List of input event names in event_set_yaml and matching output event names for the scaled events.
-        If not provided, event_set_yaml must exist and all events will be scaled.
     **params
         Additional parameters to pass to the FutureClimateRainfall Params instance.
 
@@ -141,91 +116,114 @@ class FutureClimateRainfall(ExpandMethod):
     name: str = "future_climate_rainfall"
 
     _test_kwargs = {
-        "scenario_name": "RCP85",
-        "dT": 1.8,
+        "scenarios": {"rcp45_2050": 1.0},
         "event_set_yaml": Path("event_set.yaml"),
-        "event_names_input": ["p_event1", "p_event2"],
+        "event_names": ["p_event1", "p_event2"],
     }
 
     def __init__(
         self,
-        scenario_name: str,
-        dT: int,
+        scenarios: dict[str, float],
         event_set_yaml: Path,
-        event_root: Path = Path("data/events/future_rainfall"),
-        wildcard: str = "future_event",
-        event_names_input: Optional[List[str]] = None,
-        event_names_output: Optional[List[str]] = None,
+        event_names: Optional[List[str]] = None,
+        event_root: Path = Path("data/events"),
+        event_wildcard: str = "future_event",
+        scenario_wildcard: str = "scenario",
         **params,
     ) -> None:
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
+        if self.input.event_set_yaml.exists():
+            event_set = EventSet.from_yaml(self.input.event_set_yaml)
+            event_set_names = [event["name"] for event in event_set.events]
+            if event_names is None:
+                event_names = event_set_names
+            else:
+                # for validation after parsing event_names
+                params["event_set_names"] = event_set_names
+        elif event_names is None:
+            raise ValueError(
+                "event_names must be provided if event_set_yaml does not exist"
+            )
+
         self.params: Params = Params(
-            scenario_name=scenario_name,
-            dT=dT,
+            scenarios=scenarios,
             event_root=event_root,
-            wildcard=wildcard,
-            event_names_input=event_names_input,
-            event_names_output=event_names_output,
-            input=self.input,  # for validation
+            event_wildcard=event_wildcard,
+            scenario_wildcard=scenario_wildcard,
+            event_names=event_names,
             **params,
         )
 
-        wc = "{" + self.params.wildcard + "}"
+        ewc = "{" + self.params.event_wildcard + "}"
+        swc = "{" + self.params.scenario_wildcard + "}"
 
         self.output: Output = Output(
-            future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
-            future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
-            future_event_set_yaml=Path(self.params.event_root)
-            / f"future_pluvial_events_{self.params.scenario_name}.yml",
+            future_event_yaml=self.params.event_root / swc / f"{ewc}.yml",
+            future_event_csv=self.params.event_root / swc / f"{ewc}.csv",
+            future_event_set_yaml=self.params.event_root
+            / swc
+            / f"{self.input.event_set_yaml.stem}_{swc}.yml",
         )
 
-        self.set_expand_wildcard(wildcard, self.params.event_names_output)
+        self.set_expand_wildcard(self.params.event_wildcard, self.params.event_names)
+        self.set_expand_wildcard(
+            self.params.scenario_wildcard, list(self.params.scenarios.keys())
+        )
 
     def _run(self):
         """Run the FutureClimateRainfall method."""
         event_set = EventSet.from_yaml(self.input.event_set_yaml)
 
-        # List to save the scaled events
-        future_events_list = []
+        # scenario in outer loop because of event set
+        for scenario, dT in self.params.scenarios.items():
+            # List to save the scaled events
+            future_events_list = []
 
-        for name, name_out in zip(
-            self.params.event_names_input, self.params.event_names_output
-        ):
-            output = self.get_output_for_wildcards({self.params.wildcard: name_out})
-
-            # Load the event
-            event: Event = event_set.get_event(name)
-            # get precip forcing
-            if len(event.forcings) > 1:
-                logger.warning(
-                    f"Event {name} has more than one forcing. The first rainfall forcing is used."
+            for name in self.params.event_names:
+                output = self.get_output_for_wildcards(
+                    {
+                        self.params.event_wildcard: name,
+                        self.params.scenario_wildcard: scenario,
+                    }
                 )
-                rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
-            else:
-                rainfall = event.forcings[0]
-            event_df = rainfall.data.copy()
 
-            # Apply CC scaling
-            scaled_ts = event_df.values * (1 + self.params.alpha) ** (self.params.dT)
+                # Load the original event
+                event: Event = event_set.get_event(name)
 
-            # Create a new df to include the time and scaled values
-            future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
-            future_event_df.to_csv(output["future_event_csv"], index=True)
+                # get precip forcing
+                if len(event.forcings) > 1:
+                    logger.warning(
+                        f"Event {name} has more than one forcing. The first rainfall forcing is used."
+                    )
+                    rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
+                else:
+                    rainfall = event.forcings[0]
+                event_df = rainfall.data.copy()
 
-            # write event to yaml
-            future_event = Event(
-                name=name_out,
-                forcings=[{"type": "rainfall", "path": output["future_event_csv"]}],
-            )
-            future_event.set_time_range_from_forcings()
-            future_event.to_yaml(output["future_event_yaml"])
+                # Apply CC scaling
+                scaled_ts = event_df.values * (1 + self.params.alpha) ** (dT)
 
-            # append event to list
-            future_events_list.append(
-                {"name": name_out, "path": output["future_event_yaml"]}
-            )
+                # Create a new df to include the time and scaled values
+                future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
+                future_event_df.to_csv(output["future_event_csv"], index=True)
 
-        # make and save event set yaml file
-        future_event_set = EventSet(events=future_events_list)
-        future_event_set.to_yaml(self.output.future_event_set_yaml)
+                # write event to yaml
+                future_event = Event(
+                    name=name,
+                    forcings=[{"type": "rainfall", "path": output["future_event_csv"]}],
+                    return_period=event.return_period,
+                    tstart=event.tstart,
+                    tstop=event.tstop,
+                )
+                future_event.set_time_range_from_forcings()
+                future_event.to_yaml(output["future_event_yaml"])
+
+                # append event to list
+                future_events_list.append(
+                    {"name": name, "path": output["future_event_yaml"]}
+                )
+
+            # make and save event set yaml file
+            future_event_set = EventSet(events=future_events_list)
+            future_event_set.to_yaml(output["future_event_set_yaml"])

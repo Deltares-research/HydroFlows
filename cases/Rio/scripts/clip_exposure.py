@@ -1,4 +1,4 @@
-"""Clip exposure datasets to the region of interest."""
+"""Clip exposure datasets to the region of interest and store model data in output data source folder."""
 # %% imports
 import os
 from pathlib import Path
@@ -51,5 +51,3 @@ buildings_gdf.to_file(out_root / "building_centroids.gpkg", driver="GPKG")
 entrances_path = Path(root, "census/numero_porta.gpkg")
 entrances_gdf = gpd.read_file(entrances_path, mask=sectors_gdf)
 entrances_gdf.to_file(out_root / "entrances.gpkg", driver="GPKG")
-
-# %%

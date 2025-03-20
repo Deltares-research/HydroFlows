@@ -37,8 +37,13 @@ class Wildcards(BaseModel):
     def set(self, key: str, values: list[str]):
         """Add a wildcard."""
         key = str(key).lower()
-        if key in self.wildcards and values != self.wildcards[key]:
-            raise KeyError(f"Wildcard '{key}' already exists.")
+        if key in self.wildcards:
+            if values != self.wildcards[key]:
+                raise KeyError(f"Wildcard '{key}' already exists.")
+            logger.debug(f"Wildcard '{key}' already exists with identical keys.")
+            return
+        if not isinstance(values, list):
+            raise TypeError("Values must be a list.")
         self.wildcards.update({key: values})
         logger.info(f"Added wildcard '{key}' with values: {values}")
 

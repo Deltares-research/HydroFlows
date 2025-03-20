@@ -11,6 +11,7 @@ from hydroflows.methods.rainfall import (
     PluvialDesignEvents,
     PluvialDesignEventsGPEX,
 )
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 
 def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
@@ -84,16 +85,17 @@ def test_future_climate_rainfall(
 ):
     out_root = Path(tmp_path / "CC_scaling")
 
-    rule = FutureClimateRainfall(
+    fut_clim_rain = FutureClimateRainfall(
         event_set_yaml=event_set_file,
-        scenario_name="RCP85",
-        dT=2.5,
+        scenarios={"RCP4.5": 1.0, "RCP8.5": 1.5},
         event_root=out_root,
     )
 
-    rule.run()
+    fut_clim_rain.run()
 
-    fn_scaled_event_set = rule.output.future_event_set_yaml
+    fn_scaled_event_set = resolve_wildcards(
+        fut_clim_rain.output.future_event_set_yaml, {"scenario": "RCP4.5"}
+    )
     scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)
     assert isinstance(scaled_event_set.events, list)
 

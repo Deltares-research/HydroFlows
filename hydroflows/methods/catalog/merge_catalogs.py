@@ -24,9 +24,9 @@ class Input(Parameters):
 
     @model_validator(mode="before")
     @classmethod
-    def _set_abs_paths(cls, data: dict) -> dict:
+    def _set_paths(cls, data: dict) -> dict:
         if isinstance(data, dict) and "catalog_paths" in data:
-            data.update(**data["catalog_paths"])
+            data.update(**{k: Path(v) for k, v in data["catalog_paths"].items()})
             del data["catalog_paths"]
         return data
 

@@ -24,11 +24,33 @@ local_DTM_1m_clipped:
     notes: Clipped version of the "MDT_Lidar_1m1-001.tif" file.
 river_bathymetry:
   data_type: RasterDataset
-  path: bathymetry/ACARI_BATHYMETRY.tif
+  path: bathymetry/ACARI_BATHYMETRY_MERGED.tif
   driver: raster
   filesystem: local
   meta:
-    notes: The file "ACARI_BATHYMETRY.tif" contains the bathymetry of the Acari River, derived using point locations.
+    notes: The file "ACARI_BATHYMETRY_MERGED.tif" contains the bathymetry of the Acari River, derived using point locations.
 admin_sentores:
   data_type: GeoDataFrame
   path: admin/Setores_CensitA1rios_2010.gpkg
+planned_reservoirs:
+  data_type: GeoDataFrame
+  path: master_plan/PDMAP_RESERVOIRS_ACARI_polygons.gpkg
+planned_dredging:
+  data_type: RasterDataset
+  path: master_plan/T1BEPRK_T2DESSAS_R02.tif
+damage_values:
+  data_type: DataFrame
+  path: census/damages/max_pot_damages.csv
+  driver: csv
+  filesystem: local
+vulnerability_curves:
+  data_type: DataFrame
+  path: census/vulnerability/single_curves
+  driver: csv
+vulnerability_curves_linking:
+  data_type: DataFrame
+  path: census/vulnerability/damage_functions_linking.csv
+  driver: csv
+aggregation_neighbourhood:
+  data_type: GeoDataFrame
+  path: census/aggregation_neighbourhood.gpkg

@@ -18,6 +18,7 @@ from tqdm.contrib.concurrent import thread_map
 from hydroflows.utils.parsers import get_wildcards, has_wildcards
 from hydroflows.utils.path_utils import cwd
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
+from hydroflows.workflow.method_parameters import Parameters
 from hydroflows.workflow.wildcards import resolve_wildcards
 
 if TYPE_CHECKING:
@@ -178,7 +179,8 @@ class Rule:
         wildcards: Dict[str, List] = {"input": [], "output": [], "params": []}
         wildcard_fields: Dict[str, List] = {}
         for sec in wildcards.keys():
-            for field, value in self.method.dict[sec].items():
+            for field, value in getattr(self.method, sec):
+                # skip if value is not a string or path
                 if not isinstance(value, (str, Path)):
                     continue
                 val_wildcards = get_wildcards(value)
@@ -402,10 +404,11 @@ class Rule:
         for method in self._method_instances:
             for name in parameters:
                 if name == "output" and isinstance(method, ExpandMethod):
-                    obj = method.output_expanded.items()
+                    inout_dict = method.output_expanded
                 else:
-                    obj = getattr(method, name)
-                for key, value in obj:
+                    obj: Parameters = getattr(method, name)
+                    inout_dict = {key: getattr(obj, key) for key in obj.all_fields}
+                for key, value in inout_dict.items():
                     if key not in parameters[name]:
                         parameters[name][key] = []
                     if name in ["input", "output"]:

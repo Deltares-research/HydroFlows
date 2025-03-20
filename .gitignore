@@ -109,6 +109,9 @@ bin/
 
 # temporary snakemake files
 */.snakemake/*
+*.smk
+**/Snakefile
+**/*config.yml
 
 # ruff
 .ruff_cache

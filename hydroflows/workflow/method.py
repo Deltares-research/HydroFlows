@@ -315,10 +315,10 @@ class Method(ABC):
                         logger.warning(msg)
                     else:
                         raise FileNotFoundError(msg)
-        for value in self.output.model_dump().values():
-            if isinstance(value, Path):
-                if not value.parent.is_dir():
-                    value.parent.mkdir(parents=True)
+        # get all output folders
+        folders = list(set([p.parent for _, p in self._output_paths]))
+        for folder in folders:
+            folder.mkdir(parents=True, exist_ok=True)
 
     @property
     def _output_paths(self) -> List[Tuple[str, Path]]:

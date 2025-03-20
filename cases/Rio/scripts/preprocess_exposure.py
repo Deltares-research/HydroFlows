@@ -10,6 +10,7 @@ from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
+import pandas as pd
 import yaml
 from shapely.geometry import MultiPolygon, Polygon
 
@@ -42,6 +43,24 @@ def convert_to_2d(geometry):
         return geometry
 
 
+def map_social_class(income):
+    """Map the social class to the income."""
+    if income < 2403.04:
+        return "DE"
+    elif income > 2403.04 and income < 3980.38:
+        return "C2"
+    elif income > 3980.38 and income < 7017.64:
+        return "C1"
+    elif income > 7017.64 and income < 12683.34:
+        return "B2"
+    elif income > 12683.34 and income < 26811.68:
+        return "B1"
+    elif income > 26811.68:
+        return "A"
+    else:
+        return ""
+
+
 # %% load clipped data
 census_path = data_source / "census2010.gpkg"
 census_gdf = gpd.read_file(census_path).to_crs(crs)
@@ -53,8 +72,17 @@ buildings_gdf.columns = buildings_gdf.columns.str.lower()
 entrances_path = data_source / "entrances.gpkg"
 entrances_gdf = gpd.read_file(entrances_path).to_crs(crs)
 
-# %% prep building data
+# %% load csv data
+social_class_path = (
+    Path(data_source.parent)
+    / "local-data"
+    / "census"
+    / "damages"
+    / "social_class_building_type_mapping.csv"
+)
+social_class = pd.read_csv(social_class_path)
 
+# %% prep building data
 
 # NOTE that not all buildings have entrances, these are likely unplanned residential buildings
 
@@ -77,10 +105,6 @@ if buildings_gdf.crs != occupancy_gdf.crs:
     )
 
 # TODO: Create strategy to possibly remove duplicate building footprints!
-
-# TODO map topologies to curves - as soon we get the correct curves
-# occupancy_gdf.to_file((data_source / "occupancy_pre_processed_translated_occupaction_local.gpkg"))
-# ...
 
 # fill typology with residential if missing
 dic_occupancy = {
@@ -124,9 +148,9 @@ occupancy_gdf_jrc["primary_object_type"] = (
 
 # %% prep population data
 
-occupancy_gdf = gpd.sjoin(occupancy_gdf, census_gdf, how="left", predicate="within")
+occupancy_gdf = gpd.sjoin(occupancy_gdf_jrc, census_gdf, how="left", predicate="within")
 
-res_buildings = occupancy_gdf["primary_object_type"] == "Residential"
+res_buildings = occupancy_gdf["primary_object_type"] == "residential"
 
 # per cod_setor total area of building footprints
 building_area_per_sector = (
@@ -152,12 +176,70 @@ occupancy_gdf["residents"] = np.where(
     0.0,  # Default value for other rows
 )
 
+# %% Map local occupancy types based on income
+# Combine income csv with spatial sectors
+occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
+    lambda x: np.nan if x is None else x
+)
+occupancy_gdf["V005"] = occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
+    lambda x: float(x.replace(",", ".")) if pd.notna(x) else np.nan
+)
+# either adjust income to inflation or map to 2010 values - not available I think
+occupancy_gdf["V005"] = (
+    occupancy_gdf["V005"] * 2.75
+)  # https://www3.bcb.gov.br/CALCIDADAO/publico/corrigirPorIndice.do?method=corrigirPorIndice
+
+# Map social class
+occupancy_bf_residential = occupancy_gdf[
+    occupancy_gdf["primary_object_type"] == "residential"
+]
+occupancy_bf_com_ind = occupancy_gdf[
+    occupancy_gdf["primary_object_type"] != "residential"
+]
+
+for index, row in occupancy_bf_residential.iterrows():
+    if pd.isna(row["V005"]) or row["V005"] is None:
+        nearest_idx = occupancy_bf_residential.sindex.nearest(
+            row["geometry"], return_all=False
+        )
+        if isinstance(nearest_idx, (list, np.ndarray)):
+            for idx in nearest_idx:
+                if pd.notna(occupancy_bf_residential.iloc[idx]["V005"][0]):
+                    nearest_idx = idx
+                    break
+        nearest_row = occupancy_bf_residential.iloc[nearest_idx]
+        occupancy_bf_residential.at[index, "V005"] = nearest_row["V005"]
+
+# Apply mapping function
+occupancy_bf_residential["social_class"] = occupancy_bf_residential["V005"].apply(
+    map_social_class
+)
+occupancy_bf_com_ind["V005"] = None
+
+new_occupancy = pd.concat(
+    [occupancy_bf_residential, occupancy_bf_com_ind], ignore_index=True
+)
+new_occupancy = new_occupancy.reset_index(drop=True)
+
+# Map building
+social_class_dict = dict(
+    zip(social_class["SOCIALCLASS"], social_class["BUILDINGSTANDARD"])
+)
+
+new_occupancy["secondary_object_type"] = new_occupancy["social_class"].map(
+    social_class_dict
+)
+
+for index, row in new_occupancy.iterrows():
+    if row["primary_object_type"] == "commercial":
+        new_occupancy.at[index, "secondary_object_type"] = "commercial"
+    elif row["primary_object_type"] == "industrial":
+        new_occupancy.at[index, "secondary_object_type"] = "industrial"
 # %% save data
 
 # Define file names
 fn_building_footprints = "building_footprints_2d.gpkg"
-# fn_local_dummy = "occupancy_pre_processed_translated_occupaction_local_dummy.gpkg"
-fn_jrc = "occupancy_pre_processed_translated_occupaction_jrc.gpkg"
+fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
 fn_asset_population = "asset_population.gpkg"
 
@@ -165,18 +247,17 @@ fn_asset_population = "asset_population.gpkg"
 buildings_gdf.to_file(data_source / fn_building_footprints)
 
 ## Save occupancy
-# occupancy_gdf[["geometry", "primary_object_type"]].to_file(
-#     (data_source / fn_local_dummy)
-# )
-occupancy_gdf_jrc[["geometry", "primary_object_type"]].to_file((data_source / fn_jrc))
+new_occupancy[["geometry", "primary_object_type", "secondary_object_type"]].to_file(
+    (data_source / fn_local)
+)
 
 # Save Finished Floor Height
 ##convert from cm into meters
-occupancy_gdf["altura"] = occupancy_gdf["altura"] / 100
-occupancy_gdf[["altura", "geometry"]].to_file(data_source / fn_floor_height)
+new_occupancy["altura"] = new_occupancy["altura"] / 100
+new_occupancy[["altura", "geometry"]].to_file(data_source / fn_floor_height)
 
 ## Save population
-occupancy_gdf[["residents", "geometry"]].to_file(
+new_occupancy[["residents", "geometry"]].to_file(
     data_source / fn_asset_population, driver="GPKG"
 )
 
@@ -184,22 +265,30 @@ occupancy_gdf[["residents", "geometry"]].to_file(
 # %%
 # Create a dictionary
 # Helper function to create entries
-def create_entry(path, crs):
-    """Create a dictionary entry representing a GeoDataFrame."""
-    return {
-        "data_type": "GeoDataFrame",
-        "path": path,
-        "driver": "vector",
-        "filesystem": "local",
-        "crs": crs.to_epsg() if crs else None,
-    }
+def create_entry(path, crs=None, datatype: str = "vector"):
+    """Create a dictionary entry representing a GeoDataFrame or a DataFrame."""
+    if datatype == "vector":
+        return {
+            "data_type": "GeoDataFrame",
+            "path": path,
+            "driver": "vector",
+            "filesystem": "local",
+            "crs": crs.to_epsg() if crs else None,
+        }
+    elif datatype == "csv":
+        return {
+            "data_type": "DataFrame",
+            "path": path,
+            "driver": "csv",
+            "filesystem": "local",
+        }
 
 
 # Dict
 yaml_dict = {
-    "preprocessed_occupaction_jrc": create_entry(
-        fn_jrc,
-        occupancy_gdf_jrc.crs,
+    "preprocessed_occupaction": create_entry(
+        fn_local,
+        occupancy_gdf.crs,
     ),
     "preprocessed_floor_height": create_entry(
         fn_floor_height,
@@ -215,5 +304,4 @@ yaml_dict = {
 catalog_path = data_source / "data_catalog.yml"
 with open(catalog_path, "w") as yaml_file:
     yaml.dump(yaml_dict, yaml_file, default_flow_style=False, sort_keys=False)
-
 # %%
