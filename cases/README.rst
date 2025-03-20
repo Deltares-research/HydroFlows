@@ -5,6 +5,9 @@ Rio case structure
 .. code-block:: text
 
     rio
+    ├── bin
+    │   ├── fiat_v0.2.1
+    │   └── sfincs_v0.2.1
     ├── data
     │   ├── global-data
     │   │   └── data_catalog.yml
@@ -35,5 +38,7 @@ Rio case structure
     │       ├── Snakefile-validation.smk
     │       └── Snakefile-validation.config.yml
     ├── global-workflow-risk.py
+    ├── global-workflow-risk-climate
     ├── local-workflow-risk.py
+    ├── local-workflow-risk-climate-strategies.py
     └── local-workflow-validation.py
