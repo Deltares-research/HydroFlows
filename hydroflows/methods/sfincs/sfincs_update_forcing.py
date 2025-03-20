@@ -40,7 +40,7 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
-    output_dir: Path
+    output_dir: OutPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<event_name>."""
 
     copy_model: bool = False
@@ -48,9 +48,6 @@ class Params(Parameters):
 
     sfincs_config: JsonDict = {}
     """SFINCS simulation config settings to update sfincs_inp."""
-
-    out_root: OutPath
-    """Root folder in which outputs are created."""
 
 
 class SfincsUpdateForcing(Method):
@@ -107,16 +104,13 @@ class SfincsUpdateForcing(Method):
         if event_name is None:
             # event name is the stem of the event file
             event_name = self.input.event_yaml.stem
-        if "out_root" in params:
-            logger.warning("Param out_root will be overwritten.", stacklevel=1)
-        params["out_root"] = self.input.sfincs_inp.parent
         self.params: Params = Params(
             event_name=event_name, output_dir=output_dir, **params
         )
         if self.params.copy_model and not self.params.output_dir:
             raise ValueError("Unknown dest. folder for copy operation.")
 
-        sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
+        sfincs_out_inp = self.params.output_dir / "sfincs.inp"
         if not self.params.copy_model and not self.params.output_dir.is_relative_to(
             self.input.sfincs_inp.parent
         ):

@@ -108,7 +108,7 @@ FolderPath = Annotated[Path, AfterValidator(folderpath_validator)]
 
 
 class outpath(Path):
-    """Subclass Path to indicate path is used as root for output locations."""
+    """Subclass Path to indicate Param is used as root for output locations."""
 
     _flavour = type(Path())._flavour
 

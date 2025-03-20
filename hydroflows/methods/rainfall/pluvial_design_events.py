@@ -9,7 +9,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import FolderPath, ListOfFloat, ListOfInt, ListOfStr
+from hydroflows._typing import FolderPath, ListOfFloat, ListOfInt, ListOfStr, OutPath
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -49,7 +49,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`PluvialDesignEvents` method."""
 
-    event_root: Path
+    event_root: OutPath
     """Root folder to save the derived design events."""
 
     rps: ListOfFloat

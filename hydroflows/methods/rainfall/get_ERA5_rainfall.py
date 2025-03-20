@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 import xarray as xr
 
+from hydroflows._typing import OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -36,7 +37,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`GetERA5Rainfall`."""
 
-    data_root: Path = Path("data/input")
+    data_root: OutPath = OutPath("data/input")
     """The root folder where the data is stored."""
 
     filename: str = "era5_precip.nc"
