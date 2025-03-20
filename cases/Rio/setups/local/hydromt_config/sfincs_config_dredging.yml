@@ -15,7 +15,7 @@ setup_mask_bounds:
 
 setup_subgrid:
   datasets_dep:
-    - elevtn: river_bathymetry
+    - elevtn: planned_dredging
     - elevtn: local_DTM_1m_clipped
       mask: admin_sentores
     - elevtn: local_DEM_5m
@@ -28,7 +28,7 @@ setup_subgrid:
       # mask: osm_water_poly
       rivdph: 2
       rivwth: 10
-      manning': 0.035
+      manning: 0.035
   write_dep_tif: True
   nr_subgrid_pixels: 20 # 2.5m resolution
   nbins: 8
