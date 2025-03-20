@@ -28,6 +28,10 @@ To initialize the :class:`~hydroflows.workflow.Workflow` class, a user can suppl
 .. ipython:: python
 
     from hydroflows.workflow import Workflow
+    import logging
+
+    # setup logging
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 
     # initialize a workflow
     wf = Workflow(
@@ -164,8 +168,9 @@ Create workflow rules (expand and reduce wildcards)
 In order to create multiple output files from a single set of input files (expand) or to create a single output file from multiple input files (reduce),
 special methods called ``ExpandMethod`` and ``ReduceMethod`` can be used, see :ref:`expand_reduce_methods`.
 
-For example, the `PrepareDummyEvents` method can be used to create multiple events for different return periods from a single time series.
+For example, the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` method can be used to create multiple events for different return periods from a single time series.
 The method has a ``wildcard`` parameter to define the wildcard name, while its values will be based on the ``rps`` parameter.
+Which input parameter is used for expanding or reducing depends on the method logic and is described in the method documentation.
 At initialization, an ``ExpandMethod`` stores the name and values as *expand* wildcard which are used to create multiple output files.
 
 .. ipython:: python
@@ -196,7 +201,10 @@ At initialization, an ``ExpandMethod`` stores the name and values as *expand* wi
 After an ``ExpandMethod`` is added to the workflow, the wildcard can be used in subsequent rules to repeat the
 method for each value of the wildcard value and/or to reduce over multiple input files.
 
-In the following example, the `RunDummyEvent` method is repeated for each event created by the `PrepareDummyEvents` method, followed by the ``ReduceMethod`` `CombineDummyEvents` that combines the results. The latter takes the output of all event simulations as input.
+In the following example, the :class:`~hydroflows.methods.dummy.RunDummyEvent` method is repeated for each event,
+created by the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` method,
+followed by the ``ReduceMethod`` :class:`~hydroflows.methods.dummy.CombineDummyEvents` that combines the results.
+The latter takes the output of all event simulations as input.
 
 .. ipython:: python
 

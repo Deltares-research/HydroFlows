@@ -30,7 +30,17 @@ class PostprocessDummyEventParams(Parameters):
 
 
 class PostprocessDummyEvent(Method):
-    """Run an event with some model."""
+    """Postprocess a dummy event.
+
+    Parameters
+    ----------
+    model_nc : Path
+        Model output netcdf file
+    output_dir : Path
+        The output directory
+    event_name : str, optional
+        The event name, by default None
+    """
 
     input: PostprocessDummyEventInput
     output: PostprocessDummyEventOutput
@@ -48,13 +58,6 @@ class PostprocessDummyEvent(Method):
         output_dir: Path,
         event_name: str | None = None,
     ):
-        """Create a PostprocessDummyEvent instance.
-
-        Parameters
-        ----------
-        model_nc : Path
-            Model output netcdf file
-        """
         self.input = PostprocessDummyEventInput(model_nc=model_nc)
         if event_name is None:
             event_name = self.input.model_nc.stem

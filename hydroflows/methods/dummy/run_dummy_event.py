@@ -39,7 +39,24 @@ class RunDummyEventParams(Parameters):
 
 
 class RunDummyEvent(Method):
-    """Run an event with some model."""
+    """Run a dummy event.
+
+    Parameters
+    ----------
+    event_csv : Path
+        Event csv file
+    settings_toml : Path
+        Model settings file
+    output_dir : Path
+        Output directory
+    event_name : str, optional
+        The event name, by default None
+    model_exe : Path, optional
+        Model executable, required if run_method is 'exe', by default None
+    **params
+        Additional parameters to pass to the RunDummyEvent Params instance.
+        See :py:class:`~hydroflows.methods.dummy.RunDummyEventParams`.
+    """
 
     input: RunDummyEventInput
     output: RunDummyEventOutput
@@ -62,24 +79,6 @@ class RunDummyEvent(Method):
         model_exe: Path | None = None,
         **params,
     ):
-        """Create a RunDummyEvent instance.
-
-        Parameters
-        ----------
-        event_csv : Path
-            Event csv file
-        settings_toml : Path
-            Model settings file
-        output_dir : Path
-            Output directory
-        event_name : str, optional
-            The event name, by default None
-        model_exe : Path, optional
-            Model executable, required if run_method is 'exe', by default None
-        **params
-            Additional parameters to pass to the RunDummyEvent Params instance.
-            See :py:class:`~hydroflows.methods.dummy.RunDummyEventParams`.
-        """
         self.input = RunDummyEventInput(
             event_csv=event_csv, settings_toml=settings_toml, model_exe=model_exe
         )

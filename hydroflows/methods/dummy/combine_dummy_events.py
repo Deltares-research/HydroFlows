@@ -27,7 +27,18 @@ class CombineDummyEventsParams(Parameters):
 
 
 class CombineDummyEvents(ReduceMethod):
-    """Combine the model outputs for all events."""
+    """Create a CombineDummyEvents instance.
+
+    Parameters
+    ----------
+    model_out_ncs : List[Path] | WildcardPath
+        List of model output netcdf files or a wildcard path
+    output_dir : Path, optional
+        The output directory, by default None
+    **params
+        Additional parameters to pass to the CombineDummyEvents Params instance.
+        See :py:class:`~hydroflows.methods.dummy.CombineDummyEvents`
+    """
 
     input: CombineDummyEventsInput
     output: CombineDummyEventsOutput
@@ -42,18 +53,6 @@ class CombineDummyEvents(ReduceMethod):
         output_dir: Path | None = None,
         **params,
     ):
-        """Create a CombineDummyEvents instance.
-
-        Parameters
-        ----------
-        model_out_ncs : List[Path] | WildcardPath
-            List of model output netcdf files or a wildcard path
-        output_dir : Path, optional
-            The output directory, by default None
-        **params
-            Additional parameters to pass to the CombineDummyEvents Params instance.
-            See :py:class:`~hydroflows.methods.dummy.CombineDummyEvents
-        """
         self.params = CombineDummyEventsParams(output_dir=output_dir, **params)
         self.input = CombineDummyEventsInput(model_out_ncs=model_out_ncs)
         self.output = CombineDummyEventsOutput(

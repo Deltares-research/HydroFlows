@@ -39,7 +39,20 @@ class PrepareDummyEventsParams(Parameters):
 
 
 class PrepareDummyEvents(ExpandMethod):
-    """Prepare events for some model."""
+    """Prepare events for some model.
+
+    Parameters
+    ----------
+    timeseries_csv : Path
+        Input timeseries csv file
+    output_dir : Path
+        Output directory
+    rps : List[int]
+        Return periods [years].
+        This is used to expand the outputs and create a file for each return period.
+    **params
+        Additional parameters for the method, see :class:`~hydroflows.methods.dummy.PrepareDummyEventsParams`.
+    """
 
     input: PrepareDummyEventsInput
     output: PrepareDummyEventsOutput

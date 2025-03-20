@@ -78,3 +78,17 @@ For usage and limitations see :ref:`python_script`.
    :template: module-template.rst
 
    script.script_method
+
+Dummy methods
+-------------
+
+These methods are used for documentation and testing purposes only.
+
+.. autosummary::
+   :toctree: ../_generated
+   :template: module-template.rst
+
+   dummy.combine_dummy_events
+   dummy.postprocess_dummy_event
+   dummy.prepare_dummy_events
+   dummy.run_dummy_event

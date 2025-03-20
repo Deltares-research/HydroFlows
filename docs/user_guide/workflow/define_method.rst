@@ -30,6 +30,10 @@ Printing the method shows all input, output and params fields of the method.
 .. ipython:: python
 
     from hydroflows.methods.dummy import RunDummyEvent
+    import logging
+
+    # setup logging
+    logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 
     # initialize a method
     method = RunDummyEvent(
@@ -59,6 +63,9 @@ These methods are called `ExpandMethod` and `ReduceMethod` and are subclasses of
 The `ExpandMethod` class generates one or more :term:`wildcards` on the output files which can be used
 in subsequent rules to expand the workflow over multiple output files. These can be explored by
 printing the method as in the example below.
+The wildcard name and values are defined in the method and stored in the `ExpandMethod.expand_wildcards` attribute, see below.
+Which method arguments are used to define the name and values is described in the documentation.
+An info logging message is printed with the wildcard name and values.
 
 
 .. ipython:: python
@@ -72,8 +79,15 @@ printing the method as in the example below.
         rps=[1,5,10,50,100],
     )
 
+    # Check the method expand_wildcards
+    print(method.expand_wildcards)
+
     # Note the method type and expand_wildcards
     print(method)
+
+
+# TODO add example for ReduceMethod
+
 
 .. _python_script:
 

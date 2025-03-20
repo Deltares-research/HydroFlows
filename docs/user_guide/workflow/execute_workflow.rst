@@ -7,7 +7,7 @@ Execute a Workflow
 After creating a workflow, see :ref:`compose_workflow`, you can execute it using the HydroFlows framework or export it to a workflow engine to execute it.
 HydroFlows has a simple implementation which is most suitable for testing parts of your workflow or running simple workflows.
 For most workflows, we recommend exporting the workflow to a workflow engine which has more extended capabilities for parallelization, job caching, etc.
-Currently, HydroFlows supports exporting workflows to the `SnakeMake`_ workflow engine and the `Common Workflow Language (CWL) <CWL>_`, but other workflow engines can be added in the future.
+Currently, HydroFlows supports exporting workflows to the SnakeMake_ workflow engine and the Common Workflow Language (CWL_), but other workflow engines can be added in the future.
 We don't aim to support all features of the workflow engines but rather provide a simple way to export functioning workflows to these engines. We recommend using the HydroFlows framework to *create*, *validate*, *edit*, and *configure* the workflow and use the workflow engine only to *execute* the workflow.
 Below we describe how to execute a workflow in HydroFlows, and with both supported workflow engines.
 
