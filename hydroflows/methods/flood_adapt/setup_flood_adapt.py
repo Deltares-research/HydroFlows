@@ -5,7 +5,6 @@ from pathlib import Path
 
 import toml
 from hydromt.config import configread
-from hydromt_sfincs import SfincsModel
 
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
@@ -18,12 +17,12 @@ __all__ = ["SetupFloodAdapt"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SetupFloodAdapt` method."""
 
-    sfincs_inp: Path
+    sfincs_inp: Path | None = None
     """
     The file path to the SFINCS base model config file.
     """
 
-    fiat_cfg: Path
+    fiat_cfg: Path | None = None
     """
     The file path to the FIAT base model config file.
     """
@@ -42,8 +41,8 @@ class Output(Parameters):
     The file path to the flood adaptation model.
     """
 
-    sfincs_out_inp: Path
-    """The path to the copied sfincs model configuration."""
+    fiat_out_cfg: Path
+    """The path to the copied fiat model configuration."""
 
     probabilistic_set: Path | None = None
     """The path to the event set configuration."""
@@ -71,8 +70,8 @@ class SetupFloodAdapt(Method):
 
     def __init__(
         self,
-        sfincs_inp: Path,
-        fiat_cfg: Path,
+        sfincs_inp: Path | None = None,
+        fiat_cfg: Path | None = None,
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
     ):
@@ -106,9 +105,7 @@ class SetupFloodAdapt(Method):
 
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
-            sfincs_out_inp=Path(
-                self.params.output_dir, self.input.sfincs_inp.parent.stem, "sfincs.inp"
-            ),
+            fiat_out_cfg=Path(self.params.output_dir, "fiat", "settings.toml"),
         )
 
         if self.input.event_set_yaml is not None:
@@ -121,54 +118,13 @@ class SetupFloodAdapt(Method):
     def _run(self):
         """Run the SetupFloodAdapt method."""
         # prepare and copy fiat model
-        shutil.copytree(
-            os.path.dirname(self.input.fiat_cfg),
-            Path(self.params.output_dir, "fiat"),
-            dirs_exist_ok=True,
-            ignore=lambda d, c: {x for x in c if x.startswith("simulation")},
-        )
-        # Get all sfincs models and prepare and copy sfincs model
-        sfincs_models = []
-        for item in os.listdir(self.input.sfincs_inp.parent.parent):
-            if item.startswith("sfincs"):
-                sfincs_models.append(item)
-        for model in sfincs_models:
+        if self.input.fiat_cfg is not None:
             shutil.copytree(
-                Path(self.input.sfincs_inp.parent.parent / model),
-                Path(self.params.output_dir, model),
+                os.path.dirname(self.input.fiat_cfg),
+                Path(self.params.output_dir, "fiat"),
                 dirs_exist_ok=True,
+                ignore=lambda d, c: {x for x in c if x.startswith("simulation")},
             )
-            sfincs_model = Path(self.params.output_dir, model)
-            if not Path(sfincs_model, "sfincs.bnd").exists():
-                sm = SfincsModel(
-                    root=self.input.sfincs_inp.parent,
-                    mode="r",
-                )
-                x = sm.grid["x"].values
-                y = sm.grid["y"].values
-                sfincs_bnd = []
-                sfincs_bnd.append(x[0])
-                sfincs_bnd.append(y[0])
-                with open(Path(sfincs_model, "sfincs.bnd"), "w") as output:
-                    for row in sfincs_bnd:
-                        output.write(str(row) + " ")
-                with open(Path(sfincs_model, "sfincs.inp"), "a") as sfincs_cfg:
-                    sfincs_cfg.write("bndfile = sfincs.bnd\n")
-
-            # Remove discharge
-            if Path(sfincs_model, "sfincs.dis").exists():
-                Path(sfincs_model, "sfincs.dis").unlink()
-                with open(Path(sfincs_model, "sfincs.inp"), "r") as sfincs_cfg:
-                    lines = sfincs_cfg.readlines()
-                lines = [line for line in lines if "disfile" not in line]
-                with open(Path(sfincs_model, "sfincs.inp"), "w") as sfincs_cfg:
-                    sfincs_cfg.writelines(lines)
-
-            # Remove simulation and figure folder
-            if Path(sfincs_model, "simulations").exists():
-                shutil.rmtree(Path(sfincs_model, "simulations"))
-            if Path(sfincs_model, "figs").exists():
-                shutil.rmtree(Path(sfincs_model, "figs"))
         # prepare probabilistic set
         if self.input.event_set_yaml is not None:
             translate_events(
@@ -179,7 +135,7 @@ class SetupFloodAdapt(Method):
             # Create FloodAdapt Database Builder config
             fa_db_config(
                 self.params.output_dir,
-                sfincs=sfincs_models[0],
+                sfincs=self.input.sfincs_inp.parent.stem,
                 probabilistic_set=self.input.event_set_yaml.stem,
             )
 
@@ -187,7 +143,7 @@ class SetupFloodAdapt(Method):
             # Create FloodAdapt Database Builder config
             fa_db_config(
                 self.params.output_dir,
-                sfincs=sfincs_models[0],
+                sfincs=self.input.sfincs_inp.parent.stem,
             )
 
         pass
