@@ -74,7 +74,11 @@ entrances_gdf = gpd.read_file(entrances_path).to_crs(crs)
 
 # %% load csv data
 social_class_path = (
-    data_source.parent / "loca-data" / "social_class_building_type_mapping.csv"
+    Path(data_source.parent)
+    / "local-data"
+    / "census"
+    / "damages"
+    / "social_class_building_type_mapping.csv"
 )
 social_class = pd.read_csv(social_class_path)
 
@@ -85,6 +89,8 @@ social_class = pd.read_csv(social_class_path)
 # %% Create 2D building footprints
 # Apply the conversion to each geometry in the GeoDataFrame
 buildings_gdf["geometry"] = buildings_gdf["geometry"].apply(convert_to_2d)
+buildings_gdf = buildings_gdf.dissolve(by="COD_LOTE")
+buildings_gdf = buildings_gdf.explode()
 
 # %% link buildings entrances to footprints based on cod_lote
 # NOTE There are duplicates in the cod_lote so merge might create weird duplicates, prefer spatialjoint
