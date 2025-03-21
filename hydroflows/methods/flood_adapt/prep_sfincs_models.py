@@ -80,7 +80,9 @@ class PrepSfincsModels(Method):
         # Get all sfincs models and prepare and copy sfincs model
         sfincs_model = Path(self.params.output_dir, self.input.sfincs_inp.parent.stem)
         shutil.copytree(
-            Path(self.input.sfincs_inp.parent.parent / self.input.sfincs_inp.parent),
+            Path(
+                self.input.sfincs_inp.parent.parent / self.input.sfincs_inp.parent.stem
+            ),
             sfincs_model,
             dirs_exist_ok=True,
         )
