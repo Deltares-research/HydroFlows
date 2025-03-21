@@ -2,7 +2,9 @@
 import os
 import shutil
 from pathlib import Path
+from typing import Optional
 
+import geopandas as gpd
 import toml
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
@@ -57,6 +59,16 @@ class Params(Parameters):
     The directory where the output files will be saved.
     """
 
+    river_coordinates: Optional[dict] = None
+    """
+    Dictionary of river names and coordinates, by default None
+    """
+
+    database_path: Path | None = None
+    """
+    The file path to an existing FloodAdapt database, needed when events are translated.
+    """
+
 
 class SetupFloodAdapt(Method):
     """Rule for setting up the input for the FloodAdapt Database Builder."""
@@ -74,7 +86,9 @@ class SetupFloodAdapt(Method):
         sfincs_inp: Path,
         fiat_cfg: Path,
         event_set_yaml: Path | None = None,
+        database_path: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
+        river_coordinates: Optional[Path] = None,
     ):
         """Create and validate a SetupFloodAdapt instance.
 
@@ -86,8 +100,12 @@ class SetupFloodAdapt(Method):
             The file path to the FIAT base model.
         event_set_yaml : Path, optional
             The file path to the HydroFlows event set yaml file.
+        database_path : Path, optional
+            The path to an existing FloodAdapt database.
         output_dir: Path, optional
             The folder where the output is stored, by default "flood_adapt_builder".
+        river_coordinates: Optional[Path]
+            The file path to the sfincs_build output src point geojson by default None
         **params
             Additional parameters to pass to the GetERA5Rainfall instance.
 
@@ -102,7 +120,11 @@ class SetupFloodAdapt(Method):
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
         )
-        self.params: Params = Params(output_dir=output_dir)
+        self.params: Params = Params(
+            output_dir=output_dir,
+            river_coordinates=river_coordinates,
+            database_path=database_path,
+        )
 
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
@@ -117,13 +139,20 @@ class SetupFloodAdapt(Method):
 
     def _run(self):
         """Run the SetupFloodAdapt method."""
+        # prepare and copy fiat model
+        shutil.copytree(
+            os.path.dirname(self.input.fiat_cfg),
+            Path(self.params.output_dir, "fiat"),
+            dirs_exist_ok=True,
+        )
         # prepare and copy sfincs model
         shutil.copytree(
             os.path.dirname(self.input.sfincs_inp),
             Path(self.params.output_dir, "sfincs"),
             dirs_exist_ok=True,
         )
-        if not Path(self.params.output_dir, "sfincs", "sfincs.bnd").exists():
+        sfincs_model = Path(self.params.output_dir, "sfincs")
+        if not Path(sfincs_model, "sfincs.bnd").exists():
             sm = SfincsModel(
                 root=self.input.sfincs_inp.parent,
                 mode="r",
@@ -133,33 +162,40 @@ class SetupFloodAdapt(Method):
             sfincs_bnd = []
             sfincs_bnd.append(x[0])
             sfincs_bnd.append(y[0])
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.bnd"), "w"
-            ) as output:
+            with open(Path(sfincs_model, "sfincs.bnd"), "w") as output:
                 for row in sfincs_bnd:
                     output.write(str(row) + " ")
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
-            ) as sfincs_cfg:
+            with open(Path(sfincs_model, "sfincs.inp"), "a") as sfincs_cfg:
                 sfincs_cfg.write("bndfile = sfincs.bnd\n")
+        if Path(sfincs_model, "sfincs.dis").exists():
+            Path(sfincs_model, "sfincs.dis").unlink()
+            with open(Path(sfincs_model, "sfincs.inp"), "r") as sfincs_cfg:
+                lines = sfincs_cfg.readlines()
+            lines = [line for line in lines if "disfile" not in line]
+            with open(Path(sfincs_model, "sfincs.inp"), "w") as sfincs_cfg:
+                sfincs_cfg.writelines(lines)
 
-        if not Path(self.params.output_dir, "sfincs", "sfincs.bzs").exists():
-            sfincs_bzs = [0, 0]
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.bzs"), "w"
-            ) as output:
-                for row in sfincs_bzs:
-                    output.write(str(row) + " ")
-            with open(
-                Path(self.params.output_dir, "sfincs", "sfincs.inp"), "a"
-            ) as sfincs_cfg:
-                sfincs_cfg.write("bzsfile = sfincs.bzs\n")
+        if Path(sfincs_model, "simulations").exists():
+            shutil.rmtree(Path(sfincs_model, "simulations"))
+        if Path(sfincs_model, "figs").exists():
+            shutil.rmtree(Path(sfincs_model, "figs"))
 
-        # prepare probabilistic set #NOTE: Is it possible to have multiple testsets in one workflow?
+        # prepare probabilistic set
         if self.input.event_set_yaml is not None:
+            # Create dict of river names and coordinates
+            if self.params.river_coordinates is not None:
+                src_points = gpd.read_file(self.params.river_coordinates)
+                self.params.river_coordinates = (
+                    src_points.set_index("index")[["geometry"]]
+                    .apply(lambda row: (row.geometry.x, row.geometry.y), axis=1)
+                    .to_dict()
+                )
+
             translate_events(
                 self.input.event_set_yaml,
-                Path(self.params.output_dir),
+                Path(self.params.output_dir, self.input.event_set_yaml.stem),
+                self.params.database_path,
+                river_coordinates=self.params.river_coordinates,
             )
 
             # Create FloodAdapt Database Builder config
@@ -189,7 +225,10 @@ def fa_db_config(
         The file path to the HydroFlows event set yaml file.
     """
     config = configread(config)
+
+    # Add probabilistic set to the config if provided
     if probabilistic_set is not None:
         config["probabilistic_set"] = probabilistic_set
+
     with open(Path(fa_root, "fa_build.toml"), "w") as toml_file:
         toml.dump(config, toml_file)

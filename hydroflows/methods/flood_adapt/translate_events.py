@@ -3,15 +3,21 @@
 import logging
 import os
 import pathlib
+import shutil
 from pathlib import Path
-from typing import Union
+from typing import Optional, Union
 
 import pandas as pd
 import toml
 import tomli_w
+from flood_adapt import Settings
 from pydantic import BaseModel
 
 from hydroflows.events import EventSet
+from hydroflows.methods.flood_adapt.convert_eventsets import (
+    convert_event,
+    convert_eventset,
+)
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
 # run the event in the FloodAdapt model. This folder must be placed into the Floodadapt input/events folder.
@@ -40,8 +46,8 @@ class FloodAdaptEvent(BaseModel):
     mode: str = "single_event"
     """Mode of each event. Default set to "single event"."""
 
-    template: str = "Historical_nearshore"
-    """FloodAdapt event template for each event. Default set to "Historical_nearshore."""
+    template: str = "Historical"
+    """FloodAdapt event template for each event. Default set to "Historical"."""
 
     timing: str = "historical"
     """Timing of the event. Default set to "historical"."""
@@ -107,7 +113,7 @@ class FloodAdaptEvent(BaseModel):
         Read a CSV file containing station data and returns a list of stations.
 
         The CSV file is expected to have either two columns or more. The first column must be the timestamp of the timeseries.
-        If the CSV file contains more than one station, individual DataFrames for each station are returned with keys in the format "station_{column_name}".
+        If the CSV file contains more than one station, individual DataFrames for each station are returned with keys in the format "column_name".
 
         Parameters
         ----------
@@ -122,14 +128,16 @@ class FloodAdaptEvent(BaseModel):
         df_stations = pd.read_csv(filepath)
         all_stations = {}
         if len(df_stations.columns) == 2:
-            all_stations["station"] = df_stations
+            all_stations[df_stations.columns[1]] = df_stations.iloc[
+                0:, 1
+            ]  # df_stations
             return all_stations
         else:
             # Write individual files
             df_stations.set_index(df_stations.columns[0], inplace=True, drop=True)
             for column in df_stations.columns:
                 df_station = df_stations[column]
-                all_stations[f"station_{column}"] = df_station
+                all_stations[column] = df_station
             return all_stations
 
 
@@ -162,9 +170,10 @@ class ForcingSources:
 
 
 def translate_events(
-    root: Union[str, Path] = None,
-    fa_events: Union[str, Path] = None,
-    description: str = "This is a hydroflows event set",
+    root: Union[str, Path],
+    output_fa_events: Union[str, Path],
+    database_path: Path,
+    river_coordinates: Optional[dict] = None,
 ):
     """
     Translate HydroFlows events to floodAdapt events.
@@ -175,9 +184,13 @@ def translate_events(
         Path to the root folder of the events, by default None
     fa_events : Union[str, Path]
         Folder to write the floodadapt events to, by default None
+    database_path: str
+        The path to an existing FloodAdapt database
+    river_coordinates: Optional[dict]
+        Dictionary of river names and coordinates, by default None
     """
     # Create output directory
-    fn_floodadapt = Path.joinpath(fa_events, root.stem)
+    fn_floodadapt = Path.joinpath(output_fa_events / "old", root.stem)
     fn_floodadapt.parent.mkdir(parents=True, exist_ok=True)
 
     # Get events
@@ -202,7 +215,6 @@ def translate_events(
         # Create dictionary for floodadapt individual event
         fa_event = FloodAdaptEvent(
             name=file_name,
-            description=description,
         )
 
         # Time
@@ -270,7 +282,7 @@ def translate_events(
                 csv_station_timeseries_discharge = fa_event.read_csv_stations(
                     forcing_sources.discharge
                 )
-                for key in csv_station_timeseries_discharge.items():
+                for key in csv_station_timeseries_discharge:
                     rivers.timeseries_file = f"{key}.csv"
                     river.append(rivers.model_dump())
                 fa_event.river = river
@@ -328,9 +340,7 @@ def translate_events(
                 for key, value in csv_station_timeseries_discharge.items():
                     df = value
                     df = df.round(decimals=2)
-                    df.to_csv(
-                        os.path.join(event_fn, f"{key}.csv"), index=False, header=None
-                    )
+                    df.to_csv(os.path.join(event_fn, f"{key}.csv"), header=None)
 
         # Save return period for test set toml
         if len(events.events) > 1:
@@ -348,7 +358,6 @@ def translate_events(
 
         floodadapt_config = {
             "name": name_test_set,
-            "description": description,
             "mode": "risk",
             "subevent_name": subevent_name,
             "frequency": rp,
@@ -359,3 +368,20 @@ def translate_events(
             os.path.join(fn_floodadapt, f"{name_test_set}.toml"), "w"
         ) as toml_file:
             toml.dump(floodadapt_config, toml_file)
+    # Convert event
+    # Set up Database - NOTE: A functioning DB must be provided (bug in FA, hopefully in the future there is no db needed anymore.) THIS SHOULD BE FETCH AND THEN USED AS SELF.INPUT
+    Settings(
+        DATABASE_ROOT=database_path.parent,
+        DATABASE_NAME=database_path.stem,
+        SYSTEM_FOLDER=database_path.parent / "system",
+    )
+    if len(events.events) > 1:
+        convert_eventset(
+            Path(fn_floodadapt),
+            Path(output_fa_events),
+            river_coordinates,
+        )
+        # Remove old translation folder
+        shutil.rmtree(fn_floodadapt.parent)
+    else:
+        convert_event(fa_event.attrs, Path(event_fn), river_coordinates)
