@@ -206,7 +206,9 @@ class Workflow:
         """
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
+            logger.info(
+                f"Run rule {i + 1}/{nrules}: {rule.rule_id} ({rule.n_runs} runs)"
+            )
             rule.run(max_workers=max_workers)
 
     def dryrun(self, missing_file_error: bool = False) -> None:
@@ -220,7 +222,9 @@ class Workflow:
         nrules = len(self.rules)
         input_files = []
         for i, rule in enumerate(self.rules):
-            logger.info(f">> Rule {i + 1}/{nrules}: {rule.rule_id}")
+            logger.info(
+                f"Dryrun rule {i + 1}/{nrules}: {rule.rule_id} ({rule.n_runs} runs)"
+            )
             output_files = rule.dryrun(
                 missing_file_error=missing_file_error, input_files=input_files
             )

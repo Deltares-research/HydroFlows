@@ -123,7 +123,7 @@ class Params(Parameters):
 
 
 class PluvialDesignEventsGPEX(ExpandMethod):
-    """Method for generating pluvial design events based on the GPEX global IDF dataset.
+    """Method for generating pluvial design events based on the GPEX global IDF dataset using the alternating block method.
 
     Parameters
     ----------

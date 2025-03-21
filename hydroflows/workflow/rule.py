@@ -480,7 +480,7 @@ class Rule:
         with cwd(self.workflow.root):
             for i, method in enumerate(self._method_instances):
                 msg = f"Running {self.rule_id} {i + 1}/{nruns}"
-                logger.info(msg)
+                logger.debug(msg)
                 output_files_i = method.dryrun(
                     missing_file_error=missing_file_error, input_files=input_files
                 )

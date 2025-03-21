@@ -140,9 +140,9 @@ html_theme_options = {
 
 html_context = {
     "github_url": "https://github.com",  # or your GitHub Enterprise interprise
-    "github_user": "Deltares",
+    "github_user": "Deltares-research",
     "github_repo": "HydroFlows",
-    "github_version": "main",  # FIXME
+    "github_version": "main",
     "doc_path": "docs",
     "default_mode": "light",
 }
