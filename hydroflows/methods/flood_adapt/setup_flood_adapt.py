@@ -56,6 +56,16 @@ class Params(Parameters):
     The directory where the output files will be saved.
     """
 
+    db_name: str = "fa_database"
+    """
+    The name of the FloodAdapt Database
+    """
+
+    description: str = "This is a FloodAdapt Database"
+    """
+    The description of the FloodAdapt Database
+    """
+
 
 class SetupFloodAdapt(Method):
     """Rule for setting up the input for the FloodAdapt Database Builder."""
@@ -74,6 +84,8 @@ class SetupFloodAdapt(Method):
         fiat_cfg: Path | None = None,
         event_set_yaml: Path | None = None,
         output_dir: Path = "flood_adapt_builder",
+        db_name: str = "fa_database",
+        description: str = "This is a FloodAdapt Database",
     ):
         """Create and validate a SetupFloodAdapt instance.
 
@@ -87,6 +99,10 @@ class SetupFloodAdapt(Method):
             The file path to the HydroFlows event set yaml file.
         output_dir: Path, optional
             The folder where the output is stored, by default "flood_adapt_builder".
+        db_name: str, optional
+            The name of the FloodAdapt Database
+        description: str, optional
+            The description of the FloodAdapt Database
         **params
             Additional parameters to pass to the GetERA5Rainfall instance.
 
@@ -101,7 +117,9 @@ class SetupFloodAdapt(Method):
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,
         )
-        self.params: Params = Params(output_dir=output_dir)
+        self.params: Params = Params(
+            output_dir=output_dir, db_name=db_name, description=description
+        )
 
         self.output: Output = Output(
             fa_build_toml=Path(self.params.output_dir, "fa_build.toml"),
@@ -136,6 +154,8 @@ class SetupFloodAdapt(Method):
             fa_db_config(
                 self.params.output_dir,
                 sfincs=self.input.sfincs_inp.parent.stem,
+                db_name=self.params.db_name,
+                description=self.params.description,
                 probabilistic_set=self.input.event_set_yaml.stem,
             )
 
@@ -144,6 +164,8 @@ class SetupFloodAdapt(Method):
             fa_db_config(
                 self.params.output_dir,
                 sfincs=self.input.sfincs_inp.parent.stem,
+                db_name=self.params.db_name,
+                description=self.params.description,
             )
 
         pass
@@ -153,6 +175,8 @@ def fa_db_config(
     fa_root: Path,
     config: Path = Path(HYDROMT_CONFIG_DIR / "fa_database_build.yml"),
     sfincs: str = "sfincs",
+    db_name: str = "fa_database",
+    description: str = "This is a FloodAdapt Database",
     probabilistic_set: Path | None = None,
 ):
     """Create the path to the configuration file (.yml) that defines the settings.
@@ -168,6 +192,8 @@ def fa_db_config(
     """
     config = configread(config)
     config["sfincs"] = sfincs
+    config["name"] = db_name
+    config["description"] = description
     if probabilistic_set is not None:
         config["probabilistic_set"] = probabilistic_set
     with open(Path(fa_root, "fa_build.toml"), "w") as toml_file:
