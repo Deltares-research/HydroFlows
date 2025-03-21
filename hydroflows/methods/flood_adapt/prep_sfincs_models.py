@@ -108,13 +108,3 @@ class PrepSfincsModels(Method):
             shutil.rmtree(Path(sfincs_model, "simulations"))
         if Path(sfincs_model, "figs").exists():
             shutil.rmtree(Path(sfincs_model, "figs"))
-
-        # Remove discharge
-        if Path(sfincs_model, "sfincs.dis").exists():
-            Path(sfincs_model, "sfincs.dis").unlink()
-            sm.config.pop("disfile")
-        # Remove simulation and figure folder
-        if Path(sfincs_model, "simulations").exists():
-            shutil.rmtree(Path(sfincs_model, "simulations"))
-        if Path(sfincs_model, "figs").exists():
-            shutil.rmtree(Path(sfincs_model, "figs"))
