@@ -42,7 +42,7 @@ Methods include the automated setup of physics-based models such as Wflow_ and S
 Many methods build on HydroMT_ and are backed up by a large stack of state-of-art global datasets to enable rapid assessments anywhere globally.
 As the workflows are fully automated these can easily be replaced by local data  where available.
 The final outcomes of the HydroFlows flood risk workflows are flood hazard and risk maps and statistics.
-In addition a FloodAdapt_ instance can be created from the build models and event sets.
+In addition a FloodAdapt_ instance can be created from the built models and event sets.
 
 Getting Started
 ===============

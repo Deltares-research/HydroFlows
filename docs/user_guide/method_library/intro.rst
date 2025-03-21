@@ -9,7 +9,7 @@ Flood risk workflows
 
 
 An overview of the available methods in HydroFlows is provided in this section.
-For more details regarding specifc inputs, outputs, and parameters per ``Method``,
+For more details regarding specific inputs, outputs, and parameters per ``Method``,
 please refer to the method documentation in the :ref:`api_reference` section.
 
 For guidance on combining these methods for flood risk analysis with HydroFlows, see the :ref:`examples` section for typical workflows.

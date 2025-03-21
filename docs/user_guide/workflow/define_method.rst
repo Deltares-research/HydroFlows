@@ -24,7 +24,7 @@ After initialization the method output files can be explored using the `output` 
 These output files can directly used as input for other methods in the workflow,
 see :ref:`compose_workflow` section.
 
-In the example below we initialize a method which is created for demonstration purposes only.
+In the example below we initialize a the :class:`~hydroflows.methods.dummy.RunDummyEvent` method which is created for demonstration purposes only.
 Printing the method shows all input, output and params fields of the method.
 
 .. ipython:: python
@@ -43,7 +43,7 @@ Printing the method shows all input, output and params fields of the method.
         model_exe="bin/model.exe"
     )
 
-    # explore the method input, output and params
+    # inspect the method
     print(method)
 
 Usually, the method is run as part of a :term:`workflow` or :term:`rule` and executed from the
@@ -60,11 +60,16 @@ Expand and reduce methods
 There are two special types of methods that can be used to create multiple output files from a single
 set of input files (expand) or to create a single output file from multiple input files (reduce).
 These methods are called `ExpandMethod` and `ReduceMethod` and are subclasses of the `Method` class.
+
 The `ExpandMethod` class generates one or more :term:`wildcards` on the output files which can be used
-in subsequent rules to expand the workflow over multiple output files. These can be explored by
-printing the method as in the example below.
-The wildcard name and values are defined in the method and stored in the `ExpandMethod.expand_wildcards` attribute, see below.
-Which method arguments are used to define the name and values is described in the documentation.
+in subsequent rules to expand the workflow over multiple output files.
+The wildcard name and values are defined in the method and stored in the `ExpandMethod.expand_wildcards` attribute.
+The same wildcard name cannot be used on any input files.
+
+In the example below we initialize the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` expand method.
+The method documentation describes which arguments are used to define the name and values of the wildcard.
+Here, the wildcard values are defined by the `rps` argument and the wildcard name is defined by the `wildcard` argument.
+The ``expand_wildcards`` are shown together with the input, output, and params when printing the method, see below.
 An info logging message is printed with the wildcard name and values.
 
 
@@ -76,17 +81,32 @@ An info logging message is printed with the wildcard name and values.
     method = PrepareDummyEvents(
         timeseries_csv="data/timeseries.csv",
         output_dir="output",
-        rps=[1,5,10,50,100],
+        wildcard="return_period",  # wildcard name
+        rps=[1,5,10,50,100],  # input used to define wildcard values
     )
 
-    # Check the method expand_wildcards
-    print(method.expand_wildcards)
-
-    # Note the method type and expand_wildcards
+    # inspect the method
     print(method)
 
 
-# TODO add example for ReduceMethod
+The `ReduceMethod` class is used to reduce multiple input files to a single output file.
+This type of method expects a wildcard on the input files which is not present in the output files.
+
+In the example below we initialize the :class:`~hydroflows.methods.dummy.CombineDummyEvents` reduce method.
+Note the method type and that the output file does not contain the "return_period" wildcard when printing the method.
+
+.. ipython:: python
+
+    from hydroflows.methods.dummy import CombineDummyEvents
+
+    # initialize a method
+    method = CombineDummyEvents(
+        model_out_ncs="model/{return_period}/output.nc",
+        output_dir="output"
+    )
+
+    # inspect the method
+    print(method)
 
 
 .. _python_script:

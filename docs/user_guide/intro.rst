@@ -16,7 +16,7 @@ At initialization of a :term:`method` its input, output and parameters are valid
 Using the concept of :term:`wildcards`, a method can be applied to multiple input files in parallel or reduce over multiple input files.
 When adding the method to the workflow, a :term:`rule` is created which evaluates all wildcards and sets up the connections between the methods.
 In addition, some validation is done on the workflow to ensure it is correct.
-At this point, the workflow can test run, executed or parsed to a workflow engine.
+At this point, the workflow can be test-run, executed or parsed to a workflow engine.
 More information on how to use HydroFlows can be found in the :ref:`workflow_framework` section.
 
 Methods library

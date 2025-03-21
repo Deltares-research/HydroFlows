@@ -50,8 +50,11 @@ To create a rule, the method it is based on should be initialized first.
 A rule is then created by added it to the workflow using the :meth:`~hydroflows.workflow.Workflow.create_rule`.
 When calling ``create_rule`` with a method the following steps are executed in the background:
 
-- The :term:`wildcards` are evaluated and based on detected wildcards, different *method instances* are created
-  for all values of the wildcard. This makes it possible to execute the method for multiple input files or parameters in parallel.
+- The :term:`wildcards` are detected and validated. Based on the wildcard values different *method instances* are created.
+  This makes it possible to execute the method for multiple input files or parameters in parallel.
+  A `ReduceMethod` expects a wildcard on the input files which is not present on the output files.
+  An `ExpandMethod` expects a wildcard on the output files which is not present on the input files.
+  And a `Method` expects either no wildcards or the same *repeat* wildcard on the input and output files.
 - The method input files are either linked to output files of previous rules or set in the workflow configuration.
 - A check is performed to ensure the output files are unique (not already used in the workflow).
 - The dependencies of the rule are evaluated.

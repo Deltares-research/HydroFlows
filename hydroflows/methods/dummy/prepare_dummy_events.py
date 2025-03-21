@@ -50,6 +50,8 @@ class PrepareDummyEvents(ExpandMethod):
     rps : List[int]
         Return periods [years].
         This is used to expand the outputs and create a file for each return period.
+    wildcard : str
+        Wildcard name used to expand the outputs over `rps`.
     **params
         Additional parameters for the method, see :class:`~hydroflows.methods.dummy.PrepareDummyEventsParams`.
     """
@@ -69,10 +71,13 @@ class PrepareDummyEvents(ExpandMethod):
         timeseries_csv: Path,
         output_dir: Path,
         rps: list[int] = [1, 10, 100, 1000],  # noqa: B006
+        wildcard: str = "return_period",
         **params,
     ):
         self.input = PrepareDummyEventsInput(timeseries_csv=timeseries_csv)
-        self.params = PrepareDummyEventsParams(output_dir=output_dir, rps=rps, **params)
+        self.params = PrepareDummyEventsParams(
+            output_dir=output_dir, rps=rps, wildcard=wildcard, **params
+        )
         wc = "{" + self.params.wildcard + "}"
         self.output = PrepareDummyEventsOutput(
             event_csv=self.params.output_dir / f"event_rp{wc}.csv",

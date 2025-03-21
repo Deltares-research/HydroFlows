@@ -9,7 +9,8 @@ class CombineDummyEventsInput(Parameters):
     """Input files for the CombineDummyEvents method."""
 
     model_out_ncs: ListOfPath | WildcardPath
-    """Model output netcdf files"""
+    """Model output netcdf files to be combined.
+    This argument expects either a path with a wildcard or a list of paths."""
 
 
 class CombineDummyEventsOutput(Parameters):
@@ -32,7 +33,8 @@ class CombineDummyEvents(ReduceMethod):
     Parameters
     ----------
     model_out_ncs : List[Path] | WildcardPath
-        List of model output netcdf files or a wildcard path
+        Model output netcdf files to be combined.
+        This argument expects either a path with a wildcard or a list of paths.
     output_dir : Path, optional
         The output directory, by default None
     **params
