@@ -3,7 +3,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
-from hydroflows.utils.parsers import has_wildcards
 from hydroflows.workflow.wildcards import wildcard_product
 
 
@@ -34,11 +33,6 @@ def map_cwl_types(input: Any) -> Dict[str, str]:
             out["type"] = "string"
             out["value"] = f"{str(input)}"
         case Path():
-            # if "{" in input.as_posix():
-            if has_wildcards(input.as_posix()):
-                # If path contains wildcard, input is array
-                # Not yet seen a case where 'value' is needed here
-                out["type"] = "File[]"
             if input.suffix:
                 out["type"] = "File"
                 out["value"] = {"class": "File", "path": input.as_posix()}

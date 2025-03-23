@@ -171,14 +171,9 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
 
 def validate_cwl_files(cwl_folder: Path):
     for file in glob.glob((cwl_folder / "*.cwl").as_posix()):
-        subprocess.run(
-            [
-                "cwltool",
-                "--validate",
-                file,
-            ],
-            shell=True,
-        ).check_returncode()
+        cmd = ["cwltool", "--validate", file]
+        print(cmd)
+        subprocess.run(cmd).check_returncode()
 
 
 def validate_cwl_workflow(workflow_file: Path):

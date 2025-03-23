@@ -366,7 +366,25 @@ class JinjaCWLWorkflow:
                         else:
                             input_dict[key] = info
                         if not any([id in info["source"] for id in step_ids]):
-                            step._input[key]["source"] = key
+                            # handle inputs being reduced over
+                            if step.rule.wildcards["reduce"]:
+                                # original source of input
+                                rule_id = [id for id in ids if id in info["source"]][0]
+                                # find subworkflow original source is in
+                                sub_wfs = [
+                                    wf
+                                    for wf in self.steps
+                                    if isinstance(wf, JinjaCWLWorkflow)
+                                ]
+                                for sub_wf in sub_wfs:
+                                    new_ids = [sub_step.id for sub_step in sub_wf.steps]
+                                    if any([new_id in rule_id for new_id in new_ids]):
+                                        final_id = sub_wf.id
+                                source = info["source"].replace(rule_id, final_id)
+                                step._input[key]["source"] = source
+
+                            else:
+                                step._input[key]["source"] = key
             # Copy inputs from subworkflow
             elif isinstance(step, JinjaCWLWorkflow):
                 ins = deepcopy(step.input)
