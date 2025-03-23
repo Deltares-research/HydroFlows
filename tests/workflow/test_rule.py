@@ -34,8 +34,8 @@ def test_rule_properties(rule: Rule):
         "input_file2": [Path("test_file2")],
     }
     assert rule.output == {
-        "output_file1": [Path("output1")],
-        "output_file2": [Path("output2")],
+        "output_file1": [Path("output1.txt")],
+        "output_file2": [Path("output2.txt")],
     }
 
 
@@ -67,10 +67,10 @@ def test_rule_to_dict(rule: Rule):
     rule_dict = rule.to_dict()
     assert rule_dict["method"] == "test_method"
     assert rule_dict["kwargs"] == {
-        "input_file1": "$config.test_rule_input_file1",
-        "input_file2": "$config.test_rule_input_file2",
-        "out_root": "$config.test_rule_out_root",
-        "param": "$config.test_rule_param",
+        "input_file1": "test_file1",
+        "input_file2": "test_file2",
+        "out_root": ".",
+        "param": "param",
     }
     assert rule_dict["rule_id"] == "test_rule"
 
@@ -293,14 +293,6 @@ def test_create_references_for_method_inputs(workflow: Workflow):
         out_root="root",
     )
     workflow.create_rule(method=method2, rule_id="method2")
-    # Assert that refs of inputs of first rule are pointing to config
-    assert workflow.rules[0].method.input._refs == {
-        "input_file1": "$config.method1_input_file1",
-        "input_file2": "$config.method1_input_file2",
-    }
-    # Assert that workflow config contains the input values of the first rule
-    assert workflow.config.method1_input_file1 == "test.file"
-    assert workflow.config.method1_input_file2 == "test2.file"
     # Assert that refs of second rule point to output of first rule
     assert workflow.rules[1].method.input._refs == {
         "input_file1": "$rules.method1.output.output_file1",
@@ -314,60 +306,8 @@ def test_create_references_for_method_inputs(workflow: Workflow):
     )
     workflow.create_rule(method3, rule_id="method3")
     assert workflow.rules[2].method.input._refs == {
-        "input_file1": "$config.method1_input_file1",
         "input_file2": "$rules.method2.output.output_file2",
     }
-
-
-def test_add_method_params_to_config(workflow: Workflow):
-    method = TestMethod(
-        input_file1="test.file", input_file2="test2.file", param="test_param"
-    )
-    workflow.create_rule(method=method)
-    # Assert the non-default test_param has been moved to config
-    assert workflow.config.test_method_param == "test_param"
-    assert workflow.rules[0].method.params._refs == {
-        "param": "$config.test_method_param",
-        "out_root": "$config.test_method_out_root",
-    }
-    # default_param should not be included in workflow.config
-    assert "default_param" not in workflow.config.to_dict().values()
-    assert "default_param2" not in workflow.config.to_dict().values()
-
-    # Check whether ref to value already in config is correctly set
-    method2 = TestMethod(
-        input_file1="test.file",
-        input_file2="test2.file",
-        out_root="root",
-        param="test_param",
-    )
-    workflow.create_rule(method2, rule_id="method2")
-    assert workflow.rules[1].method.params._refs == {
-        "param": "$config.test_method_param",
-        "out_root": "$config.method2_out_root",
-    }
-    # make sure not a new param is added to config
-    assert "method2_param" not in workflow.config.to_dict().keys()
-
-    # Make sure not a new item is added to config if param is already a ref
-    method3 = TestMethod(
-        input_file1="test.file",
-        input_file2="test2.file",
-        out_root="root3",
-        param=workflow.get_ref("$config.test_method_param"),
-    )
-    workflow.create_rule(method3, rule_id="method3")
-    assert "method3_param" not in workflow.config.to_dict().keys()
-
-    # Make sure param is not added to config if it contains a wildcard
-    method4 = TestMethod(
-        input_file1="test.file",
-        input_file2="test2.file",
-        param="{region}",
-        out_root="{region}",
-    )
-    workflow.create_rule(method4, rule_id="method4")
-    assert "method4_param" not in workflow.config.to_dict().keys()
 
 
 def test_input_output(workflow: Workflow):
@@ -480,4 +420,6 @@ def test_output_path_refs(w: Workflow):
     w.create_rule(method=method1, rule_id="method1")
 
     output_path_refs = w.rules["method1"]._output_path_refs
-    assert list(output_path_refs.keys()) == ["output" + str(x) for x in range(1, 3)]
+    assert list(output_path_refs.keys()) == [
+        "output" + str(x) + ".txt" for x in range(1, 3)
+    ]

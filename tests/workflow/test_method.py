@@ -55,7 +55,7 @@ def test_method_to_dict(test_method: TestMethod):
     out_dict = test_method.to_dict()
     assert out_dict == {
         "input": {"input_file1": "test_file1", "input_file2": "test_file2"},
-        "output": {"output_file1": "output1", "output_file2": "output2"},
+        "output": {"output_file1": "output1.txt", "output_file2": "output2.txt"},
         "params": {"out_root": ".", "param": "param"},
     }
 
@@ -127,7 +127,7 @@ def test_output_paths(tmp_path):
     paths = test_method._output_paths
     assert isinstance(paths[0], tuple)
     assert paths[0][0] == "output_file1"
-    assert paths[0][1] == tmp_path / "output1"
+    assert paths[0][1] == tmp_path / "output1.txt"
 
 
 def test_check_output_exists(tmp_path):
