@@ -8,7 +8,7 @@ from hydromt_sfincs import SfincsModel
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["PrepSfincsModels"]
+__all__ = ["PrepSfincsModels", "Input", "Output", "Params"]
 
 
 class Input(Parameters):

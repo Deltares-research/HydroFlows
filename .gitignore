@@ -124,6 +124,7 @@ examples/cases/*
 examples/bin/*
 examples/data/*
 my_workflow_root/*
+rulegraph.svg
 
 # pixi environments
 .pixi

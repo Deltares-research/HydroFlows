@@ -6,7 +6,7 @@
 .. _Delft-FIAT: https://deltares.github.io/Delft-FIAT/
 .. _HydroMT: https://deltares.github.io/hydromt/
 .. _FloodAdapt: https://deltares-research.github.io/FloodAdapt/
-.. _HE-UP2030 project: https://up2030-he.eu/
+.. _HE-UP2030: https://up2030-he.eu/
 .. _pixi: https://pixi.sh/latest/
 .. _mamba: https://mamba.readthedocs.io/en/latest/
 .. _conda: https://docs.conda.io/en/latest/

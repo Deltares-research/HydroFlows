@@ -40,20 +40,21 @@ jobs:
 
       # build docs and save to html
       - name: Build docs
-        if : ${{ github.event_name != 'pull_request' }}
+        # if : ${{ github.event_name != 'pull_request' }}
         run: |
           pixi run -e doc docs-html
+          ls -la docs/_build/html
         # echo "DOC_VERSION=$(pixi run -e doc get-version)" >> $GITHUB_ENV
 
       # Upload the html docs as an artifact
       - name: Upload artifact
-        if : ${{ github.event_name != 'pull_request' }}
+        # if : ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
       # Deploy the docs to GitHub Pages
       - name: Deploy to GitHub Pages
-        if : ${{ github.event_name != 'pull_request' }}
+        # if : ${{ github.event_name != 'pull_request' }}
         id: deployment
-        uses: actions/deploy-pages@v2
+        uses: actions/deploy-pages@v3

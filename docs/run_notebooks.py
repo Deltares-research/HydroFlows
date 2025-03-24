@@ -8,13 +8,13 @@ import papermill as pm
 
 
 if __name__ == "__main__":
-    overwrite = True
+    overwrite = False
     current_dir = Path(__file__).parent
     examples_dir = current_dir / "../examples"
+    cases_dir = current_dir / "../cases"
     output_dir = Path(current_dir, "_examples")
     output_dir.mkdir(exist_ok=True)
-    os.chdir(examples_dir)
-    for nb in Path(examples_dir).glob("*.ipynb"):
+    for nb in list(Path(examples_dir).glob("*.ipynb")) + list(Path(cases_dir).glob("**/*.ipynb")):
         nb_name = nb.name
         if Path(output_dir, nb_name).exists():
             if overwrite is False:
@@ -22,5 +22,6 @@ if __name__ == "__main__":
                 continue
             else:
                 Path(output_dir, nb_name).unlink()
+        os.chdir(Path(nb).parent)
         print(f"Running {nb_name}")
         pm.execute_notebook(nb, output_path=output_dir / nb_name)

@@ -111,9 +111,9 @@ class FIATVisualize(Method):
 
     See Also
     --------
-    :py:class:`fiat_visualize Input <~hydroflows.methods.fiat.fiat_visualize.Input>`,
-    :py:class:`fiat_visualize Output <~hydroflows.methods.fiat.fiat_visualize.Output>`,
-    :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
+    :py:class:`fiat_visualize Input <hydroflows.methods.fiat.fiat_visualize.Input>`
+    :py:class:`fiat_visualize Output <hydroflows.methods.fiat.fiat_visualize.Output>`
+    :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`
     """
 
     name: str = "fiat_visualize"

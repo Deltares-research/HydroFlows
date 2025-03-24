@@ -113,9 +113,9 @@ class FIATBuild(Method):
 
     See Also
     --------
-    :py:class:`fiat_build Input <~hydroflows.methods.fiat.fiat_build.Input>`,
-    :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`,
-    :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`,
+    :py:class:`fiat_build Input <~hydroflows.methods.fiat.fiat_build.Input>`
+    :py:class:`fiat_build Output <~hydroflows.methods.fiat.fiat_build.Output>`
+    :py:class:`fiat_build Params <~hydroflows.methods.fiat.fiat_build.Params>`
     :py:class:`hydromt_fiat.fiat.FIATModel`
     """
 

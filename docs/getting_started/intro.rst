@@ -75,9 +75,9 @@ This will install all dependencies and create an editable installation of HydroF
    pixi install -e full        # full dev py3.11 installation from the lock file
 
    # optional commands (see "pixi run x" for more options)
-   pixi run install-pre-commit # install pre-commit hooks
-   pixi run html-docs          # build the documentation
-   pixi run tests              # run all tests
+   pixi run -e full install-pre-commit # install pre-commit hooks
+   pixi run -e full tests              # run all tests
+   pixi run -e full html-docs          # build the documentation
 
 
 To update the lock file and your environment after changes to the dependencies, run:
