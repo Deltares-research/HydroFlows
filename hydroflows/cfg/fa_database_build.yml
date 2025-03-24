@@ -1,6 +1,5 @@
 name: floodadapt_db
 database_path: Database
-sfincs: sfincs
 fiat: fiat
 unit_system: metric
 gui:

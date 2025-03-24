@@ -47,6 +47,7 @@ __eps__ = {
     "prepare_dummy_events": "hydroflows.methods.dummy.prepare_dummy_events:PrepareDummyEvents",
     "run_dummy_event": "hydroflows.methods.dummy.run_dummy_event:RunDummyEvent",
     "postprocess_dummy_event": "hydroflows.methods.dummy.postprocess_dummy_event:PostprocessDummyEvent",
+    "prep_sfincs_models": "hydroflows.methods.flood_adapt.prep_sfincs_models:PrepSfincsModels",
 }
 
 
