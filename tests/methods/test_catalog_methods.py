@@ -26,12 +26,13 @@ def test_merge_catalogs(global_catalog: Path, tmp_path: Path):
 
     # test with three catalogs (one extra)
     m = MergeCatalogs(
-        catalog_path1=catalog1,
-        catalog_path2=catalog2,
-        catalog_path3=catalog3,
+        catalog_path1=catalog1.as_posix(),
+        catalog_path2=catalog2.as_posix(),
+        catalog_path3=catalog3.as_posix(),
         merged_catalog_path=merged_catalog,
     )
-    assert "catalog_path3" in m.input.model_extra
+    assert "catalog_path3" in m.input.all_fields
+    assert isinstance(m.input.catalog_path1, Path)
     assert isinstance(m.input.catalog_path3, Path)
 
     m.run()

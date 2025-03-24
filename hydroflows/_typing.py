@@ -90,4 +90,11 @@ EventDatesDict = Annotated[
     ),
 ]
 
+ClimateScenariosDict = Annotated[
+    Dict[str, float],
+    BeforeValidator(
+        lambda x: json.loads(x.replace("'", '"')) if isinstance(x, str) else x
+    ),
+]
+
 DataCatalogPath = Union[ListOfStr, ListOfPath, Path]
