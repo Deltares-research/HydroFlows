@@ -80,11 +80,12 @@ class PrepSfincsModels(Method):
         # Get all sfincs models and prepare and copy sfincs model
         sfincs_model = Path(self.params.output_dir, self.input.sfincs_inp.parent.stem)
         shutil.copytree(
-            Path(
-                self.input.sfincs_inp.parent.parent / self.input.sfincs_inp.parent.stem
-            ),
+            Path(self.input.sfincs_inp.parent),
             sfincs_model,
             dirs_exist_ok=True,
+            ignore=lambda d, c: {
+                x for x in c if Path(x).is_dir() and x not in {"gis", "subgrid"}
+            },
         )
         sm = SfincsModel(
             root=sfincs_model,
@@ -92,19 +93,11 @@ class PrepSfincsModels(Method):
         )
 
         if "bndfile" not in sm.config:
-            sm.setup_waterlevel_bnd_from_mask(10000)
+            sm.setup_waterlevel_bnd_from_mask(1e9)
             sm.write_forcing()
-            sm.config.pop("bzsfile")
-            Path(sfincs_model, "sfincs.bzs").unlink()
+            Path(sfincs_model, sm.config.pop("bzsfile")).unlink()
 
         # Remove discharge
         if "disfile" in sm.config:
-            Path(sfincs_model, "sfincs.dis").unlink()
-            sm.config.pop("disfile")
+            Path(sfincs_model, sm.config.pop("disfile")).unlink()
             sm.write_config()
-
-        # Remove simulation and figure folder
-        if Path(sfincs_model, "simulations").exists():
-            shutil.rmtree(Path(sfincs_model, "simulations"))
-        if Path(sfincs_model, "figs").exists():
-            shutil.rmtree(Path(sfincs_model, "figs"))
