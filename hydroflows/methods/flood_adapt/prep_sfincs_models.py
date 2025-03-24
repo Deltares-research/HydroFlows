@@ -83,9 +83,11 @@ class PrepSfincsModels(Method):
             Path(self.input.sfincs_inp.parent),
             sfincs_model,
             dirs_exist_ok=True,
-            ignore=lambda d, c: {
-                x for x in c if (Path(d) / x).is_dir() and x not in {"gis", "subgrid"}
-            },
+            ignore=lambda d, c: set(
+                filter(
+                    lambda x: (Path(d) / x).is_dir() and x not in {"gis", "subgrid"}, c
+                )
+            ),
         )
         sm = SfincsModel(
             root=sfincs_model,
