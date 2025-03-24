@@ -43,6 +43,7 @@ __eps__ = {
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
     "historical_events": "hydroflows.methods.historical_events.historical_events:HistoricalEvents",
+    "prep_sfincs_models": "hydroflows.methods.flood_adapt.prep_sfincs_models:PrepSfincsModels",
 }
 
 
