@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 jobs:
-  docs:
+  build:
     defaults:
       run:
         shell: bash -l {0}
@@ -18,6 +18,7 @@ jobs:
       id-token: write
     timeout-minutes: 30
     runs-on: ubuntu-latest
+
     steps:
       - name: checkout code
         uses: actions/checkout@v4
@@ -43,7 +44,6 @@ jobs:
         # if : ${{ github.event_name != 'pull_request' }}
         run: |
           pixi run -e doc docs-html
-          ls -la docs/_build/html
         # echo "DOC_VERSION=$(pixi run -e doc get-version)" >> $GITHUB_ENV
 
       # Upload the html docs as an artifact
@@ -53,8 +53,25 @@ jobs:
         with:
           path: docs/_build/html
 
-      # Deploy the docs to GitHub Pages
-      - name: Deploy to GitHub Pages
-        # if : ${{ github.event_name != 'pull_request' }}
-        id: deployment
-        uses: actions/deploy-pages@v3
+  deploy:
+    needs: build
+    # if : ${{ github.event_name != 'pull_request' }}
+
+    permissions:
+      pages: write
+      id-token: write
+
+    # Deploy to the github-pages environment
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+
+    # Deploy the docs to GitHub Pages
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v3 # or specific "vX.X.X" version tag for this action
