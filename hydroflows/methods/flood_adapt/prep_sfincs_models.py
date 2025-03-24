@@ -84,7 +84,7 @@ class PrepSfincsModels(Method):
             sfincs_model,
             dirs_exist_ok=True,
             ignore=lambda d, c: {
-                x for x in c if Path(x).is_dir() and x not in {"gis", "subgrid"}
+                x for x in c if (Path(d) / x).is_dir() and x not in {"gis", "subgrid"}
             },
         )
         sm = SfincsModel(
