@@ -33,6 +33,13 @@ jobs:
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
+      - name: Restore cache of hydroflows test data
+        uses: actions/cache@v4
+        id: restore-cache
+        with:
+          path: ~/.cache/hydroflows/*.tar.gz
+          key: test-data-${{ hashFiles('hydroflows/utils/registry.json') }}
+
       # dummy docs (not IO)
       - name: Generate dummy docs
         if: ${{ github.event_name == 'pull_request' }}
@@ -41,21 +48,21 @@ jobs:
 
       # build docs and save to html
       - name: Build docs
-        # if : ${{ github.event_name != 'pull_request' }}
+        if : ${{ github.event_name != 'pull_request' }}
         run: |
           pixi run -e doc docs-html
         # echo "DOC_VERSION=$(pixi run -e doc get-version)" >> $GITHUB_ENV
 
       # Upload the html docs as an artifact
       - name: Upload artifact
-        # if : ${{ github.event_name != 'pull_request' }}
+        if : ${{ github.event_name != 'pull_request' }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: docs/_build/html
 
   deploy:
     needs: build
-    # if : ${{ github.event_name != 'pull_request' }}
+    if : ${{ github.event_name != 'pull_request' }}
 
     permissions:
       pages: write
