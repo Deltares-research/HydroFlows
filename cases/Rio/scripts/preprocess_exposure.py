@@ -89,13 +89,16 @@ social_class = pd.read_csv(social_class_path)
 # %% Create 2D building footprints
 # Apply the conversion to each geometry in the GeoDataFrame
 buildings_gdf["geometry"] = buildings_gdf["geometry"].apply(convert_to_2d)
-buildings_gdf = buildings_gdf.dissolve(by="COD_LOTE")
+buildings_gdf = buildings_gdf.dissolve(by="cod_lote")
 buildings_gdf = buildings_gdf.explode()
-
+del buildings_gdf["clnp"]
 # %% link buildings entrances to footprints based on cod_lote
 # NOTE There are duplicates in the cod_lote so merge might create weird duplicates, prefer spatialjoint
-occupancy_gdf = gpd.sjoin_nearest(buildings_gdf, entrances_gdf)
-occupancy_gdf = occupancy_gdf[["geometry", "cod_uso", "altura", "shape__area"]]
+buildings_gdf.to_crs(entrances_gdf.crs, inplace=True)
+occupancy_gdf = gpd.sjoin_nearest(
+    [["altura", "shape__area", "geometry"]], entrances_gdf[["cod_uso", "geometry"]]
+)
+
 occupancy_gdf.drop_duplicates(
     subset="geometry", inplace=True
 )  # NOTE currently no logic behind dropping. Could drop the higher impacts. Discuss with partners
@@ -105,8 +108,6 @@ if buildings_gdf.crs != occupancy_gdf.crs:
     occupancy_gdf = gpd.GeoDataFrame(occupancy_gdf, geometry="geometry").set_crs(
         buildings_gdf.crs
     )
-
-# TODO: Create strategy to possibly remove duplicate building footprints!
 
 # fill typology with residential if missing
 dic_occupancy = {
