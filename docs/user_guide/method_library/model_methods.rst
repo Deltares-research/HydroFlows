@@ -71,6 +71,7 @@ The model postprocess methods are used to visualize the model results or transfo
       - :py:class:`~hydroflows.methods.fiat.fiat_visualize.FIATVisualize`
     * - FloodAdapt
       - :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt`
+        :py:class:`~hydroflows.methods.flood_adapt.prep_sfincs_models.PrepSfincsModels`
       - N.A.
       - N.A.
       - N.A.

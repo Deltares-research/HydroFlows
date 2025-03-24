@@ -28,6 +28,7 @@ Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT fl
    wflow.wflow_update_factors
    wflow.wflow_run
    flood_adapt.setup_flood_adapt
+   flood_adapt.prep_sfincs_models
 
 Historical, future and design event methods
 -------------------------------------------
