@@ -1,6 +1,6 @@
 """HydroFlows: Automated and reproducible hydro model workflows."""
 
-__version__ = "0.1.0.dev"
+__version__ = "0.1.0"
 
 
 from hydroflows.workflow import Wildcards, Workflow, WorkflowConfig

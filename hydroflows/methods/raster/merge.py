@@ -6,7 +6,7 @@ from pydantic import Field, model_validator
 
 from hydroflows._typing import ListOfPath, WildcardPath
 from hydroflows.methods.raster.merge_utils import merge_raster_datasets
-from hydroflows.utils.io import to_netcdf
+from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
 

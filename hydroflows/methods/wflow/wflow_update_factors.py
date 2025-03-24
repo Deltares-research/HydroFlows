@@ -7,8 +7,8 @@ import hydromt  # noqa: F401
 import xarray as xr
 from hydromt_wflow import WflowModel
 
+from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.methods.wflow.wflow_utils import copy_wflow_model
-from hydroflows.utils.io import to_netcdf
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 

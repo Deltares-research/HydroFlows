@@ -8,7 +8,7 @@ from pydantic import ConfigDict, model_validator
 
 from hydroflows._typing import ListOfListOfInt, ListOfStr
 from hydroflows.methods.climate.grid_utils import extract_climate_projections_statistics
-from hydroflows.utils.io import to_netcdf
+from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 

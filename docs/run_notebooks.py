@@ -8,7 +8,7 @@ import papermill as pm
 
 
 if __name__ == "__main__":
-    overwrite = False
+    overwrite = True
     current_dir = Path(__file__).parent
     examples_dir = current_dir / "../examples"
     output_dir = Path(current_dir, "_examples")
