@@ -81,4 +81,4 @@ jobs:
     # Deploy the docs to GitHub Pages
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v3 # or specific "vX.X.X" version tag for this action
+      uses: actions/deploy-pages@v4
