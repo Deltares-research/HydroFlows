@@ -3,7 +3,7 @@
 
 import os
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Literal
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -12,7 +12,7 @@ import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import PositiveInt, model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows._typing import ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -70,14 +70,14 @@ class Params(Parameters):
     event_root: Path
     """"Root folder to save the derived design events."""
 
-    rps: ListOfFloat
+    rps: ListOfInt
     """Return periods of of design events."""
 
     wildcard: str = "event"
     """The wildcard key for expansion over the design events."""
 
     # Note: set by model_validator based on rps if not provided
-    event_names: Optional[ListOfStr] = None
+    event_names: ListOfStr | None = None
     """List of event names derived from the design events."""
 
     # parameters for the get_peaks function
@@ -127,7 +127,7 @@ class Params(Parameters):
     def _validate_event_names(self):
         """Use rps to define event names if not provided."""
         if self.event_names is None:
-            self.event_names = [f"q_event{int(i+1):02d}" for i in range(len(self.rps))]
+            self.event_names = [f"q_event_rp{rp:03d}" for rp in self.rps]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -173,13 +173,13 @@ class FluvialDesignEvents(ExpandMethod):
         self,
         discharge_nc: Path,
         event_root: Path = "data/events/discharge",
-        rps: Optional[List[float]] = None,
-        event_names: Optional[List[str]] = None,
+        rps: list[int] | None = None,
+        event_names: list[str] | None = None,
         wildcard: str = "event",
         **params,
     ) -> None:
         if rps is None:
-            rps = [1, 2, 5, 10, 20, 50, 100]
+            rps = [2, 5, 10, 20, 50, 100]
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,

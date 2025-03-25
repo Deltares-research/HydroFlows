@@ -4,9 +4,6 @@ from logging import getLogger
 from pathlib import Path
 from typing import List, Optional
 
-import pandas as pd
-from pydantic import Field, model_validator
-
 from hydroflows._typing import ClimateScenariosDict, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
@@ -45,7 +42,7 @@ class Params(Parameters):
     """Parameters for :py:class:`FutureClimateRainfall` method."""
 
     scenarios: ClimateScenariosDict
-    """Future scenario name, e.g. "rcp45_2050", and delta temperature for CC scaling.
+    """Future scenario name, e.g. "rcp45_2050", and delta temperature for Clausius-Clapeyron scaling.
 
     The delta temperature represents the projected temperature increase, with an emphasis on
     hot days, rather than a simple average temperature change. To accurately capture extreme
@@ -60,7 +57,7 @@ class Params(Parameters):
     """Root folder to save the derived scaled events."""
 
     event_names: ListOfStr
-    """List of event names matching event_set_yaml."""
+    """List of event names (subset of event_set_yaml events)."""
 
     alpha: float = 0.07
     """The rate of change of precipitation with respect to temperature (per degree)
@@ -72,22 +69,9 @@ class Params(Parameters):
     scenario_wildcard: str = "scenario"
     """The wildcard key for expansion over the scenarios."""
 
-    event_set_names: ListOfStr | None = Field(None, exclude=True)
-    """List of event names in event_set_yaml"""
-
-    @model_validator(mode="after")
-    def _check_event_names(self):
-        """Check if event_names match event_set_yaml."""
-        if self.event_names is not None and self.event_set_names is not None:
-            if self.event_names and set(self.event_names) != set(self.event_set_names):
-                raise ValueError("event_names do not match event_set_yaml")
-            # use ordered event names from event set
-            self.event_names = self.event_set_names
-        return self
-
 
 class FutureClimateRainfall(ExpandMethod):
-    """Create and validate a FutureClimateRainfall instance.
+    """Method to derive future climate rainfall by scaling an historical event using Clausius-Clapeyron (CC).
 
     Parameters
     ----------
@@ -133,14 +117,13 @@ class FutureClimateRainfall(ExpandMethod):
     ) -> None:
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
+        event_set_names = None
         if self.input.event_set_yaml.exists():
             event_set = EventSet.from_yaml(self.input.event_set_yaml)
             event_set_names = [event["name"] for event in event_set.events]
-            if event_names is None:
-                event_names = event_set_names
-            else:
-                # for validation after parsing event_names
-                params["event_set_names"] = event_set_names
+
+        if event_names is None and event_set_names is not None:
+            event_names = event_set_names
         elif event_names is None:
             raise ValueError(
                 "event_names must be provided if event_set_yaml does not exist"
@@ -154,6 +137,12 @@ class FutureClimateRainfall(ExpandMethod):
             event_names=event_names,
             **params,
         )
+        if event_set_names is not None:
+            # make sure all event names are in the event set
+            if not set(event_names).issubset(event_set_names):
+                raise ValueError(
+                    "event_names must be subset of event names in event_set_yaml"
+                )
 
         ewc = "{" + self.params.event_wildcard + "}"
         swc = "{" + self.params.scenario_wildcard + "}"
@@ -191,30 +180,22 @@ class FutureClimateRainfall(ExpandMethod):
                 # Load the original event
                 event: Event = event_set.get_event(name)
 
-                # get precip forcing
-                if len(event.forcings) > 1:
-                    logger.warning(
-                        f"Event {name} has more than one forcing. The first rainfall forcing is used."
-                    )
-                    rainfall = [f for f in event.forcings if f["type"] == "rainfall"][0]
-                else:
-                    rainfall = event.forcings[0]
-                event_df = rainfall.data.copy()
-
-                # Apply CC scaling
-                scaled_ts = event_df.values * (1 + self.params.alpha) ** (dT)
-
-                # Create a new df to include the time and scaled values
-                future_event_df = pd.DataFrame(index=event_df.index, data=scaled_ts)
-                future_event_df.to_csv(output["future_event_csv"], index=True)
+                # scale the precip forcing, keep other forcings
+                forcings = []
+                delta_precip = (1 + self.params.alpha) ** (dT)
+                for forcing in event.forcings:
+                    if forcing.type == "rainfall":
+                        # update and write forcing timeseries to csv
+                        future_event_df = forcing.data.copy() * delta_precip
+                        future_event_df.to_csv(output["future_event_csv"], index=True)
+                        forcing.path = output["future_event_csv"]
+                    forcings.append(forcing)
 
                 # write event to yaml
                 future_event = Event(
                     name=name,
-                    forcings=[{"type": "rainfall", "path": output["future_event_csv"]}],
+                    forcings=forcings,
                     return_period=event.return_period,
-                    tstart=event.tstart,
-                    tstop=event.tstop,
                 )
                 future_event.set_time_range_from_forcings()
                 future_event.to_yaml(output["future_event_yaml"])

@@ -1,7 +1,7 @@
 """Method for generating pluvial design events based on the GPEX global IDF dataset."""
 
 from pathlib import Path
-from typing import List, Literal, Optional
+from typing import Literal
 
 import geopandas as gpd
 import hydromt  # we need hydromt for raster functionality # noqa: F401
@@ -10,7 +10,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows._typing import ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.rainfall.pluvial_design_events import (
     _plot_hyetograph,
@@ -63,7 +63,7 @@ class Params(Parameters):
     event_root: Path
     """Root folder to save the derived design events."""
 
-    rps: ListOfFloat
+    rps: ListOfInt
     """Return periods of interest."""
 
     duration: int = 48
@@ -79,7 +79,7 @@ class Params(Parameters):
     """The wildcard key for expansion over the design events."""
 
     # Note: set by model_validator based on rps if not provided
-    event_names: Optional[ListOfStr] = None
+    event_names: ListOfStr | None = None
     """List of event names associated with return periods."""
 
     t0: str = "2020-01-01"
@@ -111,9 +111,7 @@ class Params(Parameters):
             )
         # validate event_names
         if self.event_names is None:
-            self.event_names = [
-                f"p_event{int(i + 1):02d}" for i in range(len(self.rps))
-            ]
+            self.event_names = [f"p_event_rp{rp:03d}" for rp in self.rps]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -164,9 +162,9 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         gpex_nc: Path,
         region: Path,
         event_root: Path = Path("data/events/rainfall"),
-        rps: Optional[ListOfFloat] = None,
+        rps: list[int] | None = None,
         duration: int = 48,
-        event_names: Optional[List[str]] = None,
+        event_names: list[str] | None = None,
         wildcard: str = "event",
         **params,
     ) -> None:

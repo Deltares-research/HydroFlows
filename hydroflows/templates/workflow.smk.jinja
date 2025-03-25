@@ -3,8 +3,8 @@
 
 configfile: "{{ configfile }}"
 
-{% for key, values in wildcards.items() %}
-{{ key|upper }}={{ values|tojson }}
+{% for key in wildcards %}
+{{ key|upper }}=config["{{ key|upper }}"]
 {% endfor %}
 
 rule all:

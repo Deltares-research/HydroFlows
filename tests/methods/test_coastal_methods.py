@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Tuple
 
 import geopandas as gpd
+import numpy as np
 import pytest
 import xarray as xr
 
@@ -15,6 +16,7 @@ from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalys
 from hydroflows.methods.coastal.future_slr import FutureSLR
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
+from hydroflows.workflow.wildcards import resolve_wildcards
 
 
 @pytest.mark.requires_test_data()
@@ -113,23 +115,31 @@ def test_future_climate_sea_level(
     tmp_path: Path,
 ):
     event_set_yaml = test_data_dir / "event-sets" / "coastal_events.yml"
+    event_set = EventSet.from_yaml(event_set_yaml)
 
     out_root = Path(tmp_path / "future_climate_sea_level")
 
     rule = FutureSLR(
+        scenarios={"RCP85": 50},
         event_set_yaml=event_set_yaml,
-        scenario_name="RCP85",
-        slr_value=50,
         slr_unit="cm",
         event_root=out_root,
     )
 
     rule.run()
 
-    fn_scaled_event_set = rule.output.future_event_set_yaml
+    fn_scaled_event_set = resolve_wildcards(
+        rule.output.future_event_set_yaml, {"scenario": "RCP85"}
+    )
     scaled_event_set = EventSet.from_yaml(fn_scaled_event_set)
     assert isinstance(scaled_event_set.events, list)
 
     # are all paths absolute
     assert all([Path(event["path"]).is_absolute() for event in scaled_event_set.events])
     assert all([Path(event["path"]).exists() for event in scaled_event_set.events])
+
+    # check that the events are scaled
+    name = scaled_event_set.events[0]["name"]
+    df_scaled = scaled_event_set.get_event(name).forcings[0].data
+    df = event_set.get_event(name).forcings[0].data
+    assert np.allclose(df_scaled.values - df.values, 0.5)  # 0.5 m

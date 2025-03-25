@@ -174,8 +174,13 @@ class Workflow:
         # write the snakefile and config file
         with open(snake_path, "w") as f:
             f.write(_str)
+        # save the config file including wildcards
+        config_dict = self.config.to_dict(mode="json", posix_path=True)
+        config_dict.update(
+            **{k.upper(): v for k, v in self.wildcards.to_dict().items()}
+        )
         with open(config_path, "w") as f:
-            yaml.dump(self.config.to_dict(mode="json", posix_path=True), f)
+            yaml.dump(config_dict, f)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""
