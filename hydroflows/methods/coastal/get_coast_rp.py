@@ -1,4 +1,4 @@
-"""Get return periods from COAST-RP data."""
+"""Method for fetching and processing COAST-RP dataset for a given region."""
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from hydroflows._typing import FolderPath, OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["GetCoastRP"]
+__all__ = ["GetCoastRP", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -45,7 +45,24 @@ class Params(Parameters):
 
 
 class GetCoastRP(Method):
-    """Method for fetching and processing COAST-RP dataset."""
+    """Method for fetching and processing COAST-RP dataset for a given region.
+
+    Parameters
+    ----------
+    region : Path
+        Path to region geometry file.
+        Centroid is used to look for closest station to be consistent with GetGTSMData method.
+    coastrp_fn : Path
+        Path to full COAST-RP dataset.
+    data_root : Path, optional
+        The folder root where output is stored, by default "data/input/forcing_data/waterlevel"
+
+    See Also
+    --------
+    :py:class:`GetCoastRP Input <hydroflows.methods.coastal.get_coast_rp.Input>`
+    :py:class:`GetCoastRP Output <hydroflows.methods.coastal.get_coast_rp.Output>`
+    :py:class:`GetCoastRP Params <hydroflows.methods.coastal.get_coast_rp.Params>`
+    """
 
     name: str = "get_coast_rp"
 
@@ -61,24 +78,6 @@ class GetCoastRP(Method):
         data_root: Path = Path("data/input/forcing_data/waterlevel"),
         **params,
     ) -> None:
-        """Create and validate a GetCoastRP instance.
-
-        Parameters
-        ----------
-        region : Path
-            Path to region geometry file.
-            Centroid is used to look for closest station to be consistent with GetGTSMData method.
-        coastrp_fn : Path
-            Path to full COAST-RP dataset.
-        data_root : Path, optional
-            The folder root where output is stored, by default "data/input/forcing_data/waterlevel"
-
-        See Also
-        --------
-        :py:class:`GetCoastRP Input <hydroflows.methods.coastal.get_coast_rp.Input>`
-        :py:class:`GetCoastRP Output <hydroflows.methods.coastal.get_coast_rp.Output>`
-        :py:class:`GetCoastRP Params <hydroflows.methods.coastal.get_coast_rp.Params>`
-        """
         self.input: Input = Input(region=region, coastrp_catalog=coastrp_catalog)
         self.params: Params = Params(data_root=data_root, **params)
 

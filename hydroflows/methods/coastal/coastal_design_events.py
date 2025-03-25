@@ -16,7 +16,7 @@ from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["CoastalDesignEvents"]
+__all__ = ["CoastalDesignEvents", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -89,7 +89,31 @@ class Params(Parameters):
 
 
 class CoastalDesignEvents(ExpandMethod):
-    """Method for deriving extreme event waterlevels from tide and surge timeseries."""
+    """Create design events for coastal waterlevels.
+
+    Parameters
+    ----------
+    surge_timeseries : Path
+        Path to surge timeseries data.
+    tide_timeseries : Path
+        Path to tides timeseries data.
+    waterlevel_rps : Path
+        Path to the total still waterlevel return values dataset.
+    event_root : Path, optional
+        Folder root of ouput event catalog file, by default "data/interim/coastal"
+    rps : List[float], optional
+        Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
+    event_names : List[str], optional
+        List of event names for the design events, by "p_event{i}", where i is the event number.
+    wildcard : str, optional
+        The wildcard key for expansion over the design events, by default "event".
+
+    See Also
+    --------
+    :py:class:`CoastalDesignEvents Input <hydroflows.methods.coastal.coastal_design_events.Input>`
+    :py:class:`CoastalDesignEvents Output <hydroflows.methods.coastal.coastal_design_events.Output>`
+    :py:class:`CoastalDesignEvents Params <hydroflows.methods.coastal.coastal_design_events.Params>`
+    """
 
     name: str = "coastal_design_events"
 
@@ -110,31 +134,6 @@ class CoastalDesignEvents(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate CoastalDesignEvents instance.
-
-        Parameters
-        ----------
-        surge_timeseries : Path
-            Path to surge timeseries data.
-        tide_timeseries : Path
-            Path to tides timeseries data.
-        waterlevel_rps : Path
-            Path to the total still waterlevel return values dataset.
-        event_root : Path, optional
-            Folder root of ouput event catalog file, by default "data/interim/coastal"
-        rps : List[float], optional
-            Return periods of design events, by default [1, 2, 5, 10, 20, 50, 100].
-        event_names : List[str], optional
-            List of event names for the design events, by "p_event{i}", where i is the event number.
-        wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
-
-        See Also
-        --------
-        :py:class:`CoastalDesignEvents Input <hydroflows.methods.coastal.coastal_design_events.Input>`
-        :py:class:`CoastalDesignEvents Output <hydroflows.methods.coastal.coastal_design_events.Output>`
-        :py:class:`CoastalDesignEvents Params <hydroflows.methods.coastal.coastal_design_events.Params>`
-        """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
 

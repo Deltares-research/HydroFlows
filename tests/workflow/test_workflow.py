@@ -9,11 +9,11 @@ import pytest
 import yaml
 
 from hydroflows.workflow import (
-    Ref,
     Rule,
     Workflow,
     WorkflowConfig,
 )
+from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.wildcards import Wildcards
 from tests.workflow.conftest import (
     MockExpandMethod,
@@ -117,16 +117,18 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
 
     test_yml = {
         "config": {
-            "region": "data/test_region.geojson",
-            "rps": [5, 10, 50],
-            "catalog_path": "data/global-data/data_catalog.yml",
+            "event_csv": "data/event.csv",
+            "settings_toml": "model/settings.toml",
+            "model_exe": "model/model.exe",
         },
         "rules": [
             {
-                "method": "sfincs_build",
+                "method": "run_dummy_event",
                 "kwargs": {
-                    "region": "$config.region",
-                    "catalog_path": "$config.catalog_path",
+                    "event_csv": "$config.event_csv",
+                    "settings_toml": "$config.settings_toml",
+                    "model_exe": "$config.model_exe",
+                    "output_dir": "output",
                 },
             },
             "method",
@@ -139,10 +141,7 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
     with pytest.raises(ValueError, match="Rule 2 invalid: not a dictionary."):
         Workflow.from_yaml(test_file)
 
-    test_yml["rules"] = [
-        {"kwargs": {"region": "$config.region", "catalog_path": "$config.catalog_path"}}
-    ]
-
+    test_yml["rules"][0].pop("method")
     with open(test_file, "w") as f:
         yaml.dump(test_yml, f, sort_keys=False)
 
@@ -150,7 +149,7 @@ def test_workflow_from_yaml(tmp_path, workflow_yaml_dict):
         Workflow.from_yaml(test_file)
 
 
-def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
+def test_workflow_to_snakemake(workflow: Workflow, tmp_path, has_snakemake: bool):
     test_file = tmp_path / "test.yml"
     with open(test_file, "w") as f:
         yaml.dump({"data": "test"}, f)
@@ -160,13 +159,14 @@ def test_workflow_to_snakemake(workflow: Workflow, tmp_path):
     w.to_snakemake(snakefile="Snakefile")
     assert "Snakefile.config.yml" in os.listdir(tmp_path)
     assert "Snakefile" in os.listdir(tmp_path)
-    subprocess.run(
-        [
-            "snakemake",
-            "--dry-run",
-        ],
-        cwd=tmp_path,
-    ).check_returncode()
+    if has_snakemake:
+        subprocess.run(
+            [
+                "snakemake",
+                "--dry-run",
+            ],
+            cwd=tmp_path,
+        ).check_returncode()
 
 
 def validate_cwl_files(cwl_folder: Path):

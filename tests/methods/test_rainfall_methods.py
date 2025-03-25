@@ -67,7 +67,7 @@ def test_pluvial_design_events_gpex(region: Path, gpex_data: Path, tmp_path: Pat
 def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
     get_era5 = GetERA5Rainfall(
         region=str(region),
-        data_root=str(tmp_path / "data"),
+        output_dir=str(tmp_path / "data"),
         filename="era5.nc",
         start_date="2023-11-01",
         end_date="2023-12-31",

@@ -1,4 +1,4 @@
-"""Wflow build method."""
+"""Build a Wflow model from scratch using hydromt_wflow."""
 
 from pathlib import Path
 from typing import Optional
@@ -13,7 +13,7 @@ from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["WflowBuild"]
+__all__ = ["WflowBuild", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -77,7 +77,35 @@ class Params(Parameters):
 
 
 class WflowBuild(Method):
-    """Rule for building Wflow model."""
+    """Build a Wflow model from scratch using hydromt_wflow.
+
+    Parameters
+    ----------
+    region : Path
+        The file path to the geometry file that defines the region of interest
+        for constructing a wflow model.
+    config : Path
+        The path to the configuration file (.yml) that defines the settings
+        to build a Wflow model. In this file the different model components
+        that are required by the :py:class:`hydromt_wflow.wflow.WflowModel` are listed.
+    catalog_path: Optional[Path], optional
+        The path to the data catalog file (.yml) that contains the data sources
+        specified in the config file. If None (default), a predefined data catalog should be provided.
+    predefined_catalogs : Optional[ListOfStr], optional
+        A list containing the predefined data catalog names.
+    wflow_root : Path
+        The path to the root directory where the  wflow model will be created, by default "models/wflow".
+    **params
+        Additional parameters to pass to the WflowBuild instance.
+        See :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`.
+
+    See Also
+    --------
+    :py:class:`wflow_build Input <hydroflows.methods.wflow.wflow_build.Input>`
+    :py:class:`wflow_build Output <hydroflows.methods.wflow.wflow_build.Output>`
+    :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
+    :py:class:`hydromt_wflow.WflowModel`
+    """
 
     name: str = "wflow_build"
 
@@ -97,35 +125,6 @@ class WflowBuild(Method):
         wflow_root: Path = "models/wflow",
         **params,
     ) -> None:
-        """Create and validate a WflowBuild instance.
-
-        Parameters
-        ----------
-        region : Path
-            The file path to the geometry file that defines the region of interest
-            for constructing a wflow model.
-        config : Path
-            The path to the configuration file (.yml) that defines the settings
-            to build a Wflow model. In this file the different model components
-            that are required by the :py:class:`hydromt_wflow.wflow.WflowModel` are listed.
-        catalog_path: Optional[Path], optional
-            The path to the data catalog file (.yml) that contains the data sources
-            specified in the config file. If None (default), a predefined data catalog should be provided.
-        predefined_catalogs : Optional[ListOfStr], optional
-            A list containing the predefined data catalog names.
-        wflow_root : Path
-            The path to the root directory where the  wflow model will be created, by default "models/wflow".
-        **params
-            Additional parameters to pass to the WflowBuild instance.
-            See :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`.
-
-        See Also
-        --------
-        :py:class:`wflow_build Input <hydroflows.methods.wflow.wflow_build.Input>`
-        :py:class:`wflow_build Output <hydroflows.methods.wflow.wflow_build.Output>`
-        :py:class:`wflow_build Params <hydroflows.methods.wflow.wflow_build.Params>`
-        :py:class:`hydromt_wflow.WflowModel`
-        """
         self.params: Params = Params(
             wflow_root=wflow_root, predefined_catalogs=predefined_catalogs, **params
         )

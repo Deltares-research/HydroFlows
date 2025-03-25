@@ -1,4 +1,4 @@
-"""Downscale data to wflow model resolution."""
+"""Downscale a climate change factor dataset to the resolution of a wflow model and add to settings file."""
 
 from os.path import relpath
 from pathlib import Path
@@ -8,10 +8,12 @@ import xarray as xr
 from hydromt_wflow import WflowModel
 
 from hydroflows._typing import FolderPath, OutPath
-from hydroflows.io import to_netcdf
+from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.methods.wflow.wflow_utils import copy_wflow_model
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["WflowUpdateChangeFactors", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -68,7 +70,24 @@ class Params(Parameters):
 
 
 class WflowUpdateChangeFactors(Method):
-    """Method to downscale data to wflow model resolution."""
+    """Downscale a climate change factor dataset to the resolution of a wflow model and add to settings file.
+
+    Parameters
+    ----------
+    change_factor_dataset : Path
+        Path to the to be downscaled dataset.
+    wflow_toml : Path
+        Path to the wflow settings toml that needs to be adjusted.
+    **params
+        Additional parameters to pass to the WflowDownscale instance.
+        See :py:class:`wflow_update_factors Params <hydroflows.methods.wflow.wflow_update_factors.Params>`.
+
+    See Also
+    --------
+    :py:class:`wflow_update_factors Input <~hydroflows.methods.wflow.wflow_update_factors.Input>`
+    :py:class:`wflow_update_factors Output <~hydroflows.methods.wflow.wflow_update_factors.Output>`
+    :py:class:`wflow_update_factors Params <~hydroflows.methods.wflow.wflow_update_factors.Params>`
+    """
 
     name: str = "wflow_update_factors"
 
@@ -85,24 +104,6 @@ class WflowUpdateChangeFactors(Method):
         output_dir: Path,
         **params,
     ):
-        """Downscale a dataset to the resolution of a wflow model.
-
-        Parameters
-        ----------
-        change_factor_dataset : Path
-            Path to the to be downscaled dataset.
-        wflow_toml : Path
-            Path to the wflow settings toml that needs to be adjusted.
-        **params
-            Additional parameters to pass to the WflowDownscale instance.
-            See :py:class:`wflow_update_factors Params <hydroflows.methods.wflow.wflow_update_factors.Params>`.
-
-        See Also
-        --------
-        :py:class:`wflow_update_factors Input <~hydroflows.methods.wflow.wflow_update_factors.Input>`
-        :py:class:`wflow_update_factors Output <~hydroflows.methods.wflow.wflow_update_factors.Output>`
-        :py:class:`wflow_update_factors Params <~hydroflows.methods.wflow.wflow_update_factors.Params>`
-        """
         self.params: Params = Params(output_dir=output_dir, **params)
         self.input: Input = Input(
             change_factor_dataset=change_factor_dataset,

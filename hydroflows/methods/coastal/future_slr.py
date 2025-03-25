@@ -1,4 +1,5 @@
-"""Future climate sea level method."""
+"""Derive future (climate) sea level (rise) events by applying a user-specified offset to an event."""
+
 
 from logging import getLogger
 from pathlib import Path
@@ -14,7 +15,7 @@ from hydroflows.workflow.method_parameters import Parameters
 
 logger = getLogger(__name__)
 
-__all__ = ["FutureSLR"]
+__all__ = ["FutureSLR", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -105,7 +106,36 @@ class Params(Parameters):
 
 
 class FutureSLR(ExpandMethod):
-    """Rule for deriving future (climate) sea level (rise) by applying a user-specified offset to an event."""
+    """Derive future (climate) sea level (rise) events by applying a user-specified offset to an event.
+
+    Parameters
+    ----------
+    event_set_yaml : Path
+        The file path to the event set YAML file, which includes the events to be offset
+        for a future climate projection.
+    scenario_name: str
+        Future scenario name for which the Sea Level Rise offset is applied.
+    slr_value: float
+        Sea level rise (SLR) change value corresponding to the future climate scenario `scenario_name`.
+        This value is added to the input event (water level) time series specified in `event_set_yaml`.
+        The unit of the SLR value can be determined in the `slr_unit` parameter. As default the value
+        is expected in meters.
+    event_root: Path, optional
+        Root folder to save the derived scaled events, by default "data/events/future_climate_sea_level".
+    wildcard: str
+        The wildcard key for expansion over the scaled events, default is "future_event".
+    event_names_input, event_names_output: Optional[List[str]]
+        List of input event names in event_set_yaml and matching output event names for the scaled events.
+        If not provided, event_set_yaml must exist and all events will be scaled.
+    **params
+        Additional parameters to pass to the FutureSLR Params instance.
+
+    See Also
+    --------
+    :py:class:`FutureSLR Input <hydroflows.methods.coastal.future_slr.Input>`
+    :py:class:`FutureSLR Output <hydroflows.methods.coastal.future_slr.Output>`
+    :py:class:`FutureSLR Params <hydroflows.methods.coastal.future_slr.Params>`
+    """
 
     name: str = "future_slr"
 
@@ -127,36 +157,6 @@ class FutureSLR(ExpandMethod):
         event_names_output: Optional[List[str]] = None,
         **params,
     ) -> None:
-        """Create and validate a FutureSLR instance.
-
-        Parameters
-        ----------
-        event_set_yaml : Path
-            The file path to the event set YAML file, which includes the events to be offset
-            for a future climate projection.
-        scenario_name: str
-            Future scenario name for which the Sea Level Rise offset is applied.
-        slr_value: float
-            Sea level rise (SLR) change value corresponding to the future climate scenario `scenario_name`.
-            This value is added to the input event (water level) time series specified in `event_set_yaml`.
-            The unit of the SLR value can be determined in the `slr_unit` parameter. As default the value
-            is expected in meters.
-        event_root: Path, optional
-            Root folder to save the derived scaled events, by default "data/events/future_climate_sea_level".
-        wildcard: str
-            The wildcard key for expansion over the scaled events, default is "future_event".
-        event_names_input, event_names_output: Optional[List[str]]
-            List of input event names in event_set_yaml and matching output event names for the scaled events.
-            If not provided, event_set_yaml must exist and all events will be scaled.
-        **params
-            Additional parameters to pass to the FutureSLR Params instance.
-
-        See Also
-        --------
-        :py:class:`FutureSLR Input <hydroflows.methods.coastal.future_slr.Input>`
-        :py:class:`FutureSLR Output <hydroflows.methods.coastal.future_slr.Output>`
-        :py:class:`FutureSLR Params <hydroflows.methods.coastal.future_slr.Params>`
-        """
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         self.params: Params = Params(

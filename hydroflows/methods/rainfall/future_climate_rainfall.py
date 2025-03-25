@@ -1,4 +1,4 @@
-"""Future climate rainfall method."""
+"""Method to deriving future climate rainfall by scaling an historical event using Clausius-Clapeyron (CC)."""
 
 from logging import getLogger
 from pathlib import Path
@@ -13,6 +13,8 @@ from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
 logger = getLogger(__name__)
+
+__all__ = ["FutureClimateRainfall", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -85,7 +87,31 @@ class Params(Parameters):
 
 
 class FutureClimateRainfall(ExpandMethod):
-    """Rule for deriving future climate rainfall by scaling an event using Clausius-Clapeyron (CC)."""
+    """Create and validate a FutureClimateRainfall instance.
+
+    Parameters
+    ----------
+    scenarios: Dict[str, float]
+        Future scenario name, e.g. "rcp45_2050", and delta temperature for CC scaling.
+    event_set_yaml : Path
+        The file path to the event set YAML file, which includes the events to be scaled
+        for a future climate projection.
+    event_names: Optional[List[str]]
+        List of event names in event_set_yaml
+        If not provided, event_set_yaml must exist to get the event names.
+    event_root: Path, optional
+        Root folder to save the derived scaled events, by default "data/events/future_rainfall".
+    wildcard: str
+        The wildcard key for expansion over the scaled events, default is "future_event".
+    **params
+        Additional parameters to pass to the FutureClimateRainfall Params instance.
+
+    See Also
+    --------
+    :py:class:`FutureClimateRainfall Input <hydroflows.methods.rainfall.future_climate_rainfall.Input>`
+    :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
+    :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
+    """
 
     name: str = "future_climate_rainfall"
 
@@ -105,31 +131,6 @@ class FutureClimateRainfall(ExpandMethod):
         scenario_wildcard: str = "scenario",
         **params,
     ) -> None:
-        """Create and validate a FutureClimateRainfall instance.
-
-        Parameters
-        ----------
-        scenarios: Dict[str, float]
-            Future scenario name, e.g. "rcp45_2050", and delta temperature for CC scaling.
-        event_set_yaml : Path
-            The file path to the event set YAML file, which includes the events to be scaled
-            for a future climate projection.
-        event_names: Optional[List[str]]
-            List of event names in event_set_yaml
-            If not provided, event_set_yaml must exist to get the event names.
-        event_root: Path, optional
-            Root folder to save the derived scaled events, by default "data/events/future_rainfall".
-        wildcard: str
-            The wildcard key for expansion over the scaled events, default is "future_event".
-        **params
-            Additional parameters to pass to the FutureClimateRainfall Params instance.
-
-        See Also
-        --------
-        :py:class:`FutureClimateRainfall Input <hydroflows.methods.rainfall.future_climate_rainfall.Input>`
-        :py:class:`FutureClimateRainfall Output <hydroflows.methods.rainfall.future_climate_rainfall.Output>`
-        :py:class:`FutureClimateRainfall Params <hydroflows.methods.rainfall.future_climate_rainfall.Params>`
-        """
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
         if self.input.event_set_yaml.exists():

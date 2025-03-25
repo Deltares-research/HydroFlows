@@ -11,7 +11,6 @@ import inspect
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from pprint import pformat
 from typing import Any, ClassVar, Dict, Generator, List, Optional, Tuple
 
 from hydroflows.utils.parsers import has_wildcards
@@ -28,8 +27,7 @@ class Method(ABC):
     """Base method for all methods.
 
     The method class defines the structure of a method in a HydroFlow workflow.
-    It should have a name, input, output and params, and implement a run and __init__ method.
-
+    It should have a name, input, output and params, and implement a _run and __init__ method.
     """
 
     # name of the method, should be replaced in subclass
@@ -40,7 +38,6 @@ class Method(ABC):
 
     @abstractmethod
     def __init__(self) -> None:
-        """Create a new method instance with input, output and params."""
         # NOTE: the parameter fields are specific to each method and should
         # be initialized in the method __init__  method.
         self.input: Parameters = Parameters()
@@ -106,9 +103,14 @@ class Method(ABC):
         self._params = value
 
     ## MAGIC METHODS
-
     def __repr__(self) -> str:
-        return f"Method(name={self.name}; parameters={pformat(self.dict)})"
+        parameters = "\n ".join([f"{k}=({getattr(self, k)})" for k in self.dict])
+        method_type = self.__class__.__bases__[0].__name__
+        expand = ""
+        if isinstance(self, ExpandMethod):
+            wcs = " ".join([f"{k}={v}" for k, v in self.expand_wildcards.items()])
+            expand = f" expand_wildcards=({wcs})\n"
+        return f"{method_type}(\n name={self.name}\n {parameters}\n{expand})"
 
     def __eq__(self, other: "Method") -> bool:
         return (
@@ -179,13 +181,13 @@ class Method(ABC):
     ## SERIALIZATION METHODS
 
     @classmethod
-    def from_kwargs(cls, name: Optional[str] = None, **kwargs) -> "Method":
+    def from_kwargs(cls, method_name: Optional[str] = None, **kwargs) -> "Method":
         """Create a new method instance from the method `name` and its initialization arguments."""
         # if called from the parent class, get the subclass by name
         if cls.name == "abstract_method":
-            if name is None:
+            if method_name is None:
                 raise ValueError("Cannot initiate from Method without a method name")
-            cls = cls._get_subclass(name)
+            cls = cls._get_subclass(method_name)
 
         return cls(**kwargs)
 
@@ -223,10 +225,27 @@ class Method(ABC):
         outputs = list(self.output.model_fields.keys())
         params = list(self.params.model_fields.keys())
         ukeys = set(inputs + outputs + params)
+        if "method_name" in ukeys:
+            raise ValueError("Key 'method_name' is reserved for the method name")
         nkeys = len(inputs) + len(outputs) + len(params)
         # check for unique keys
         if len(ukeys) != nkeys:
             raise ValueError("Keys of input, output and params should all be unique")
+
+    def test_method(self) -> None:
+        """Run all tests on the method."""
+        errors = []
+        try:
+            self._test_unique_keys()
+        except Exception as e:
+            errors.append(e)
+        try:
+            self._test_roundtrip()
+        except Exception as e:
+            errors.append(e)
+        if errors:
+            msg = "\n".join([str(e) for e in errors])
+            raise ValueError(f"Method tests failed:\n{msg}")
 
     ## RUN METHODS
 

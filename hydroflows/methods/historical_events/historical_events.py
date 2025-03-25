@@ -1,4 +1,4 @@
-"""Historical events method for all drivers."""
+"""Method to derive historical events with one or more drivers from timeseries data."""
 
 import logging
 from pathlib import Path
@@ -13,7 +13,7 @@ from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["HistoricalEvents"]
+__all__ = ["HistoricalEvents", "Input", "Output", "Params"]
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,32 @@ class Params(Parameters):
 
 
 class HistoricalEvents(ExpandMethod):
-    """Rule for deriving historical events from a longer series."""
+    """Method to derive historical events with one or more drivers from timeseries data.
+
+    Parameters
+    ----------
+    discharge_nc : Path, optional
+        The file path to the discharge time series in NetCDF format.
+    precip_nc : Path, optional
+        The file path to the rainfall time series in NetCDF format.
+    water_level_nc : Path, optional
+        The file path to the water level time series in NetCDF format.
+    events_dates : Dict
+        The dictionary mapping event names to their start and end date/time information. For example,
+        events_dates = {"p_event": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"}.
+    output_dir : Path, optional
+        The directory where the derived historical events will be saved, by default "data/historical_events".
+    wildcard : str, optional
+        The wildcard key for expansion over the historical events, by default "event".
+    **params
+        Additional parameters to pass to the HistoricalEvents instance.
+
+    See Also
+    --------
+    :py:class:`HistoricalEvents Input <hydroflows.methods.historical_events.historical_events.Input>`
+    :py:class:`HistoricalEvents Output <hydroflows.methods.historical_events.historical_events.Output>`
+    :py:class:`HistoricalEvents Params <hydroflows.methods.historical_events.historical_events.Params>`
+    """
 
     name: str = "historical_events"
 
@@ -133,32 +158,6 @@ class HistoricalEvents(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a HistoricalEvents instance.
-
-        Parameters
-        ----------
-        discharge_nc : Path, optional
-            The file path to the discharge time series in NetCDF format.
-        precip_nc : Path, optional
-            The file path to the rainfall time series in NetCDF format.
-        water_level_nc : Path, optional
-            The file path to the water level time series in NetCDF format.
-        events_dates : Dict
-            The dictionary mapping event names to their start and end date/time information. For example,
-            events_dates = {"p_event": {"startdate": "1995-03-04 12:00", "enddate": "1995-03-05 14:00"}.
-        output_dir : Path, optional
-            The directory where the derived historical events will be saved, by default "data/historical_events".
-        wildcard : str, optional
-            The wildcard key for expansion over the historical events, by default "event".
-        **params
-            Additional parameters to pass to the HistoricalEvents instance.
-
-        See Also
-        --------
-        :py:class:`HistoricalEvents Input <hydroflows.methods.historical_events.historical_events.Input>`
-        :py:class:`HistoricalEvents Output <hydroflows.methods.historical_events.historical_events.Output>`
-        :py:class:`HistoricalEvents Params <hydroflows.methods.historical_events.historical_events.Params>`
-        """
         self.params: Params = Params(
             output_dir=output_dir,
             events_dates=events_dates,

@@ -2,21 +2,13 @@ import pytest
 from importlib_metadata import EntryPoint
 
 from hydroflows.workflow.method import Method
-from hydroflows.workflow.method_entrypoints import METHODS, MethodEPS
-
-
-def test_methods():
-    assert len(METHODS.entry_points) > 0
-    for name in METHODS.entry_points:
-        m = METHODS.load(name)
-        assert issubclass(m, Method)
-        assert m.name.lower() == name, f"Method name {m.name} does not match key {name}"
+from hydroflows.workflow.method_entrypoints import MethodEPS
 
 
 def test_method_eps():
-    name = "get_ERA5_rainfall"
-    cls_name = "GetERA5Rainfall"
-    module = "hydroflows.methods.rainfall.get_ERA5_rainfall"
+    name = "run_dummy_event"
+    cls_name = "RunDummyEvent"
+    module = "hydroflows.methods.dummy.run_dummy_event"
     ep_str = f"{module}:{cls_name}"
 
     m = MethodEPS({name: ep_str})
@@ -36,7 +28,7 @@ def test_method_eps():
     with pytest.raises(ValueError, match="Invalid entry point 123"):
         m.set_ep("test_invalid", 123)
     # raise ValueError if method already exists
-    with pytest.raises(ValueError, match="Duplicate entry point get_era5_rainfall"):
+    with pytest.raises(ValueError, match="Duplicate entry point run_dummy_event"):
         m.set_ep(name, ep_str)
     # raise ValueError if method not found
     with pytest.raises(ValueError, match="Method not_a_method not found"):

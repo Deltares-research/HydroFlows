@@ -14,13 +14,14 @@ from pprint import pformat
 from shutil import copy
 from typing import Dict, List, Optional, Union
 
+import graphviz
 import yaml
 from jinja2 import Environment, PackageLoader
 
 from hydroflows import __version__
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
-from hydroflows.workflow.method import Method
+from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 from hydroflows.workflow.reference import Ref
 from hydroflows.workflow.rule import Rule
 from hydroflows.workflow.rules import Rules
@@ -31,7 +32,15 @@ logger = logging.getLogger(__name__)
 
 
 class Workflow:
-    """Workflow class."""
+    """Create a workflow instance.
+
+    Parameters
+    ----------
+    config : Dict, optional
+        The configuration of the workflow, by default None.
+    wildcards : Dict, optional
+        The wildcard keys and values of the workflow, by default None.
+    """
 
     def __init__(
         self,
@@ -40,17 +49,6 @@ class Workflow:
         wildcards: Optional[Dict] = None,
         root: Optional[Path] = None,
     ) -> None:
-        """Create a workflow instance.
-
-        Workflow instances are validated and can be parsed to a workflow engine.
-
-        Parameters
-        ----------
-        config : Dict, optional
-            The configuration of the workflow, by default None.
-        wildcards : Dict, optional
-            The wildcard keys and values of the workflow, by default None.
-        """
         if config is None:
             config = {}
         if wildcards is None:
@@ -117,7 +115,7 @@ class Workflow:
             if isinstance(value, str) and value.startswith("$"):
                 kwargs[key] = self.get_ref(value)
         # instantiate the method and add the rule
-        m = Method.from_kwargs(name=str(method), **kwargs)
+        m = Method.from_kwargs(str(method), **kwargs)
         self.create_rule(m, rule_id)
 
     def get_ref(self, ref: str) -> Ref:
@@ -138,9 +136,9 @@ class Workflow:
         # Add the rules to the workflow
         for i, rule in enumerate(rules):
             if not isinstance(rule, dict):
-                raise ValueError(f"Rule {i+1} invalid: not a dictionary.")
+                raise ValueError(f"Rule {i + 1} invalid: not a dictionary.")
             if "method" not in rule.keys():
-                raise ValueError(f"Rule {i+1} invalid: 'method' name missing.")
+                raise ValueError(f"Rule {i + 1} invalid: 'method' name missing.")
             workflow.create_rule_from_kwargs(**rule)
         return workflow
 
@@ -290,7 +288,9 @@ class Workflow:
         """
         nrules = len(self.rules)
         for i, rule in enumerate(self.rules):
-            logger.info("Rule %d/%d: %s", i + 1, nrules, rule.rule_id)
+            logger.info(
+                f"Run rule {i + 1}/{nrules}: {rule.rule_id} ({rule.n_runs} runs)"
+            )
             rule.run(max_workers=max_workers)
 
     def dryrun(self, missing_file_error: bool = False) -> None:
@@ -304,8 +304,75 @@ class Workflow:
         nrules = len(self.rules)
         input_files = []
         for i, rule in enumerate(self.rules):
-            logger.info(f">> Rule {i+1}/{nrules}: {rule.rule_id}")
+            logger.info(
+                f"Dryrun rule {i + 1}/{nrules}: {rule.rule_id} ({rule.n_runs} runs)"
+            )
             output_files = rule.dryrun(
                 missing_file_error=missing_file_error, input_files=input_files
             )
             input_files = list(set(input_files + output_files))
+
+    def plot_rulegraph(
+        self, filename: str | Path | None = "rulegraph.svg", plot_rule_attrs=True
+    ) -> graphviz.Digraph:
+        """Plot the rulegraph.
+
+        The rulegraph is a directed graph where the nodes are rules and the edges are dependencies.
+
+        The nodes are colored based on the type of rule:
+        Expand rules are colored blue, reduce rules are colored green,
+        and rules with repeat wildcards are colored purple. Result rules are colored red.
+
+        Parameters
+        ----------
+        filename : str, optional
+            The filename of the rulegraph, by default "rulegraph.svg".
+            The file is saved in the root directory of the workflow.
+        plot_rule_attrs : bool, optional
+            Plot the rule attributes (n runs and wildcards) in the node, by default True.
+
+        Returns
+        -------
+        graphviz.Digraph
+            The graphviz Digraph object.
+        """
+        node_attr = {
+            "shape": "box",
+            "style": "rounded",
+            "fontname": "Courier",
+            "fontsize": "12",
+            "penwidth": "2",
+        }
+        edge_attr = {"penwidth": "2", "color": "grey"}
+        graph = graphviz.Digraph(
+            name=self.name, node_attr=node_attr, edge_attr=edge_attr
+        )
+        for rule in self.rules:
+            # add the rule_id in bold
+            name = f"""<b>{rule.rule_id}</b><BR/>"""
+            # get rule attributes (n runs and ) from the rule object __repr__
+            rule_attrs = ""
+            if plot_rule_attrs:
+                rule_attrs = "<BR/>".join(str(rule)[5:-1].split(",")[2:])
+            # add node to graph with color based on rule type
+            kwargs = {"color": "black"}
+            if rule.rule_id in self.rules.result_rules:
+                kwargs["color"] = "red"
+            elif isinstance(rule.method, ExpandMethod):
+                kwargs["color"] = "blue"
+            elif isinstance(rule.method, ReduceMethod):
+                kwargs["color"] = "green"
+            elif len(rule.wildcards["repeat"]) > 0:
+                kwargs["color"] = "purple"
+            graph.node(rule.rule_id, f"<{name}{rule_attrs}>", **kwargs)
+            # add edges (dependencies) to the graph
+            for dep in self.rules.dependency_map[rule.rule_id]:
+                graph.edge(dep, rule.rule_id)
+        if filename is not None:
+            graph.render(
+                Path(filename).stem,
+                directory=self.root,
+                format=Path(filename).suffix[1:],
+                cleanup=True,
+            )
+        return graph

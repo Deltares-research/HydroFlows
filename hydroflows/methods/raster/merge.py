@@ -1,14 +1,16 @@
-"""Merge multiple (climate) datasets into one."""
+"""Merge multiple (climate) datasets into one using quantile reduction."""
 
 from pathlib import Path
 
 from pydantic import Field, model_validator
 
 from hydroflows._typing import ListOfPath, OutPath, WildcardPath
-from hydroflows.io import to_netcdf
 from hydroflows.methods.raster.merge_utils import merge_raster_datasets
+from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["MergeGriddedDatasets", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -72,7 +74,31 @@ class Params(Parameters):
 
 
 class MergeGriddedDatasets(ReduceMethod):
-    """Method to merge (reduce) different gridded datasets using a quantile."""
+    """Merge multiple (climate) datasets into one using quantile reduction.
+
+    Parameters
+    ----------
+    datasets : ListOfPath, WildcardPath
+        List of paths of the datasets for merging.
+    output_dir : Path
+        The output directory of reduced dataset.
+    output_name : str, optional
+        The name of the output file. Default is None.
+    quantile : float
+        The quantile the merged data should be given the input datasets.
+    reduce_dim : str
+        The dimension to reduce the datasets along. Default is "model"
+        This dimension will be added if not present in the datasets.
+    **params
+        Additional parameters to pass to the MergeGriddedDatasets instance.
+        See :py:class:`merge Params <hydroflows.methods.raster.merge.Params>`.
+
+    See Also
+    --------
+    :py:class:`merge Input <~hydroflows.methods.raster.merge.Input>`
+    :py:class:`merge Output <~hydroflows.methods.raster.merge.Output>`
+    :py:class:`merge Params <~hydroflows.methods.raster.merge.Params>`
+    """
 
     name: str = "merge_gridded_datasets"
 
@@ -90,31 +116,6 @@ class MergeGriddedDatasets(ReduceMethod):
         quantile: float = 0.5,
         **params,
     ) -> None:
-        """Merge multiple gridded datasets using a quantile over all datasets.
-
-        Parameters
-        ----------
-        datasets : ListOfPath, WildcardPath
-            List of paths of the datasets for merging.
-        output_dir : Path
-            The output directory of reduced dataset.
-        output_name : str, optional
-            The name of the output file. Default is None.
-        quantile : float
-            The quantile the merged data should be given the input datasets.
-        reduce_dim : str
-            The dimension to reduce the datasets along. Default is "model"
-            This dimension will be added if not present in the datasets.
-        **params
-            Additional parameters to pass to the MergeGriddedDatasets instance.
-            See :py:class:`merge Params <hydroflows.methods.raster.merge.Params>`.
-
-        See Also
-        --------
-        :py:class:`merge Input <~hydroflows.methods.raster.merge.Input>`
-        :py:class:`merge Output <~hydroflows.methods.raster.merge.Output>`
-        :py:class:`merge Params <~hydroflows.methods.raster.merge.Params>`
-        """
         self.input: Input = Input(datasets=datasets)
         self.params: Params = Params(
             output_dir=output_dir,

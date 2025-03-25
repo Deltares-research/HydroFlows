@@ -13,15 +13,13 @@ optional
 - hydroflows create: create a new workflow
 """
 
-from pathlib import Path
-from typing import Dict, Literal, Optional
+from typing import Dict, Optional
 
 import click
 
 from hydroflows import __version__
 from hydroflows.log import setuplog
 from hydroflows.workflow.method import Method
-from hydroflows.workflow.workflow import Workflow
 
 
 # Copied from rasterio.rio.options
@@ -108,7 +106,7 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 
 
 @cli.command(short_help="Run a method with a set of key-word arguments.")
-@click.argument("METHOD", type=str, nargs=1)
+@click.argument("METHOD_NAME", type=str, nargs=1)
 @click.argument(
     "KWARGS",
     nargs=-1,
@@ -125,98 +123,30 @@ def cli(ctx, info, license, debug):  # , quiet, verbose):
 @click.pass_context
 def method(
     ctx: click.Context,
-    method: str,
+    method_name: str,
     kwargs: Dict[str, str],
     dry_run: bool = False,
     touch_output: bool = False,
 ):
     """Run a method with a set of key-word arguments.
 
-    RUNNER is the name of the method to run, e.g., 'build_wflow'.
+    METHOD_NAME is the name of the method to run, e.g., 'build_wflow'.
     KWARGS is a list of key-value pairs, e.g., 'input=foo output=bar'.
     """
     logger = setuplog()
     try:
-        method: Method = Method.from_kwargs(method, **kwargs)
+        method: Method = Method.from_kwargs(method_name, **kwargs)
         if dry_run:
             input_files = list(method.input.to_dict().values())
-            if touch_output:
-                method.dryrun(
-                    input_files=input_files, missing_file_error=True, touch_output=True
-                )
-            else:
-                method.dryrun(input_files=input_files, missing_file_error=True)
+            method.dryrun(
+                input_files=input_files,
+                missing_file_error=True,
+                touch_output=touch_output,
+            )
         else:
             method.run()
     except Exception as e:
         logger.error(e)
-        ctx.exit(1)
-
-
-@cli.command(short_help="Create a workflow file.")
-@click.argument(
-    "WORKFLOW",
-    type=click.Path(exists=True, file_okay=True),
-)
-# TODO support output dir requires adapting relative paths in the workflow file.
-# for now we assume the workflow file is in the output dir.
-# @click.argument(
-#     "OUTPUT_DIR",
-#     type=click.Path(exists=False, file_okay=False, dir_okay=True, writable=True),
-# )
-@click.option(
-    "--fmt",
-    required=False,
-    type=click.Choice(["smk"]),
-    help="Choose the format of the workflow file.",
-    default="smk",
-)
-@click.pass_context
-def create(
-    ctx: click.Context,
-    workflow: Path,
-    # output_dir: Path,
-    fmt: Literal["smk"] = "smk",
-) -> None:
-    """Create a workflow file.
-
-    Parameters
-    ----------
-    WORKFLOW : Path
-        The hydroflows workflow file to use as template.
-    FORMAT : Literal["smk"]
-        The format of the workflow file.
-    """
-    wf = Workflow.from_yaml(workflow)
-    match fmt:
-        case "smk":
-            wf.to_snakemake(Path(workflow).with_suffix(".smk"))
-        case _:
-            click.echo(f"Error: Unknown format {fmt}")
-            ctx.exit(1)
-
-
-@cli.command(short_help="Run a workflow file.")
-@click.argument(
-    "WORKFLOW",
-    type=click.Path(exists=True, file_okay=True),
-)
-@click.pass_context
-def run(
-    ctx: click.Context,
-    workflow: Path,
-) -> None:
-    """Create a workflow file.
-
-    Parameters
-    ----------
-    WORKFLOW : Path
-        The hydroflows workflow file to use as template.
-    """
-    try:
-        Workflow.from_yaml(workflow).run()
-    except Exception as e:
-        click.echo(f"Error: {e}")
         ctx.exit(1)
 
 

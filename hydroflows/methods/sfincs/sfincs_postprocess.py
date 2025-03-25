@@ -1,4 +1,4 @@
-"""SFINCS postprocess method."""
+"""Postprocess SFINCS netcdf maximum water level (zsmax) output to a regular grid geotiff file."""
 
 from pathlib import Path
 from typing import Optional
@@ -9,7 +9,7 @@ from hydroflows._typing import OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsPostprocess"]
+__all__ = ["SfincsPostprocess", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -37,7 +37,26 @@ class Params(Parameters):
 
 
 class SfincsPostprocess(Method):
-    """Reduce sfincs_map.nc zsmax variable to the global zsmax and save on a regular grid."""
+    """Postprocess SFINCS netcdf maximum water level (zsmax) output to a regular grid geotiff file.
+
+    output nc file is saved to {output_root}/zsmax_{event_name}.nc
+
+    Parameters
+    ----------
+    sfincs_map : Path
+        The path to the SFINCS model output sfincs_map.nc file.
+    event_name : str
+        The name of the event, used to create the output filename.
+    output_root : Optional[Path], optional
+        The output directory where the hazard output files are saved.
+        By default the output is saved in the same directory as the input.
+
+    See Also
+    --------
+    :py:class:`sfincs_downscale Input <hydroflows.methods.sfincs.sfincs_downscale.Input>`
+    :py:class:`sfincs_downscale Output <hydroflows.methods.sfincs.sfincs_downscale.Output>`
+    :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`
+    """
 
     name: str = "sfincs_postprocess"
 
@@ -51,26 +70,6 @@ class SfincsPostprocess(Method):
         event_name: Optional[str] = None,
         output_root: Optional[Path] = None,
     ) -> None:
-        """Reduce sfincs_map.nc zsmax variable to the global zsmax and save on a regular grid.
-
-        output nc file is saved to {output_root}/zsmax_{event_name}.nc
-
-        Parameters
-        ----------
-        sfincs_map : Path
-            The path to the SFINCS model output sfincs_map.nc file.
-        event_name : str
-            The name of the event, used to create the output filename.
-        output_root : Optional[Path], optional
-            The output directory where the hazard output files are saved.
-            By default the output is saved in the same directory as the input.
-
-        See Also
-        --------
-        :py:class:`sfincs_downscale Input <hydroflows.methods.sfincs.sfincs_downscale.Input>`
-        :py:class:`sfincs_downscale Output <hydroflows.methods.sfincs.sfincs_downscale.Output>`
-        :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`
-        """
         self.input: Input = Input(sfincs_map=sfincs_map)
 
         if output_root is None:

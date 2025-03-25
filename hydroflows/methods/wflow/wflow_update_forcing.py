@@ -1,4 +1,4 @@
-"""Wflow update forcing method."""
+"""Method to update the Wflow meteorological forcing."""
 
 import os
 from datetime import datetime
@@ -13,7 +13,7 @@ from hydroflows.methods.wflow.wflow_utils import copy_wflow_model, shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["WflowUpdateForcing"]
+__all__ = ["WflowUpdateForcing", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -88,7 +88,37 @@ class Params(Parameters):
 
 
 class WflowUpdateForcing(Method):
-    """Rule for updating Wflow forcing."""
+    """Method to update the Wflow meteorological forcing.
+
+    Wflow updated toml along with the forcing are stored in a simulations
+    subdirectory of the basemodel.
+
+    Parameters
+    ----------
+    wflow_toml : Path
+        The file path to the Wflow basemodel configuration file (toml).
+    start_time : datetime
+        The start time of the period for which we want to generate forcing.
+    end_time : datetime
+        The end time of the period for which we want to generate forcing
+    output_dir : str
+        Output location of updated model
+    catalog_path: Optional[Path], optional
+        The path to the data catalog file (.yml) that contains the data sources
+        specified in the config file. If None (default), a predefined data catalog should be provided.
+    predefined_catalogs : Optional[ListOfStr], optional
+        A list containing the predefined data catalog names.
+    **params
+        Additional parameters to pass to the WflowUpdateForcing instance.
+        See :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`.
+
+    See Also
+    --------
+    :py:class:`wflow_update_forcing Input <hydroflows.methods.wflow.wflow_update_forcing.Input>`
+    :py:class:`wflow_update_forcing Output <hydroflows.methods.wflow.wflow_update_forcing.Output>`
+    :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`
+    :py:class:`hydromt_wflow.WflowModel`
+    """
 
     name: str = "wflow_update_forcing"
 
@@ -110,37 +140,6 @@ class WflowUpdateForcing(Method):
         predefined_catalogs: Optional[ListOfStr] = None,
         **params,
     ):
-        """Create and validate a WflowUpdateForcing instance.
-
-        Wflow updated toml along with the forcing are stored in a simulations
-        subdirectory of the basemodel.
-
-        Parameters
-        ----------
-        wflow_toml : Path
-            The file path to the Wflow basemodel configuration file (toml).
-        start_time : datetime
-            The start time of the period for which we want to generate forcing.
-        end_time : datetime
-            The end time of the period for which we want to generate forcing
-        output_dir : str
-            Output location of updated model
-        catalog_path: Optional[Path], optional
-            The path to the data catalog file (.yml) that contains the data sources
-            specified in the config file. If None (default), a predefined data catalog should be provided.
-        predefined_catalogs : Optional[ListOfStr], optional
-            A list containing the predefined data catalog names.
-        **params
-            Additional parameters to pass to the WflowUpdateForcing instance.
-            See :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`.
-
-        See Also
-        --------
-        :py:class:`wflow_update_forcing Input <hydroflows.methods.wflow.wflow_update_forcing.Input>`
-        :py:class:`wflow_update_forcing Output <hydroflows.methods.wflow.wflow_update_forcing.Output>`
-        :py:class:`wflow_update_forcing Params <hydroflows.methods.wflow.wflow_update_forcing.Params>`
-        :py:class:`hydromt_wflow.WflowModel`
-        """
         self.params: Params = Params(
             start_time=start_time,
             end_time=end_time,

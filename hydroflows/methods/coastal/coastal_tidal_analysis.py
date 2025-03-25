@@ -1,4 +1,4 @@
-"""Convert waterlevel timeseries into tide and surge timeseries."""
+"""Derive tide and surge from waterlevel timeseries based on a tidal analysis."""
 
 from pathlib import Path
 
@@ -11,7 +11,7 @@ from hydroflows._typing import OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["CoastalTidalAnalysis"]
+__all__ = ["CoastalTidalAnalysis", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -42,10 +42,22 @@ class Params(Parameters):
 
 
 class CoastalTidalAnalysis(Method):
-    """
-    Method for deriving tide and surge timeseries from waterlevel timeseries.
+    """Derive tide and surge from waterlevel timeseries based on a tidal analysis.
 
     Implements hatyan package to do tidal analysis. Uses 94 tidal constituents to estimate tidal signal.
+
+    Parameters
+    ----------
+    waterlevel_timeseries : Path
+        Path to waterlevel timeseries to derive tide and surge from.
+    data_root : Path, optional
+        Folder root where output is stored, by default "data/input/forcing/waterlevel"
+
+    See Also
+    --------
+    :py:class:`CoastalTidalAnalysis Input <hydroflows.methods.coastal.coastal_tidal_analysis.Input>`
+    :py:class:`CoastalTidalAnalysis Output <hydroflows.methods.coastal.coastal_tidal_analysis.Output>`
+    :py:class:`CoastalTidalAnalysis Params <hydroflows.methods.coastal.coastal_tidal_analysis.Params>`
     """
 
     name: str = "coastal_tidal_analysis"
@@ -60,21 +72,6 @@ class CoastalTidalAnalysis(Method):
         data_root: Path = Path("data/input"),
         **params,
     ) -> None:
-        """Create and validate CoastalTidalAnalysis instance.
-
-        Parameters
-        ----------
-        waterlevel_timeseries : Path
-            Path to waterlevel timeseries to derive tide and surge from.
-        data_root : Path, optional
-            Folder root where output is stored, by default "data/input/forcing/waterlevel"
-
-        See Also
-        --------
-        :py:class:`CoastalTidalAnalysis Input <hydroflows.methods.coastal.create_tide_surge_timeseries.Input>`
-        :py:class:`CoastalTidalAnalysis Output <hydroflows.methods.coastal.create_tide_surge_timeseries.Output>`
-        :py:class:`CoastalTidalAnalysis Params <hydroflows.methods.coastal.create_tide_surge_timeseries.Params>`
-        """
         self.input: Input = Input(waterlevel_nc=waterlevel_nc)
         self.params: Params = Params(data_root=data_root, **params)
 

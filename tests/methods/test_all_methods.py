@@ -6,10 +6,11 @@ from hydroflows.workflow.method_entrypoints import METHODS
 ALL_METHODS = list(METHODS.entry_points.keys())
 
 
-def _init_method(method: str) -> Method:
+def _init_method(method_name: str) -> Method:
     # instantiate method with made-up kwargs
-    method_class = METHODS.load(method)
-    assert method_class.name.lower() == method.lower()
+    method_class = METHODS.load(method_name)
+    assert issubclass(method_class, Method)
+    assert method_class.name.lower() == method_name.lower()
     kwargs = getattr(method_class, "_test_kwargs", {})
     if not kwargs:
         pytest.skip(f"Skipping {method_class} because it has no _test_kwargs")

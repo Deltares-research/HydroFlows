@@ -12,7 +12,7 @@ from hydroflows.utils.docker_utils import fetch_docker_uid
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["WflowRun"]
+__all__ = ["WflowRun", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -86,7 +86,27 @@ when executing via 'script'. {self.wflow_run_script} is not a valid path."
 
 
 class WflowRun(Method):
-    """Rule for running a Wflow model."""
+    """Method for running a Wflow model.
+
+    Parameters
+    ----------
+    wflow_toml : Path
+        The file path to the Wflow (toml) configuration file.
+    run_method : Literal["exe", "docker", "julia", "apptainer", "script"]
+        How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
+        'docker' or 'apptainer' for running the model in a container.
+    wflow_bin : Path
+        The path to the Wflow executable
+    **params
+        Additional parameters to pass to the WflowRun Params instance.
+        See :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`.
+
+    See Also
+    --------
+    :py:class:`wflow_run Input <hydroflows.methods.wflow.wflow_run.Input>`
+    :py:class:`wflow_run Output <hydroflows.methods.wflow.wflow_run.Output>`
+    :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`
+    """
 
     name: str = "wflow_run"
 
@@ -102,27 +122,6 @@ class WflowRun(Method):
         wflow_bin: Optional[Path] = None,
         **params,
     ) -> "WflowRun":
-        """Create and validate a WflowRun instance.
-
-        Parameters
-        ----------
-        wflow_toml : Path
-            The file path to the Wflow (toml) configuration file.
-        run_method : Literal["exe", "docker", "julia", "apptainer", "script"]
-            How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
-            'docker' or 'apptainer' for running the model in a container.
-        wflow_bin : Path
-            The path to the Wflow executable
-        **params
-            Additional parameters to pass to the WflowRun Params instance.
-            See :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`.
-
-        See Also
-        --------
-        :py:class:`wflow_run Input <hydroflows.methods.wflow.wflow_run.Input>`
-        :py:class:`wflow_run Output <hydroflows.methods.wflow.wflow_run.Output>`
-        :py:class:`wflow_run Params <hydroflows.methods.wflow.wflow_run.Params>`
-        """
         self.params: Params = Params(
             wflow_bin=wflow_bin, run_method=run_method, **params
         )

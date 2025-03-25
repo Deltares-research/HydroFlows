@@ -1,4 +1,4 @@
-"""FIAT updating submodule/ rules."""
+"""Method for updating a FIAT model with hazard maps."""
 
 from pathlib import Path
 from typing import List, Literal, Optional, Union
@@ -11,6 +11,8 @@ from hydroflows.methods.fiat.fiat_utils import copy_fiat_model
 from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["FIATUpdateHazard", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -66,12 +68,39 @@ class Params(Parameters):
 
 
 class FIATUpdateHazard(ReduceMethod):
-    """Rule for updating a FIAT model with hazard maps.
+    """Method for updating a FIAT model with hazard maps.
 
-    This class utilizes the :py:class:`Params <hydroflows.methods.fiat.fiat_update.Params>`,
-    :py:class:`Input <hydroflows.methods.fiat.fiat_update.Input>`, and
-    :py:class:`Output <hydroflows.methods.fiat.fiat_update.Output>` classes to update
-    a FIAT model with hazard maps.
+    Either hazard_maps or single_hazard_map should be provided.
+    If single_hazard_map is provided, risk analysis is disabled.
+
+    FIAT simulations are stored in {output_dir}/{sim_name}.
+
+    Parameters
+    ----------
+    fiat_cfg : Path
+        The file path to the FIAT configuration (toml) file.
+    event_set_yaml : Path
+        The path to the event description file.
+    output_dir : str
+        Output location of updated model
+    hazard_maps : Path or List[Path], optional
+        The path to the hazard maps. It can be a list of paths, a single path containing a wildcard,
+        or a single path to a single hazard map.
+    map_type : Literal["water_level", "water_depth"], optional
+        The hazard data type
+    sim_name : str, optional
+        The name of the simulation folder. If None, the stem of the event set file or the first hazard map is used.
+
+    **params
+        Additional parameters to pass to the FIATUpdateHazard instance.
+        See :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`.
+
+    See Also
+    --------
+    :py:class:`fiat_update_hazard Input <hydroflows.methods.fiat.fiat_update_hazard.Input>`
+    :py:class:`fiat_update_hazard Output <hydroflows.methods.fiat.fiat_update_hazard.Output>`
+    :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`
+
     """
 
     name: str = "fiat_update_hazard"
@@ -94,40 +123,6 @@ class FIATUpdateHazard(ReduceMethod):
         sim_name: Optional[str] = None,
         **params,
     ):
-        """Create and validate a FIATUpdateHazard instance.
-
-        Either hazard_maps or single_hazard_map should be provided.
-        If single_hazard_map is provided, risk analysis is disabled.
-
-        FIAT simulations are stored in {basemodel}/{sim_subfolder}/{sim_name}.
-
-        Parameters
-        ----------
-        fiat_cfg : Path
-            The file path to the FIAT configuration (toml) file.
-        event_set_yaml : Path
-            The path to the event description file.
-        output_dir : str
-            Output location of updated model
-        hazard_maps : Path or List[Path], optional
-            The path to the hazard maps. It can be a list of paths, a single path containing a wildcard,
-            or a single path to a single hazard map.
-        map_type : Literal["water_level", "water_depth"], optional
-            The hazard data type
-        sim_name : str, optional
-            The name of the simulation folder. If None, the stem of the event set file or the first hazard map is used.
-
-        **params
-            Additional parameters to pass to the FIATUpdateHazard instance.
-            See :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`.
-
-        See Also
-        --------
-        :py:class:`fiat_update_hazard Input <hydroflows.methods.fiat.fiat_update_hazard.Input>`
-        :py:class:`fiat_update_hazard Output <hydroflows.methods.fiat.fiat_update_hazard.Output>`
-        :py:class:`fiat_update_hazard Params <hydroflows.methods.fiat.fiat_update_hazard.Params>`
-
-        """
         self.input: Input = Input(
             fiat_cfg=fiat_cfg,
             event_set_yaml=event_set_yaml,

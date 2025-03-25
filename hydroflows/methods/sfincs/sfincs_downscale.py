@@ -1,4 +1,4 @@
-"""SFINCS downscale method."""
+"""Downscale SFINCS simulated waterlevels to high res water depths."""
 
 from pathlib import Path
 from typing import Optional
@@ -9,7 +9,7 @@ from hydroflows._typing import FolderPath, JsonDict, OutPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsDownscale"]
+__all__ = ["SfincsDownscale", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -46,7 +46,31 @@ class Params(Parameters):
 
 
 class SfincsDownscale(Method):
-    """Rule for downscaling Sfincs output to an inundation map."""
+    """Downscale SFINCS simulated waterlevels to high res water depths.
+
+    output tif file is saved to {output_root}/hmax_{event_name}.tif
+
+    Parameters
+    ----------
+    sfincs_map : Path
+        The path to the SFINCS model output sfincs_map.nc file.
+    sfincs_subgrid_dep : Path
+        The path to the highres dem file to use for downscaling the results.
+    event_name : str
+        The name of the event, used to create the output filename.
+    output_root : Optional[Path], optional
+        The output directory where the hazard output files are saved.
+        By default the output is saved in the same directory as the input.
+    **params
+        Additional parameters to pass to the SfincsDownscale instance.
+        See :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`.
+
+    See Also
+    --------
+    :py:class:`sfincs_downscale Input <hydroflows.methods.sfincs.sfincs_downscale.Input>`
+    :py:class:`sfincs_downscale Output <hydroflows.methods.sfincs.sfincs_downscale.Output>`
+    :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`
+    """
 
     name: str = "sfincs_downscale"
 
@@ -63,31 +87,6 @@ class SfincsDownscale(Method):
         output_root: Optional[Path] = None,
         **params,
     ) -> None:
-        """Downscale SFINCS waterlevels to a flood depth map.
-
-        output tif file is saved to {output_root}/hmax_{event_name}.tif
-
-        Parameters
-        ----------
-        sfincs_map : Path
-            The path to the SFINCS model output sfincs_map.nc file.
-        sfincs_subgrid_dep : Path
-            The path to the highres dem file to use for downscaling the results.
-        event_name : str
-            The name of the event, used to create the output filename.
-        output_root : Optional[Path], optional
-            The output directory where the hazard output files are saved.
-            By default the output is saved in the same directory as the input.
-        **params
-            Additional parameters to pass to the SfincsDownscale instance.
-            See :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`.
-
-        See Also
-        --------
-        :py:class:`sfincs_downscale Input <hydroflows.methods.sfincs.sfincs_downscale.Input>`
-        :py:class:`sfincs_downscale Output <hydroflows.methods.sfincs.sfincs_downscale.Output>`
-        :py:class:`sfincs_downscale Params <hydroflows.methods.sfincs.sfincs_downscale.Params>`
-        """
         self.input: Input = Input(
             sfincs_map=sfincs_map, sfincs_subgrid_dep=sfincs_subgrid_dep
         )

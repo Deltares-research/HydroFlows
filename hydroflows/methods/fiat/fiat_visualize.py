@@ -1,4 +1,4 @@
-"""Module/ Rule for building FIAT models."""
+"""Method for visualizing FIAT model results."""
 
 import shutil
 from pathlib import Path
@@ -24,7 +24,7 @@ from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["FIATVisualize"]
+__all__ = ["FIATVisualize", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -96,7 +96,26 @@ class Output(Parameters):
 
 
 class FIATVisualize(Method):
-    """Rule for visualizing FIAT output."""
+    """Method for visualizing FIAT model results.
+
+    Parameters
+    ----------
+    fiat_output_csv: Path
+        The file path to the output csv of the FIAT model.
+    fiat_cfg: Path
+        The file path to the FIAT configuration (toml) file from the FIAT model simulation.
+    spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
+        The path to the spatial joins configuration file.
+    **params
+        Additional parameters to pass to the FIATVisualize instance.
+        See :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
+
+    See Also
+    --------
+    :py:class:`fiat_visualize Input <hydroflows.methods.fiat.fiat_visualize.Input>`
+    :py:class:`fiat_visualize Output <hydroflows.methods.fiat.fiat_visualize.Output>`
+    :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`
+    """
 
     name: str = "fiat_visualize"
 
@@ -114,27 +133,6 @@ class FIATVisualize(Method):
         output_dir: Path = Path("output/fiat"),
         **params,
     ) -> None:
-        """Create and validate a FIATVisualize instance.
-
-        Parameters
-        ----------
-        fiat_output_csv: Path
-            The file path to the output csv of the FIAT model.
-        fiat_cfg: Path
-            The file path to the FIAT configuration (toml) file from the FIAT model simulation.
-        spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
-            The path to the spatial joins configuration file.
-        **params
-            Additional parameters to pass to the FIATVisualize instance.
-            See :py:class:`fiat_visualize Params <hydroflows.methods.fiat.fiat_visualize.Params>`.
-
-        See Also
-        --------
-        :py:class:`fiat_visualize Input <~hydroflows.methods.fiat.fiat_visualize.Input>`,
-        :py:class:`fiat_visualize Output <~hydroflows.methods.fiat.fiat_visualize.Output>`,
-        :py:class:`fiat_visualize Params <~hydroflows.methods.fiat.fiat_visualize.Params>`,
-        :py:class:`hydromt_fiat.fiat.FIATModel`
-        """
         self.input: Input = Input(
             spatial_joins_cfg=spatial_joins_cfg,
             fiat_output_csv=fiat_output_csv,

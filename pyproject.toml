@@ -6,37 +6,23 @@ build-backend = "flit_core.buildapi"
 name = "hydroflows"
 authors = [
   { name = "Dirk Eilander", email = "dirk.eilander@deltares.nl" },
-  { name = "Hessel Winsemius", email = "hessel.winsemius@deltares.nl" },
-  { name = "Brendan Dalmijn", email = "brendan.dalmijn@deltares.nl" },
   { name = "Willem Tromp", email = "willem.tromp@deltares.nl" },
   { name = "Athanasios Tsiokanos", email = "athanasios.tsiokanos@deltares.nl"},
+  { name = "Brendan Dalmijn"},
+  { name = "Sarah Rautenbach"},
 ]
 dependencies = [
-  "cartopy",                  # plotting
-  "contextily",               # basemaps
   "click",                    # CLI
-  "fiat-toolbox>=0.1.16",    # toolbox for post-processing delft fiat output
   "geopandas>=1.0, <2.0",     # Reading vector data
-  "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
-  "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
-  "hydromt-fiat>=0.5.3, <1.0", # hydromt plugin for FIAT models
-  "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
-  "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
+  "graphviz",                 # plot graph
+  "importlib-metadata",       # entry points
   "jinja2",                   # templating
-  "matplotlib",               # plotting
-  "netcdf4",                  # data handling
-  "numpy>=1.20",           # pin necessary to ensure compatability with C headers
   "pandas",                   # data handling
   "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
-  "requests",                 # data fetching
-  "shapely",                  # geometry
   "typing_extensions",        # type hinting
   "tqdm",                     # progress bar
-  "xarray==2024.3.0",         # data handling
-  "dask==2024.11.2",
-  "cwltool; platform_system != 'Windows'",
 ]
 
 
@@ -53,12 +39,29 @@ classifiers = [
 dynamic = ['version', 'description']
 
 [project.optional-dependencies]
+methods = [
+  "cartopy",                  # plotting
+  "contextily",               # basemaps
+  "dask==2024.11.2",
+  "fiat-toolbox>=0.1.16",     # toolbox for post-processing delft fiat output
+  "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
+  "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
+  "hydromt-fiat>=0.5.4, <1.0", # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
+  "matplotlib",               # plotting
+  "netcdf4",                  # data handling
+  "numpy>=1.20",              # array handling
+  "requests",                 # data fetching
+  "shapely",                  # geometry
+  "xarray==2024.3.0",         # data handling
+]
 dev = [
   "pip>=23.1.2", # needed for editable installs
   "pre-commit",  # linting
   "ruff",        # linting
   "tomli",       # parsing toml files
-  "hydroflows[test, doc, extra]"
+  "hydroflows[doc, extra, methods, test]", # install all dependencies
 ]
 doc = [
   "nbsphinx",  # Jupyter notebooks in Sphinx
@@ -68,27 +71,26 @@ doc = [
   "pydata-sphinx-theme",
   "autodoc_pydantic",
   "sphinxcontrib-programoutput",
+  "hydroflows[extra, methods]",
 ]
 extra = [
   "papermill",  # execute Jupyter notebooks
   "jupyter",
   "snakemake>=8.20, <9.0",      # Workflow manager
-  "graphviz",
-  "osmnx>1,<2",     # OpenStreetMap data temporarly pinned
+  "cwltool; platform_system != 'Windows'",  # Workflow manager
 ]
 test = [
   "pytest>=2.7.3",  # testing framework
   "pytest-cov",     # test coverage
   "pytest-mock",    # mocking
   "pytest-timeout", # darn hanging tests
-  "hydroflows[extra]",      # needed for testing snake file
 ]
 models = [
   "delft_fiat==0.2.0",  # Delft fiat
   "juliaup"             # julia package manager to install julia & wflow
 ]
 
-full = ["hydroflows[dev, doc, test, extra, models]"]
+full = ["hydroflows[dev, doc, test, extra, methods, models]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
@@ -164,7 +166,8 @@ deps_not_in_conda = [
   "hatyan",
   "autodoc_pydantic",
   "sphinxcontrib-programoutput",
-  "fiat-toolbox"
+  "fiat-toolbox",
+  "hydromt-fiat"
 ]
 
 [tool.pixi.project]
@@ -181,10 +184,14 @@ hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 p
 hydromt_wflow = ">=0.6,<1.0"
 xarray = "==2024.3.0"
 dask = "==2024.11.2"
+graphviz = "*" # conda-forge to get dot executable
+
+[tool.pixi.feature.doc.dependencies]
+nbsphinx = "*"
+papermill = "*"
 
 [tool.pixi.feature.extra.dependencies]
 snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
-graphviz = {version = "*", channel= "conda-forge" }  # conda-forge to get dot executable
 
 [tool.pixi.feature.models.dependencies]
 delft_fiat = "==0.2.0"
@@ -193,11 +200,11 @@ delft_fiat = "==0.2.0"
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["dev", "doc", "test", "extra", "py311", "models", "full"], solve-group = "py311" }
-doc = { features = ["doc", "extra"], solve-group = "py311" }
+default = { features = ["extra", "methods"], solve-group = "py311" }
+full = { features = ["dev", "doc", "test", "extra", "py311", "models", "methods", "full"], solve-group = "py311" }
+doc = { features = ["doc", "extra", "methods"], solve-group = "py311" }
 slim = { solve-group = "py311" }
-extra = { features = ["extra"], solve-group = "py311" }
-test-py311 = { features = ["test", "extra"], solve-group = "py311" }
+test-py311 = { features = ["test", "extra", "methods"], solve-group = "py311" }
 
 [tool.pixi.tasks]
 install-pre-commit = "pre-commit install"
@@ -215,6 +222,7 @@ docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "
 docs-html = {cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends-on = ["examples"]}
 docs-clean = {cmd = ["rm", "-rf", "./docs/_build", "./docs/_generated", "./docs/_examples"] }
 docs-html-clean = { depends-on = ["docs-clean", "docs-html"] }
+docs-html-no-examples = { cmd = ["sphinx-build", "-M", "html", "./docs", "./docs/_build", "-W"], depends-on = ["docs-clean"] }
 
 get-version = { cmd = ["python", "-c", "import hydroflows; print(hydroflows.__version__)"] }
 
