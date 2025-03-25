@@ -1,4 +1,4 @@
-"""Pluvial design events using GPEX global IDF method."""
+"""Method for generating pluvial design events based on the GPEX global IDF dataset."""
 
 from pathlib import Path
 from typing import List, Literal, Optional
@@ -20,7 +20,11 @@ from hydroflows.methods.rainfall.pluvial_design_events import (
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["PluvialDesignEventsGPEX"]
+__all__ = ["PluvialDesignEventsGPEX", "Input", "Output", "Params"]
+
+# TODO: move GPEX to data catalog and generalize to use any IDF dataset
+
+GPEX_RPS = [2, 5, 10, 20, 39, 50, 100]  # subset from the GPEX data up to 100yr rp
 
 
 class Input(Parameters):
@@ -107,7 +111,9 @@ class Params(Parameters):
             )
         # validate event_names
         if self.event_names is None:
-            self.event_names = [f"p_event{int(i+1):02d}" for i in range(len(self.rps))]
+            self.event_names = [
+                f"p_event{int(i + 1):02d}" for i in range(len(self.rps))
+            ]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -117,7 +123,34 @@ class Params(Parameters):
 
 
 class PluvialDesignEventsGPEX(ExpandMethod):
-    """Rule for generating pluvial design events based on the GPEX global IDF dataset."""
+    """Method for generating pluvial design events based on the GPEX global IDF dataset using the alternating block method.
+
+    Parameters
+    ----------
+    gpex_nc : Path
+        The file path to the GPEX data set.
+    region : Path
+        The file path to the geometry file for which we want
+        to derive GPEX estimates at its centroid pixel.
+    event_root : Path, optional
+        The root folder to save the derived design events, by default "data/events/rainfall".
+    rps : List[float], optional
+        Return periods of design events, by default [2, 5, 10, 20, 39, 50, 100].
+    duration : int
+        Duration of the produced design event, by default 48 hours.
+    event_names : List[str], optional
+        List of event names for the design events, by "p_event{i}", where i is the event number.
+    wildcard : str, optional
+        The wildcard key for expansion over the design events, by default "event".
+    **params
+        Additional parameters to pass to the PluvialDesignEventsGPEX Params instance.
+
+    See Also
+    --------
+    :py:class:`PluvialDesignEventsGPEX Input <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Input>`
+    :py:class:`PluvialDesignEventsGPEX Output <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Output>`
+    :py:class:`PluvialDesignEventsGPEX Params <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Params>`
+    """
 
     name: str = "pluvial_design_events_GPEX"
 
@@ -137,44 +170,8 @@ class PluvialDesignEventsGPEX(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a PluvialDesignEventsGPEX instance.
-
-        Parameters
-        ----------
-        gpex_nc : Path
-            The file path to the GPEX data set.
-        region : Path
-            The file path to the geometry file for which we want
-            to derive GPEX estimates at its centroid pixel.
-        event_root : Path, optional
-            The root folder to save the derived design events, by default "data/events/rainfall".
-        rps : List[float], optional
-            Return periods of design events, by default [2, 5, 10, 20, 39, 50, 100].
-        duration : int
-            Duration of the produced design event, by default 48 hours.
-        event_names : List[str], optional
-            List of event names for the design events, by "p_event{i}", where i is the event number.
-        wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
-        **params
-            Additional parameters to pass to the PluvialDesignEventsGPEX Params instance.
-
-        See Also
-        --------
-        :py:class:`PluvialDesignEventsGPEX Input <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Input>`
-        :py:class:`PluvialDesignEventsGPEX Output <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Output>`
-        :py:class:`PluvialDesignEventsGPEX Params <hydroflows.methods.rainfall.pluvial_design_events_GPEX.Params>`
-        """
         if rps is None:
-            rps = [
-                2,
-                5,
-                10,
-                20,
-                39,
-                50,
-                100,
-            ]  # subset from the GPEX data up to 100yr rp
+            rps = GPEX_RPS
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,

@@ -1,4 +1,4 @@
-"""Get GTSM data method."""
+"""Method for fetching GTSM waterlevel and surge timeseries for a given region."""
 
 from datetime import datetime
 from pathlib import Path
@@ -9,7 +9,7 @@ from hydromt.data_catalog import DataCatalog
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["GetGTSMData"]
+__all__ = ["GetGTSMData", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -60,7 +60,22 @@ class Params(Parameters):
 
 
 class GetGTSMData(Method):
-    """Method for getting GTSM waterlevel and surge timeseries at centroid of a region."""
+    """Method for fetching GTSM waterlevel and surge timeseries for a given region.
+
+    Parameters
+    ----------
+    region : Path
+        Path to file containing area of interest geometry.
+        Centroid is used to look for nearest GTSM station.
+    data_root : Path, optional
+        The root folder where data is stored, by default "data/input/forcing_data/waterlevel"
+
+    See Also
+    --------
+    :py:class:`GetGTSMData Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
+    :py:class:`GetGTSMData Output <hydroflows.methods.coastal.get_gtsm_data.Output>`
+    :py:class:`GetGTSMData Params <hydroflows.methods.coastal.get_gtsm_data.Params>`
+    """
 
     name: str = "get_gtsm_data"
 
@@ -76,22 +91,6 @@ class GetGTSMData(Method):
         data_root: Path = Path("data/input"),
         **params,
     ) -> None:
-        """Create and validate a GetGTSMData instance.
-
-        Parameters
-        ----------
-        region : Path
-            Path to file containing area of interest geometry.
-            Centroid is used to look for nearest GTSM station.
-        data_root : Path, optional
-            The root folder where data is stored, by default "data/input/forcing_data/waterlevel"
-
-        See Also
-        --------
-        :py:class:`GetGTSMData Input <hydroflows.methods.coastal.get_gtsm_data.Input>`
-        :py:class:`GetGTSMData Output <hydroflows.methods.coastal.get_gtsm_data.Output>`
-        :py:class:`GetGTSMData Params <hydroflows.methods.coastal.get_gtsm_data.Params>`
-        """
         self.input: Input = Input(region=region, gtsm_catalog=gtsm_catalog)
         self.params: Params = Params(data_root=data_root, **params)
 

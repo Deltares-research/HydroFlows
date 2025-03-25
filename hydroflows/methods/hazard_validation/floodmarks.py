@@ -1,4 +1,4 @@
-"""Validate simulated hazard maps using floodmarks method."""
+"""Validate simulated hazard based on floodmarks."""
 
 import logging
 from pathlib import Path
@@ -19,7 +19,7 @@ from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["FloodmarksValidation"]
+__all__ = ["FloodmarksValidation", "Input", "Output", "Params"]
 logger = logging.getLogger(__name__)
 
 
@@ -112,7 +112,32 @@ class Params(Parameters):
 
 
 class FloodmarksValidation(Method):
-    """Rule for validating the derived flood hazard maps against floodmarks."""
+    """Validate simulated hazard based on floodmarks.
+
+    Parameters
+    ----------
+    floodmarks_geom : Path
+        Path to the geometry file (shapefile, GeoJSON or GeoPackage) with floodmark locations as
+        points. The corresponding water levels are defined by the property specified
+        in :py:attr:`waterlevel_col`.
+    flood_hazard_map : Path
+        The file path to the flood hazard map to be used for validation.
+    out_root : Path, optional
+        The root folder to save the derived validation scores, by default "data/validation".
+    waterlevel_col : Str
+        The property name for the observed water levels in the floodmarks geometry file
+    waterlevel_unit : Literal["m", "cm", "mm", "ft", "in"]
+        Obsevred floodmarks unit. Valid options are 'm' for meters,
+        'cm' for centimeters, 'ft' for feet and 'in' for inches .
+    **params
+        Additional parameters to pass to the FloodmarksValidation instance.
+
+    See Also
+    --------
+    :py:class:`FloodmarksValidation Input <hydroflows.methods.validation.floodmarks_validation.Input>`
+    :py:class:`FloodmarksValidation Output <hydroflows.methods.validation.floodmarks_validation.Output>`
+    :py:class:`FloodmarksValidation Params <hydroflows.methods.validation.floodmarks_validation.Params>`
+    """
 
     name: str = "floodmarks_validation"
 
@@ -132,32 +157,6 @@ class FloodmarksValidation(Method):
         out_root: Path = Path("data/validation"),
         **params,
     ):
-        """Create and validate a FloodmarksValidation instance.
-
-        Parameters
-        ----------
-        floodmarks_geom : Path
-           Path to the geometry file (shapefile, GeoJSON or GeoPackage) with floodmark locations as
-           points. The corresponding water levels are defined by the property specified
-           in :py:attr:`waterlevel_col`.
-        flood_hazard_map : Path
-            The file path to the flood hazard map to be used for validation.
-        scores_root : Path, optional
-            The root folder to save the derived validation scores, by default "data/validation".
-        waterlevel_col : Str
-            The property name for the observed water levels in the floodmarks geometry file
-        waterlevel_unit : Literal["m", "cm", "mm", "ft", "in"]
-            Obsevred floodmarks unit. Valid options are 'm' for meters,
-            'cm' for centimeters, 'ft' for feet and 'in' for inches .
-        **params
-            Additional parameters to pass to the FloodmarksValidation instance.
-
-        See Also
-        --------
-        :py:class:`FloodmarksValidation Input <hydroflows.methods.validation.floodmarks_validation.Input>`
-        :py:class:`FloodmarksValidation Output <hydroflows.methods.validation.floodmarks_validation.Output>`
-        :py:class:`FloodmarksValidation Params <hydroflows.methods.validation.floodmarks_validation.Params>`
-        """
         self.params: Params = Params(
             out_root=out_root,
             waterlevel_col=waterlevel_col,

@@ -1,4 +1,5 @@
-"""Fluvial design events method."""
+"""Derive fluvial design events from a discharge time series."""
+
 
 import os
 from pathlib import Path
@@ -16,7 +17,7 @@ from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["FluvialDesignEvents"]
+__all__ = ["FluvialDesignEvents", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -136,7 +137,31 @@ class Params(Parameters):
 
 
 class FluvialDesignEvents(ExpandMethod):
-    """Rule for generating fluvial design events."""
+    """Derive fluvial design events from a discharge time series.
+
+    Parameters
+    ----------
+    discharge_nc : Path
+        The file path to the discharge time series in NetCDF format.
+    event_root : Path, optional
+        The root folder to save the derived design events, by default "data/events/discharge".
+    rps : List[float], optional
+        Return periods of the design events, by default [1, 2, 5, 10, 20, 50, 100].
+    event_names : List[str], optional
+        List of event names of the design events, by default "q_event{i}", where i is the event number.
+    wildcard : str, optional
+        The wildcard key for expansion over the design events, by default "event".
+    **params
+        Additional parameters to pass to the FluvialDesignEvents Params instance.
+        See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
+
+    See Also
+    --------
+    :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
+    :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
+    :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
+    :py:class:`hydromt.stats.extremes`
+    """
 
     name: str = "fluvial_design_events"
 
@@ -153,31 +178,6 @@ class FluvialDesignEvents(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate a FluvialDesignEvents instance.
-
-        Parameters
-        ----------
-        discharge_nc : Path
-            The file path to the discharge time series in NetCDF format.
-        event_root : Path, optional
-            The root folder to save the derived design events, by default "data/events/discharge".
-        rps : List[float], optional
-            Return periods of the design events, by default [1, 2, 5, 10, 20, 50, 100].
-        event_names : List[str], optional
-            List of event names of the design events, by default "q_event{i}", where i is the event number.
-        wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
-        **params
-            Additional parameters to pass to the FluvialDesignEvents Params instance.
-            See :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`.
-
-        See Also
-        --------
-        :py:class:`fluvial_design_events Input <hydroflows.methods.discharge.fluvial_design_events.Input>`
-        :py:class:`fluvial_design_events Output <hydroflows.methods.discharge.fluvial_design_events.Output>`
-        :py:class:`fluvial_design_events Params <hydroflows.methods.discharge.fluvial_design_events.Params>`
-        :py:class:`hydromt.stats.extremes`
-        """
         if rps is None:
             rps = [1, 2, 5, 10, 20, 50, 100]
         self.params: Params = Params(

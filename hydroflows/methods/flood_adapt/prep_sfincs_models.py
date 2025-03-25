@@ -1,4 +1,5 @@
-"""Setup FloodAdapt method."""
+"""Prepare a SFINCS model for usage in FloodAdapt."""
+
 import shutil
 from pathlib import Path
 
@@ -7,7 +8,7 @@ from hydromt_sfincs import SfincsModel
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["PrepSfincsModels"]
+__all__ = ["PrepSfincsModels", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -36,7 +37,23 @@ class Params(Parameters):
 
 
 class PrepSfincsModels(Method):
-    """Rule for setting up the sfincs models for the FloodAdapt Database Builder."""
+    """Prepare a SFINCS model for usage in FloodAdapt.
+
+    Parameters
+    ----------
+    sfincs_inp : Path
+        The file path to the SFINCS base model.
+    output_dir: Path, optional
+        The folder where the output is stored, by default "flood_adapt_builder".
+    **params
+        Additional parameters to pass to the GetERA5Rainfall instance.
+
+    See Also
+    --------
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.sprep_sfincs_models.Input>`
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.prep_sfincs_models.Output>`
+    :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.prep_sfincs_models.Params>`
+    """
 
     name: str = "prep_sfincs_models"
 
@@ -47,23 +64,6 @@ class PrepSfincsModels(Method):
         sfincs_inp: Path,
         output_dir: Path = "flood_adapt_builder",
     ):
-        """Create and validate a PrepSfincsModels instance.
-
-        Parameters
-        ----------
-        sfincs_inp : Path
-            The file path to the SFINCS base model.
-        output_dir: Path, optional
-            The folder where the output is stored, by default "flood_adapt_builder".
-        **params
-            Additional parameters to pass to the GetERA5Rainfall instance.
-
-        See Also
-        --------
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.sprep_sfincs_models.Input>`
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.prep_sfincs_models.Output>`
-        :py:class:`SetupFloodAdapt Input <hydroflows.methods.flood_adapt.prep_sfincs_models.Params>`
-        """
         self.input: Input = Input(
             sfincs_inp=sfincs_inp,
         )

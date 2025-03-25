@@ -41,11 +41,11 @@ extensions = [
     "sphinx.ext.autosummary",
     "sphinx.ext.githubpages",
     "sphinx.ext.intersphinx",
-    # "IPython.sphinxext.ipython_directive",
-    # "IPython.sphinxext.ipython_console_highlighting",
+    "IPython.sphinxext.ipython_directive",
+    "IPython.sphinxext.ipython_console_highlighting",
     "sphinxcontrib.autodoc_pydantic",
     "sphinxcontrib.programoutput",
-    # "nbsphinx",
+    "nbsphinx",
 ]
 
 autosummary_generate = True
@@ -69,7 +69,13 @@ language = "en"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This patterns also effect to html_static_path and html_extra_path
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store", 'links.rst']
+
+# make rst_epilog a variable, so you can add other epilog parts to it
+rst_epilog =""
+# Read link all targets from file
+with open('links.rst') as f:
+     rst_epilog += f.read()
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = "sphinx"
@@ -84,8 +90,8 @@ todo_include_todos = False
 # a list of builtin themes.
 #
 html_theme = "pydata_sphinx_theme"
-html_logo = "_static/hydromt-icon.svg"
-html_favicon = "_static/hydromt-icon.svg"
+# html_logo = "_static/hydromt-icon.svg"
+# html_favicon = "_static/hydromt-icon.svg"
 autodoc_member_order = "bysource"  # overwrite default alphabetical sort
 autoclass_content = "both"
 
@@ -93,7 +99,6 @@ autoclass_content = "both"
 autodoc_pydantic_model_show_json = False
 autodoc_pydantic_model_show_config_summary = False
 autodoc_pydantic_model_show_validator_members = False
-
 autodoc_pydantic_model_show_validator_summary = False
 autodoc_pydantic_model_show_config_summary = False
 autodoc_pydantic_model_members = True
@@ -135,9 +140,9 @@ html_theme_options = {
 
 html_context = {
     "github_url": "https://github.com",  # or your GitHub Enterprise interprise
-    "github_user": "Deltares",
+    "github_user": "Deltares-research",
     "github_repo": "HydroFlows",
-    "github_version": "main",  # FIXME
+    "github_version": "main",
     "doc_path": "docs",
     "default_mode": "light",
 }
@@ -153,14 +158,6 @@ htmlhelp_basename = "hydroflows_doc"
 
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3/", None),
-    "pandas": ("https://pandas.pydata.org/pandas-docs/stable", None),
-    # "numpy": ("https://numpy.org/doc/stable", None),
-    "scipy": ("https://docs.scipy.org/doc/scipy", None),
-    # "numba": ("https://numba.pydata.org/numba-doc/latest", None),
-    # "matplotlib": ("https://matplotlib.org/stable/", None),
-    # "dask": ("https://docs.dask.org/en/latest", None),
-    "rasterio": ("https://rasterio.readthedocs.io/en/latest", None),
-    "geopandas": ("https://geopandas.org/en/stable", None),
     "xarray": ("https://xarray.pydata.org/en/stable", None),
     "hydromt": ("https://deltares.github.io/hydromt/latest/", None),
     "hydromt_wflow": ("https://deltares.github.io/hydromt_wflow/stable/", None),
