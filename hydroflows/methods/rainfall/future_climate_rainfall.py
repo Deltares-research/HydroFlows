@@ -139,7 +139,7 @@ class FutureClimateRainfall(ExpandMethod):
         )
         if event_set_names is not None:
             # make sure all event names are in the event set
-            if not set(event_names).issubset(event_set_names):
+            if not set(self.params.event_names).issubset(event_set_names):
                 raise ValueError(
                     "event_names must be subset of event names in event_set_yaml"
                 )
