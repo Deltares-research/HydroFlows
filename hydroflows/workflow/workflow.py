@@ -19,6 +19,7 @@ import yaml
 from jinja2 import Environment, PackageLoader
 
 from hydroflows import __version__
+from hydroflows.templates import TEMPLATE_DIR
 from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
@@ -256,7 +257,7 @@ class Workflow:
                             fn.touch()
 
         # Copy yml files with nested types
-        yml_root = Path(__file__).parents[1] / "templates"
+        yml_root = TEMPLATE_DIR
         yml_files = yml_root.glob("*.yml")
         for file in yml_files:
             copy(file, cwlfile.parent / file.name)
