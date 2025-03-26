@@ -282,7 +282,7 @@ class Method(ABC):
 
         if touch_output:
             for path in out_paths:
-                print(f"Touch file at {path.as_posix()}")
+                logger.debug(f"Touch file at {path.as_posix()}")
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.touch()
 

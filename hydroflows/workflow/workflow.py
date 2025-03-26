@@ -182,7 +182,7 @@ class Workflow:
 
     def to_cwl(
         self,
-        cwlfile: Path,
+        cwlfile: Path = None,
         dryrun: bool = False,
     ) -> None:
         """Save the workflow to a CWL workflow.
@@ -194,7 +194,9 @@ class Workflow:
         dryrun : bool, optional
             Run the workflow in dryrun mode, by default False
         """
-        cwlfile = Path(cwlfile).resolve()
+        if cwlfile is None:
+            cwlfile = f"{self.name}.cwl"
+        cwlfile = Path(self.root, cwlfile).resolve()
         configfile = cwlfile.with_suffix(".config.yml")
         # Make sure all necessary folders exist
         if not (cwlfile.parent / "cwl").exists():
