@@ -5,7 +5,7 @@ from typing import Optional
 
 from hydromt_sfincs import SfincsModel
 
-from hydroflows._typing import OutPath
+from hydroflows._typing import OutputDirPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -29,7 +29,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`SfincsPostprocess` method."""
 
-    output_root: Optional[OutPath] = None
+    output_root: Optional[OutputDirPath] = None
     """The output directory where the hazard output files are saved."""
 
     event_name: str

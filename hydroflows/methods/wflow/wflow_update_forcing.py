@@ -8,7 +8,7 @@ from typing import Optional
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import FolderPath, ListOfStr, OutPath
+from hydroflows._typing import FileDirPath, ListOfStr, OutputDirPath
 from hydroflows.methods.wflow.wflow_utils import copy_wflow_model, shift_time
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -19,7 +19,7 @@ __all__ = ["WflowUpdateForcing", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`WflowUpdateForcing` method."""
 
-    wflow_toml: FolderPath
+    wflow_toml: FileDirPath
     """The file path to the Wflow (toml) configuration file from the initial
     Wflow model to be updated."""
 
@@ -32,7 +32,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`WflowUpdateForcing` method."""
 
-    wflow_out_toml: FolderPath
+    wflow_out_toml: FileDirPath
     """The path to the updated (forcing) Wflow (toml) configuration file."""
 
 
@@ -51,7 +51,7 @@ class Params(Parameters):
     end_time: datetime
     """The end time of the period for which we want to generate forcing."""
 
-    output_dir: OutPath
+    output_dir: OutputDirPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>."""
 
     copy_model: bool = False

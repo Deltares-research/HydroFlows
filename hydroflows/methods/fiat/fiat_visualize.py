@@ -19,7 +19,7 @@ from fiat_toolbox.metrics_writer.fiat_write_return_period_threshold import (
 )
 from pydantic import DirectoryPath, FilePath
 
-from hydroflows._typing import FolderPath, OutPath
+from hydroflows._typing import FileDirPath, OutputDirPath
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -42,7 +42,7 @@ class Input(Parameters):
     spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
     """The path to the spatial joins configuration file."""
 
-    fiat_cfg: FolderPath
+    fiat_cfg: FileDirPath
     """The file path to the FIAT configuration (toml) file from the FIAT model simulation."""
 
 
@@ -74,7 +74,7 @@ class Params(Parameters):
     infographic_images: DirectoryPath = CFG_DIR / "infographics" / "images"
     """The path to the directory where the images for the infographics are saved."""
 
-    output_dir: OutPath = OutPath("output/fiat")
+    output_dir: OutputDirPath = OutputDirPath("output/fiat")
     """The path to the directory where the infometrics and infographics output can be saved."""
 
     scenario_name: str

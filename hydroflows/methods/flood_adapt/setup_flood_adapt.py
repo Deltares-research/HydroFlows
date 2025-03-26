@@ -7,7 +7,7 @@ from pathlib import Path
 import toml
 from hydromt.config import configread
 
-from hydroflows._typing import FolderPath, OutPath
+from hydroflows._typing import FileDirPath, OutputDirPath
 from hydroflows.config import HYDROMT_CONFIG_DIR
 from hydroflows.methods.flood_adapt.translate_events import translate_events
 from hydroflows.workflow.method import Method
@@ -19,17 +19,17 @@ __all__ = ["SetupFloodAdapt", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SetupFloodAdapt` method."""
 
-    sfincs_inp: FolderPath | None = None
+    sfincs_inp: FileDirPath | None = None
     """
     The file path to the SFINCS base model config file.
     """
 
-    fiat_cfg: FolderPath | None = None
+    fiat_cfg: FileDirPath | None = None
     """
     The file path to the FIAT base model config file.
     """
 
-    event_set_yaml: FolderPath | None = None
+    event_set_yaml: FileDirPath | None = None
     """
     The file path to the event set YAML file.
     """
@@ -43,17 +43,17 @@ class Output(Parameters):
     The file path to the flood adaptation model.
     """
 
-    fiat_out_cfg: FolderPath
+    fiat_out_cfg: FileDirPath
     """The path to the copied fiat model configuration."""
 
-    probabilistic_set: FolderPath | None = None
+    probabilistic_set: FileDirPath | None = None
     """The path to the event set configuration."""
 
 
 class Params(Parameters):
     """Parameters for the :py:class:`SetupFloodAdapt` method."""
 
-    output_dir: OutPath = OutPath("flood_adapt_builder")
+    output_dir: OutputDirPath = OutputDirPath("flood_adapt_builder")
     """
     The directory where the output files will be saved.
     """

@@ -7,7 +7,12 @@ from typing import List, Optional
 import pandas as pd
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ClimateScenariosDict, FolderPath, ListOfStr, OutPath
+from hydroflows._typing import (
+    ClimateScenariosDict,
+    FileDirPath,
+    ListOfStr,
+    OutputDirPath,
+)
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -28,7 +33,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FutureClimateRainfall` method."""
 
-    future_event_yaml: FolderPath
+    future_event_yaml: FileDirPath
     """The path to the scaled event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
@@ -56,7 +61,7 @@ class Params(Parameters):
     for CMIP5 and CMIP6 models can be taken via:
     `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_"""
 
-    event_root: OutPath
+    event_root: OutputDirPath
     """Root folder to save the derived scaled events."""
 
     event_names: ListOfStr

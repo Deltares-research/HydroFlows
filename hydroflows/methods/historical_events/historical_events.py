@@ -8,7 +8,7 @@ import pandas as pd
 import xarray as xr
 from pydantic import model_validator
 
-from hydroflows._typing import EventDatesDict, FolderPath, OutPath
+from hydroflows._typing import EventDatesDict, FileDirPath, OutputDirPath
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -66,7 +66,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`HistoricalEvents` method."""
 
-    event_yaml: FolderPath
+    event_yaml: FileDirPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
@@ -90,7 +90,7 @@ class Params(Parameters):
     }
     """
 
-    output_dir: OutPath
+    output_dir: OutputDirPath
     """Directory to save the derived historical events."""
 
     wildcard: str = "event"

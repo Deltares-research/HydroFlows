@@ -5,7 +5,7 @@ from typing import Literal, Optional
 
 from pydantic import model_validator
 
-from hydroflows._typing import FolderPath
+from hydroflows._typing import FileDirPath
 from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
 from hydroflows.methods.wflow.wflow_utils import get_wflow_basemodel_root
 from hydroflows.utils.docker_utils import fetch_docker_uid
@@ -18,7 +18,7 @@ __all__ = ["WflowRun", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`WflowRun` method."""
 
-    wflow_toml: FolderPath
+    wflow_toml: FileDirPath
     """The file path to the Wflow (toml) configuration file from the
     Wflow model that needs to be run."""
 

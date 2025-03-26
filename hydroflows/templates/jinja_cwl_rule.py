@@ -3,7 +3,7 @@ from itertools import product
 from pathlib import Path
 from typing import TYPE_CHECKING, Dict, List, Union
 
-from hydroflows._typing import folderpath, outpath
+from hydroflows._typing import filedirpath, outputdirpath
 from hydroflows.utils.cwl_utils import map_cwl_types, wildcard_inputs_nested
 from hydroflows.utils.parsers import get_wildcards
 
@@ -68,7 +68,7 @@ class JinjaCWLRule:
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
                 inputs[key]["type"] += "[]"
-            if isinstance(ref.value, folderpath):
+            if isinstance(ref.value, filedirpath):
                 inputs[key + "_dir"] = {
                     "type": "Directory",
                     "source": inputs[key]["source"] + "_dir",
@@ -78,7 +78,7 @@ class JinjaCWLRule:
                 # This is to ensure the proxy file and the dir it represents have the correct parentage
                 inputs[key]["valueFrom"] = f"$(inputs.{key}_dir.path)/$(self.basename)"
             # ref to config does not maintain folderpath typing (reverts it instead to Path)
-            elif isinstance(getattr(self.rule.method.input, key), folderpath):
+            elif isinstance(getattr(self.rule.method.input, key), filedirpath):
                 inputs[key + "_dir"] = {
                     "type": "Directory",
                     "source": inputs[key]["source"] + "_dir",
@@ -127,7 +127,7 @@ class JinjaCWLRule:
         wc_expand = self.rule.wildcards["expand"]
         for key, val in results.items():
             if not any(
-                [isinstance(par[1], outpath) for par in self.rule.method.params]
+                [isinstance(par[1], outputdirpath) for par in self.rule.method.params]
             ):
                 for _, in_value in self.rule.method.input.to_dict().items():
                     if val.is_relative_to(in_value.parent):
@@ -172,7 +172,7 @@ class JinjaCWLRule:
                 "value": out_value,
                 "eval": out_eval,
             }
-            if isinstance(val, folderpath):
+            if isinstance(val, filedirpath):
                 outputs[key + "_dir"] = {
                     "type": out_type.replace("File", "Directory"),
                     "value": [Path(out).parent.as_posix() for out in out_value],
