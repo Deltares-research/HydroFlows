@@ -10,7 +10,7 @@ import xarray as xr
 from hydromt.stats import eva, get_peak_hydrographs, get_peaks
 from pydantic import model_validator
 
-from hydroflows._typing import FileDirPath, ListOfFloat, ListOfStr, OutputDirPath
+from hydroflows._typing import FileDirPath, ListOfInt, ListOfStr, OutputDirPath
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.workflow.method import ExpandMethod
@@ -54,8 +54,8 @@ class Params(Parameters):
     event_root: OutputDirPath
     """Root folder to save the derived design events."""
 
-    rps: ListOfFloat
-    """Return periods of interest."""
+    rps: ListOfInt
+    """Return periods of interest [year]."""
 
     event_names: Optional[ListOfStr] = None
     """List of event names for the design events."""
@@ -79,7 +79,7 @@ class Params(Parameters):
     def _validate_event_names(self):
         """Use rps to define event names if not provided."""
         if self.event_names is None:
-            self.event_names = [f"h_event{int(i+1):02d}" for i in range(len(self.rps))]
+            self.event_names = [f"h_event_rp{rp:03d}" for rp in self.rps]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -135,7 +135,7 @@ class CoastalDesignEvents(ExpandMethod):
         **params,
     ) -> None:
         if rps is None:
-            rps = [1, 2, 5, 10, 20, 50, 100]
+            rps = [2, 5, 10, 20, 50, 100]
 
         self.params: Params = Params(
             event_root=event_root,

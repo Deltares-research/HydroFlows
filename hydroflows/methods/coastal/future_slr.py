@@ -1,13 +1,15 @@
 """Derive future (climate) sea level (rise) events by applying a user-specified offset to an event."""
 
-
 from logging import getLogger
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from pydantic import Field, model_validator
-
-from hydroflows._typing import FileDirPath, ListOfStr, OutputDirPath
+from hydroflows._typing import (
+    ClimateScenariosDict,
+    FileDirPath,
+    ListOfStr,
+    OutputDirPath,
+)
 from hydroflows.events import Event, EventSet
 from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import ExpandMethod
@@ -45,13 +47,10 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for :py:class:`FutureSLR` method."""
 
-    scenario_name: str
-    """Future scenario name for which sea level rise offset is applied."""
+    scenarios: ClimateScenariosDict
+    """Future scenario name, e.g. "rcp45_2050", and sea level rise.
 
-    slr_value: float
-    """Sea level rise (SLR) change value. This value is added to the input event
-    (water level) time series and represents the change in sea level for the specified
-    climate scenario.
+    The sea level rise value is added to the input event water level time series.
 
     Sea level rise change for different periods and emission scenarios
     for different climate models can be taken via:
@@ -66,43 +65,14 @@ class Params(Parameters):
     event_root: OutputDirPath
     """Root folder to save the derived offset events."""
 
-    wildcard: str = "future_event"
+    event_names: Optional[ListOfStr]
+    """List of event names (subset of event_set_yaml events)."""
+
+    event_wildcard: str = "future_event"
     """The wildcard key for expansion over the offset events."""
 
-    event_names_input: Optional[ListOfStr] = None
-    """List of event names to be offset for future climate projections."""
-
-    event_names_output: Optional[ListOfStr] = None
-    """List of event names for the offset future climate events."""
-
-    input: Input = Field(exclude=True)
-    """Internal variable to link input."""
-
-    @model_validator(mode="after")
-    def _validate_model(self):
-        # Check if the input event set yaml file exists and check / set event names
-        if self.input.event_set_yaml.is_file():
-            input_event_set = EventSet.from_yaml(self.input.event_set_yaml)
-            event_names = [event["name"] for event in input_event_set.events]
-            if self.event_names_input is not None:
-                if not set(self.event_names_input).issubset(event_names):
-                    not_found = list(set(self.event_names_input) - set(event_names))
-                    raise ValueError(
-                        f"Events {not_found} event_names_input are missing in the event_set_yaml {self.input.event_set_yaml}."
-                    )
-            else:
-                self.event_names_input = event_names
-        # Check if the event_names_output are provided and same length as event_input_name or set them
-        if self.event_names_output is not None:
-            if len(self.event_names_output) != len(self.event_names_input):
-                raise ValueError(
-                    "The number of event_names_output should match the number of event_names_input."
-                )
-        elif self.event_names_input is not None:
-            self.event_names_output = [
-                f"{name}_{self.scenario_name}" for name in self.event_names_input
-            ]
-        return self
+    scenario_wildcard: str = "scenario"
+    """The wildcard key for expansion over the scenarios."""
 
 
 class FutureSLR(ExpandMethod):
@@ -140,46 +110,65 @@ class FutureSLR(ExpandMethod):
     name: str = "future_slr"
 
     _test_kwargs = {
-        "scenario_name": "RCP85",
-        "slr_value": 0.12,
+        "scenarios": {"rcp45_2050": 0.1},
         "event_set_yaml": Path("event_set.yaml"),
-        "event_names_input": ["wl_event1", "wl_event2"],
+        "event_names": ["wl_event1", "wl_event2"],
     }
 
     def __init__(
         self,
-        scenario_name: str,
-        slr_value: float,
+        scenarios: dict[str, float],
         event_set_yaml: Path,
+        event_names: Optional[List[str]] = None,
         event_root: Path = Path("data/events/future_climate_sea_level"),
-        wildcard: str = "future_event",
-        event_names_input: Optional[List[str]] = None,
-        event_names_output: Optional[List[str]] = None,
+        event_wildcard: str = "future_event",
+        scenario_wildcard: str = "scenario",
         **params,
     ) -> None:
         self.input: Input = Input(event_set_yaml=event_set_yaml)
 
+        event_set_names = None
+        if self.input.event_set_yaml.exists():
+            event_set = EventSet.from_yaml(self.input.event_set_yaml)
+            event_set_names = [event["name"] for event in event_set.events]
+
+        if event_names is None and event_set_names is not None:
+            event_names = event_set_names
+        elif event_names is None:
+            raise ValueError(
+                "event_names must be provided if event_set_yaml does not exist"
+            )
+
         self.params: Params = Params(
-            scenario_name=scenario_name,
-            slr_value=slr_value,
+            scenarios=scenarios,
             event_root=event_root,
-            wildcard=wildcard,
-            event_names_input=event_names_input,
-            event_names_output=event_names_output,
-            input=self.input,  # for validation
+            event_wildcard=event_wildcard,
+            scenario_wildcard=scenario_wildcard,
+            event_names=event_names,
             **params,
         )
+        if event_set_names is not None:
+            # make sure all event names are in the event set
+            if not set(self.params.event_names).issubset(event_set_names):
+                raise ValueError(
+                    "event_names must be subset of event names in event_set_yaml"
+                )
 
-        wc = "{" + self.params.wildcard + "}"
+        ewc = "{" + self.params.event_wildcard + "}"
+        swc = "{" + self.params.scenario_wildcard + "}"
 
         self.output: Output = Output(
-            future_event_yaml=Path(self.params.event_root) / f"{wc}.yml",
-            future_event_csv=Path(self.params.event_root) / f"{wc}.csv",
-            future_event_set_yaml=Path(self.params.event_root)
-            / f"future_coastal_events_{self.params.scenario_name}.yml",
+            future_event_yaml=self.params.event_root / swc / f"{ewc}.yml",
+            future_event_csv=self.params.event_root / swc / f"{ewc}.csv",
+            future_event_set_yaml=self.params.event_root
+            / swc
+            / f"{self.input.event_set_yaml.stem}_{swc}.yml",
         )
 
-        self.set_expand_wildcard(wildcard, self.params.event_names_output)
+        self.set_expand_wildcard(self.params.event_wildcard, self.params.event_names)
+        self.set_expand_wildcard(
+            self.params.scenario_wildcard, list(self.params.scenarios.keys())
+        )
 
     def _run(self):
         """Run the FutureClimateSLR method."""
@@ -188,46 +177,46 @@ class FutureSLR(ExpandMethod):
         # List to save the offset events
         future_events_list = []
 
-        for name, name_out in zip(
-            self.params.event_names_input, self.params.event_names_output
-        ):
-            output = self.get_output_for_wildcards({self.params.wildcard: name_out})
+        for scenario, slr_value in self.params.scenarios.items():
+            # List to save the scaled events
+            future_events_list = []
 
-            # Load the event
-            event: Event = event_set.get_event(name)
-            # get water level forcing
-            if len(event.forcings) > 1:
-                logger.warning(
-                    f"Event {name} has more than one forcing. The first water level forcing is used."
+            for name in self.params.event_names:
+                output = self.get_output_for_wildcards(
+                    {
+                        self.params.event_wildcard: name,
+                        self.params.scenario_wildcard: scenario,
+                    }
                 )
-                water_level = [f for f in event.forcings if f["type"] == "water_level"][
-                    0
-                ]
-            else:
-                water_level = event.forcings[0]
-            event_df = water_level.data.copy()
 
-            # Apply the offset
-            future_event_df = event_df + convert_to_meters(
-                self.params.slr_value, self.params.slr_unit
-            )
+                # Load the event
+                event: Event = event_set.get_event(name)
 
-            # write forcing timeseries to csv
-            future_event_df.to_csv(output["future_event_csv"], index=True)
-            # write event to yaml
-            water_level.path = output["future_event_csv"]
-            future_event = Event(
-                name=name_out,
-                forcings=[water_level],
-            )
-            future_event.set_time_range_from_forcings()
-            future_event.to_yaml(output["future_event_yaml"])
+                # scale water level forcing, keep other forcings
+                forcings = []
+                slr_m = convert_to_meters(slr_value, self.params.slr_unit)
+                for forcing in event.forcings:
+                    if forcing.type == "water_level":
+                        # update and write forcing timeseries to csv
+                        future_event_df = forcing.data.copy() + slr_m
+                        future_event_df.to_csv(output["future_event_csv"], index=True)
+                        forcing.path = output["future_event_csv"]
+                    forcings.append(forcing)
 
-            # append event to list
-            future_events_list.append(
-                {"name": name_out, "path": output["future_event_yaml"]}
-            )
+                # write event to yaml
+                future_event = Event(
+                    name=name,
+                    forcings=forcings,
+                    return_period=event.return_period,
+                )
+                future_event.set_time_range_from_forcings()
+                future_event.to_yaml(output["future_event_yaml"])
 
-        # make and save event set yaml file
-        future_event_set = EventSet(events=future_events_list)
-        future_event_set.to_yaml(self.output.future_event_set_yaml)
+                # append event to list
+                future_events_list.append(
+                    {"name": name, "path": output["future_event_yaml"]}
+                )
+
+            # make and save event set yaml file
+            future_event_set = EventSet(events=future_events_list)
+            future_event_set.to_yaml(output["future_event_set_yaml"])

@@ -58,7 +58,7 @@ class Params(Parameters):
     event_root: OutputDirPath
     """Root folder to save the derived design events."""
 
-    rps: ListOfFloat
+    rps: ListOfInt
     """Return periods of interest."""
 
     wildcard: str = "event"
@@ -116,7 +116,7 @@ class Params(Parameters):
     def _validate_model(self):
         # validate event_names
         if self.event_names is None:
-            self.event_names = [f"p_event{int(i+1):02d}" for i in range(len(self.rps))]
+            self.event_names = [f"p_event_rp{rp:03d}" for rp in self.rps]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -199,7 +199,7 @@ class PluvialDesignEvents(ExpandMethod):
         **params,
     ) -> None:
         if rps is None:
-            rps = [1, 2, 5, 10, 20, 50, 100]
+            rps = [2, 5, 10, 20, 50, 100]
         self.params: Params = Params(
             event_root=event_root,
             rps=rps,
