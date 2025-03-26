@@ -39,7 +39,7 @@ class Input(Parameters):
     The file path to the output.csv file of the FIAT model.
     """
 
-    spatial_joins_cfg: Path = "models/fiat/spatial_joins.toml"
+    spatial_joins_cfg: FileDirPath = "models/fiat/spatial_joins.toml"
     """The path to the spatial joins configuration file."""
 
     fiat_cfg: FileDirPath

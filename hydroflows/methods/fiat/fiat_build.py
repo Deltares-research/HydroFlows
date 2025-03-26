@@ -61,7 +61,7 @@ class Output(Parameters):
     fiat_cfg: FileDirPath
     """The file path to the FIAT configuration (toml) file."""
 
-    spatial_joins_cfg: Path
+    spatial_joins_cfg: FileDirPath
     """The file path to the FIAT spatial joins configuration (toml) file."""
 
     ## TODO check if spatial_joins_cfg is created based on config file

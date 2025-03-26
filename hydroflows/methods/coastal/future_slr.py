@@ -21,7 +21,7 @@ __all__ = ["FutureSLR", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`FutureSLR` method."""
 
-    event_set_yaml: Path
+    event_set_yaml: FileDirPath
     """The file path to the event set YAML file, which includes the events to be offset
     for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
 
@@ -36,7 +36,7 @@ class Output(Parameters):
     future_event_csv: Path
     """The path to the offset event csv timeseries file."""
 
-    future_event_set_yaml: Path
+    future_event_set_yaml: FileDirPath
     """The path to the offset event set yml file,
     see also :py:class:`hydroflows.events.EventSet`.
     """

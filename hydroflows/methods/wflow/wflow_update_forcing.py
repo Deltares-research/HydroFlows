@@ -23,7 +23,7 @@ class Input(Parameters):
     """The file path to the Wflow (toml) configuration file from the initial
     Wflow model to be updated."""
 
-    catalog_path: Optional[Path] = None
+    catalog_path: Optional[FileDirPath] = None
     """The file path to the data catalog. This is a file in yml format, which should contain the data sources for precipitation,
     temperature, elevation grid of the climate data (optionally) and
     potential evaporation (PET) estimation."""

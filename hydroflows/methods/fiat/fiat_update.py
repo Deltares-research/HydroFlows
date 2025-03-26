@@ -24,7 +24,7 @@ class Input(Parameters):
     hazard_maps: Union[WildcardPath, ListOfPath]
     """List of paths to hazard maps the event description file."""
 
-    event_set_yaml: Optional[Path] = None
+    event_set_yaml: Optional[FileDirPath] = None
     """The path to the event description file,
     used to get the return periods of events :py:class:`hydroflows.events.EventSet`.
     Optional for a single hazard map.
