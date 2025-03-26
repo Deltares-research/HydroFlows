@@ -68,6 +68,7 @@ class JinjaCWLRule:
             # Set input type
             if reduce_wc and key in self.rule.wildcard_fields[reduce_wc]:
                 inputs[key]["type"] += "[]"
+                inputs[key]["separator"] = '", "'
             if isinstance(ref.value, filedirpath):
                 inputs[key + "_dir"] = {
                     "type": "Directory",
@@ -226,10 +227,6 @@ class JinjaCWLRule:
         ref_updates = {}
         conf_updates = {}
 
-        # unpack existing config
-        conf_keys = self.rule.workflow.config.keys
-        conf_values = self.rule.workflow.config.values
-
         for p in self.rule.method.params:
             key, value = p
             # Check if key can be found in method Params class
@@ -241,10 +238,6 @@ class JinjaCWLRule:
             # Skip if key is already a ref
             if key in self.rule.method.params._refs:
                 continue
-            # Check if value already exists in conf and update ref if so
-            elif value in conf_values:
-                conf_key = conf_keys[conf_values.index(value)]
-                ref_updates.update({key: "$config." + conf_key})
 
             elif value != default_value:
                 config_key = f"{self.id}_{key}"
