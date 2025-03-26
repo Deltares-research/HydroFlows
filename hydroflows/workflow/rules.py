@@ -104,6 +104,7 @@ class Rules:
             )
         return ind
 
+    # Sort repeat wildcards here vs in Rule class because we need access to previous rule and its wildcard order.
     def _sort_repeat_wildcards(self, ind) -> None:
         if ind == 0:
             return

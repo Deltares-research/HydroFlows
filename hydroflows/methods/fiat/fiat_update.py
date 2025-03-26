@@ -50,9 +50,6 @@ class Params(Parameters):
         For more details on the setup_hazard method used in hydromt_fiat
     """
 
-    sim_name: str
-    """The name of the simulation folder."""
-
     output_dir: OutputDirPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<sim_name>."""
 
@@ -120,7 +117,6 @@ class FIATUpdateHazard(ReduceMethod):
         output_dir: str,
         risk: bool = True,
         map_type: Literal["water_level", "water_depth"] = "water_level",
-        sim_name: Optional[str] = None,
         **params,
     ):
         self.input: Input = Input(
@@ -128,15 +124,6 @@ class FIATUpdateHazard(ReduceMethod):
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
         )
-
-        # get the simulation name
-        if sim_name is None:
-            if self.input.event_set_yaml is not None:
-                sim_name = self.input.event_set_yaml.stem
-            elif isinstance(self.input.hazard_maps, list):
-                sim_name = self.input.hazard_maps[0].stem
-            else:
-                sim_name = "default"
 
         # check if risk analysis is required
         if (
@@ -146,7 +133,6 @@ class FIATUpdateHazard(ReduceMethod):
             risk = False
 
         self.params: Params = Params(
-            sim_name=sim_name,
             output_dir=output_dir,
             map_type=map_type,
             risk=risk,
@@ -159,7 +145,7 @@ class FIATUpdateHazard(ReduceMethod):
             )
 
         # output root is the simulation folder
-        fiat_root = self.params.output_dir / self.params.sim_name
+        fiat_root = self.params.output_dir
 
         if not self.params.copy_model and not self.params.output_dir.is_relative_to(
             self.input.fiat_cfg.parent
