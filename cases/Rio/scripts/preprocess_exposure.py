@@ -89,7 +89,7 @@ social_class = pd.read_csv(social_class_path)
 # %% Create 2D building footprints
 # Apply the conversion to each geometry in the GeoDataFrame
 buildings_gdf["geometry"] = buildings_gdf["geometry"].apply(convert_to_2d)
-buildings_gdf = buildings_gdf.dissolve(by="COD_LOTE")
+buildings_gdf = buildings_gdf.dissolve(by="cod_lote")
 buildings_gdf = buildings_gdf.explode()
 
 # %% link buildings entrances to footprints based on cod_lote
@@ -105,8 +105,6 @@ if buildings_gdf.crs != occupancy_gdf.crs:
     occupancy_gdf = gpd.GeoDataFrame(occupancy_gdf, geometry="geometry").set_crs(
         buildings_gdf.crs
     )
-
-# TODO: Create strategy to possibly remove duplicate building footprints!
 
 # fill typology with residential if missing
 dic_occupancy = {
@@ -147,6 +145,17 @@ occupancy_gdf_jrc["primary_object_type"] = (
 
 # TODO check threshold elevation or sample from DEM
 
+# %% Assign income to census areas without income information from nearest
+for index, row in census_gdf.iterrows():
+    if pd.isna(row["V005"]) or row["V005"] is None:
+        nearest_idx = census_gdf.sindex.nearest(row["geometry"], return_all=False)
+        if isinstance(nearest_idx, (list, np.ndarray)):
+            for idx in nearest_idx:
+                if pd.notna(census_gdf.iloc[idx]["V005"][0]):
+                    nearest_idx = idx
+                    break
+        nearest_row = census_gdf.iloc[nearest_idx]
+        census_gdf.at[index, "V005"] = nearest_row["V005"].item()
 
 # %% prep population data
 
@@ -183,7 +192,12 @@ occupancy_gdf["residents"] = np.where(
 occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
     lambda x: np.nan if x is None else x
 )
-occupancy_gdf["V005"] = occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
+
+for idx, row in occupancy_gdf.iterrows():
+    if not isinstance(row["V005"], (str, float, int)) and row["V005"] is not np.nan:
+        occupancy_gdf.at[idx, "V005"] = str(row["V005"].item())
+
+occupancy_gdf["V005"] = occupancy_gdf["V005"].apply(
     lambda x: float(x.replace(",", ".")) if pd.notna(x) else np.nan
 )
 # either adjust income to inflation or map to 2010 values - not available I think
@@ -198,19 +212,6 @@ occupancy_bf_residential = occupancy_gdf[
 occupancy_bf_com_ind = occupancy_gdf[
     occupancy_gdf["primary_object_type"] != "residential"
 ]
-
-for index, row in occupancy_bf_residential.iterrows():
-    if pd.isna(row["V005"]) or row["V005"] is None:
-        nearest_idx = occupancy_bf_residential.sindex.nearest(
-            row["geometry"], return_all=False
-        )
-        if isinstance(nearest_idx, (list, np.ndarray)):
-            for idx in nearest_idx:
-                if pd.notna(occupancy_bf_residential.iloc[idx]["V005"][0]):
-                    nearest_idx = idx
-                    break
-        nearest_row = occupancy_bf_residential.iloc[nearest_idx]
-        occupancy_bf_residential.at[index, "V005"] = nearest_row["V005"]
 
 # Apply mapping function
 occupancy_bf_residential["social_class"] = occupancy_bf_residential["V005"].apply(
