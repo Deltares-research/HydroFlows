@@ -190,6 +190,7 @@ class Workflow:
         self,
         cwlfile: Path = None,
         dryrun: bool = False,
+        touch_inputs: bool = False,
     ) -> None:
         """Save the workflow to a CWL workflow.
 
@@ -243,7 +244,7 @@ class Workflow:
             yaml.dump(config, f)
 
         # For dryrun, touch missing input files
-        if dryrun:
+        if dryrun and touch_inputs:
             for _, info in config.items():
                 if isinstance(info, dict):
                     fn = Path(info["path"])

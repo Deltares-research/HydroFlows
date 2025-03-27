@@ -138,10 +138,8 @@ def method(
         method: Method = Method.from_kwargs(method_name, **kwargs)
         if dry_run:
             method.dryrun(
-                input_files=[]
-                if touch_output
-                else list(method.input.to_dict().values()),
-                missing_file_error=True,
+                input_files=[],
+                missing_file_error=touch_output,
                 touch_output=touch_output,
             )
         else:
