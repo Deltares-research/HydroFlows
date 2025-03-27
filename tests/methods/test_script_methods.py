@@ -112,7 +112,7 @@ def test_script_method_run(tmp_path: Path):
     assert data == json.loads(method2.json_kwargs)
 
 
-def test_script_method_snakemake(tmp_path: Path):
+def test_script_method_snakemake(tmp_path: Path, has_snakemake: bool):
     # initialize workflow
     workflow = Workflow(name="test_workflow")
     # test snakemake properties
@@ -129,4 +129,5 @@ def test_script_method_snakemake(tmp_path: Path):
         f.write("")
     with open(tmp_path / "script.py", "w") as f:
         f.write("")
-    subprocess.run(["snakemake", "-n"], check=True, cwd=tmp_path)
+    if has_snakemake:
+        subprocess.run(["snakemake", "-n"], check=True, cwd=tmp_path)

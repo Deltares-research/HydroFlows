@@ -8,6 +8,8 @@ try:
 except ImportError:
     pass
 
+__all__ = ["fetch_docker_uid"]
+
 
 def fetch_docker_uid() -> Tuple[Union[str, None], Union[str, None]]:
     """Fetch uid to use in docker run cmd.

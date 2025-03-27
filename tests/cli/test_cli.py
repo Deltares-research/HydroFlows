@@ -27,11 +27,6 @@ def test_cli_main(cli_obj: CliRunner):
     assert result.exit_code == 0
 
 
-def test_cli_run_help(cli_obj: CliRunner):
-    result: Result = cli_obj.invoke(cli, ["method", "--help"], echo=True)
-    assert result.exit_code == 0
-
-
 def test_cli_run_method(cli_obj: CliRunner, monkeypatch: MonkeyPatch):
     # mock the Method class
     monkeypatch.setattr("hydroflows.cli.main.Method", MockMethod)

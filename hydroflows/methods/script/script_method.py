@@ -1,4 +1,4 @@
-"""Method to run scripts."""
+"""Method to run python script with HydroFlows."""
 
 import json
 import subprocess
@@ -9,6 +9,8 @@ from pydantic import ConfigDict, model_validator
 
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["ScriptMethod", "ScriptInput", "ScriptOutput", "ScriptParams"]
 
 
 class ScriptParams(Parameters):
@@ -65,7 +67,19 @@ class ScriptInput(ScriptOutput):
 
 
 class ScriptMethod(Method):
-    """Script method class."""
+    """Method to run python script with HydroFlows.
+
+    Parameters
+    ----------
+    script : Path
+        Path to the script file.
+    output : Dict[str, Path]
+        Output files.
+    input : Dict[str, Path]
+        Input files.
+    params : Dict
+        Parameters.
+    """
 
     name = "script_method"
 
@@ -83,19 +97,6 @@ class ScriptMethod(Method):
         input: Dict[str, Path] = None,
         params: Optional[Dict[str, Any]] = None,
     ) -> None:
-        """Initialize and validate the script method.
-
-        Parameters
-        ----------
-        script : Path
-            Path to the script file.
-        output : Dict[str, Path]
-            Output files.
-        input : Dict[str, Path]
-            Input files.
-        params : Dict
-            Parameters.
-        """
         input = {} if input is None else input
         params = {} if params is None else params
         # use model_validate on input first to to parse json input, then set script field

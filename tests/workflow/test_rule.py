@@ -435,7 +435,7 @@ def test_input_output(workflow: Workflow):
 
 
 def test_dryrun(caplog, tmp_path):
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
     workflow = Workflow(wildcards={"region": ["region1", "region2"]}, root=tmp_path)
     test_method = TestMethod(input_file1="{region}/test1", input_file2="{region}/test2")
     rule = Rule(method=test_method, workflow=workflow)

@@ -1,4 +1,4 @@
-"""Get ERA5 rainfall method."""
+"""Get ERA5 rainfall timeseries data for a region center point."""
 
 import logging
 from datetime import datetime
@@ -13,6 +13,8 @@ from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
 logger = logging.getLogger(__name__)
+
+__all__ = ["GetERA5Rainfall", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -36,7 +38,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`GetERA5Rainfall`."""
 
-    data_root: Path = Path("data/input")
+    output_dir: Path = Path("data/input")
     """The root folder where the data is stored."""
 
     filename: str = "era5_precip.nc"
@@ -50,7 +52,24 @@ class Params(Parameters):
 
 
 class GetERA5Rainfall(Method):
-    """Rule for downloading ERA5 rainfall data at the centroid of a region."""
+    """Method for downloading ERA5 rainfall data at the centroid of a region.
+
+    Parameters
+    ----------
+    region : Path
+        The file path to the geometry file for which we want
+        to download ERA5 rainfall time series at its centroid.
+    output_dir : Path, optional
+        The root folder where the data is stored, by default "data/input".
+    **params
+        Additional parameters to pass to the GetERA5Rainfall instance.
+
+    See Also
+    --------
+    :py:class:`GetERA5Rainfall Input <hydroflows.methods.rainfall.get_ERA5_rainfall.Input>`
+    :py:class:`GetERA5Rainfall Output <hydroflows.methods.rainfall.get_ERA5_rainfall.Output>`
+    :py:class:`GetERA5Rainfall Params <hydroflows.methods.rainfall.get_ERA5_rainfall.Params>`
+    """
 
     name: str = "get_ERA5_rainfall"
 
@@ -58,29 +77,11 @@ class GetERA5Rainfall(Method):
         "region": Path("region.geojson"),
     }
 
-    def __init__(self, region: Path, data_root: Path = "data/input", **params):
-        """Create and validate a GetERA5Rainfall instance.
-
-        Parameters
-        ----------
-        region : Path
-            The file path to the geometry file for which we want
-            to download ERA5 rainfall time series at its centroid.
-        data_root : Path, optional
-            The root folder where the data is stored, by default "data/input".
-        **params
-            Additional parameters to pass to the GetERA5Rainfall instance.
-
-        See Also
-        --------
-        :py:class:`GetERA5Rainfall Input <hydroflows.methods.rainfall.get_ERA5_rainfall.Input>`
-        :py:class:`GetERA5Rainfall Output <hydroflows.methods.rainfall.get_ERA5_rainfall.Output>`
-        :py:class:`GetERA5Rainfall Params <hydroflows.methods.rainfall.get_ERA5_rainfall.Params>`
-        """
-        self.params: Params = Params(data_root=data_root, **params)
+    def __init__(self, region: Path, output_dir: Path = "data/input", **params):
+        self.params: Params = Params(output_dir=output_dir, **params)
         self.input: Input = Input(region=region)
         self.output: Output = Output(
-            precip_nc=self.params.data_root / self.params.filename
+            precip_nc=self.params.output_dir / self.params.filename
         )
 
     def _run(self):

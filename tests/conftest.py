@@ -1,3 +1,4 @@
+import subprocess
 from pathlib import Path
 
 import geopandas as gpd
@@ -72,3 +73,13 @@ def event_set_file(test_data_dir) -> Path:
 def event_set(event_set_file) -> EventSet:
     """Return event set."""
     return EventSet.from_yaml(event_set_file)
+
+
+@pytest.fixture()
+def has_snakemake() -> bool:
+    """Return True if snakemake is installed."""
+    try:
+        subprocess.run(["snakemake", "--version"], check=True)
+        return True
+    except Exception:
+        return False
