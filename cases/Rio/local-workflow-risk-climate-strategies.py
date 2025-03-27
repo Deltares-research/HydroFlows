@@ -103,7 +103,7 @@ fiat_clip_exp = script.ScriptMethod(
     },
 )
 w.create_rule(fiat_clip_exp, rule_id="fiat_clip_exposure")
-w.rules.fiat_clip_exposure.run()
+
 # Preprocess clipped exposure
 fiat_preprocess_clip_exp = script.ScriptMethod(
     script=Path(pwd, "scripts", "preprocess_exposure.py"),
@@ -119,7 +119,7 @@ fiat_preprocess_clip_exp = script.ScriptMethod(
     },
 )
 w.create_rule(fiat_preprocess_clip_exp, rule_id="fiat_preprocess_exposure")
-w.rules.fiat_preprocess_exposure.run()
+
 # %%
 # Merge the preprocessed data catalog with the merged global and local data catalog
 merged_catalog_all = catalog.MergeCatalogs(
@@ -128,7 +128,7 @@ merged_catalog_all = catalog.MergeCatalogs(
     merged_catalog_path=Path(pwd, "data/merged_data_catalog_all.yml"),
 )
 w.create_rule(merged_catalog_all, rule_id="merge_all_catalogs")
-w.rules.merge_global_local_catalogs.run()
+
 # %%
 
 # Fiat build
@@ -144,7 +144,7 @@ fiat_build = fiat.FIATBuild(
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
 w.create_rule(fiat_build, rule_id="fiat_build")
-w.rules.merge_global_local_catalogs.run()
+
 # %%
 # Preprocess local precipitation data and get design events
 # Preprocess precipitation
