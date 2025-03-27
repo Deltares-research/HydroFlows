@@ -8,8 +8,10 @@ This class is responsible for:
 """
 
 import logging
+from copy import deepcopy
 from pathlib import Path
 from pprint import pformat
+from shutil import copy
 from typing import Dict, List, Optional, Union
 
 import graphviz
@@ -17,6 +19,8 @@ import yaml
 from jinja2 import Environment, PackageLoader
 
 from hydroflows import __version__
+from hydroflows.templates import TEMPLATE_DIR
+from hydroflows.templates.jinja_cwl_rule import JinjaCWLRule, JinjaCWLWorkflow
 from hydroflows.templates.jinja_snake_rule import JinjaSnakeRule
 from hydroflows.workflow.method import ExpandMethod, Method, ReduceMethod
 from hydroflows.workflow.reference import Ref
@@ -181,6 +185,88 @@ class Workflow:
         )
         with open(config_path, "w") as f:
             yaml.dump(config_dict, f)
+
+    def to_cwl(
+        self,
+        cwlfile: Path = None,
+        dryrun: bool = False,
+        touch_inputs: bool = False,
+    ) -> None:
+        """Save the workflow to a CWL workflow.
+
+        Parameters
+        ----------
+        cwlfile : Path
+            Path to the CWL workflow file. CWL files for individual methods will be created in the subfolder <cwlfile>/cwl.
+        dryrun : bool, optional
+            Run the workflow in dryrun mode, by default False
+        """
+        if cwlfile is None:
+            cwlfile = f"{self.name}.cwl"
+        cwlfile = Path(self.root, cwlfile).resolve()
+        configfile = cwlfile.with_suffix(".config.yml")
+        # Make sure all necessary folders exist
+        if not (cwlfile.parent / "cwl").exists():
+            (cwlfile.parent / "cwl").mkdir(parents=True)
+
+        template_env = Environment(
+            loader=PackageLoader("hydroflows"), trim_blocks=True, lstrip_blocks=True
+        )
+        template_workflow = template_env.get_template("workflow.cwl.jinja")
+        template_rule = template_env.get_template("rule.cwl.jinja")
+
+        # Make a copy of workflow so any changes CWL parser will make to config, refs do not alter original
+        workflow_copy = deepcopy(self)
+        cwl_workflow = JinjaCWLWorkflow(
+            rules=[JinjaCWLRule(r) for r in workflow_copy.rules], dryrun=dryrun
+        )
+
+        # Write CWL files for the methods
+        for rule in cwl_workflow.rules:
+            _str = template_rule.render(version=__version__, rule=rule)
+            with open(f"{cwlfile.parent}/cwl/{rule.method_name}.cwl", "w") as f:
+                f.write(_str)
+
+        _str = template_workflow.render(
+            version=__version__,
+            inputs=cwl_workflow.workflow_input,
+            workflow=cwl_workflow,
+            dryrun=dryrun,
+        )
+        with open(cwlfile, "w") as f:
+            f.write(_str)
+
+        # Write CWL config file
+        config = {
+            key: value["value"] for key, value in cwl_workflow.workflow_input.items()
+        }
+        with open(configfile, "w") as f:
+            yaml.dump(config, f)
+
+        # For dryrun, touch missing input files
+        if dryrun and touch_inputs:
+            for _, info in config.items():
+                if isinstance(info, dict):
+                    fn = Path(info["path"])
+                    if not fn.is_absolute():
+                        fn = self.root / fn
+                    if not fn.exists():
+                        fn.parent.mkdir(parents=True, exist_ok=True)
+                        fn.touch()
+                elif isinstance(info, list) and all(isinstance(x, dict) for x in info):
+                    for x in info:
+                        fn = Path(x["path"])
+                        if not fn.is_absolute():
+                            fn = self.root / fn
+                        if not fn.exists():
+                            fn.parent.mkdir(parents=True, exist_ok=True)
+                            fn.touch()
+
+        # Copy yml files with nested types
+        yml_root = TEMPLATE_DIR
+        yml_files = yml_root.glob("*.yml")
+        for file in yml_files:
+            copy(file, cwlfile.parent / file.name)
 
     def to_yaml(self, file: str) -> None:
         """Save the workflow to a yaml file."""

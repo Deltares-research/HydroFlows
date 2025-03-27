@@ -6,6 +6,7 @@ from pathlib import Path
 import geopandas as gpd
 from hydromt.data_catalog import DataCatalog
 
+from hydroflows._typing import FileDirPath, OutputDirPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -21,7 +22,7 @@ class Input(Parameters):
     Centroid is used to look for nearest GTSM station.
     """
 
-    gtsm_catalog: Path
+    gtsm_catalog: FileDirPath
     """Path to HydroMT data catalog describing GTSM data."""
 
 
@@ -44,7 +45,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Params for the :py:class:`GetGTSMData` method."""
 
-    data_root: Path = Path("data/input")
+    data_root: OutputDirPath = OutputDirPath("data/input")
 
     start_time: datetime = datetime(1979, 1, 1)
     """Start date for the fetched timeseries"""

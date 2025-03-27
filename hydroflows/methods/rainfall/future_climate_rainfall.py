@@ -4,7 +4,12 @@ from logging import getLogger
 from pathlib import Path
 from typing import List, Optional
 
-from hydroflows._typing import ClimateScenariosDict, ListOfStr
+from hydroflows._typing import (
+    ClimateScenariosDict,
+    FileDirPath,
+    ListOfStr,
+    OutputDirPath,
+)
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -17,7 +22,7 @@ __all__ = ["FutureClimateRainfall", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`FutureClimateRainfall` method."""
 
-    event_set_yaml: Path
+    event_set_yaml: FileDirPath
     """The file path to the event set YAML file, which includes the events to be scaled
     for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
 
@@ -25,14 +30,14 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FutureClimateRainfall` method."""
 
-    future_event_yaml: Path
+    future_event_yaml: FileDirPath
     """The path to the scaled event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
     future_event_csv: Path
     """The path to the scaled event csv timeseries file."""
 
-    future_event_set_yaml: Path
+    future_event_set_yaml: FileDirPath
     """The path to the scaled event set yml file,
     see also :py:class:`hydroflows.events.EventSet`.
     """
@@ -53,7 +58,7 @@ class Params(Parameters):
     for CMIP5 and CMIP6 models can be taken via:
     `Future Climate Data Platform <https://dap.climateinformation.org/dap/>`_"""
 
-    event_root: Path
+    event_root: OutputDirPath
     """Root folder to save the derived scaled events."""
 
     event_names: ListOfStr

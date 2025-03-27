@@ -1,0 +1,94 @@
+{% macro add_single_step(rule, dryrun) %}
+{{ rule.id }}:
+{% if rule.rule.wildcards.reduce %}
+        requirements:
+            MultipleInputFeatureRequirement: {}
+{% endif %}
+        in:
+{% for id, info in rule.input.items() %}
+{% if info.source %}
+            {{id}}: {{info.source}}
+{% endif %}
+{% endfor %}
+{% if rule.input_wildcards %}
+{% for wc in rule.input_wildcards %}
+            {{wc}}: {{wc}}
+{% endfor %}
+{% endif %}
+{% if dryrun%}
+            dryrun: dryrun
+            touch_output: touch_output
+{% endif %}
+        out:
+{% for id, info in rule.output.items()%}
+            - {{id}}
+{% endfor %}
+        run: ./cwl/{{rule.method_name}}.cwl
+{% endmacro %}
+
+{% macro add_subworkflow(wf, dryrun)%}
+{{wf.id}}:
+        in:
+{% for id, info in wf.input.items()%}
+{% if info.source%}
+            {{id}}: {{info.source}}
+{% else %}
+            {{id}}: {{id}}
+{% endif %}
+{%- endfor %}
+{% if dryrun%}
+            dryrun: dryrun
+            touch_output: touch_output
+{% endif %}
+        out:
+{% for id in wf.output%}
+            - {{id}}
+{% endfor %}
+        scatter:
+{% for id in wf.input_scatter%}
+            - {{id}}
+{% endfor %}
+        scatterMethod: dotproduct
+        run:
+            class: Workflow
+            inputs:
+{% for id, info in wf.input.items()%}
+                {{id}}: {{info.type}}
+{% endfor %}
+{% if dryrun %}
+                dryrun: boolean
+                touch_output: boolean
+{% endif %}
+            outputs:
+{% for id, info in wf.output.items()%}
+                {{id}}:
+                    type: {{info.type}}
+                    outputSource: {{info.outputSource}}
+{% endfor %}
+            steps:
+{% for step in wf.steps %}
+{% with step=step %}
+                {{ add_step(step, dryrun)|indent(12) -}}
+{% endwith %}
+{% endfor %}
+{% endmacro %}
+
+{% macro add_step(step, dryrun)%}
+{% if step.steps%}
+{{ add_subworkflow(step, dryrun) }}
+{% else %}
+{{ add_single_step(step, dryrun) }}
+{% endif%}
+{% endmacro %}
+
+{% macro workflow_outputs(rule)%}
+{% for id, info in rule.output.items()%}
+    {{id}}:
+        {% if rule.input_scatter%}
+        type: {{info.type}}[]
+        {% else %}
+        type: {{info.type}}
+        {%endif%}
+        outputSource: {{rule.rule_id}}/{{id}}
+{% endfor %}
+{% endmacro%}

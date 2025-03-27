@@ -4,7 +4,7 @@ from pathlib import Path
 
 from pydantic import Field, model_validator
 
-from hydroflows._typing import ListOfPath, WildcardPath
+from hydroflows._typing import ListOfPath, OutputDirPath, WildcardPath
 from hydroflows.methods.raster.merge_utils import merge_raster_datasets
 from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.workflow.method import ReduceMethod
@@ -42,7 +42,7 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    output_dir: Path
+    output_dir: OutputDirPath
     """
     The output directory of the dataset.
     """

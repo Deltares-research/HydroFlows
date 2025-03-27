@@ -98,3 +98,31 @@ ClimateScenariosDict = Annotated[
 ]
 
 DataCatalogPath = Union[ListOfStr, ListOfPath, Path]
+
+
+class filedirpath(Path):
+    """Subtype Path to indicate when parent folder is needed for workflow execution."""
+
+    _flavour = type(Path())._flavour
+
+
+def filedir_validator(x: Path) -> filedirpath:
+    """Promote Path to filedirpath type."""
+    return filedirpath(x)
+
+
+FileDirPath = Annotated[Path, AfterValidator(filedir_validator)]
+
+
+class outputdirpath(Path):
+    """Subclass Path to indicate Param is used as root for output locations."""
+
+    _flavour = type(Path())._flavour
+
+
+def outputdirpath_validator(x: Path) -> outputdirpath:
+    """Promote Path to outputdirpath."""
+    return outputdirpath(x)
+
+
+OutputDirPath = Annotated[Path, AfterValidator(outputdirpath_validator)]

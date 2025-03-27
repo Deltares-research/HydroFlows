@@ -4,11 +4,19 @@ import os
 from pathlib import Path
 
 import papermill as pm
+import argparse
 
 
 
 if __name__ == "__main__":
-    overwrite = False
+    parser = argparse.ArgumentParser(description="Run all notebooks in the examples and cases directories.")
+    parser.add_argument(
+        "--overwrite",
+        action="store_true",
+        default=False,
+        help="Overwrite existing executed notebooks in the output directory."
+    )
+    args = parser.parse_args()
     current_dir = Path(__file__).parent
     examples_dir = current_dir / "../examples"
     cases_dir = current_dir / "../cases"
@@ -17,7 +25,7 @@ if __name__ == "__main__":
     for nb in list(Path(examples_dir).glob("*.ipynb")) + list(Path(cases_dir).glob("**/*.ipynb")):
         nb_name = nb.name
         if Path(output_dir, nb_name).exists():
-            if overwrite is False:
+            if args.overwrite is False:
                 print(f"Skipping {nb_name} (already executed)")
                 continue
             else:

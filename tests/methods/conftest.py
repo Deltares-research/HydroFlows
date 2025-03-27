@@ -366,7 +366,7 @@ def tmp_floodmark_points(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def temp_waterlevel_timeseries_nc(tmp_path: Path) -> Path:
-    dates = pd.date_range(start="2000-01-01", end="2015-12-31", freq="10min")
+    dates = pd.date_range(start="2000-01-01", end="2003-12-31", freq="10min")
 
     np.random.seed(1234)
     data = np.random.rand(len(dates), 1)

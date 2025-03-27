@@ -5,7 +5,7 @@ from typing import List, Literal, Optional, Union
 
 from hydromt_fiat.fiat import FiatModel
 
-from hydroflows._typing import ListOfPath, WildcardPath
+from hydroflows._typing import FileDirPath, ListOfPath, OutputDirPath, WildcardPath
 from hydroflows.events import EventSet
 from hydroflows.methods.fiat.fiat_utils import copy_fiat_model
 from hydroflows.utils.path_utils import make_relative_paths
@@ -24,7 +24,7 @@ class Input(Parameters):
     hazard_maps: Union[WildcardPath, ListOfPath]
     """List of paths to hazard maps the event description file."""
 
-    event_set_yaml: Optional[Path] = None
+    event_set_yaml: Optional[FileDirPath] = None
     """The path to the event description file,
     used to get the return periods of events :py:class:`hydroflows.events.EventSet`.
     Optional for a single hazard map.
@@ -37,7 +37,7 @@ class Output(Parameters):
     fiat_hazard: Path
     """"The path to the generated combined hazard file (NetCDF) containing all rps."""
 
-    fiat_out_cfg: Path
+    fiat_out_cfg: FileDirPath
     """The path to the newly created settings file."""
 
 
@@ -50,10 +50,7 @@ class Params(Parameters):
         For more details on the setup_hazard method used in hydromt_fiat
     """
 
-    sim_name: str
-    """The name of the simulation folder."""
-
-    output_dir: Path
+    output_dir: OutputDirPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<sim_name>."""
 
     copy_model: bool = False
@@ -120,7 +117,6 @@ class FIATUpdateHazard(ReduceMethod):
         output_dir: str,
         risk: bool = True,
         map_type: Literal["water_level", "water_depth"] = "water_level",
-        sim_name: Optional[str] = None,
         **params,
     ):
         self.input: Input = Input(
@@ -128,15 +124,6 @@ class FIATUpdateHazard(ReduceMethod):
             event_set_yaml=event_set_yaml,
             hazard_maps=hazard_maps,
         )
-
-        # get the simulation name
-        if sim_name is None:
-            if self.input.event_set_yaml is not None:
-                sim_name = self.input.event_set_yaml.stem
-            elif isinstance(self.input.hazard_maps, list):
-                sim_name = self.input.hazard_maps[0].stem
-            else:
-                sim_name = "default"
 
         # check if risk analysis is required
         if (
@@ -146,7 +133,6 @@ class FIATUpdateHazard(ReduceMethod):
             risk = False
 
         self.params: Params = Params(
-            sim_name=sim_name,
             output_dir=output_dir,
             map_type=map_type,
             risk=risk,
@@ -159,7 +145,7 @@ class FIATUpdateHazard(ReduceMethod):
             )
 
         # output root is the simulation folder
-        fiat_root = self.params.output_dir / self.params.sim_name
+        fiat_root = self.params.output_dir
 
         if not self.params.copy_model and not self.params.output_dir.is_relative_to(
             self.input.fiat_cfg.parent

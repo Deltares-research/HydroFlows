@@ -7,6 +7,7 @@ import hydromt  # noqa: F401
 import xarray as xr
 from hydromt_wflow import WflowModel
 
+from hydroflows._typing import FileDirPath, OutputDirPath
 from hydroflows.methods.utils.io import to_netcdf
 from hydroflows.methods.wflow.wflow_utils import copy_wflow_model
 from hydroflows.workflow.method import Method
@@ -27,7 +28,7 @@ class Input(Parameters):
     The path to the to be change factor dataset.
     """
 
-    wflow_toml: Path
+    wflow_toml: FileDirPath
     """
     The path to the wflow settings toml that will be updated.
     """
@@ -45,7 +46,7 @@ class Output(Parameters):
     Path to the change factor dataset at wflow model resolution.
     """
 
-    wflow_out_toml: Path
+    wflow_out_toml: FileDirPath
     """
     The path to the updated wflow settings toml.
     """
@@ -58,7 +59,7 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    output_dir: Path
+    output_dir: OutputDirPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>."""
 
     copy_model: bool = False

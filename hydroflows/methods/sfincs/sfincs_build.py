@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_sfincs import SfincsModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import FileDirPath, ListOfStr
 from hydroflows.cfg import CFG_DIR
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -34,14 +34,14 @@ class Input(Parameters):
     `documentation <https://deltares.github.io/hydromt_sfincs/latest/user_guide/intro.html>`_.
     """
 
-    catalog_path: Optional[Path] = None
+    catalog_path: Optional[FileDirPath] = None
     """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
 
 
 class Output(Parameters):
     """Output parameters for the :py:class:`SfincsBuild` method."""
 
-    sfincs_inp: Path
+    sfincs_inp: FileDirPath
     """The path to the SFINCS configuration (inp) file."""
 
     sfincs_region: Path

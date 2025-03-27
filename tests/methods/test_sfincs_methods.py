@@ -88,7 +88,7 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
         output_dir=output_dir1,
         copy_model=copy_model,
     )
-    assert sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
+    assert sf.output.sfincs_out_inp == sf.params.output_dir / "sfincs.inp"
     sf.run()
 
     # This should fail when copy model == False
@@ -112,9 +112,7 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
             output_dir=output_dir2,
             copy_model=copy_model,
         )
-        assert (
-            sf.output.sfincs_out_inp == sf.params.output_dir / event_name / "sfincs.inp"
-        )
+        assert sf.output.sfincs_out_inp == sf.params.output_dir / "sfincs.inp"
         sf.run()
 
 

@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 import xarray as xr
 
+from hydroflows._typing import OutputDirPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -38,7 +39,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`GetERA5Rainfall`."""
 
-    output_dir: Path = Path("data/input")
+    output_dir: OutputDirPath = Path("data/input")
     """The root folder where the data is stored."""
 
     filename: str = "era5_precip.nc"
@@ -105,10 +106,12 @@ class GetERA5Rainfall(Method):
         ds.to_netcdf(self.output.precip_nc)
 
 
-def get_era5_open_meteo(lat, lon, start_date: datetime, end_date: datetime, variables):
+def get_era5_open_meteo(
+    lat: float, lon: float, start_date: datetime, end_date: datetime, variables
+):
     """Return ERA5 rainfall.
 
-    Return a df with ERA5 raifall data at specific point location.
+    Return a df with ERA5 rainfall data at specific point location.
     using an API
 
     Parameters

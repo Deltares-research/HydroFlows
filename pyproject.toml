@@ -77,6 +77,7 @@ extra = [
   "papermill",  # execute Jupyter notebooks
   "jupyter",
   "snakemake>=8.20, <9.0",      # Workflow manager
+  # "cwltool; platform_system != 'Windows'",  # Workflow manager for CWL This does not work with pixi..
 ]
 test = [
   "pytest>=2.7.3",  # testing framework
@@ -185,6 +186,9 @@ xarray = "==2024.3.0"
 dask = "==2024.11.2"
 graphviz = "*" # conda-forge to get dot executable
 
+[tool.pixi.target.linux-64.dependencies]
+cwltool = "*"
+
 [tool.pixi.feature.doc.dependencies]
 nbsphinx = "*"
 papermill = "*"
@@ -215,6 +219,7 @@ test-not-data = { cmd = ["pytest", "tests", "-m", "not requires_test_data and no
 test-not-slow = { cmd = ["pytest", "tests", "-m", "not slow", "-vv"] }
 
 examples = { cmd = ["python", "./docs/run_notebooks.py"]}
+examples-overwrite = { cmd = ["python", "./docs/run_notebooks.py", "--overwrite"]}
 examples-clean = { cmd = ["rm", "-rf", "examples/cases/**"] }
 
 docs-dummy = {cmd = ["sphinx-build", "./docs", "./docs/_build", "-b", "dummy", "-W"], depends-on = ["examples"]}

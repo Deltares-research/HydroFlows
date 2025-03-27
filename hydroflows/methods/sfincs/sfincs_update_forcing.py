@@ -1,10 +1,11 @@
 """Method to update SFINCS forcing."""
 
 # from datetime.datetime import strftime
+import logging
 from pathlib import Path
 from typing import Optional
 
-from hydroflows._typing import JsonDict
+from hydroflows._typing import FileDirPath, JsonDict, OutputDirPath
 from hydroflows.events import Event
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 from hydroflows.workflow.method import Method
@@ -12,14 +13,16 @@ from hydroflows.workflow.method_parameters import Parameters
 
 __all__ = ["SfincsUpdateForcing", "Input", "Output", "Params"]
 
+logger = logging.getLogger(__name__)
+
 
 class Input(Parameters):
     """Input parameters for the :py:class:`SfincsUpdateForcing` method."""
 
-    sfincs_inp: Path
+    sfincs_inp: FileDirPath
     """The file path to the SFINCS basemodel configuration file (inp)."""
 
-    event_yaml: Path
+    event_yaml: FileDirPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
@@ -27,7 +30,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for :py:class:`SfincsUpdateForcing` method."""
 
-    sfincs_out_inp: Path
+    sfincs_out_inp: FileDirPath
     """The path to the updated SFINCS configuration (inp) file per event."""
 
 
@@ -37,7 +40,7 @@ class Params(Parameters):
     event_name: str
     """The name of the event"""
 
-    output_dir: Path
+    output_dir: OutputDirPath
     """Output location relative to the workflow root. The updated model will be stored in <output_dir>/<event_name>."""
 
     copy_model: bool = False
@@ -97,18 +100,16 @@ class SfincsUpdateForcing(Method):
         self.params: Params = Params(
             event_name=event_name, output_dir=output_dir, **params
         )
-
         if self.params.copy_model and not self.params.output_dir:
             raise ValueError("Unknown dest. folder for copy operation.")
 
-        sfincs_out_inp = self.params.output_dir / self.params.event_name / "sfincs.inp"
+        sfincs_out_inp = self.params.output_dir / "sfincs.inp"
         if not self.params.copy_model and not self.params.output_dir.is_relative_to(
             self.input.sfincs_inp.parent
         ):
             raise ValueError(
                 "Output directory must be relative to input directory when not copying model."
             )
-
         self.output: Output = Output(sfincs_out_inp=sfincs_out_inp)
 
     def _run(self):
