@@ -15,7 +15,7 @@ from hydroflows.workflow.wildcards import resolve_wildcards
 
 
 def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
-    rps = [1, 10, 100]
+    rps = [2, 10, 100]
     p_events = PluvialDesignEvents(
         precip_nc=tmp_precip_time_series_nc,
         event_root=Path(tmp_path, "data"),
@@ -41,7 +41,7 @@ def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
     assert all([Path(event["path"]).exists() for event in event_set.events])
 
     # test max value is 1
-    event = event_set.get_event("p_event01")
+    event = event_set.get_event("p_event_rp002")
     filename = event.forcings[0].path
     fn_csv = tmp_precip_time_series_nc.parent / filename
     df = pd.read_csv(fn_csv, parse_dates=True, index_col=0)
@@ -67,7 +67,7 @@ def test_pluvial_design_events_gpex(region: Path, gpex_data: Path, tmp_path: Pat
 def test_get_ERA5_rainfall(region: Path, tmp_path: Path):
     get_era5 = GetERA5Rainfall(
         region=str(region),
-        data_root=str(tmp_path / "data"),
+        output_dir=str(tmp_path / "data"),
         filename="era5.nc",
         start_date="2023-11-01",
         end_date="2023-12-31",

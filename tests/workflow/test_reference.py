@@ -2,8 +2,8 @@ import re
 
 import pytest
 
-from hydroflows.workflow import Ref, WorkflowConfig
-from hydroflows.workflow.workflow import Workflow
+from hydroflows.workflow.reference import Ref
+from hydroflows.workflow.workflow import Workflow, WorkflowConfig
 from tests.workflow.conftest import MockExpandMethod
 
 

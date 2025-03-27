@@ -5,6 +5,7 @@ import pytest
 import toml
 
 import hydroflows.methods.flood_adapt.translate_events as events
+from hydroflows.methods.flood_adapt.prep_sfincs_models import PrepSfincsModels
 from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
 
@@ -51,9 +52,15 @@ def test_fa_setup(
         The path to a file containing an event set, in the format expected by
         HydroFlows.
     """
+    prep_sfincs_model = PrepSfincsModels(
+        sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
+        output_dir=tmp_path.joinpath("flood_adapt"),
+    )
+    prep_sfincs_model.run()
+
     rule = SetupFloodAdapt(
         fiat_cfg=Path(fiat_tmp_model, "settings.toml"),
-        sfincs_inp=Path(sfincs_tmp_model, "sfincs.inp"),
+        sfincs_inp=prep_sfincs_model.output.sfincs_out_inp,
         event_set_yaml=event_set_file,
         output_dir=tmp_path.joinpath("flood_adapt"),
     )

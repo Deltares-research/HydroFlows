@@ -11,7 +11,7 @@ __all__ = ["METHODS"]
 
 __eps__ = {
     "climate_change_factors": "hydroflows.methods.climate.change_factor:ClimateChangeFactors",
-    "monthly_climatology": "hydroflows.methods.climate.climatology:MonthlyClimatolgy",
+    "monthly_climatology": "hydroflows.methods.climate.climatology:MonthlyClimatology",
     "merge_gridded_datasets": "hydroflows.methods.raster.merge:MergeGriddedDatasets",
     "fiat_run": "hydroflows.methods.fiat.fiat_run:FIATRun",
     "fiat_build": "hydroflows.methods.fiat.fiat_build:FIATBuild",
@@ -43,6 +43,11 @@ __eps__ = {
     "setup_flood_adapt": "hydroflows.methods.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.methods.catalog.merge_catalogs:MergeCatalogs",
     "historical_events": "hydroflows.methods.historical_events.historical_events:HistoricalEvents",
+    "combine_dummy_events": "hydroflows.methods.dummy.combine_dummy_events:CombineDummyEvents",
+    "prepare_dummy_events": "hydroflows.methods.dummy.prepare_dummy_events:PrepareDummyEvents",
+    "run_dummy_event": "hydroflows.methods.dummy.run_dummy_event:RunDummyEvent",
+    "postprocess_dummy_event": "hydroflows.methods.dummy.postprocess_dummy_event:PostprocessDummyEvent",
+    "prep_sfincs_models": "hydroflows.methods.flood_adapt.prep_sfincs_models:PrepSfincsModels",
 }
 
 

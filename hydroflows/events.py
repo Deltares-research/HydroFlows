@@ -19,7 +19,7 @@ from typing_extensions import TypedDict
 
 from hydroflows.utils.path_utils import abs_to_rel_path, rel_to_abs_path
 
-__all__ = ["EventSet", "Event"]
+__all__ = ["EventSet", "Event", "Forcing"]
 
 SERIALIZATION_KWARGS = {"mode": "json", "round_trip": True, "exclude_none": True}
 
@@ -153,7 +153,7 @@ class Event(BaseModel):
         event = Event(
             name="event",
             forcings=[{"type": "rainfall", "path": "path/to/data.csv"}],
-            probability=0.5,
+            return_period=2,
         )
     """
 

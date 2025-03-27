@@ -1,4 +1,4 @@
-"""Create coastal design events from tide,surge timeseries and return period dataset."""
+"""Derive coastal design events from tide, surge timeseries and return period dataset."""
 
 from datetime import datetime
 from pathlib import Path
@@ -9,11 +9,13 @@ import xarray as xr
 from hydromt.stats import get_peak_hydrographs, get_peaks
 from pydantic import model_validator
 
-from hydroflows._typing import ListOfFloat, ListOfStr
+from hydroflows._typing import ListOfInt, ListOfStr
 from hydroflows.events import Event, EventSet
 from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+__all__ = ["CoastalDesignEventFromRPData", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -54,7 +56,7 @@ class Params(Parameters):
     event_root: Path
     """Root folder to save the derived design events."""
 
-    rps: ListOfFloat
+    rps: ListOfInt
     """Return periods of rp_dataset."""
 
     event_names: Optional[ListOfStr] = None
@@ -79,7 +81,7 @@ class Params(Parameters):
     def _validate_event_names(self):
         """Use rps to define event names if not provided."""
         if self.event_names is None:
-            self.event_names = [f"h_event{int(i+1):02d}" for i in range(len(self.rps))]
+            self.event_names = [f"h_event_rp{rp:03d}" for rp in self.rps]
         elif len(self.event_names) != len(self.rps):
             raise ValueError("event_names should have the same length as rps")
         # create a reference to the event wildcard
@@ -89,7 +91,31 @@ class Params(Parameters):
 
 
 class CoastalDesignEventFromRPData(ExpandMethod):
-    """Method for deriving extreme event waterlevels from tide and surge timeseries using a return period dataset."""
+    """Derive coastal design events from tide, surge timeseries and return period dataset.
+
+    Parameters
+    ----------
+    surge_timeseries : Path
+        Path to surge timeseries data.
+    tide_timeseries : Path
+        Path to tides timeseries data.
+    rp_dataset : Path
+        Path to return period dataset.
+    rps : List[float], optional
+        List of return periods in the rp_dataset, by default None and extracted from rp_dataset.
+    event_root : Path, optional
+        Folder root of output event catalog file, by default "data/interim/coastal"
+    event_names : List[str], optional
+        List of event names for the design events, by "p_event{i}", where i is the event number.
+    wildcard : str, optional
+        The wildcard key for expansion over the design events, by default "event".
+
+    See Also
+    --------
+    :py:class:`CoastalDesignEventFromRPData Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`
+    :py:class:`CoastalDesignEventFromRPData Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`
+    :py:class:`CoastalDesignEventFromRPData Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>`
+    """
 
     name: str = "coastal_design_events_from_rp_data"
 
@@ -113,31 +139,6 @@ class CoastalDesignEventFromRPData(ExpandMethod):
         wildcard: str = "event",
         **params,
     ) -> None:
-        """Create and validate CoastalDesignEvents instance.
-
-        Parameters
-        ----------
-        surge_timeseries : Path
-            Path to surge timeseries data.
-        tide_timeseries : Path
-            Path to tides timeseries data.
-        rp_dataset : Path
-            Path to return period dataset.
-        rps : List[float], optional
-            List of return periods in the rp_dataset, by default None and extracted from rp_dataset.
-        event_root : Path, optional
-            Folder root of output event catalog file, by default "data/interim/coastal"
-        event_names : List[str], optional
-            List of event names for the design events, by "p_event{i}", where i is the event number.
-        wildcard : str, optional
-            The wildcard key for expansion over the design events, by default "event".
-
-        See Also
-        --------
-        :py:class:`CoastalDesignEventFromRPData Input <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Input>`
-        :py:class:`CoastalDesignEventFromRPData Output <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Output>`
-        :py:class:`CoastalDesignEventFromRPData Params <hydroflows.methods.coastal.coastal_design_events_from_rp_data.Params>`
-        """
         self.input: Input = Input(
             surge_timeseries=surge_timeseries,
             tide_timeseries=tide_timeseries,

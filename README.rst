@@ -14,97 +14,58 @@ HydroFlows
     :target: https://github.com/Deltares-research/HydroFlows/blob/main/LICENSE
 
 .. warning::
-   This is a **work in progress** and not yet ready for use!
+   This is a **work in progress**!
+   Deltares does not provide any support for this software.
+   The software is provided as is and is not suitable for production use.
 
-HydroFlows is a Python package for automated workflows for globally applicable flood risk assessments.
-At its core, it contains a set of methods that can be called via command line interface (CLI) or Python API.
-These are combined into `snakemake <https://snakemake.readthedocs.io>`_ workflows to perform a series of tasks that are common to flood risk assessments.
+Overview
+========
 
-How to install
-==============
+**HydroFlows** aims to make it easy to create validated workflows using standardized methods and parse these to a workflow engine.
+In HydroFlows, a workflow consists of methods that are chained together by connecting the file-based output of one method to the input of another.
+While HydroFlows can also execute the workflows, it is recommended to use a workflow engine to manage the execution of the workflows
+and to take advantage of the parallelization, scalability, and caching features of these engines.
+Currently we support Snakemake_ or engines that support the Common Workflow Language (CWL_).
 
-To install HydroFlows, you can use either pixi or mamba.
-The package is not yet available on PyPi or conda-forge, so you need to install it from the GitHub repository.
+Why HydroFlows?
+---------------
 
-Using pixi (for developers)
----------------------------
+It can be challenging to create workflows, especially when these should be modular and flexible.
+With HydroFlows, users can create workflows in a Python script and don't need to learn a new language or syntax.
+Using a IDE such as VSCode_ method in- and outputs can easily be discovered, making it easy to chain methods together in a workflow.
+Furthermore, method parameters are directly validated at initialization and connections between methods are validated when adding them to the workflow.
+All these features make it easy to create and maintain workflows compared to other workflow engines.
 
-Pixi offers a project-centric approach for python environments and run commands.
-Using the pixi.lock file the environment is reproducible and can be shared with others.
+HydroFlows for flood risk assessments
+-------------------------------------
 
-First, install pixi from https://pixi.sh/latest/
-Then, clone the repository and install HydroFlows using pixi (this will also create an editable installation of HydroFlows):
+Currently, the available methods in HydroFlows are focused on flood risk assessments.
+Methods include the automated setup of physics-based models such as Wflow_ and SFINCS_, statistical analysis, and impact assessments using Delft-FIAT_.
+Many methods build on HydroMT_ and are backed up by a large stack of state-of-art global datasets to enable rapid assessments anywhere globally.
+As the workflows are fully automated these can easily be replaced by local data  where available.
+The final outcomes of the HydroFlows flood risk workflows are flood hazard and risk maps and statistics.
+In addition a FloodAdapt_ instance can be created from the built models and event sets.
 
-.. code-block:: bash
+Acknowledgements
+================
 
-   git clone git@github.com:Deltares-research/HydroFlows.git
-   cd HydroFlows
-   pixi install                # dev py3.11 installation from the lock file
-
-   # optional commands (see "pixi run x" for more options)
-   pixi run install-pre-commit # install pre-commit hooks
-   pixi run html-docs          # build the documentation
-   pixi run tests              # run all tests
-
-
-To update the lock file and your environment after changes to the dependencies, run:
-
-.. code-block:: bash
-
-   pixi update
-
-Using conda (for users)
------------------------
-
-To install HydroFlows using conda, you first need to clone the repository,
-then create a conda environment file from the pyproject.toml and install all dependencies, and finally install HydroFlows:
-
-.. code-block:: bash
-
-   git clone git@github.com:Deltares-research/HydroFlows.git
-   cd HydroFlows
-   python make_env.py
-   mamba env create -f environment.yml
-   conda activate hydroflows
-   pip install -e .
-   pre-commit install
+This library was created as part of the Horizon Europe UP2030_ (Grant Agreement Number 101096405)
+and InterTwin_ (Grant Agreement Number 101058386) projects.
 
 
-How to use
-==========
+License
+=======
 
-HydroFlows is designed to create workflows using python scripts and parse these to a workflow engine like snakemake.
-Example scripts can be found in the `examples` folder.
-Below we run the `pluvial_risk` example, but you can also pick another example or create your own.
-
-To create an example workflow, you can use the following command.
-This will create a new folder `cases/pluvial_risk` with the example workflow `Snakefile`:
-
-.. code-block:: bash
-
-   python examples/pluvial_risk.py
-
-To run the snakemake workflow, you can use the following command. Note that this requires executables for the models used in the workflow.
-See the `snakemake documentation <https://snakemake.readthedocs.io/en/stable/executing/cli.html>`_ for more options.
-
-.. code-block:: bash
-
-   cd examples/cases/pluvial_risk
-   snakemake -n  # dry-run
-   snakemake -c 1  # run with 1 core
+MIT license, see the `LICENSE <LICENSE>`_ file for details.
 
 
-With pixi the commands are combined in a single command, this will create and run the snakemake in one go.
-Note that this only works for the examples provided in the `examples` folder.
-
-On Windows with powershell you can use the following command:
-
-.. code-block:: bash
-
-   $env:EXAMPLE='pluvial_risk'; pixi run examples-run
-
-In Linux you can use the following command:
-
-.. code-block:: bash
-
-   EXAMPLE='pluvial_risk' pixi run examples-run
+.. _snakemake: https://snakemake.readthedocs.io/en/stable/
+.. _CWL: https://www.commonwl.org/
+.. _VSCode: https://code.visualstudio.com/
+.. _Wflow: https://deltares.github.io/Wflow.jl/
+.. _SFINCS: https://sfincs.readthedocs.org/
+.. _Delft-FIAT: https://deltares.github.io/Delft-FIAT/
+.. _HydroMT: https://deltares.github.io/hydromt/
+.. _FloodAdapt: https://deltares-research.github.io/FloodAdapt/
+.. _UP2030: https://up2030-he.eu/
+.. _InterTwin: https://www.intertwin.eu/

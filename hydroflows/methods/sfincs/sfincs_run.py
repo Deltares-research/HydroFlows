@@ -1,4 +1,5 @@
-"""SFINCS run method."""
+"""Method for running a SFINCS model."""
+
 import platform
 import subprocess
 from pathlib import Path
@@ -11,7 +12,7 @@ from hydroflows.utils.docker_utils import fetch_docker_uid
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
-__all__ = ["SfincsRun"]
+__all__ = ["SfincsRun", "Input", "Output", "Params"]
 
 
 class Input(Parameters):
@@ -63,7 +64,27 @@ class Params(Parameters):
 
 
 class SfincsRun(Method):
-    """Rule for running a Sfincs model."""
+    """Method for running a SFINCS model.
+
+    Parameters
+    ----------
+    sfincs_inp : str
+        Path to the SFINCS input file.
+    run_method : Literal["exe", "docker", "apptainer"], optional
+        How to run the SFINCS model. The default is "exe", which runs the Windows executable.
+        If 'docker' or 'apptainer' is specified, the model is run in a Docker or Apptainer container.
+    sfincs_exe : Path, optional
+        Path to the SFINCS Windows executable.
+    **params
+        Additional parameters to pass to the SfincsRun instance.
+        See :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`.
+
+    See Also
+    --------
+    :py:class:`sfincs_run Input <hydroflows.methods.sfincs.sfincs_run.Input>`
+    :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
+    :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
+    """
 
     name: str = "sfincs_run"
 
@@ -79,27 +100,6 @@ class SfincsRun(Method):
         sfincs_exe: Optional[Path] = None,
         **params,
     ) -> "SfincsRun":
-        """Create and validate a sfincs_run instance.
-
-        Parameters
-        ----------
-        sfincs_inp : str
-            Path to the SFINCS input file.
-        run_method : Literal["exe", "docker", "apptainer"], optional
-            How to run the SFINCS model. The default is "exe", which runs the Windows executable.
-            If 'docker' or 'apptainer' is specified, the model is run in a Docker or Apptainer container.
-        sfincs_exe : Path, optional
-            Path to the SFINCS Windows executable.
-        **params
-            Additional parameters to pass to the SfincsRun instance.
-            See :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`.
-
-        See Also
-        --------
-        :py:class:`sfincs_run Input <hydroflows.methods.sfincs.sfincs_run.Input>`
-        :py:class:`sfincs_run Output <hydroflows.methods.sfincs.sfincs_run.Output>`
-        :py:class:`sfincs_run Params <hydroflows.methods.sfincs.sfincs_run.Params>`
-        """
         self.params: Params = Params(
             sfincs_exe=sfincs_exe, run_method=run_method, **params
         )

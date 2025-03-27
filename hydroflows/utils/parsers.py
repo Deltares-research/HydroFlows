@@ -4,7 +4,13 @@ import re
 from pathlib import Path
 from typing import List, Optional
 
-__all__ = ["str_to_list", "get_wildcards"]
+__all__ = [
+    "str_to_list",
+    "str_to_list_nested",
+    "str_to_tuple",
+    "get_wildcards",
+    "has_wildcards",
+]
 
 
 def str_to_list(v: str) -> list[str]:
