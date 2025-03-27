@@ -155,7 +155,7 @@ for index, row in census_gdf.iterrows():
                     nearest_idx = idx
                     break
         nearest_row = census_gdf.iloc[nearest_idx]
-        census_gdf.at[index, "V005"] = nearest_row["V005"]
+        census_gdf.at[index, "V005"] = nearest_row["V005"].item()
 
 # %% prep population data
 
