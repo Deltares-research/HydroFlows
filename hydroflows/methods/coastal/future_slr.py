@@ -4,7 +4,12 @@ from logging import getLogger
 from pathlib import Path
 from typing import List, Literal, Optional
 
-from hydroflows._typing import ClimateScenariosDict, ListOfStr
+from hydroflows._typing import (
+    ClimateScenariosDict,
+    FileDirPath,
+    ListOfStr,
+    OutputDirPath,
+)
 from hydroflows.events import Event, EventSet
 from hydroflows.utils.units import convert_to_meters
 from hydroflows.workflow.method import ExpandMethod
@@ -18,7 +23,7 @@ __all__ = ["FutureSLR", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`FutureSLR` method."""
 
-    event_set_yaml: Path
+    event_set_yaml: FileDirPath
     """The file path to the event set YAML file, which includes the events to be offset
     for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
 
@@ -26,14 +31,14 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FutureSLR` method."""
 
-    future_event_yaml: Path
+    future_event_yaml: FileDirPath
     """The path to the offset event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
     future_event_csv: Path
     """The path to the offset event csv timeseries file."""
 
-    future_event_set_yaml: Path
+    future_event_set_yaml: FileDirPath
     """The path to the offset event set yml file,
     see also :py:class:`hydroflows.events.EventSet`.
     """
@@ -57,7 +62,7 @@ class Params(Parameters):
     "mm" for milimeters, "ft" for feet and "in" for inches.
     Default is 'm'."""
 
-    event_root: Path
+    event_root: OutputDirPath
     """Root folder to save the derived offset events."""
 
     event_names: Optional[ListOfStr]

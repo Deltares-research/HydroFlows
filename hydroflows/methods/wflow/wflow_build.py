@@ -7,7 +7,7 @@ from hydromt.config import configread, configwrite
 from hydromt.log import setuplog
 from hydromt_wflow import WflowModel
 
-from hydroflows._typing import ListOfStr
+from hydroflows._typing import FileDirPath, ListOfStr
 from hydroflows.cfg import CFG_DIR
 from hydroflows.methods.wflow.wflow_utils import plot_basemap
 from hydroflows.workflow.method import Method
@@ -35,7 +35,7 @@ class Input(Parameters):
     `documentation <https://deltares.github.io/hydromt_wflow/latest/user_guide/wflow_model_setup.html#model-methods>`_
     """
 
-    catalog_path: Optional[Path] = None
+    catalog_path: Optional[FileDirPath] = None
     """The file path to the data catalog. This is a file in yml format, which should contain the data sources specified in the config file."""
 
     gauges: Optional[Path] = None
@@ -49,7 +49,7 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`WflowBuild` method."""
 
-    wflow_toml: Path
+    wflow_toml: FileDirPath
     """
     The file path to the Wflow (toml) configuration file.
     """

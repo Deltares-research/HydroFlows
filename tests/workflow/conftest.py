@@ -52,8 +52,8 @@ class TestMethod(Method):
             out_root=out_root,
         )
         self.output: TestMethodOutput = TestMethodOutput(
-            output_file1=self.params.out_root / "output1",
-            output_file2=self.params.out_root / "output2",
+            output_file1=self.params.out_root / "output1.txt",
+            output_file2=self.params.out_root / "output2.txt",
         )
 
     def _run(self):

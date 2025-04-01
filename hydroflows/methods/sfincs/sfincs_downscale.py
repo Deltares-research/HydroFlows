@@ -5,7 +5,7 @@ from typing import Optional
 
 from hydromt_sfincs import SfincsModel, utils
 
-from hydroflows._typing import JsonDict
+from hydroflows._typing import FileDirPath, JsonDict, OutputDirPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -15,7 +15,7 @@ __all__ = ["SfincsDownscale", "Input", "Output", "Params"]
 class Input(Parameters):
     """Input parameters for the :py:class:`SfincsDownscale` method."""
 
-    sfincs_map: Path
+    sfincs_map: FileDirPath
     """The path to the SFINCS model output sfincs_map.nc file."""
 
     sfincs_subgrid_dep: Path
@@ -32,7 +32,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`SfincsDownscale` method."""
 
-    output_root: Optional[Path] = None
+    output_root: Optional[OutputDirPath] = None
     """The path to the root directory where the hazard output files are saved."""
 
     event_name: str

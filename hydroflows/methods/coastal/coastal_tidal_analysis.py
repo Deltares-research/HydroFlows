@@ -7,6 +7,7 @@ import pandas as pd
 import xarray as xr
 from dateutil.relativedelta import relativedelta
 
+from hydroflows._typing import OutputDirPath
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -33,7 +34,7 @@ class Output(Parameters):
 class Params(Parameters):
     """Params for the :py:class:`CoastalTidalAnalysis` method."""
 
-    data_root: Path = Path("data/input")
+    data_root: OutputDirPath = OutputDirPath("data/input")
 
     plot_fig: bool = True
     """Make tidal component and timeseries plots.

@@ -12,7 +12,7 @@ import xarray as xr
 from hydromt.stats import design_events, extremes, get_peaks
 from pydantic import PositiveInt, model_validator
 
-from hydroflows._typing import ListOfInt, ListOfStr
+from hydroflows._typing import FileDirPath, ListOfInt, ListOfStr, OutputDirPath
 from hydroflows.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
@@ -43,14 +43,14 @@ class Input(Parameters):
 class Output(Parameters):
     """Output parameters for the :py:class:`FluvialDesignEvents` method."""
 
-    event_yaml: Path
+    event_yaml: FileDirPath
     """The path to the event description file,
     see also :py:class:`hydroflows.events.Event`."""
 
     event_csv: Path
     """The path to the event csv timeseries file."""
 
-    event_set_yaml: Path
+    event_set_yaml: FileDirPath
     """The path to the event set yml file that contains the derived
     fluvial event configurations. This event set can be created from
     a dictionary using the :py:class:`hydroflows.events.EventSet` class.
@@ -67,7 +67,7 @@ class Params(Parameters):
         using HydroMT.
     """
 
-    event_root: Path
+    event_root: OutputDirPath
     """"Root folder to save the derived design events."""
 
     rps: ListOfInt

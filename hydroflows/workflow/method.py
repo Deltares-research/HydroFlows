@@ -250,7 +250,10 @@ class Method(ABC):
     ## RUN METHODS
 
     def dryrun(
-        self, input_files: List[Path], missing_file_error: bool = False
+        self,
+        input_files: List[Path],
+        missing_file_error: bool = False,
+        touch_output: bool = False,
     ) -> List[Path]:
         """Run method with dummy outputs.
 
@@ -275,7 +278,15 @@ class Method(ABC):
                     else:
                         logger.warning(msg)
         # return output paths
-        return [value for _, value in self._output_paths]
+        out_paths = [value for _, value in self._output_paths]
+
+        if touch_output:
+            for path in out_paths:
+                logger.debug(f"Touch file at {path.as_posix()}")
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.touch()
+
+        return out_paths
 
     def run(self, check_output: bool = True) -> None:
         """Run the method with input/output checks.

@@ -61,10 +61,7 @@ def test_fiat_update_hazard(
         copy_model=copy_model,
     )
 
-    assert (
-        rule.output.fiat_out_cfg
-        == rule.params.output_dir / rule.params.sim_name / "settings.toml"
-    )
+    assert rule.output.fiat_out_cfg == rule.params.output_dir / "settings.toml"
 
     rule.run()
 
@@ -89,10 +86,7 @@ def test_fiat_update_hazard(
             output_dir=output_dir2,
             copy_model=copy_model,
         )
-        assert (
-            rule.output.fiat_out_cfg
-            == rule.params.output_dir / rule.params.sim_name / "settings.toml"
-        )
+        assert rule.output.fiat_out_cfg == rule.params.output_dir / "settings.toml"
 
     rule.run()
 

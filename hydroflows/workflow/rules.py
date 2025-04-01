@@ -104,6 +104,18 @@ class Rules:
             )
         return ind
 
+    # Sort repeat wildcards here vs in Rule class because we need access to previous rule and its wildcard order.
+    def _sort_repeat_wildcards(self, ind) -> None:
+        if ind == 0:
+            return
+        prev_rule = self[ind - 1]
+        rule = self[ind]
+        wc_sort = prev_rule.wildcards["repeat"]
+        wc_new = [name for name in rule.wildcards["repeat"] if name not in wc_sort]
+        rule._wildcards["repeat"] = sorted(
+            rule._wildcards["repeat"], key=lambda x: [*wc_sort, *wc_new].index(x)
+        )
+
     # method for getting a rule using numerical index,
     # i.e. rules[0] and rules['rule_id'] are both valid
     def __getitem__(self, key: int | str) -> Rule:
@@ -127,6 +139,7 @@ class Rules:
         self._detect_dependencies_rule(rule)
         ind = self._get_new_rule_index(rule)
         self.names.insert(ind, key)
+        self._sort_repeat_wildcards(ind)
 
     def __iter__(self) -> Iterator[Rule]:
         return iter([self[rule_id] for rule_id in self.names])
