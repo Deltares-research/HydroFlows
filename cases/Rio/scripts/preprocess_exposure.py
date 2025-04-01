@@ -64,6 +64,7 @@ def map_social_class(income):
 # %% load clipped data
 census_path = data_source / "census2010.gpkg"
 census_gdf = gpd.read_file(census_path).to_crs(crs)
+census_gdf = census_gdf.explode()
 
 buildings_path = data_source / "building_footprints.gpkg"
 buildings_gdf = gpd.read_file(buildings_path).to_crs(crs)
@@ -146,20 +147,37 @@ occupancy_gdf_jrc["primary_object_type"] = (
 # TODO check threshold elevation or sample from DEM
 
 # %% Assign income to census areas without income information from nearest
-for index, row in census_gdf.iterrows():
-    if pd.isna(row["V005"]) or row["V005"] is None:
-        nearest_idx = census_gdf.sindex.nearest(row["geometry"], return_all=False)
-        if isinstance(nearest_idx, (list, np.ndarray)):
-            for idx in nearest_idx:
-                if pd.notna(census_gdf.iloc[idx]["V005"][0]):
-                    nearest_idx = idx
-                    break
-        nearest_row = census_gdf.iloc[nearest_idx]
-        census_gdf.at[index, "V005"] = nearest_row["V005"].item()
+valid_census_gdf = census_gdf.dropna(subset=["V005"])
+nearest_census_gdf = gpd.sjoin_nearest(
+    census_gdf,
+    valid_census_gdf[["V005", "V002", "geometry"]],
+    how="left",
+    distance_col="nearest_dist",
+)
+nearest_census_gdf["V005"] = nearest_census_gdf["V005_left"].fillna(
+    nearest_census_gdf["V005_right"]
+)
+nearest_census_gdf["V002"] = nearest_census_gdf["V002_left"].fillna(
+    nearest_census_gdf["V002_right"]
+)
+census_gdf = nearest_census_gdf.drop(
+    columns=[
+        "index_right",
+        "nearest_dist",
+        "V005_right",
+        "V005_left",
+        "V002_right",
+        "V002_left",
+    ]
+)
 
 # %% prep population data
 
-occupancy_gdf = gpd.sjoin(occupancy_gdf_jrc, census_gdf, how="left", predicate="within")
+occupancy_gdf = gpd.sjoin(
+    occupancy_gdf_jrc, census_gdf, how="left", predicate="intersects"
+)
+occupancy_gdf = occupancy_gdf.groupby(occupancy_gdf.index).first()
+occupancy_gdf.drop(columns=["index_right"], errors="ignore", inplace=True)
 
 res_buildings = occupancy_gdf["primary_object_type"] == "residential"
 
@@ -169,12 +187,13 @@ building_area_per_sector = (
     .groupby("cod_setor")
     .sum()["shape__area"]
 )
+building_area_per_sector = building_area_per_sector.loc[
+    ~building_area_per_sector.index.duplicated()
+]
+census_gdf = census_gdf.set_index("cod_setor")["V002"].astype(float)
+census_gdf = census_gdf.loc[~census_gdf.index.duplicated()]
 # average residents per sector (V002) per footprint area
-residents_per_sector = (
-    census_gdf.set_index("cod_setor")["V002"]
-    .astype(float)
-    .reindex(building_area_per_sector.index)
-)
+residents_per_sector = census_gdf.reindex(building_area_per_sector.index)
 residents_per_area = residents_per_sector / building_area_per_sector
 
 # get residents (population) per building entrance
@@ -223,6 +242,7 @@ new_occupancy = pd.concat(
     [occupancy_bf_residential, occupancy_bf_com_ind], ignore_index=True
 )
 new_occupancy = new_occupancy.reset_index(drop=True)
+new_occupancy.crs = occupancy_gdf_jrc.crs
 
 # Map building
 social_class_dict = dict(
@@ -240,7 +260,7 @@ for index, row in new_occupancy.iterrows():
         new_occupancy.at[index, "secondary_object_type"] = "industrial"
 # %% save data
 
-# Define file names
+# Defie file names
 fn_building_footprints = "building_footprints_2d.gpkg"
 fn_local = "local_occupancy_pre_processed.gpkg"
 fn_floor_height = "finished_floor_height.gpkg"
