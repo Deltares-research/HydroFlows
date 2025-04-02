@@ -163,7 +163,7 @@ w.create_rule(precipitation, rule_id="preprocess_local_rainfall")
 pluvial_design_events = rainfall.PluvialDesignEvents(
     precip_nc=precipitation.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard="pluvial_design_events",
+    wildcard="events",
     event_root="events/default",
 )
 w.create_rule(pluvial_design_events, rule_id="get_pluvial_design_events")
@@ -174,7 +174,7 @@ scenarios_design_events = rainfall.FutureClimateRainfall(
     scenarios=w.get_ref("$config.scenarios_dict"),
     event_names=pluvial_design_events.params.event_names,
     event_set_yaml=pluvial_design_events.output.event_set_yaml,
-    event_wildcard="pluvial_design_events",  # we overwrite the wildcard
+    event_wildcard="events",  # we overwrite the wildcard
     scenario_wildcard="scenarios",
     event_root="events",
 )
@@ -185,7 +185,9 @@ w.create_rule(scenarios_design_events, rule_id="scenarios_pluvial_design_events"
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=scenarios_design_events.output.future_event_yaml,
-    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations_{scenarios}",
+    output_dir=sfincs_build.output.sfincs_inp.parent
+    / "simulations_{scenarios}"
+    / "{events}",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
 

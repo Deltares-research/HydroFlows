@@ -7,7 +7,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import fiat, flood_adapt, rainfall, sfincs
+from hydroflows.methods import fiat, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -84,7 +84,7 @@ w.create_rule(pluvial_data, rule_id="pluvial_data")
 pluvial_events = rainfall.PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard="pluvial_design_events",
+    wildcard="events",
     event_root="events/design",
 )
 w.create_rule(pluvial_events, rule_id="pluvial_design_events")
@@ -94,7 +94,7 @@ w.create_rule(pluvial_events, rule_id="pluvial_design_events")
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=pluvial_events.output.event_yaml,
-    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations",
+    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations" / "{events}",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
 
@@ -148,19 +148,19 @@ w.create_rule(fiat_run, rule_id="fiat_run")
 fiat_visualize_risk = fiat.FIATVisualize(
     fiat_output_csv=fiat_run.output.fiat_out_csv,
     fiat_cfg=fiat_build.output.fiat_cfg,
-    output_dir=fiat_run.output.fiat_out_csv.parent,
+    output_dir="output/risk",
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
 # %%
 # Setup FloodAdapt with the models above and the design events
-floodadapt_build = flood_adapt.SetupFloodAdapt(
-    sfincs_inp=sfincs_build.output.sfincs_inp,
-    fiat_cfg=fiat_build.output.fiat_cfg,
-    event_set_yaml=pluvial_events.output.event_set_yaml,
-    output_dir="models/flood_adapt_builder",
-)
-w.create_rule(floodadapt_build, rule_id="floodadapt_build")
+# floodadapt_build = flood_adapt.SetupFloodAdapt(
+#     sfincs_inp=sfincs_build.output.sfincs_inp,
+#     fiat_cfg=fiat_build.output.fiat_cfg,
+#     event_set_yaml=pluvial_events.output.event_set_yaml,
+#     output_dir="models/flood_adapt_builder",
+# )
+# w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 
 # %%
 # run workflow

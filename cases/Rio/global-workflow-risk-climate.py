@@ -83,7 +83,7 @@ w.create_rule(fiat_build, rule_id="fiat_build")
 # Get ERA5 data
 pluvial_data = rainfall.GetERA5Rainfall(
     region=sfincs_build.output.sfincs_region,
-    data_root=Path(pwd, "data/global-data"),
+    output_dir=Path(pwd, "data/global-data"),
     start_date=w.get_ref("$config.start_date"),
     end_date=w.get_ref("$config.end_date"),
 )
@@ -93,8 +93,8 @@ w.create_rule(pluvial_data, rule_id="get_ERA5_data")
 pluvial_design_events = rainfall.PluvialDesignEvents(
     precip_nc=pluvial_data.output.precip_nc,
     rps=w.get_ref("$config.rps"),
-    wildcard="pluvial_design_events",
-    event_root="events/design",
+    wildcard="events",
+    event_root="events/default",
 )
 w.create_rule(pluvial_design_events, rule_id="derive_pluvial_design_events")
 
@@ -104,7 +104,7 @@ scenarios_design_events = rainfall.FutureClimateRainfall(
     scenarios=w.get_ref("$config.scenarios_dict"),
     event_names=pluvial_design_events.params.event_names,
     event_set_yaml=pluvial_design_events.output.event_set_yaml,
-    event_wildcard="pluvial_design_events",  # we overwrite the wildcard
+    event_wildcard="events",  # we overwrite the wildcard
     scenario_wildcard="scenarios",
     event_root="events",
 )
@@ -115,7 +115,9 @@ w.create_rule(scenarios_design_events, rule_id="scenarios_pluvial_design_events"
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=scenarios_design_events.output.future_event_yaml,
-    output_dir=sfincs_build.output.sfincs_inp.parent / "simulations_{scenarios}",
+    output_dir=sfincs_build.output.sfincs_inp.parent
+    / "simulations_{scenarios}"
+    / "{events}",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
 
@@ -133,7 +135,7 @@ sfincs_down = sfincs.SfincsDownscale(
     sfincs_map=sfincs_run.output.sfincs_map,
     sfincs_subgrid_dep=sfincs_build.output.sfincs_subgrid_dep,
     depth_min=w.get_ref("$config.depth_min"),
-    output_root="output/hazard_default",
+    output_root="output/hazard_{scenarios}",
 )
 w.create_rule(sfincs_down, rule_id="sfincs_downscale")
 
@@ -171,7 +173,7 @@ fiat_visualize_risk = fiat.FIATVisualize(
     fiat_output_csv=fiat_run.output.fiat_out_csv,
     fiat_cfg=fiat_build.output.fiat_cfg,
     spatial_joins_cfg=fiat_build.output.spatial_joins_cfg,
-    output_dir=fiat_run.output.fiat_out_csv.parent,
+    output_dir="output/risk_{scenarios}",
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 # %%

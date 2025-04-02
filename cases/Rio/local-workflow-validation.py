@@ -111,6 +111,9 @@ w.create_rule(historical_event, rule_id="historical_event")
 sfincs_update = sfincs.SfincsUpdateForcing(
     sfincs_inp=sfincs_build.output.sfincs_inp,
     event_yaml=historical_event.output.event_yaml,
+    output_dir=sfincs_build.output.sfincs_inp.parent
+    / "simulations"
+    / "{pluvial_historical_event}",
 )
 w.create_rule(sfincs_update, rule_id="sfincs_update")
 
