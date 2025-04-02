@@ -9,7 +9,6 @@ from hydromt.config import configread
 
 from hydroflows._typing import FileDirPath, OutputDirPath
 from hydroflows.config import HYDROMT_CONFIG_DIR
-from hydroflows.methods.flood_adapt.translate_events import translate_events
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -46,7 +45,7 @@ class Output(Parameters):
     fiat_out_cfg: FileDirPath
     """The path to the copied fiat model configuration."""
 
-    probabilistic_set: FileDirPath | None = None
+    # probabilistic_set: FileDirPath | None = None
     """The path to the event set configuration."""
 
 
@@ -127,12 +126,12 @@ class SetupFloodAdapt(Method):
             fiat_out_cfg=Path(self.params.output_dir, "fiat", "settings.toml"),
         )
 
-        if self.input.event_set_yaml is not None:
-            self.output.probabilistic_set = Path(
-                self.params.output_dir,
-                self.input.event_set_yaml.stem,
-                f"{self.input.event_set_yaml.stem}.toml",
-            )
+        # if self.input.event_set_yaml is not None:
+        #    self.output.probabilistic_set = Path(
+        #        self.params.output_dir,
+        #        self.input.event_set_yaml.stem,
+        #        f"{self.input.event_set_yaml.stem}.toml",
+        #    )
 
     def _run(self):
         """Run the SetupFloodAdapt method."""
@@ -146,10 +145,10 @@ class SetupFloodAdapt(Method):
             )
         # prepare probabilistic set
         if self.input.event_set_yaml is not None:
-            translate_events(
-                self.input.event_set_yaml,
-                Path(self.params.output_dir),
-            )
+            # translate_events(
+            #    self.input.event_set_yaml,
+            #    Path(self.params.output_dir),
+            # )
 
             # Create FloodAdapt Database Builder config
             fa_db_config(
