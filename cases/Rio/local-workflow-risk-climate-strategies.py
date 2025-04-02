@@ -6,7 +6,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, rainfall, script, sfincs
+from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
 from hydroflows.workflow.wildcards import resolve_wildcards
 
 # Where the current file is located
@@ -246,15 +246,22 @@ fiat_visualize_risk = fiat.FIATVisualize(
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
 # %%
-# Setup FloodAdapt
-# floodadapt_build = flood_adapt.SetupFloodAdapt(
-#     sfincs_inp=sfincs_build.output.sfincs_inp,
-#     fiat_cfg=fiat_build.output.fiat_cfg,
-#     event_set_yaml=pluvial_events.output.event_set_yaml,
-#     output_dir="models/flood_adapt_builder_{strategies}",
-# )
-# w.create_rule(floodadapt_build, rule_id="floodadapt_build")
+# Prepare Sfincs models for FloodAdapt DataBase
+prep_sfincs_models = flood_adapt.PrepSfincsModels(
+    sfincs_inp=sfincs_run.output,
+    output_dir="output/floodadapt/risk_{scenarios}_{strategies}",
+)
+w.create_rule(prep_sfincs_models, rule_id="prep_sfincs_models")
 
+# %%
+# Setup FloodAdapt
+floodadapt_build = flood_adapt.SetupFloodAdapt(
+    sfincs_inp="output/risk_present_default/sfincs.inp",  # NOTE! Is this the correct path? We just want to build it for 1 sfincs model and then copy the other ones in the DB after
+    fiat_cfg=fiat_update.output.fiat_out_cfg,
+    event_set_yaml="output/risk_present_default/pluvial_risk_eventset.toml",  # NOTE! Here I don't know the path. But we should provide the presen pluvial risk eventset. The translatin doesnt work but the folders are created. Then we copy the translated event manually in the folder.
+    output_dir="output/floodadapt/database_prep",
+)
+w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 # %%
 # run workflow
 w.dryrun()
