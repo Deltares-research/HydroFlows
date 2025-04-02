@@ -4,6 +4,6 @@ fiat: fiat
 unit_system: metric
 gui:
   max_flood_depth: 2
-  max_aggr_dmg: 10000000
+  max_aggr_dmg: 3000000000
   max_footprint_dmg: 250000
   max_benefits: 50000000
