@@ -29,6 +29,8 @@ setup_exposure_buildings:
   unit: meters
   ground_elevation: rio/setups/local/models/sfincs/subgrid/dep_subgrid.tif
   damage_types: [structure, content]
+  damage_unit: "BRL"
+  bf_conversion: True
 
 # setup_exposure_roads:
 #   roads_fn: "OSM"
@@ -42,6 +44,6 @@ setup_exposure_population:
 
 setup_aggregation_areas:
   aggregation_area_fn: rio/data/local-data/census/aggregation_neighbourhood.gpkg
-  attribute_names: "Nome_do_bairro"
+  attribute_names: "nm_subdist"
   label_names: "neighbourhood"
   file_names: "census_neighbourhoods"

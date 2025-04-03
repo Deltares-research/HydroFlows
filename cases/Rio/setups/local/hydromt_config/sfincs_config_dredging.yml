@@ -16,6 +16,7 @@ setup_mask_bounds:
 setup_subgrid:
   datasets_dep:
     - elevtn: planned_dredging
+    - elevtn: river_bathymetry
     - elevtn: local_DTM_1m_clipped
       mask: admin_sentores
     - elevtn: local_DEM_5m

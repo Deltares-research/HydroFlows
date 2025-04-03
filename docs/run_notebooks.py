@@ -22,7 +22,7 @@ if __name__ == "__main__":
     cases_dir = current_dir / "../cases"
     output_dir = Path(current_dir, "_examples")
     output_dir.mkdir(exist_ok=True)
-    for nb in list(Path(examples_dir).glob("*.ipynb")) + list(Path(cases_dir).glob("**/*.ipynb")):
+    for nb in list(Path(examples_dir).glob("*.ipynb")) + list(Path(cases_dir).glob("**/*strategies.ipynb")):
         nb_name = nb.name
         if Path(output_dir, nb_name).exists():
             if args.overwrite is False:
