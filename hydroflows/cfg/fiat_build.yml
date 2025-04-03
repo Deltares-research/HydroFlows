@@ -18,7 +18,8 @@ setup_exposure_buildings:
   extraction_method: centroid
   damage_types: ["structure", "content"]
   country: "Brazil"
-  eur_to_us_dollar: True
+  damage_unit: "BRL"
+  bf_conversion: True
 
 setup_aggregation_areas:
   res_x: 500
