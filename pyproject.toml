@@ -8,8 +8,8 @@ authors = [
   { name = "Dirk Eilander", email = "dirk.eilander@deltares.nl" },
   { name = "Willem Tromp", email = "willem.tromp@deltares.nl" },
   { name = "Athanasios Tsiokanos", email = "athanasios.tsiokanos@deltares.nl"},
-  { name = "Brendan Dalmijn"},
-  { name = "Sarah Rautenbach"},
+  { name = "Brendan Dalmijn", email = "info@deltares.nl"},
+  { name = "Sarah Rautenbach", email = "info@deltares.nl"},
 ]
 dependencies = [
   "click",                    # CLI
@@ -94,9 +94,13 @@ full = ["hydroflows[dev, doc, test, extra, methods, models]"]
 
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
+Documentation = "https://deltares-research.github.io/HydroFlows"
 
 [project.scripts]
 hydroflows = "hydroflows.cli.main:cli"
+
+[tool.flit.sdist]
+exclude = ["docs/", "tests/", "examples/", "cases/", ".*", "pixi.lock"]
 
 [tool.pytest.ini_options]
 testpaths = ["test"]
