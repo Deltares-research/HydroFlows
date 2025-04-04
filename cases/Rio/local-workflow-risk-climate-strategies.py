@@ -6,7 +6,7 @@ from pathlib import Path
 
 from hydroflows import Workflow, WorkflowConfig
 from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, rainfall, script, sfincs
+from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
 from hydroflows.workflow.wildcards import resolve_wildcards
 
 # Where the current file is located
@@ -248,15 +248,22 @@ fiat_visualize_risk = fiat.FIATVisualize(
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
 # %%
-# Setup FloodAdapt
-# floodadapt_build = flood_adapt.SetupFloodAdapt(
-#     sfincs_inp=sfincs_build.output.sfincs_inp,
-#     fiat_cfg=fiat_build.output.fiat_cfg,
-#     event_set_yaml=pluvial_events.output.event_set_yaml,
-#     output_dir="models/flood_adapt_builder_{strategies}",
-# )
-# w.create_rule(floodadapt_build, rule_id="floodadapt_build")
+# Prepare Sfincs models for FloodAdapt DataBase
+prep_sfincs_models = flood_adapt.PrepSfincsModels(
+    sfincs_inp=sfincs_run.output,
+    output_dir="output/floodadapt/risk_{scenarios}_{strategies}",
+)
+w.create_rule(prep_sfincs_models, rule_id="prep_sfincs_models")
 
+# %%
+# Setup FloodAdapt
+floodadapt_build = flood_adapt.SetupFloodAdapt(
+    sfincs_inp=prep_sfincs_models.output.sfincs_out_inp,
+    fiat_cfg=fiat_update.output.fiat_out_cfg,
+    event_set_yaml="events/present/pluvial_design_events_present.yml",
+    output_dir="output/floodadapt/database_prep",
+)
+w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 # %%
 # run workflow
 w.dryrun()
