@@ -256,9 +256,9 @@ w.create_rule(prep_sfincs_models, rule_id="prep_sfincs_models")
 # %%
 # Setup FloodAdapt
 floodadapt_build = flood_adapt.SetupFloodAdapt(
-    sfincs_inp="output/risk_present_default/sfincs.inp",  # NOTE! Is this the correct path? We just want to build it for 1 sfincs model and then copy the other ones in the DB after
+    sfincs_inp=prep_sfincs_models.output.sfincs_out_inp,
     fiat_cfg=fiat_update.output.fiat_out_cfg,
-    event_set_yaml="output/risk_present_default/pluvial_risk_eventset.toml",  # NOTE! Here I don't know the path. But we should provide the presen pluvial risk eventset. The translatin doesnt work but the folders are created. Then we copy the translated event manually in the folder.
+    event_set_yaml="events/present/pluvial_design_events_present.yml",
     output_dir="output/floodadapt/database_prep",
 )
 w.create_rule(floodadapt_build, rule_id="floodadapt_build")
