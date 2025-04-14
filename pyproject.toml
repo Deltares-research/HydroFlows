@@ -45,7 +45,7 @@ methods = [
   "dask==2024.11.2",
   "fiat-toolbox>=0.1.16",     # toolbox for post-processing delft fiat output
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
-  "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
+  "hydromt>=0.9.4, <2.0",     # hydromt core for setting up models
   "hydromt-fiat>=0.5.4, <1.0", # hydromt plugin for FIAT models
   "hydromt_sfincs>=1.1.0, <2.0", # hydromt plugin for sfincs models
   "hydromt_wflow>=0.6, <1.0",   # hydromt plugin for wflow models
