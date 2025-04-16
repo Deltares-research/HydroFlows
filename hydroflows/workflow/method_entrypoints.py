@@ -68,7 +68,11 @@ class MethodEPS:
         eps = eps or {}
         # load other eps
         for ep in entry_points(group=self.group):
-            eps.update(ep.load())
+            ep_dict = ep.load()
+            if isinstance(ep_dict, dict):
+                eps.update(ep_dict)
+            else:
+                raise ValueError(f"Invalid entry point {ep} in group {self.group}")
         # add eps
         for name, ep in eps.items():
             self.set_ep(name, ep)
