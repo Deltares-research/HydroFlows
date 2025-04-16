@@ -67,7 +67,8 @@ class MethodEPS:
         # local eps
         eps = eps or {}
         # load other eps
-        eps.update({ep.name: ep for ep in entry_points(group=self.group)})
+        for ep in entry_points(group=self.group):
+            eps.update(ep.load())
         # add eps
         for name, ep in eps.items():
             self.set_ep(name, ep)
