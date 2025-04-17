@@ -67,7 +67,12 @@ class MethodEPS:
         # local eps
         eps = eps or {}
         # load other eps
-        eps.update({ep.name: ep for ep in entry_points(group=self.group)})
+        for ep in entry_points(group=self.group):
+            ep_dict = ep.load()
+            if isinstance(ep_dict, dict):
+                eps.update(ep_dict)
+            else:
+                raise ValueError(f"Invalid entry point {ep} in group {self.group}")
         # add eps
         for name, ep in eps.items():
             self.set_ep(name, ep)
