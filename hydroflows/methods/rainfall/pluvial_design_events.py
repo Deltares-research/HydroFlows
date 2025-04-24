@@ -16,7 +16,7 @@ from hydroflows._typing import (
     ListOfStr,
     OutputDirPath,
 )
-from hydroflows.events import Event, EventSet
+from hydroflows.methods.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 

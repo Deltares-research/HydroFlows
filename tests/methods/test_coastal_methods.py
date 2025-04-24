@@ -7,7 +7,6 @@ import numpy as np
 import pytest
 import xarray as xr
 
-from hydroflows.events import EventSet
 from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
 from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
     CoastalDesignEventFromRPData,
@@ -16,6 +15,7 @@ from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalys
 from hydroflows.methods.coastal.future_slr import FutureSLR
 from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
 from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
+from hydroflows.methods.events import EventSet
 from hydroflows.workflow.wildcards import resolve_wildcards
 
 

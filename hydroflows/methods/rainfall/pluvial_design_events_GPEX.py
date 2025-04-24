@@ -11,7 +11,7 @@ import xarray as xr
 from pydantic import model_validator
 
 from hydroflows._typing import FileDirPath, ListOfInt, ListOfStr, OutputDirPath
-from hydroflows.events import Event, EventSet
+from hydroflows.methods.events import Event, EventSet
 from hydroflows.methods.rainfall.pluvial_design_events import (
     _plot_hyetograph,
     _plot_idf_curves,

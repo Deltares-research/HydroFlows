@@ -11,7 +11,7 @@ import toml
 import tomli_w
 from pydantic import BaseModel
 
-from hydroflows.events import EventSet
+from hydroflows.methods.events import EventSet
 
 # A method to translate HydroFlows events into FloodAdapt compatible events. This scripts creates a new folder including all the neccessary files (incl. timeseries csv files) to
 # run the event in the FloodAdapt model. This folder must be placed into the Floodadapt input/events folder.

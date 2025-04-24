@@ -9,7 +9,7 @@ import xarray as xr
 from pydantic import model_validator
 
 from hydroflows._typing import EventDatesDict, FileDirPath, OutputDirPath
-from hydroflows.events import Event, EventSet
+from hydroflows.methods.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 

@@ -7,7 +7,7 @@ import pandas as pd
 import pytest
 from shapely import Polygon
 
-from hydroflows.events import EventSet
+from hydroflows.methods.events import EventSet
 
 
 @pytest.fixture(scope="session")

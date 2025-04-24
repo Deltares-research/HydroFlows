@@ -7,7 +7,7 @@ import yaml
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 
-from hydroflows.events import Event
+from hydroflows.methods.events import Event
 from hydroflows.methods.sfincs import (
     SfincsBuild,
     SfincsDownscale,
