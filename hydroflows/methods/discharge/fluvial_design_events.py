@@ -45,7 +45,7 @@ class Output(Parameters):
 
     event_yaml: FileDirPath
     """The path to the event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
     event_csv: Path
     """The path to the event csv timeseries file."""
@@ -53,7 +53,7 @@ class Output(Parameters):
     event_set_yaml: FileDirPath
     """The path to the event set yml file that contains the derived
     fluvial event configurations. This event set can be created from
-    a dictionary using the :py:class:`hydroflows.events.EventSet` class.
+    a dictionary using the :py:class:`hydroflows.methods.events.EventSet` class.
     """
 
 

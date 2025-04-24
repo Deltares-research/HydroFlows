@@ -37,14 +37,14 @@ class Output(Parameters):
 
     event_yaml: FileDirPath
     """Path to event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
     event_csv: Path
     """Path to event timeseries csv file"""
 
     event_set_yaml: FileDirPath
     """The path to the event set yml file,
-    see also :py:class:`hydroflows.events.EventSet`.
+    see also :py:class:`hydroflows.methods.events.EventSet`.
     """
 
 

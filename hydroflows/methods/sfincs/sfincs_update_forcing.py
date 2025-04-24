@@ -24,7 +24,7 @@ class Input(Parameters):
 
     event_yaml: FileDirPath
     """The path to the event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
 
 class Output(Parameters):

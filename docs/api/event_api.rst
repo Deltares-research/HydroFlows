@@ -3,7 +3,7 @@ Model event classes
 
 Model event classes define the forcings for the hydrodynamic and impact models.
 
-.. currentmodule:: hydroflows
+.. currentmodule:: hydroflows.methods
 
 .. autosummary::
    :toctree: ../_generated

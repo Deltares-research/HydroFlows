@@ -7,11 +7,11 @@ Historical, future and design event methods
 Model events and EventSets
 --------------------------
 
-The model :class:`~hydroflows.events.Event` class defines fluvial (discharge), pluvial (rainfall), or coastal (water levels) forcings.
-The class contains one or more :class:`hydroflows.events.Forcing` objects with references to time series data, the start and end times
+The model :class:`~hydroflows.methods.events.Event` class defines fluvial (discharge), pluvial (rainfall), or coastal (water levels) forcings.
+The class contains one or more :class:`hydroflows.methods.events.Forcing` objects with references to time series data, the start and end times
 of the event, and optionally a return period (RP) associated with the event.
 
-The :class:`~hydroflows.events.EventSet` class is a collection of references to multiple `Event` files.
+The :class:`~hydroflows.methods.events.EventSet` class is a collection of references to multiple `Event` files.
 It is used to group the events which are jointly used to e.g. calculate risk.
 
 All event methods generate one or more `Event` files and one `EventSet` file.
