@@ -16,8 +16,6 @@ dependencies = [
   "graphviz",                 # plot graph
   "importlib-metadata",       # entry points
   "jinja2",                   # templating
-  "pandas",                   # data handling
-  "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
   "typing_extensions",        # type hinting
@@ -52,6 +50,8 @@ methods = [
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
   "numpy>=1.20",              # array handling
+  "pandas",                   # data handling
+  "pooch",                    # test data fetching
   "requests",                 # data fetching
   "shapely",                  # geometry
   "xarray==2024.3.0",         # data handling

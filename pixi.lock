@@ -7870,14 +7870,12 @@ packages:
 - pypi: .
   name: hydroflows
   version: 0.1.0
-  sha256: 2a5bbe36db64f1acc8f92493d443b544bc92e126fe6ed46f6ce09c2c1e01e507
+  sha256: c54580765b0962dd3ad7d50e128111610f85d4d9b046b92ca9e0b65dbfd01649
   requires_dist:
   - click
   - graphviz
   - importlib-metadata
   - jinja2
-  - pandas
-  - pooch
   - pydantic>=2.9,<3
   - pyyaml
   - typing-extensions
@@ -7912,6 +7910,8 @@ packages:
   - matplotlib ; extra == 'methods'
   - netcdf4 ; extra == 'methods'
   - numpy>=1.20 ; extra == 'methods'
+  - pandas ; extra == 'methods'
+  - pooch ; extra == 'methods'
   - requests ; extra == 'methods'
   - shapely ; extra == 'methods'
   - xarray==2024.3.0 ; extra == 'methods'
