@@ -10,7 +10,7 @@ from hydroflows._typing import (
     ListOfStr,
     OutputDirPath,
 )
-from hydroflows.events import Event, EventSet
+from hydroflows.methods.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
 
@@ -24,7 +24,7 @@ class Input(Parameters):
 
     event_set_yaml: FileDirPath
     """The file path to the event set YAML file, which includes the events to be scaled
-    for future climate projections, see also :py:class:`hydroflows.events.EventSet`."""
+    for future climate projections, see also :py:class:`hydroflows.methods.events.EventSet`."""
 
 
 class Output(Parameters):
@@ -32,14 +32,14 @@ class Output(Parameters):
 
     future_event_yaml: FileDirPath
     """The path to the scaled event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
     future_event_csv: Path
     """The path to the scaled event csv timeseries file."""
 
     future_event_set_yaml: FileDirPath
     """The path to the scaled event set yml file,
-    see also :py:class:`hydroflows.events.EventSet`.
+    see also :py:class:`hydroflows.methods.events.EventSet`.
     """
 
 

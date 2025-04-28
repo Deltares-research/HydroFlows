@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 from pydantic import ValidationError
 
-from hydroflows.events import Event, EventSet, Forcing
+from hydroflows.methods.events import Event, EventSet, Forcing
 
 
 def test_forcings(tmp_csv: Path, tmp_geojson: Path):

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 from hydroflows._typing import FileDirPath, JsonDict, OutputDirPath
-from hydroflows.events import Event
+from hydroflows.methods.events import Event
 from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
 from hydroflows.workflow.method import Method
 from hydroflows.workflow.method_parameters import Parameters
@@ -24,7 +24,7 @@ class Input(Parameters):
 
     event_yaml: FileDirPath
     """The path to the event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
 
 class Output(Parameters):

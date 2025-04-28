@@ -33,7 +33,7 @@ Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT fl
 Historical, future and design event methods
 -------------------------------------------
 
-These methods are used to generate :class:`~hydroflows.events.Event` and :class:`~hydroflows.events.Eventset` data
+These methods are used to generate :class:`~hydroflows.methods.events.Event` and :class:`~hydroflows.methods.events.Eventset` data
 which are used as input for the hydrodynamic and impact models.
 
 .. autosummary::

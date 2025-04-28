@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from hydroflows.events import Event
+from hydroflows.methods.events import Event
 
 
 def load_event_files(

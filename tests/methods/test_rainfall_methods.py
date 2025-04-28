@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 import xarray as xr
 
-from hydroflows.events import EventSet
+from hydroflows.methods.events import EventSet
 from hydroflows.methods.rainfall import (
     FutureClimateRainfall,
     GetERA5Rainfall,

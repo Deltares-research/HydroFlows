@@ -13,12 +13,9 @@ authors = [
 ]
 dependencies = [
   "click",                    # CLI
-  "geopandas>=1.0, <2.0",     # Reading vector data
   "graphviz",                 # plot graph
   "importlib-metadata",       # entry points
   "jinja2",                   # templating
-  "pandas",                   # data handling
-  "pooch",                    # test data fetching
   "pydantic>=2.9, <3",        # data validation
   "pyyaml",                   # configs
   "typing_extensions",        # type hinting
@@ -44,6 +41,7 @@ methods = [
   "contextily",               # basemaps
   "dask==2024.11.2",
   "fiat-toolbox>=0.1.16",     # toolbox for post-processing delft fiat output
+  "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
   "hydromt>=0.9.4, <1.0",     # hydromt core for setting up models
   "hydromt-fiat>=0.5.4, <1.0", # hydromt plugin for FIAT models
@@ -52,6 +50,8 @@ methods = [
   "matplotlib",               # plotting
   "netcdf4",                  # data handling
   "numpy>=1.20",              # array handling
+  "pandas",                   # data handling
+  "pooch",                    # test data fetching
   "requests",                 # data fetching
   "shapely",                  # geometry
   "xarray==2024.3.0",         # data handling

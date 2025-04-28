@@ -8,7 +8,7 @@ import geopandas as gdf
 from hydromt_sfincs import SfincsModel
 from hydromt_sfincs.sfincs_input import SfincsInput
 
-from hydroflows.events import Event, Forcing
+from hydroflows.methods.events import Event, Forcing
 from hydroflows.utils.path_utils import make_relative_paths
 
 

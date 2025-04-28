@@ -6,7 +6,7 @@ from typing import List, Literal, Optional, Union
 from hydromt_fiat.fiat import FiatModel
 
 from hydroflows._typing import FileDirPath, ListOfPath, OutputDirPath, WildcardPath
-from hydroflows.events import EventSet
+from hydroflows.methods.events import EventSet
 from hydroflows.methods.fiat.fiat_utils import copy_fiat_model
 from hydroflows.utils.path_utils import make_relative_paths
 from hydroflows.workflow.method import ReduceMethod
@@ -26,7 +26,7 @@ class Input(Parameters):
 
     event_set_yaml: Optional[FileDirPath] = None
     """The path to the event description file,
-    used to get the return periods of events :py:class:`hydroflows.events.EventSet`.
+    used to get the return periods of events :py:class:`hydroflows.methods.events.EventSet`.
     Optional for a single hazard map.
     """
 

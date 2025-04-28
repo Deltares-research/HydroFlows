@@ -11,7 +11,7 @@ import xarray as xr
 from pydantic import model_validator
 
 from hydroflows._typing import FileDirPath, ListOfInt, ListOfStr, OutputDirPath
-from hydroflows.events import Event, EventSet
+from hydroflows.methods.events import Event, EventSet
 from hydroflows.methods.rainfall.pluvial_design_events import (
     _plot_hyetograph,
     _plot_idf_curves,
@@ -46,14 +46,14 @@ class Output(Parameters):
 
     event_yaml: FileDirPath
     """The path to the event description file,
-    see also :py:class:`hydroflows.events.Event`."""
+    see also :py:class:`hydroflows.methods.events.Event`."""
 
     event_csv: Path
     """The path to the event csv timeseries file"""
 
     event_set_yaml: FileDirPath
     """The path to the event set yml file,
-    see also :py:class:`hydroflows.events.EventSet`.
+    see also :py:class:`hydroflows.methods.events.EventSet`.
     """
 
 
