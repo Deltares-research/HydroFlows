@@ -39,7 +39,7 @@ dynamic = ['version', 'description']
 methods = [
   "cartopy",                  # plotting
   "contextily",               # basemaps
-  "dask==2024.11.2",
+  "dask==2025.5.0",
   "fiat-toolbox>=0.1.16",     # toolbox for post-processing delft fiat output
   "geopandas>=1.0, <2.0",     # Reading vector data
   "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
