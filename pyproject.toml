@@ -54,7 +54,7 @@ methods = [
   "pooch",                    # test data fetching
   "requests",                 # data fetching
   "shapely",                  # geometry
-  "xarray==2024.3.0",         # data handling
+  "xarray==2025.6.1",         # data handling
 ]
 dev = [
   "pip>=23.1.2", # needed for editable installs
