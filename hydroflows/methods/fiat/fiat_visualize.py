@@ -330,15 +330,10 @@ def create_output_map(
         metrics = metrics.iloc[3:, :].apply(pd.to_numeric, errors="coerce")
         metrics = metrics.rename_axis(field_name).reset_index()
         # merge aggregation grid with metrics
-        gdf_new_aggr = gpd.GeoDataFrame(
-            pd.merge(
-                gdf_aggregation,
-                metrics,
-                left_on=field_name,
-                right_on=field_name,
-            ),
-            crs=gdf_aggregation.crs,
-        ).set_geometry("geometry")
+        gdf_new_aggr = gdf_aggregation.merge(
+            metrics,
+            on=field_name,
+        )
 
         gdf_new_aggr.to_file(
             Path(aggregated_metrics_dir / f"{name}_total_damages_{event_name}.geojson")
