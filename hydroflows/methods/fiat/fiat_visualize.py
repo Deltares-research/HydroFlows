@@ -317,24 +317,28 @@ def create_output_map(
     aggregated_metrics_dir = infometrics_output.parent
     for aggregation_area in aggregation_areas:
         name = aggregation_area["name"]
-        fn = aggregation_area["file"]
         field_name = aggregation_area["field_name"]
+        # read the aggregation grid
+        fn = aggregation_area["file"]
         gdf_aggregation = gpd.read_file(Path(spatial_joins_cfg.parent / fn))
+        # read the aggregated metrics
         metrics_fn = Path(
             aggregated_metrics_dir, f"Infometrics_{event_name}_{name}.csv"
         )
-
-        metrics = pd.read_csv(metrics_fn, index_col=0).iloc[4:, 0:]
-        metrics = metrics.sort_values(metrics.columns[0])
-        metrics.reset_index(inplace=True, drop=True)
-        gdf_new_aggr = gdf_aggregation.copy().sort_values(field_name)
-        gdf_new_aggr.reset_index(inplace=True, drop=True)
-        gdf_new_aggr[field_name] = metrics.iloc[0:, 0]
-
-        for column in metrics.columns:
-            if "TotalDamage" in column or "ExpectedAnnualDamages" in column:
-                metrics_float = pd.to_numeric(metrics[column], errors="coerce")
-                gdf_new_aggr[column] = metrics_float
+        metrics = pd.read_csv(metrics_fn, index_col=0)
+        # assume first three rows are metadata
+        metrics = metrics.iloc[3:, :].apply(pd.to_numeric, errors="coerce")
+        metrics = metrics.rename_axis(field_name).reset_index()
+        # merge aggregation grid with metrics
+        gdf_new_aggr = gpd.GeoDataFrame(
+            pd.merge(
+                gdf_aggregation,
+                metrics,
+                left_on=field_name,
+                right_on=field_name,
+            ),
+            crs=gdf_aggregation.crs,
+        ).set_geometry("geometry")
 
         gdf_new_aggr.to_file(
             Path(aggregated_metrics_dir / f"{name}_total_damages_{event_name}.geojson")
