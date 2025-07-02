@@ -1,5 +1,6 @@
 """Create hydrographs for coastal waterlevels."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -17,6 +18,9 @@ from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.methods.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = logging.getLogger(__name__)
+
 
 __all__ = ["CoastalDesignEvents", "Input", "Output", "Params"]
 
@@ -205,7 +209,7 @@ class CoastalDesignEvents(ExpandMethod):
         tide_hydrographs_all["time"] = tide_hydrographs_all[
             "time"
         ].values * pd.Timedelta(tide_freq)
-        tide_hydrographs = tide_hydrographs_all.mean("peak")
+        tide_hydrographs = tide_hydrographs_all.median("peak")
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
         if locs_col_id not in tide_hydrographs.dims:
             tide_hydrographs = tide_hydrographs.expand_dims(dim={locs_col_id: 1})
@@ -323,21 +327,29 @@ class CoastalDesignEvents(ExpandMethod):
                 )
 
                 # plot return periods
-                da_wl_eva_station = da_wl_eva.sel({locs_col_id: station}).squeeze()
-                ax = plot_return_values(
-                    da_wl_eva_station["peaks"].reset_coords(drop=True),
-                    da_wl_eva_station["parameters"].reset_coords(drop=True),
-                    da_wl_eva_station["distribution"].item(),
-                    extremes_rate=da_wl_eva_station["extremes_rate"].item(),
-                    nsample=100,
-                )
-                ax.set_ylim(
-                    da_wl_eva_station["return_values"].values.min() * 0.75,
-                    ax.get_ylim()[1],
-                )
-                plt.savefig(
-                    figs_dir / f"eva_{station.values}.png", dpi=150, bbox_inches="tight"
-                )
+                try:
+                    da_wl_eva_station = da_wl_eva.sel({locs_col_id: station}).squeeze()
+                    ax = plot_return_values(
+                        da_wl_eva_station["peaks"].reset_coords(drop=True),
+                        da_wl_eva_station["parameters"].reset_coords(drop=True),
+                        da_wl_eva_station["distribution"].item(),
+                        extremes_rate=da_wl_eva_station["extremes_rate"].item(),
+                        nsample=100,
+                    )
+                    ax.set_ylim(
+                        da_wl_eva_station["return_values"].values.min() * 0.75,
+                        ax.get_ylim()[1],
+                    )
+                    plt.savefig(
+                        figs_dir / f"eva_{station.values}.png",
+                        dpi=150,
+                        bbox_inches="tight",
+                    )
+                except Exception as e:
+                    # this may fail if too few peaks are found ..
+                    logger.warning(
+                        f"Could not plot return values for station {station.values}: {e}"
+                    )
 
                 # plot design hydrograph
                 plot_hydrographs(

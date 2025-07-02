@@ -184,7 +184,7 @@ hydroflows = { path = ".", editable = true }
 # conda dependencies
 [tool.pixi.dependencies]
 hydromt = ">=0.9.4,<1.0"
-hydromt_sfincs = ">=1.2.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
+hydromt_sfincs = ">=1.1.0,<2.0"  # conda-forge because solve breaks on numpy<2 pin in pypi version ?
 hydromt_wflow = ">=0.6,<1.0"
 xarray = "==2024.3.0"
 dask = "==2024.11.2"
