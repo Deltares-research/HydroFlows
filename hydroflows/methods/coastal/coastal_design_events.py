@@ -1,5 +1,6 @@
 """Create hydrographs for coastal waterlevels."""
 
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -8,6 +9,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.stats import eva, get_peak_hydrographs, get_peaks
+from hydromt.stats.extremes import plot_return_values
+from matplotlib import pyplot as plt
 from pydantic import model_validator
 
 from hydroflows._typing import FileDirPath, ListOfInt, ListOfStr, OutputDirPath
@@ -15,6 +18,9 @@ from hydroflows.methods.coastal.coastal_utils import plot_hydrographs
 from hydroflows.methods.events import Event, EventSet
 from hydroflows.workflow.method import ExpandMethod
 from hydroflows.workflow.method_parameters import Parameters
+
+logger = logging.getLogger(__name__)
+
 
 __all__ = ["CoastalDesignEvents", "Input", "Output", "Params"]
 
@@ -183,13 +189,14 @@ class CoastalDesignEvents(ExpandMethod):
         wdw_size = int(wdw_ndays / pd.Timedelta(tide_freq))
         min_dist = int(pd.Timedelta("10D") / pd.Timedelta(tide_freq))
 
+        # get mhw tidal hydrographs
         da_mhws_peaks = get_peaks(
             da=da_tide,
             ev_type="BM",
             min_dist=min_dist,
             period="29.5D",
         )
-        tide_hydrographs = (
+        tide_hydrographs_all = (
             get_peak_hydrographs(
                 da_tide,
                 da_mhws_peaks,
@@ -197,48 +204,68 @@ class CoastalDesignEvents(ExpandMethod):
                 normalize=False,
             )
             .transpose("time", "peak", ...)
-            .mean("peak")
             .load()
         )
+        tide_hydrographs_all["time"] = tide_hydrographs_all[
+            "time"
+        ].values * pd.Timedelta(tide_freq)
+        tide_hydrographs = tide_hydrographs_all.median("peak")
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
         if locs_col_id not in tide_hydrographs.dims:
             tide_hydrographs = tide_hydrographs.expand_dims(dim={locs_col_id: 1})
             tide_hydrographs[locs_col_id] = da_tide[locs_col_id]
 
-        da_surge_eva = eva(
-            da_surge, ev_type="BM", min_dist=min_dist, rps=np.array(self.params.rps)
-        ).load()
-
-        # if rp contains one value expand the return_values dim with the rp
-        if len(self.params.rps) == 1:
-            da_surge_eva = da_surge_eva.assign_coords(rps=self.params.rps)
-            return_values_expanded = da_surge_eva.return_values.expand_dims(
-                rps=da_surge_eva.rps.values
-            )
-            da_surge_eva = da_surge_eva.assign(return_values=return_values_expanded)
-
-        surge_hydrographs = (
+        # get normalized surge hydrographs
+        surge_peaks = get_peaks(
+            da=da_surge,
+            ev_type="BM",
+            min_dist=min_dist,
+            period="year",
+        )
+        surge_hydrographs_all = (
             get_peak_hydrographs(
                 da_surge,
-                da_surge_eva["peaks"],
+                surge_peaks,
                 wdw_size=wdw_size,
-                normalize=False,
+                normalize=True,
             )
             .transpose("time", "peak", ...)
-            .mean("peak")
             .load()
         )
+        surge_hydrographs_all["time"] = surge_hydrographs_all[
+            "time"
+        ].values * pd.Timedelta(tide_freq)
+        surge_hydrographs = surge_hydrographs_all.median("peak")
         # Singleton dimensions don't survive get_peak_hydrograph function, so reinsert stations dim
         if locs_col_id not in surge_hydrographs.dims:
+            surge_hydrographs_all = surge_hydrographs_all.expand_dims(
+                dim={locs_col_id: 1}
+            )
+            surge_hydrographs_all[locs_col_id] = da_surge[locs_col_id]
             surge_hydrographs = surge_hydrographs.expand_dims(dim={locs_col_id: 1})
             surge_hydrographs[locs_col_id] = da_surge[locs_col_id]
 
-        nontidal_rp = da_surge_eva["return_values"] - tide_hydrographs
+        # calculate the total water level return values
+        da_wl = da_surge + da_tide
+        da_wl_eva = eva(
+            da_wl, ev_type="BM", min_dist=min_dist, rps=np.array(self.params.rps)
+        ).load()
+        # if rp contains one value expand the return_values dim with the rp
+        if len(self.params.rps) == 1:
+            da_wl_eva = da_wl_eva.assign_coords(rps=self.params.rps)
+            return_values_expanded = da_wl_eva.return_values.expand_dims(
+                rps=da_wl_eva.rps.values
+            )
+            da_wl_eva = da_wl_eva.assign(return_values=return_values_expanded)
+
+        # construct design hydrographs based on the return values, normalized surge hydrographs and tidal hydrographs
+        nontidal_rp = da_wl_eva["return_values"].reset_coords(
+            drop=True
+        ) - tide_hydrographs.max("time").reset_coords(drop=True)
         h_hydrograph = tide_hydrographs + surge_hydrographs * nontidal_rp
-        time = pd.to_datetime(self.params.t0) + (
-            h_hydrograph["time"].values * pd.Timedelta(tide_freq)
+        h_hydrograph = h_hydrograph.assign_coords(
+            time=tide_hydrographs["time"].values + pd.to_datetime(self.params.t0)
         )
-        h_hydrograph = h_hydrograph.assign_coords(time=time)
 
         root = self.output.event_set_yaml.parent
         events_list = []
@@ -270,11 +297,64 @@ class CoastalDesignEvents(ExpandMethod):
         if self.params.plot_fig:
             figs_dir = Path(root, "figs")
             figs_dir.mkdir(parents=True, exist_ok=True)
+
             for station in h_hydrograph[locs_col_id]:
-                fig_file = figs_dir / f"hydrographs_stationID_{station.values}.png"
+                # plot hydrograph components
+                fig, (ax, ax1) = plt.subplots(2, 1, figsize=(8, 10), sharex=True)
+                surge_hydrographs_all.sel({locs_col_id: station}).plot.line(
+                    ax=ax, x="time", lw=0.3, color="k", alpha=0.5, add_legend=False
+                )
+                surge_hydrographs.sel({locs_col_id: station}).plot.line(
+                    ax=ax, x="time", lw=2, color="k", add_legend=False
+                )
+                tide_hydrographs.sel({locs_col_id: station}).plot.line(
+                    ax=ax1, x="time", lw=2, color="k", add_legend=False
+                )
+                ax.set_ylabel("Normalized surge signal [-]")
+                ax1.set_xlabel("Time")
+                ax1.set_ylabel("MHW Tide [m+MSL]")
+                ax.set_title("Coastal Waterlevel Hydrograph components")
+                ax1.set_title("")
+                ax.set_ylim(-0.2, 1.1)
+                ax1.set_xlim(
+                    tide_hydrographs["time"].min(), tide_hydrographs["time"].max()
+                )
+                fig.tight_layout()
+                fig.savefig(
+                    figs_dir / f"hydrograph_components_{station.values}.png",
+                    dpi=150,
+                    bbox_inches="tight",
+                )
+
+                # plot return periods
+                try:
+                    da_wl_eva_station = da_wl_eva.sel({locs_col_id: station}).squeeze()
+                    ax = plot_return_values(
+                        da_wl_eva_station["peaks"].reset_coords(drop=True),
+                        da_wl_eva_station["parameters"].reset_coords(drop=True),
+                        da_wl_eva_station["distribution"].item(),
+                        extremes_rate=da_wl_eva_station["extremes_rate"].item(),
+                        nsample=100,
+                    )
+                    ax.set_ylim(
+                        da_wl_eva_station["return_values"].values.min() * 0.75,
+                        ax.get_ylim()[1],
+                    )
+                    plt.savefig(
+                        figs_dir / f"eva_{station.values}.png",
+                        dpi=150,
+                        bbox_inches="tight",
+                    )
+                except Exception as e:
+                    # this may fail if too few peaks are found ..
+                    logger.warning(
+                        f"Could not plot return values for station {station.values}: {e}"
+                    )
+
+                # plot design hydrograph
                 plot_hydrographs(
                     h_hydrograph.where(
                         h_hydrograph[locs_col_id].isin(station.values), drop=True
                     ).squeeze(),
-                    fig_file,
+                    figs_dir / f"hydrographs_stationID_{station.values}.png",
                 )
