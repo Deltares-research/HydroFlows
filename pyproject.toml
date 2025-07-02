@@ -179,7 +179,7 @@ platforms = ["win-64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 hydroflows = { path = ".", editable = true }
-hydromt-fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", branch = "fix_building_ground_elevtn" }
+hydromt-fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", branch = "fix_building_ground_elevtn", editable = true }
 
 # conda dependencies
 [tool.pixi.dependencies]

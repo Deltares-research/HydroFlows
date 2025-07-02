@@ -455,7 +455,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -889,7 +889,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -1419,7 +1419,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -1874,7 +1874,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -2416,7 +2416,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/7a/cd/18f8da995b658420625f7ef13f037be53ae04ec5ad33f9b718240dcfd48c/identify-2.6.12-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
@@ -2887,7 +2887,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/7a/cd/18f8da995b658420625f7ef13f037be53ae04ec5ad33f9b718240dcfd48c/identify-2.6.12-py2.py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
@@ -3318,7 +3318,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/ba/2b/e6ce825f2ae5638b7c6f8dfa675051424fcb45960a2759b332fd6be6dcb2/jellyfish-1.2.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -3604,7 +3604,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/9f/5a/a26132406f1f40cf51ea349a5f11b0a46cec02a2031ff82e391c2537247a/geographiclib-2.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/e5/15/cf2a69ade4b194aa524ac75112d5caac37414b20a3a03e6865dfe0bd1539/geopy-2.4.1-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/91/4c/e0ce1ef95d4000ebc1c11801f9b944fa5910ecc15b5e351865763d8657f8/graphviz-0.21-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/9a/54/f1dca498a808e427374d3bd81832045f9cfbbecafbc7f49461a6425dfd0a/jellyfish-1.2.0-cp311-cp311-win_amd64.whl
       - pypi: https://files.pythonhosted.org/packages/51/c0/00c9809d8b9346eb238a6bbd5f83e846a4ce4503da94a4c08cb7284c325b/multipledispatch-1.0.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/c0/da/977ded879c29cbd04de313843e76868e6e13408a94ed6b987245dc7c8506/openpyxl-3.1.5-py2.py3-none-any.whl
@@ -4077,7 +4077,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -4512,7 +4512,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/cb/8d/7c413722157141432216d699c6d0f914319ab1f00b97b453619ed3dec428/hatyan-2.11.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/7e/f5/f66802a942d491edb555dd61e3a9961140fd64c90bce1eafd741609d334d/httpcore-1.0.9-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/2a/39/e50c7c3a983047577ee07d2a9e53faf5a69493943ec3f6a384bdc792deb2/httpx-0.28.1-py3-none-any.whl
-      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+      - pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
       - pypi: https://files.pythonhosted.org/packages/94/5c/368ae6c01c7628438358e6d337c19b05425727fbb221d2a3c4303c372f42/ipykernel-6.29.5-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/63/f8/0031ee2b906a15a33d6bfc12dd09c3dfa966b3cb5b284ecfb7549e6ac3c4/ipython-9.4.0-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/d9/33/1f075bf72b0b747cb3288d011319aaf64083cf2efef8354174e3ed4540e2/ipython_pygments_lexers-1.1.1-py3-none-any.whl
@@ -7787,7 +7787,7 @@ packages:
 - pypi: ./
   name: hydroflows
   version: 0.1.0
-  sha256: 07fed258f8f2fe036927ae821a9472c28cfe887234243b352a65af0662299f6e
+  sha256: 410bf8ddee17a901d6cc0135fb527a460420654d190c92488f201daf7f0d0593
   requires_dist:
   - click
   - graphviz
@@ -7885,7 +7885,7 @@ packages:
   - pkg:pypi/hydromt?source=hash-mapping
   size: 158962
   timestamp: 1740647614214
-- pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#e9b43dc5f3770eb656fc25e56ef65634a707a2cb
+- pypi: git+https://github.com/Deltares/hydromt_fiat.git?branch=fix_building_ground_elevtn#db2cec1155f26a8d242d3a7cdaa36e08ab097842
   name: hydromt-fiat
   version: 0.5.5
   requires_dist:
