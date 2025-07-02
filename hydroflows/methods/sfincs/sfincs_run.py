@@ -55,7 +55,7 @@ class Params(Parameters):
     If 'docker' or 'aptainer' is specified, the model is run in a Docker or Apptainer container.
     """
 
-    docker_tag: str = "sfincs-v2.1.1-Dollerup-Release"
+    docker_tag: str = "sfincs-v2.2.0-col-dEze-Release"
     """The Docker tag to specify the version of the Docker image to use."""
 
     @model_validator(mode="after")
