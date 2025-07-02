@@ -32,7 +32,7 @@ setup_subgrid:
   #   - centerlines: grit
   #     manning': 0.035
   write_dep_tif: True
-  nr_subgrid_pixels: 5  # 20m resolution
+  nr_subgrid_pixels: 4  # 25m resolution
   nbins: 8
 
 setup_river_inflow:
