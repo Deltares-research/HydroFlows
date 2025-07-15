@@ -281,7 +281,7 @@ class CoastalDesignEvents(ExpandMethod):
                     {
                         "type": "water_level",
                         "path": output["event_csv"],
-                        "locs_path": self.input.bnd_locations,
+                        "locs_path": self.input.bnd_locations.resolve(),
                         "locs_id_col": locs_col_id,
                     }
                 ],
