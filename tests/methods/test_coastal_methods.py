@@ -64,6 +64,7 @@ def test_coastal_design_events(
 ):
     data_dir = Path(tmp_path, "coastal_rps")
     data_dir.mkdir()
+    event_dir = Path(tmp_path, "coastal_events")
     t, s = tide_surge_timeseries
     t.to_netcdf(data_dir / "tide_timeseries.nc")
     s.to_netcdf(data_dir / "surge_timeseries.nc")
@@ -74,7 +75,7 @@ def test_coastal_design_events(
         surge_timeseries=data_dir / "surge_timeseries.nc",
         tide_timeseries=data_dir / "tide_timeseries.nc",
         bnd_locations=data_dir / "bnd_locations.gpkg",
-        event_root=str(data_dir),
+        event_root=str(event_dir),
         rps=[1, 10, 50],
     )
 
