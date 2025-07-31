@@ -104,8 +104,16 @@ def parse_event_sfincs(
                 config.update({"disfile": "sfincs.dis", "srcfile": "sfincs.src"})
 
             case "rainfall":
-                sf.setup_precip_forcing(timeseries=forcing.data)
-                config.update({"precipfile": "sfincs.precip"})
+                if forcing.is_gridded:
+                    # use gridded precipitation forcing
+                    sf.setup_precip_forcing_from_grid(
+                        precip=forcing.path, aggregate=False
+                    )
+                    config.update({"netamprfile": "sfincs.netampr"})
+                else:
+                    # use time series precipitation forcing
+                    sf.setup_precip_forcing(timeseries=forcing.data)
+                    config.update({"precipfile": "sfincs.precip"})
 
     # change root and update config
     sf.set_root(out_root, mode="w+")
