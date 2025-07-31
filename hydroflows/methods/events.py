@@ -57,6 +57,9 @@ class Forcing(BaseModel):
     _data_df: Optional[pd.DataFrame] = None
     """The forcing data. This is excluded from serialization."""
 
+    _data_ds: Optional[Any] = None
+    """The gridded dataset for NetCDF files. This is excluded from serialization."""
+
     _locs_gdf: Optional[gpd.GeoDataFrame] = None
     """Optional field with geolocation of data. This field is excluded from serialization."""
 
@@ -87,6 +90,8 @@ class Forcing(BaseModel):
         # read forcing data
         if self.path.suffix == ".csv":
             self._read_csv()
+        elif self.path.suffix == ".nc":
+            self._read_netcdf()
         else:
             # placeholder for other file types
             raise NotImplementedError(f"File type {self.path.suffix} not supported.")
@@ -128,12 +133,71 @@ class Forcing(BaseModel):
         # set data
         self._data_df = df
 
+    def _read_netcdf(self) -> None:
+        """Read the NetCDF file."""
+        import xarray as xr
+        
+        # read netcdf file
+        ds = xr.open_dataset(self.path)
+        
+        # check if it has time, x, y dimensions (gridded data)
+        if all(dim in ds.dims for dim in ['time', 'x', 'y']):
+            # this is gridded data, store the dataset for later use
+            self._data_ds = ds
+            # set time range from the dataset
+            if self.tstart is None:
+                self.tstart = pd.to_datetime(ds['time'][0].values)
+            if self.tstop is None:
+                self.tstop = pd.to_datetime(ds['time'][-1].values)
+        else:
+            # fallback to time series approach (mean over space)
+            if 'time' in ds.dims:
+                # calculate mean over spatial dimensions
+                spatial_dims = [dim for dim in ds.dims if dim != 'time']
+                if spatial_dims:
+                    df = ds.mean(dim=spatial_dims).to_dataframe()
+                else:
+                    df = ds.to_dataframe()
+                
+                if not df.index.dtype == "datetime64[ns]":
+                    raise ValueError(f"Time coordinate of {self.path} is not datetime.")
+                
+                df = df.sort_index()  # make sure it is sorted
+                # apply scale factor
+                if self.scale_mult is not None:
+                    df = df * self.scale_mult
+                if self.scale_add is not None:
+                    df = df + self.scale_add
+                # clip data to tstart, tstop
+                if self.tstart is None:
+                    self.tstart = df.index[0]
+                if self.tstop is None:
+                    self.tstop = df.index[-1]
+                if self.tstart > df.index[-1] or self.tstop < df.index[0]:
+                    df = df.loc[slice(self.tstart, self.tstop)]
+                # set data
+                self._data_df = df
+            else:
+                raise ValueError(f"NetCDF file {self.path} does not have time dimension.")
+
     @property
     def data(self) -> pd.DataFrame:
         """Return the forcing data."""
-        if self._data_df is None:
+        if self._data_df is None and not hasattr(self, '_data_ds'):
             self.read_data()
         return self._data_df
+
+    @property
+    def data_ds(self):
+        """Return the gridded dataset if available."""
+        if not hasattr(self, '_data_ds') or self._data_ds is None:
+            self.read_data()
+        return getattr(self, '_data_ds', None)
+
+    @property
+    def is_gridded(self) -> bool:
+        """Check if the forcing data is gridded (NetCDF with time, x, y dimensions)."""
+        return hasattr(self, '_data_ds') and self._data_ds is not None
 
     @property
     def locs(self) -> Optional[gpd.GeoDataFrame]:
