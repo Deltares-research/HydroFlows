@@ -32,7 +32,7 @@ def _check_forcing_locs(
 
 
 def parse_event_sfincs(
-    root: Path,
+    inp: Path,
     event: Event,
     out_root: Path,
     sfincs_config: Optional[Dict] = None,
@@ -44,7 +44,7 @@ def parse_event_sfincs(
 
     Parameters
     ----------
-    root : Path
+    inp : Path
         The path to the SFINCS model configuration (inp) file.
     event : Event
         The event object containing the event description.
@@ -59,10 +59,10 @@ def parse_event_sfincs(
     if sfincs_config is None:
         sfincs_config = {}
     if copy_model:
-        copy_sfincs_model(src=root, dest=out_root)
+        copy_sfincs_model(src=inp.parent, dest=out_root)
 
     # Init sfincs and update root, config
-    sf = SfincsModel(root=root, mode="r", write_gis=False)
+    sf = SfincsModel(root=inp.parent, config_fn=inp.name, mode="r", write_gis=False)
 
     # get event time range
     event.read_forcing_data()
@@ -83,8 +83,8 @@ def parse_event_sfincs(
         sf.config.update(sfincs_config)
 
     # Set forcings, update config with relative paths
-    if out_root.is_relative_to(root) and not copy_model:
-        config = make_relative_paths(sf.config, root, out_root)
+    if out_root.is_relative_to(inp.parent) and not copy_model:
+        config = make_relative_paths(sf.config, inp.parent, out_root)
     else:
         config = sf.config
     for forcing in event.forcings:
