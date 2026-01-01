@@ -21,11 +21,11 @@ jobs:
 
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           token: ${{ secrets.GH_PAT }}
 
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.9.3
         with:
           pixi-version: "v0.39.2"
           environments: doc
@@ -34,7 +34,7 @@ jobs:
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - name: Restore cache of hydroflows test data
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: ~/.cache/hydroflows/*.tar.gz
@@ -56,7 +56,7 @@ jobs:
       # Upload the html docs as an artifact
       - name: Upload artifact
         if : ${{ github.event_name != 'pull_request' }}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: docs/_build/html
 
