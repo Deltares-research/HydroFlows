@@ -51,7 +51,7 @@ dev = [
   "ruff",        # linting
   "tomli",       # parsing toml files
 ]
-doc = [
+docs = [
   "autodoc_pydantic",
   "nbsphinx",
   "pydata-sphinx-theme",
@@ -161,7 +161,7 @@ uv = "*"
 [tool.pixi.target.linux-64.dependencies]
 cwltool = "*"
 
-[tool.pixi.feature.doc.dependencies]
+[tool.pixi.feature.docs.dependencies]
 nbsphinx = "*"
 papermill = "*"
 
@@ -172,8 +172,8 @@ delft_fiat = "==0.2.0"
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["py311", "dev", "doc", "extra", "models", "test"] }
-doc = { features = ["doc", "extra"] }
+default = { features = ["py311", "dev", "docs", "extra", "models", "test"] }
+docs = { features = ["py311", "docs", "extra"] }
 slim = { features = ["py311"] }
 test-py311 = { features = ["py311", "extra", "test"] }
 
