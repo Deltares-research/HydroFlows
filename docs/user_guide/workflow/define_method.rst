@@ -24,12 +24,12 @@ After initialization the method output files can be explored using the `output` 
 These output files can directly used as input for other methods in the workflow,
 see :ref:`compose_workflow` section.
 
-In the example below we initialize a the :class:`~hydroflows.methods.dummy.RunDummyEvent` method which is created for demonstration purposes only.
+In the example below we initialize a the :class:`~hydroflows.dummy.RunDummyEvent` method which is created for demonstration purposes only.
 Printing the method shows all input, output and params fields of the method.
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import RunDummyEvent
+    from hydroflows.dummy import RunDummyEvent
     import logging
 
     # setup logging
@@ -66,7 +66,7 @@ in subsequent rules to expand the workflow over multiple output files.
 The wildcard name and values are defined in the method and stored in the `ExpandMethod.expand_wildcards` attribute.
 The same wildcard name cannot be used on any input files.
 
-In the example below we initialize the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` expand method.
+In the example below we initialize the :class:`~hydroflows.dummy.PrepareDummyEvents` expand method.
 The method documentation describes which arguments are used to define the name and values of the wildcard.
 Here, the wildcard values are defined by the `rps` argument and the wildcard name is defined by the `wildcard` argument.
 The ``expand_wildcards`` are shown together with the input, output, and params when printing the method, see below.
@@ -75,7 +75,7 @@ An info logging message is printed with the wildcard name and values.
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import PrepareDummyEvents
+    from hydroflows.dummy import PrepareDummyEvents
 
     # initialize a method
     method = PrepareDummyEvents(
@@ -92,12 +92,12 @@ An info logging message is printed with the wildcard name and values.
 The `ReduceMethod` class is used to reduce multiple input files to a single output file.
 This type of method expects a wildcard on the input files which is not present in the output files.
 
-In the example below we initialize the :class:`~hydroflows.methods.dummy.CombineDummyEvents` reduce method.
+In the example below we initialize the :class:`~hydroflows.dummy.CombineDummyEvents` reduce method.
 Note the method type and that the output file does not contain the "return_period" wildcard when printing the method.
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import CombineDummyEvents
+    from hydroflows.dummy import CombineDummyEvents
 
     # initialize a method
     method = CombineDummyEvents(
@@ -115,13 +115,13 @@ Using python scripts as methods
 -------------------------------
 
 To make full use of the HydroFlows methods, these should be implemented following the HydroFlows ``Method`` api, see also :ref:`add_own_methods` section.
-However, python scripts can directly be added to a workflow using the :class:`~hydroflows.methods.script.ScriptMethod` class.
+However, python scripts can directly be added to a workflow using the :class:`~workflowpy.methods.script.ScriptMethod` class.
 This class does not provide any validation of the input, output, or parameters as their types are not known.
 The `ScriptMethod` class is useful for adding simple scripts to a workflow that do not necessarily need validation.
 
 .. ipython:: python
 
-    from hydroflows.methods.script import ScriptMethod
+    from workflowpy.methods.script import ScriptMethod
 
     # initialize a method
     script_method = ScriptMethod(

@@ -12,13 +12,13 @@ The model setup methods require an Area of Interest (AOI), a data catalog, and a
 Through this configuration file, a user can incorporate different data sources (global or local) or adjust model setup settings.
 For a flood model chain, a user should start by setting up the SFINCS model which determines where input boundary data is needed
 from e.g. the Wflow model and for which area the impact model (Delft-FIAT) should be build.
-A coupling between the models is achieved since the :py:class:`~hydroflows.methods.sfincs.sfincs_build.SfincsBuild` outputs can be
-used as input for the :py:class:`~hydroflows.methods.fiat.fiat_build.FIATBuild` (through the ``sfincs_subgrid_dep`` file) and
-:py:class:`~hydroflows.methods.wflow.wflow_build.WflowBuild` (through the ``sfincs_src_points``) methods.
+A coupling between the models is achieved since the :py:class:`~hydroflows.sfincs.sfincs_build.SfincsBuild` outputs can be
+used as input for the :py:class:`~hydroflows.fiat.fiat_build.FIATBuild` (through the ``sfincs_subgrid_dep`` file) and
+:py:class:`~hydroflows.wflow.wflow_build.WflowBuild` (through the ``sfincs_src_points``) methods.
 See the pluvial and fluvial flood risk :ref:`examples` for more details.
 
 A FloodAdapt database can be created from SFINCS and Delft-FIAT models and a ``EventSet`` definition with
-the :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
+the :py:class:`~hydroflows.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
 
 Model update methods
 --------------------
@@ -52,26 +52,26 @@ The model postprocess methods are used to visualize the model results or transfo
       - run model
       - postprocess model
     * - SFINCS (flood hazard)
-      - :py:class:`~hydroflows.methods.sfincs.sfincs_build.SfincsBuild`
-        :py:class:`~hydroflows.methods.sfincs.sfincs_region.SfincsRegion`
-      - :py:class:`~hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing`
-      - :py:class:`~hydroflows.methods.sfincs.sfincs_run.SfincsRun`
-      - :py:class:`~hydroflows.methods.sfincs.sfincs_downscale.SfincsDownscale`
-        :py:class:`~hydroflows.methods.sfincs.sfincs_postprocess.SfincsPostprocess`
+      - :py:class:`~hydroflows.sfincs.sfincs_build.SfincsBuild`
+        :py:class:`~hydroflows.sfincs.sfincs_region.SfincsRegion`
+      - :py:class:`~hydroflows.sfincs.sfincs_update_forcing.SfincsUpdateForcing`
+      - :py:class:`~hydroflows.sfincs.sfincs_run.SfincsRun`
+      - :py:class:`~hydroflows.sfincs.sfincs_downscale.SfincsDownscale`
+        :py:class:`~hydroflows.sfincs.sfincs_postprocess.SfincsPostprocess`
     * - Wflow (discharge boundary)
-      - :py:class:`~hydroflows.methods.wflow.wflow_build.WflowBuild`
-      - :py:class:`~hydroflows.methods.wflow.wflow_update_forcing.WflowUpdateForcing`
-        :py:class:`~hydroflows.methods.wflow.wflow_update_factors.WflowUpdateFactors`
-      - :py:class:`~hydroflows.methods.wflow.wflow_run.WflowRun`
+      - :py:class:`~hydroflows.wflow.wflow_build.WflowBuild`
+      - :py:class:`~hydroflows.wflow.wflow_update_forcing.WflowUpdateForcing`
+        :py:class:`~hydroflows.wflow.wflow_update_factors.WflowUpdateFactors`
+      - :py:class:`~hydroflows.wflow.wflow_run.WflowRun`
       - N.A.
     * - Delft-FIAT (impact)
-      - :py:class:`~hydroflows.methods.fiat.fiat_build.FIATBuild`
-      - :py:class:`~hydroflows.methods.fiat.fiat_update.FIATUpdateHazard`
-      - :py:class:`~hydroflows.methods.fiat.fiat_run.FIATRun`
-      - :py:class:`~hydroflows.methods.fiat.fiat_visualize.FIATVisualize`
+      - :py:class:`~hydroflows.fiat.fiat_build.FIATBuild`
+      - :py:class:`~hydroflows.fiat.fiat_update.FIATUpdateHazard`
+      - :py:class:`~hydroflows.fiat.fiat_run.FIATRun`
+      - :py:class:`~hydroflows.fiat.fiat_visualize.FIATVisualize`
     * - FloodAdapt
-      - :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt`
-        :py:class:`~hydroflows.methods.flood_adapt.prep_sfincs_models.PrepSfincsModels`
+      - :py:class:`~hydroflows.flood_adapt.setup_flood_adapt.SetupFloodAdapt`
+        :py:class:`~hydroflows.flood_adapt.prep_sfincs_models.PrepSfincsModels`
       - N.A.
       - N.A.
       - N.A.

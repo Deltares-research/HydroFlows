@@ -1,12 +1,13 @@
 """Testing for Setup FloodAdapt rules."""
+
 from pathlib import Path
 
 import pytest
 import toml
 
-import hydroflows.methods.flood_adapt.translate_events as events
-from hydroflows.methods.flood_adapt.prep_sfincs_models import PrepSfincsModels
-from hydroflows.methods.flood_adapt.setup_flood_adapt import SetupFloodAdapt
+import hydroflows.flood_adapt.translate_events as events
+from hydroflows.flood_adapt.prep_sfincs_models import PrepSfincsModels
+from hydroflows.flood_adapt.setup_flood_adapt import SetupFloodAdapt
 
 
 def nested_dict_values(d):
@@ -30,7 +31,7 @@ def nested_dict_values(d):
             yield v
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_fa_setup(
     fiat_tmp_model: Path, sfincs_tmp_model: Path, event_set_file: Path, tmp_path: Path
 ):
@@ -67,7 +68,7 @@ def test_fa_setup(
     rule.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_translate_events(event_set_file: Path, tmp_path: Path):
     """
     Test the translate_events function.

@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from hydroflows.methods.historical_events import HistoricalEvents
+from hydroflows.historical_events import HistoricalEvents
 
 
 def test_historical_events(

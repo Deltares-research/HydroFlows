@@ -96,8 +96,8 @@ More information on how to use HydroFlows including several examples can be foun
 
 .. code-block:: python
 
-   from hydroflows import Workflow
-   from hydroflows.methods import sfincs
+   from workflowpy import Workflow
+   from hydroflows import sfincs
 
    # create a workflow
    wf = Workflow(root="./my_workflow_root", name="my_workflow")

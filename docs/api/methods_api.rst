@@ -1,4 +1,4 @@
-.. currentmodule:: hydroflows.methods
+.. currentmodule:: hydroflows
 
 Predefined methods
 ==================
@@ -33,7 +33,7 @@ Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT fl
 Historical, future and design event methods
 -------------------------------------------
 
-These methods are used to generate :class:`~hydroflows.methods.events.Event` and :class:`~hydroflows.methods.events.Eventset` data
+These methods are used to generate :class:`~hydroflows.events.Event` and :class:`~hydroflows.events.Eventset` data
 which are used as input for the hydrodynamic and impact models.
 
 .. autosummary::
@@ -67,18 +67,6 @@ These methods are used to download, preprocess or postprocess various data sourc
    hazard_validation.floodmarks
    rainfall.get_ERA5_rainfall
    raster.merge
-
-Python script methods
----------------------
-
-Python scripts can directly be added to a workflow using the `ScriptMethod` class.
-For usage and limitations see :ref:`python_script`.
-
-.. autosummary::
-   :toctree: ../_generated
-   :template: module-template.rst
-
-   script.script_method
 
 Dummy methods
 -------------

@@ -4,14 +4,13 @@ from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
-
-from hydroflows.methods.script.script_method import (
+from workflowpy.methods.script import (
     ScriptInput,
     ScriptMethod,
     ScriptOutput,
     ScriptParams,
 )
-from hydroflows.workflow.workflow import Workflow
+from workflowpy.workflow import Workflow
 
 
 def write_script(script_path: Path) -> None:

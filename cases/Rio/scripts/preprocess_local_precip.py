@@ -1,4 +1,4 @@
-""""Script to preprocess the local precipitation time series."""
+"""Script to preprocess the local precipitation time series."""
 
 import os
 from pathlib import Path

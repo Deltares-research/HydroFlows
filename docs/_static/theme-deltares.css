@@ -1,35 +1,50 @@
-/* Override the default color set in the original theme */
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="100" cy="100" r="95" fill="#080c80" />
 
-html[data-theme="light"] {
-    /* NOTE: added after pydata v0.9 */
-    --pst-color-primary: #080c80 !important;
+  <!-- Workflow circular arrows -->
+  <g stroke="#ffffff" stroke-width="4" fill="none" stroke-linecap="round">
+    <path d="M 100 30 A 70 70 0 0 1 170 100" />
+    <path d="M 170 100 A 70 70 0 0 1 100 170" />
+    <path d="M 100 170 A 70 70 0 0 1 30 100" />
+    <path d="M 30 100 A 70 70 0 0 1 100 30" />
+  </g>
 
-    /* hyperlinks */
-    --pst-color-link: rgb(13, 56, 224);
+  <!-- Arrowheads -->
+  <polygon points="170,100 160,95 160,105" fill="#ffffff"/>
+  <polygon points="100,170 95,160 105,160" fill="#ffffff"/>
+  <polygon points="30,100 40,95 40,105" fill="#ffffff"/>
+  <polygon points="100,30 95,40 105,40" fill="#ffffff"/>
 
-    /* panels */
-    --pst-color-preformatted-border: #080c80 !important;
-    --pst-color-panel-background: #f0f0f075;
+  <!-- Workflow nodes -->
+  <circle cx="100" cy="30" r="6" fill="#ffffff"/>
+  <circle cx="170" cy="100" r="6" fill="#ffffff"/>
+  <circle cx="100" cy="170" r="6" fill="#ffffff"/>
+  <circle cx="30" cy="100" r="6" fill="#ffffff"/>
 
-    /* navbar */
-    /* NOTE: does not work since v0.9 */
-    --pst-color-navbar-link: rgb(237, 237, 255);
-    --pst-color-navbar-link-hover: #fff;
-    --pst-color-navbar-link-active: #fff;
-
-    /* sphinx design */
-    /* NOTE: does not work since v0.9 */
-    --sd-color-card-border-hover: #080c80;
-    --sd-color-tabs-label-active: #080c80;
-    --sd-color-tabs-label-hover: #080c80;
-    --sd-color-tabs-underline-active: #080c80;
-}
-
-/* enlarge deltares & github icon size; only works with local/url svg files; not with fa icons */
-img.icon-link-image {
-    height: 2.5em !important;
-}
-
-i.fa-github {
-    font-size: 2.5em;
-}
+  <!-- Center Python-inspired symbol -->
+  <g>
+    <!-- Upper (Python yellow-ish) -->
+    <path d="M85 80
+             h30
+             a10 10 0 0 1 10 10
+             v5
+             a10 10 0 0 1 -10 10
+             h-30
+             a10 10 0 0 1 -10 -10
+             v-5
+             a10 10 0 0 1 10 -10 z"
+          fill="#FFD43B"/>
+    <!-- Lower (Python blue) -->
+    <path d="M115 120
+             h-30
+             a10 10 0 0 1 -10 -10
+             v-5
+             a10 10 0 0 1 10 -10
+             h30
+             a10 10 0 0 1 10 10
+             v5
+             a10 10 0 0 1 -10 10 z"
+          fill="#306998"/>
+  </g>
+</svg>

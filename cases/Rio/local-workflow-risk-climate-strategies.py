@@ -4,10 +4,11 @@
 # Import packages
 from pathlib import Path
 
-from hydroflows import Workflow, WorkflowConfig
-from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
-from hydroflows.workflow.wildcards import resolve_wildcards
+from workflowpy import Workflow, WorkflowConfig
+from workflowpy.log import setuplog
+from workflowpy.wildcards import resolve_wildcards
+
+from hydroflows import catalog, fiat, flood_adapt, rainfall, script, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent

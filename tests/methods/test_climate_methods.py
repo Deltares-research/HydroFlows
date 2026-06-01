@@ -3,14 +3,14 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from hydroflows.methods.climate import (
+from hydroflows.climate import (
     ClimateChangeFactors,
     MonthlyClimatology,
 )
 
 
 # More integration test like
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_monthly_climatology(
     tmp_path: Path,
     cmip6_catalog: Path,
@@ -49,7 +49,7 @@ def test_monthly_climatology(
     ds = None
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_climate_change_factors(tmp_path: Path, cmip6_stats: Path):
     rule = ClimateChangeFactors(
         hist_climatology=cmip6_stats

@@ -5,9 +5,10 @@
 import subprocess
 from pathlib import Path
 
-from hydroflows import Workflow, WorkflowConfig
-from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, rainfall, script, sfincs
+from workflowpy import Workflow, WorkflowConfig
+from workflowpy.log import setuplog
+
+from hydroflows import catalog, fiat, rainfall, script, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent

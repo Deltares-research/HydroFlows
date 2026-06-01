@@ -2,11 +2,11 @@ from pathlib import Path
 
 import pytest
 
-from hydroflows.methods.hazard_validation import FloodmarksValidation
+from hydroflows.hazard_validation import FloodmarksValidation
 
 
 @pytest.mark.filterwarnings("ignore:::")  # ignore SettingWithCopyWarning from pandas
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_floodmarks_validation(
     tmp_path: Path, tmp_floodmark_points: Path, hazard_map_tif: Path, region: Path
 ):

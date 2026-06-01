@@ -6,20 +6,20 @@ import geopandas as gpd
 import numpy as np
 import pytest
 import xarray as xr
+from workflowpy.wildcards import resolve_wildcards
 
-from hydroflows.methods.coastal.coastal_design_events import CoastalDesignEvents
-from hydroflows.methods.coastal.coastal_design_events_from_rp_data import (
+from hydroflows.coastal.coastal_design_events import CoastalDesignEvents
+from hydroflows.coastal.coastal_design_events_from_rp_data import (
     CoastalDesignEventFromRPData,
 )
-from hydroflows.methods.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
-from hydroflows.methods.coastal.future_slr import FutureSLR
-from hydroflows.methods.coastal.get_coast_rp import GetCoastRP
-from hydroflows.methods.coastal.get_gtsm_data import GetGTSMData
-from hydroflows.methods.events import EventSet
-from hydroflows.workflow.wildcards import resolve_wildcards
+from hydroflows.coastal.coastal_tidal_analysis import CoastalTidalAnalysis
+from hydroflows.coastal.future_slr import FutureSLR
+from hydroflows.coastal.get_coast_rp import GetCoastRP
+from hydroflows.coastal.get_gtsm_data import GetGTSMData
+from hydroflows.events import EventSet
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_get_gtsm_data(region: Path, tmp_path: Path, global_catalog: Path):
     start_time = datetime(2010, 1, 1)
     end_time = datetime(2010, 2, 1)
@@ -36,7 +36,7 @@ def test_get_gtsm_data(region: Path, tmp_path: Path, global_catalog: Path):
     rule.run()
 
 
-@pytest.mark.slow()
+@pytest.mark.slow
 def test_create_tide_surge_timeseries(
     temp_waterlevel_timeseries_nc: Path, tmp_path: Path
 ):
@@ -48,7 +48,7 @@ def test_create_tide_surge_timeseries(
     rule.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_get_coast_rp(region: Path, tmp_path: Path, global_catalog):
     data_dir = Path(tmp_path, "coast_rp")
 

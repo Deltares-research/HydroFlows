@@ -4,6 +4,7 @@ This scrip combines
 - topology data at the entrance level with building footprints
 - population data at the sector (neighbourhood) level with building footprints
 """
+
 # %% imports
 import os
 from pathlib import Path

@@ -7,18 +7,18 @@ import yaml
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 
-from hydroflows.methods.events import Event
-from hydroflows.methods.sfincs import (
+from hydroflows.events import Event
+from hydroflows.sfincs import (
     SfincsBuild,
     SfincsDownscale,
     SfincsRegion,
     SfincsRun,
     SfincsUpdateForcing,
 )
-from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
+from hydroflows.sfincs.sfincs_utils import parse_event_sfincs
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_region(
     sfincs_test_region: Path, merit_hydro_basins: Path, tmp_path: Path
 ):
@@ -31,7 +31,7 @@ def test_sfincs_region(
     sfincs_region.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
@@ -72,7 +72,7 @@ def test_sfincs_build(
         ).run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model: bool):
     event_name = "p_event01"
@@ -116,7 +116,7 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
         sf.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_model", "sfincs_sim_model"])
 @pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
 def test_sfincs_run(
@@ -161,7 +161,7 @@ def test_sfincs_run(
     sf_run.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     tmp_hazard_root = Path(sfincs_tmp_model, "hazard")
 
@@ -176,7 +176,7 @@ def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     sf_post.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     # get dummy location within the model domain
     # read gis/region.geojson

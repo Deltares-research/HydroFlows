@@ -20,7 +20,7 @@ HydroFlows provides a simple implementation to **run** or **dryrun** a workflow,
     :alt: Execute workflow
     :align: center
 
-The :meth:`~hydroflows.workflow.Workflow.dryrun` method tests if all input files exist and methods in- and outputs are linked correctly. In the example below, a simple workflow is created and the dryrun method called. Note that you need to instantiate a logger to get feedback. You can define the level of verbosity by setting the log level, at minimal a warning level is required to see if files are missing.
+The :meth:`~workflowpy.Workflow.dryrun` method tests if all input files exist and methods in- and outputs are linked correctly. In the example below, a simple workflow is created and the dryrun method called. Note that you need to instantiate a logger to get feedback. You can define the level of verbosity by setting the log level, at minimal a warning level is required to see if files are missing.
 
 .. ipython:: python
 
@@ -30,12 +30,12 @@ The :meth:`~hydroflows.workflow.Workflow.dryrun` method tests if all input files
     from pathlib import Path
 
     # import the necessary HydroFlows classes
-    from hydroflows.methods.dummy import (
+    from hydroflows.dummy import (
         CombineDummyEvents,
         PrepareDummyEvents,
         RunDummyEvent,
     )
-    from hydroflows.workflow import Workflow
+    from workflowpy import Workflow
 
     # set the log level and format
     logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
@@ -89,7 +89,7 @@ The :meth:`~hydroflows.workflow.Workflow.dryrun` method tests if all input files
     # repeat the dryrun
     wf.dryrun()
 
-The workflow is executed by calling the :meth:`~hydroflows.workflow.Workflow.run` method.
+The workflow is executed by calling the :meth:`~workflowpy.Workflow.run` method.
 Different instances of methods under one rule (i.e., for repeat :term:`wildcards`) can be run in parallel using the `max_workers` argument.
 
 .. ipython:: python
@@ -111,7 +111,7 @@ Exporting a workflow to a workflow engine provides more extended capabilities fo
 Export to SnakeMake
 -------------------
 
-The :meth:`~hydroflows.workflow.Workflow.to_snakemake` method converts the workflow to a SnakeMake file. The SnakeMake file is by default saved as ``Snakefile`` in the root directory of the workflow. The method also creates a configuration file in the root directory with the same name as the SnakeMake file but with the extension ``.config.yml``. The configuration file contains the input files and parameters of the workflow and is referenced in the SnakeMake file.
+The :meth:`~workflowpy.Workflow.to_snakemake` method converts the workflow to a SnakeMake file. The SnakeMake file is by default saved as ``Snakefile`` in the root directory of the workflow. The method also creates a configuration file in the root directory with the same name as the SnakeMake file but with the extension ``.config.yml``. The configuration file contains the input files and parameters of the workflow and is referenced in the SnakeMake file.
 
 .. ipython:: python
 
@@ -173,6 +173,6 @@ You can find the syntax of the subcommand using the `--help` flag:
 
 .. code-block:: shell
 
-    $ hydroflows method --help
+    $ workflowpy method --help
 
-.. program-output:: hydroflows method --help
+.. program-output:: workflowpy method --help
