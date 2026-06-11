@@ -72,7 +72,7 @@ class Params(Parameters):
     ndays: int = 6
     """Duration of derived events in days."""
 
-    t0: datetime = datetime(2020, 1, 1)
+    t0: datetime = datetime(2000, 1, 1)
     """Arbitrary time of event peak."""
 
     locs_col_id: str = "stations"
@@ -271,7 +271,7 @@ class CoastalDesignEvents(ExpandMethod):
         events_list = []
         for name, rp in zip(self.params.event_names, self.params.rps):
             output = self.get_output_for_wildcards({self.params.wildcard: name})
-            h_hydrograph.sel(rps=rp).transpose().to_pandas().round(2).to_csv(
+            h_hydrograph.sel(rps=rp).to_pandas().transpose().round(2).to_csv(
                 output["event_csv"]
             )
             # save event description file

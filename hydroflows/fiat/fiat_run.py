@@ -35,9 +35,6 @@ class Output(Parameters):
     fiat_out_gpkg: FileDirPath
     """The resulting spatial file from the fiat calculations."""
 
-    fiat_out_csv: Path
-    """The resulting csv file from the fiat calculations."""
-
 
 class Params(Parameters):
     """Parameters.
@@ -105,7 +102,6 @@ class FIATRun(Method):
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
             fiat_out_gpkg=self.input.fiat_cfg.parent / "output" / "spatial.gpkg",
-            fiat_out_csv=self.input.fiat_cfg.parent / "output" / "output.csv",
         )
 
         # TODO check if cfg matches output

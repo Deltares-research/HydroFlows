@@ -123,11 +123,10 @@ class SfincsUpdateForcing(Method):
             )
 
         # update sfincs model with event forcing
-        root = self.input.sfincs_inp.parent
         out_root = self.output.sfincs_out_inp.parent
         copy_model = self.params.copy_model
         parse_event_sfincs(
-            root,
+            self.input.sfincs_inp,
             event,
             out_root,
             sfincs_config=self.params.sfincs_config,

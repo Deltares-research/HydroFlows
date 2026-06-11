@@ -234,6 +234,10 @@ class FIATUpdateHazard(ReduceMethod):
         hazard_out = self.output.fiat_hazard.relative_to(
             self.output.fiat_out_cfg.parent
         ).as_posix()
+        # Force north-south orientation
+        if model.grid.raster.res[1] > 0:
+            model._grid = model.grid.raster.flipud()
+        model._grid = model.grid.raster.gdal_compliant()
         if self.params.risk:
             model.write_grid(hazard_out)
             model.set_config("hazard.settings.var_as_band", True)

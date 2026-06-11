@@ -226,7 +226,9 @@ def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     )
 
     parse_event_sfincs(
-        root=sfincs_tmp_model, event=event, out_root=sfincs_tmp_model / "sim" / "test"
+        inp=Path(sfincs_tmp_model, "sfincs.inp"),
+        event=event,
+        out_root=sfincs_tmp_model / "sim" / "test",
     )
 
     sf = SfincsModel(root=sfincs_tmp_model / "sim" / "test", mode="r")
