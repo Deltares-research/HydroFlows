@@ -24,19 +24,20 @@ After initialization the method output files can be explored using the `output` 
 These output files can directly used as input for other methods in the workflow,
 see :ref:`compose_workflow` section.
 
-In the example below we initialize a the :class:`~hydroflows.dummy.RunDummyEvent` method which is created for demonstration purposes only.
+In the example below we initialize a the :class:`~workflowpy.methods._dummy.DummyRun`
+method which is created for demonstration purposes only.
 Printing the method shows all input, output and params fields of the method.
 
 .. ipython:: python
 
-    from hydroflows.dummy import RunDummyEvent
+    from workflowpy.methods._dummy import DummyRun
     import logging
 
     # setup logging
     logging.basicConfig(level=logging.INFO, format='%(levelname)s:%(message)s')
 
     # initialize a method
-    method = RunDummyEvent(
+    method = DummyRun(
         event_csv="events/event1.csv",
         settings_toml="settings.toml",
         output_dir="model/event1",
@@ -66,7 +67,7 @@ in subsequent rules to expand the workflow over multiple output files.
 The wildcard name and values are defined in the method and stored in the `ExpandMethod.expand_wildcards` attribute.
 The same wildcard name cannot be used on any input files.
 
-In the example below we initialize the :class:`~hydroflows.dummy.PrepareDummyEvents` expand method.
+In the example below we initialize the :class:`~workflowpy.methods._dummy.DummyPrepare` expand method.
 The method documentation describes which arguments are used to define the name and values of the wildcard.
 Here, the wildcard values are defined by the `rps` argument and the wildcard name is defined by the `wildcard` argument.
 The ``expand_wildcards`` are shown together with the input, output, and params when printing the method, see below.
@@ -75,10 +76,10 @@ An info logging message is printed with the wildcard name and values.
 
 .. ipython:: python
 
-    from hydroflows.dummy import PrepareDummyEvents
+    from workflowpy.methods._dummy import DummyPrepare
 
     # initialize a method
-    method = PrepareDummyEvents(
+    method = DummyPrepare(
         timeseries_csv="data/timeseries.csv",
         output_dir="output",
         wildcard="return_period",  # wildcard name
@@ -92,15 +93,15 @@ An info logging message is printed with the wildcard name and values.
 The `ReduceMethod` class is used to reduce multiple input files to a single output file.
 This type of method expects a wildcard on the input files which is not present in the output files.
 
-In the example below we initialize the :class:`~hydroflows.dummy.CombineDummyEvents` reduce method.
+In the example below we initialize the :class:`~workflowpy.methods._dummy.DummyCombine` reduce method.
 Note the method type and that the output file does not contain the "return_period" wildcard when printing the method.
 
 .. ipython:: python
 
-    from hydroflows.dummy import CombineDummyEvents
+    from workflowpy.methods._dummy import DummyCombine
 
     # initialize a method
-    method = CombineDummyEvents(
+    method = DummyCombine(
         model_out_ncs="model/{return_period}/output.nc",
         output_dir="output"
     )

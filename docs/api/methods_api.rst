@@ -27,8 +27,6 @@ Currently the SFINCS hydrodynamic model, Wflow hydrological model, Delft-FIAT fl
    wflow.wflow_update_forcing
    wflow.wflow_update_factors
    wflow.wflow_run
-   flood_adapt.setup_flood_adapt
-   flood_adapt.prep_sfincs_models
 
 Historical, future and design event methods
 -------------------------------------------
@@ -67,17 +65,3 @@ These methods are used to download, preprocess or postprocess various data sourc
    hazard_validation.floodmarks
    rainfall.get_ERA5_rainfall
    raster.merge
-
-Dummy methods
--------------
-
-These methods are used for documentation and testing purposes only.
-
-.. autosummary::
-   :toctree: ../_generated
-   :template: module-template.rst
-
-   dummy.combine_dummy_events
-   dummy.postprocess_dummy_event
-   dummy.prepare_dummy_events
-   dummy.run_dummy_event

@@ -30,10 +30,10 @@ The :meth:`~workflowpy.Workflow.dryrun` method tests if all input files exist an
     from pathlib import Path
 
     # import the necessary HydroFlows classes
-    from hydroflows.dummy import (
-        CombineDummyEvents,
-        PrepareDummyEvents,
-        RunDummyEvent,
+    from workflowpy.methods._dummy import (
+        DummyCombine,
+        DummyPrepare,
+        DummyRun,
     )
     from workflowpy import Workflow
 
@@ -49,7 +49,7 @@ The :meth:`~workflowpy.Workflow.dryrun` method tests if all input files exist an
     wf = Workflow(root=tempfile.mkdtemp(), config=input_files)
 
     # rule 1
-    prepare_events = PrepareDummyEvents(
+    prepare_events = DummyPrepare(
         timeseries_csv=wf.get_ref("$config.timeseries_csv"),
         output_dir="events",
         rps=[1, 10, 100],
@@ -58,7 +58,7 @@ The :meth:`~workflowpy.Workflow.dryrun` method tests if all input files exist an
     wf.create_rule(prepare_events, rule_id="prepare_events")
 
     # rule 2
-    simulate_events = RunDummyEvent(
+    simulate_events = DummyRun(
         event_csv=prepare_events.output.event_csv,
         settings_toml=wf.get_ref("$config.model_settings"),
         model_exe=wf.get_ref("$config.model_exe"),
@@ -68,7 +68,7 @@ The :meth:`~workflowpy.Workflow.dryrun` method tests if all input files exist an
     wf.create_rule(simulate_events, rule_id="simulate_events")
 
     # rule 3
-    combine_events = CombineDummyEvents(
+    combine_events = DummyCombine(
         model_out_ncs=simulate_events.output.model_out_nc,
         output_dir="results",
     )
