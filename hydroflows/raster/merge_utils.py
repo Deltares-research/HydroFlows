@@ -5,7 +5,7 @@ from typing import List
 
 import numpy as np
 import xarray as xr
-from hydromt import raster
+from hydromt.gis import raster_utils
 
 
 def create_regular_grid(
@@ -40,7 +40,7 @@ def create_regular_grid(
         )
     )
     coords = {"lat": ycoords, "lon": xcoords}
-    grid = raster.full(
+    grid = raster_utils.full(
         coords=coords,
         nodata=1,
         dtype=np.uint8,

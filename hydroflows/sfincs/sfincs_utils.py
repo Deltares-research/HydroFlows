@@ -2,11 +2,10 @@
 
 from pathlib import Path
 from shutil import copy
-from typing import Dict, Literal, Optional, cast
+from typing import Any, Dict, Literal, Optional, cast
 
 import geopandas as gdf
 from hydromt_sfincs import SfincsModel
-from hydromt_sfincs.sfincs_input import SfincsInput
 from workflowpy.utils.path_utils import make_relative_paths
 
 from hydroflows.events import Event, Forcing
@@ -62,7 +61,8 @@ def parse_event_sfincs(
         copy_sfincs_model(src=inp.parent, dest=out_root)
 
     # Init sfincs and update root, config
-    sf = SfincsModel(root=inp.parent, config_fn=inp.name, mode="r", write_gis=False)
+    sf = SfincsModel(root=inp.parent, mode="r", write_gis=False)
+    sf.config._filename = inp.name
 
     # get event time range
     event.read_forcing_data()
@@ -84,35 +84,40 @@ def parse_event_sfincs(
 
     # Set forcings, update config with relative paths
     if out_root.is_relative_to(inp.parent) and not copy_model:
-        config = make_relative_paths(sf.config, inp.parent, out_root)
+        config = make_relative_paths(
+            sf.config.data.model_dump(),
+            inp.parent,
+            out_root,
+        )
     else:
-        config = sf.config
+        config = sf.config.data.model_dump()
     for forcing in event.forcings:
         match forcing.type:
             case "water_level":
                 locs = _check_forcing_locs(forcing, sf, ftype="bzs")
-                sf.setup_waterlevel_forcing(
+                sf.water_level.create(
                     timeseries=forcing.data, locations=locs, merge=False
                 )
                 config.update({"bzsfile": "sfincs.bzs", "bndfile": "sfincs.bnd"})
 
             case "discharge":
                 locs = _check_forcing_locs(forcing, sf, ftype="dis")
-                sf.setup_discharge_forcing(
+                sf.discharge_points.create(
                     timeseries=forcing.data, locations=locs, merge=False
                 )
                 config.update({"disfile": "sfincs.dis", "srcfile": "sfincs.src"})
 
             case "rainfall":
-                sf.setup_precip_forcing(timeseries=forcing.data)
+                sf.precipitation.create_uniform(timeseries=forcing.data)
                 config.update({"precipfile": "sfincs.precip"})
 
     # change root and update config
-    sf.set_root(out_root, mode="w+")
-    sf.setup_config(**config)
+    sf.root.set(out_root, mode="w+")
+    sf.config.update(**config)
     # Write forcing and config only
-    sf.write_forcing()
-    sf.write_config()
+    for comp in sf._FORCING_COMPONENTS:
+        sf.get_component(comp).write()
+    sf.config.write()
 
 
 def copy_sfincs_model(src: Path, dest: Path) -> None:
@@ -125,17 +130,21 @@ def copy_sfincs_model(src: Path, dest: Path) -> None:
     dest : Path
         Path to destination directory.
     """
-    inp = SfincsInput.from_file(src / "sfincs.inp")
-    config = inp.to_dict()
+    sf = SfincsModel(root=src, mode="r")
 
     if not dest.exists():
         dest.mkdir(parents=True)
 
-    for key, value in config.items():
+    def files(item: dict[str, Any]):
+        if "file" in item[0]:
+            return True
+        return False
+
+    for key, value in filter(files, sf.config.data):
         # skip dep file if subgrid file is present
-        if "dep" in key and "sbgfile" in config:
+        if "dep" in key and sf.config.data.sbgfile is not None:
             continue
-        if "file" in key:
+        if isinstance(value, (Path, str)):
             copy(src / value, dest / value)
 
     copy(src / "sfincs.inp", dest / "sfincs.inp")
@@ -154,8 +163,8 @@ def get_sfincs_basemodel_root(sfincs_inp: Path) -> Path:
     Path
         Path to parent directory with static files.
     """
-    inp = SfincsInput.from_file(sfincs_inp)
-    config = inp.to_dict()
+    sf = SfincsModel(root=sfincs_inp.parent, mode="r")
+    config = sf.config.data.model_dump()
     n = 0
     for key, value in config.items():
         if "file" in key and "../" in value:

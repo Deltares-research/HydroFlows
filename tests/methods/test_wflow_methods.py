@@ -3,7 +3,6 @@ from pathlib import Path
 
 import pytest
 import xarray as xr
-from hydromt_wflow import WflowModel
 
 from hydroflows.wflow import (
     WflowBuild,
@@ -11,8 +10,16 @@ from hydroflows.wflow import (
     WflowUpdateChangeFactors,
     WflowUpdateForcing,
 )
+from hydroflows.wflow._compat import HAS_HYDROMT_WFLOW
+
+if HAS_HYDROMT_WFLOW:
+    from hydromt_wflow import WflowSbmModel
 
 
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
 @pytest.mark.requires_test_data
 @pytest.mark.slow
 def test_wflow_build(
@@ -20,7 +27,7 @@ def test_wflow_build(
 ):
     # required inputs
     region = region.as_posix()
-    wflow_root = Path(tmp_path, "wflow_model")
+    model_root = Path(tmp_path, "wflow_model")
 
     # some additional params
     catalog_path = global_catalog.as_posix()
@@ -31,7 +38,7 @@ def test_wflow_build(
         region=region,
         config=build_cfgs["wflow_build"],
         gauges=gauges,
-        wflow_root=wflow_root,
+        model_root=model_root,
         catalog_path=catalog_path,
         plot_fig=plot_fig,
     )
@@ -43,6 +50,10 @@ def test_wflow_build(
     # assert fn_geoms.exists()
 
 
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
 @pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_factors(
@@ -103,6 +114,10 @@ def test_wflow_update_factors(
         ds = None
 
 
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
 @pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_forcing(
@@ -189,7 +204,7 @@ def test_wflow_run(
     if wflow_scalar.is_file():
         wflow_scalar.unlink()
 
-    wf = WflowModel(root=wflow_sim_model, mode="r+")
+    wf = WflowSbmModel(root=wflow_sim_model, mode="r+")
     wf.setup_config(
         **{"starttime": "2014-01-01T00:00:00", "endtime": "2014-01-02T00:00:00"}
     )

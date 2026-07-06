@@ -4,7 +4,7 @@ from typing import List, Union
 
 import numpy as np
 import xarray as xr
-from hydromt.workflows import forcing
+from hydromt.model.processes import meteo
 
 
 def derive_pet(
@@ -37,14 +37,14 @@ def derive_pet(
         # todo downscale with orography
         ds = ds.rename({"press_msl": "press"})
     if pet_method == "makkink":
-        ds["pet"] = forcing.pet_makkink(
+        ds["pet"] = meteo.pet_makkink(
             temp=ds["temp"],
             press=ds["press"],
             k_in=ds["kin"],
             timestep=timestep,
         )
     elif pet_method == "debruin":
-        ds["pet"] = forcing.pet_debruin(
+        ds["pet"] = meteo.pet_debruin(
             temp=ds["temp"],
             press=ds["press"],
             k_in=ds["kin"],

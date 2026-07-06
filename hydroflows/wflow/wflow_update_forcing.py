@@ -5,13 +5,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from hydromt.log import setuplog
-from hydromt_wflow import WflowModel
+from hydromt import log
 from workflowpy._typing import FileDirPath, ListOfStr, OutputDirPath
 from workflowpy.method import Method
 from workflowpy.parameters import Parameters
 
+from hydroflows.wflow._compat import HAS_HYDROMT_WFLOW
 from hydroflows.wflow.wflow_utils import copy_wflow_model, shift_time
+
+if HAS_HYDROMT_WFLOW:
+    from hydromt_wflow import WflowSbmModel
 
 __all__ = ["WflowUpdateForcing", "Input", "Output", "Params"]
 
@@ -164,10 +167,9 @@ class WflowUpdateForcing(Method):
 
     def _run(self):
         """Run the WflowUpdateForcing method."""
-        logger = setuplog("update", log_level=20)
-
         root = self.input.wflow_toml.parent
         sims_root = self.output.wflow_out_toml.parent
+        log.initialize_logging(file_path=root, level=20)
 
         data_libs = []
         if self.params.predefined_catalogs:
@@ -177,12 +179,11 @@ class WflowUpdateForcing(Method):
         if self.params.copy_model:
             copy_wflow_model(src=root, dest=sims_root)
 
-        w = WflowModel(
+        w = WflowSbmModel(
             root=root,
             mode="r",
-            config_fn=self.input.wflow_toml.name,
+            config_filename=self.input.wflow_toml.name,
             data_libs=data_libs,
-            logger=logger,
         )
 
         fmt = "%Y-%m-%dT%H:%M:%S"  # wflow toml datetime format

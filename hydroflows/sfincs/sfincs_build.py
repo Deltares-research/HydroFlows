@@ -1,16 +1,18 @@
 """Build a SFINCS model from scratch using hydromt_sfincs."""
 
+import logging
 from pathlib import Path
 from typing import Optional
 
-from hydromt.config import configread, configwrite
-from hydromt.log import setuplog
+from hydromt import log
+from hydromt.writers import write_yaml
 from hydromt_sfincs import SfincsModel
 from workflowpy._typing import FileDirPath, ListOfStr
 from workflowpy.method import Method
 from workflowpy.parameters import Parameters
 
-from hydroflows.cfg import CFG_DIR
+from hydroflows.cfg import CFG_DIR, read_recipe
+from hydroflows.cfg.utils import find_step_index
 
 __all__ = ["SfincsBuild", "Input", "Output", "Params"]
 
@@ -63,7 +65,7 @@ class Params(Parameters):
         For more details on the SfincsModel used in hydromt_sfincs.
     """
 
-    sfincs_root: Path
+    model_root: Path
     """The path to the root directory where the SFINCS model will be created."""
 
     # optional parameter
@@ -99,7 +101,7 @@ class SfincsBuild(Method):
         specified in the config file. If None (default), a predefined data catalog should be provided.
     predefined_catalogs : Optional[ListOfStr], optional
         A list containing the predefined data catalog names.
-    sfincs_root : Path
+    model_root : Path
         The path to the root directory where the SFINCS model will be created, by default "models/sfincs".
     subgrid_output : bool, optional
         Determines whether the sfincs subgrid depth output should exist, by default False.
@@ -132,13 +134,13 @@ class SfincsBuild(Method):
         config: Path = CFG_DIR / "sfincs_build.yml",
         catalog_path: Optional[Path] = None,
         predefined_catalogs: Optional[ListOfStr] = None,
-        sfincs_root: Path = Path("models/sfincs"),
+        model_root: Path = Path("models/sfincs"),
         subgrid_output: bool = False,
         src_points_output: bool = False,
         **params,
     ) -> None:
         self.params: Params = Params(
-            sfincs_root=sfincs_root,
+            model_root=model_root,
             predefined_catalogs=predefined_catalogs,
             subgrid_output=subgrid_output,
             src_points_output=src_points_output,
@@ -157,36 +159,42 @@ class SfincsBuild(Method):
         optional_outputs = {}
         if self.params.subgrid_output:
             optional_outputs.update(
-                sfincs_subgrid_dep=self.params.sfincs_root
+                sfincs_subgrid_dep=self.params.model_root
                 / "subgrid"
                 / "dep_subgrid.tif"
             )
 
         if self.params.src_points_output:
             optional_outputs.update(
-                sfincs_src_points=self.params.sfincs_root / "gis" / "src.geojson"
+                sfincs_src_points=self.params.model_root / "gis" / "dis.geojson"
             )
 
         self.output: Output = Output(
-            sfincs_inp=self.params.sfincs_root / "sfincs.inp",
-            sfincs_region=self.params.sfincs_root / "gis" / "region.geojson",
+            sfincs_inp=self.params.model_root / "sfincs.inp",
+            sfincs_region=self.params.model_root / "gis" / "region.geojson",
             **optional_outputs,
         )
 
     def _run(self):
         """Run the SfincsBuild method."""
+        log.initialize_logging(
+            file_path=Path(self.params.model_root, "hydromt.log"),
+            level=logging.INFO,
+        )
         # read the configuration
-        opt = configread(self.input.config)
+        _, _, steps = read_recipe(
+            self.input.config, settings={"region": self.input.region}
+        )
 
         # throw error if the setup_subgrid is not included in the config but the output is set to True
-        if "setup_subgrid" not in opt and self.params.subgrid_output == True:
+        if (
+            find_step_index(steps, name="subgrid.create") is None
+            and self.params.subgrid_output == True
+        ):
             raise ValueError(
-                "The 'setup_subgrid' method must be included in the config file in order to set the 'subgrid_output' parameter to True."
+                "The 'subgrid.create' method must be included in the config file \
+in order to set the 'subgrid_output' parameter to True."
             )
-
-        # update placeholders in the config
-        opt["setup_grid_from_region"].update(region={"geom": str(self.input.region)})
-        opt["setup_mask_active"].update(mask=str(self.input.region))
 
         data_libs = []
         if self.params.predefined_catalogs:
@@ -200,13 +208,15 @@ class SfincsBuild(Method):
             root=root,
             mode="w+",
             data_libs=data_libs,
-            logger=setuplog("sfincs_build", log_level=20),
         )
         # build the model
-        sf.build(opt=opt)
+        sf.build(
+            steps=steps,
+            write=True,
+        )
 
         # write the opt as yaml
-        configwrite(root / "sfincs_build.yaml", opt)
+        write_yaml(root / "sfincs_build.yml", {"steps": steps})
 
         # plot basemap
         if self.params.plot_fig == True:

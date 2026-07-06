@@ -5,8 +5,6 @@ from glob import glob
 from pathlib import Path
 from shutil import copy
 
-import cartopy.crs as ccrs
-import cartopy.io.img_tiles as cimgt
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,6 +14,10 @@ from dateutil.relativedelta import relativedelta
 from matplotlib import colors
 from matplotlib.axes import Axes
 from matplotlib.figure import Figure
+
+# TODO: re-enable carthopy imports
+ccrs = None
+cimgt = None
 
 # Note: should be moved to hydromt_wflow
 __all__ = ["plot_forcing", "plot_basemap"]

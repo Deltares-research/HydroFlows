@@ -16,13 +16,13 @@ from hydroflows.fiat import FIATBuild, FIATRun, FIATUpdateHazard, FIATVisualize
 def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     # Setting input data
     region = sfincs_test_region.as_posix()
-    fiat_root = Path(tmp_path, "fiat_model")
+    model_root = Path(tmp_path, "fiat_model")
     predefined_catalogs = ["artifact_data"]
     # Setup the rule
     rule = FIATBuild(
         region=region,
         config=build_cfgs["fiat_build"],
-        fiat_root=fiat_root,
+        model_root=model_root,
         predefined_catalogs=predefined_catalogs,
     )
     rule.run()

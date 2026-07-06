@@ -5,13 +5,16 @@ from pathlib import Path
 
 import hydromt  # noqa: F401
 import xarray as xr
-from hydromt_wflow import WflowModel
 from workflowpy._typing import FileDirPath, OutputDirPath
 from workflowpy.method import Method
 from workflowpy.parameters import Parameters
 
 from hydroflows.utils.io import to_netcdf
+from hydroflows.wflow._compat import HAS_HYDROMT_WFLOW
 from hydroflows.wflow.wflow_utils import copy_wflow_model
+
+if HAS_HYDROMT_WFLOW:
+    from hydromt_wflow import WflowSbmModel
 
 __all__ = ["WflowUpdateChangeFactors", "Input", "Output", "Params"]
 
@@ -136,7 +139,7 @@ class WflowUpdateChangeFactors(Method):
 
         # Open input files
         ds = xr.open_dataset(self.input.change_factor_dataset, lock=False)
-        w = WflowModel(root=self.input.wflow_toml.parent, mode="r+")
+        w = WflowSbmModel(root=self.input.wflow_toml.parent, mode="r+")
 
         # squeeze
         ds = ds.squeeze()

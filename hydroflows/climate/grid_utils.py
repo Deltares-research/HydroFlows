@@ -417,22 +417,15 @@ def extract_climate_projections_statistics(
         else:
             model_entry = model
         entry = f"{clim_source}_{model_entry}_{scenario}_{member}"
+        print(entry)
         if data_catalog.contains_source(entry):
-            # bug #677 in hydromt: attrs for non selected variables
-            # for now, remove and update after get_data method
-            dc_entry = data_catalog.get_source(entry).to_dict()
-            entry_attrs = dc_entry.pop("attrs", None)
-            dc_entry.pop("data_type", None)
-            adapter = hydromt.data_adapter.RasterDatasetAdapter(**dc_entry)
-            data_catalog.add_source(entry, adapter)
-
             # Try to read all variables at once
             try:  # todo can this be replaced by if statement?
                 data = data_catalog.get_rasterdataset(
                     entry,
                     bbox=bbox,
                     buffer=buffer,
-                    time_tuple=time_tuple,
+                    time_range=time_tuple,
                     variables=variables,
                 )
                 # needed for cmip5/cmip6 cftime.Datetime360Day which is not picked up
@@ -447,26 +440,16 @@ def extract_climate_projections_statistics(
                             entry,
                             bbox=bbox,
                             buffer=buffer,
-                            time_tuple=time_tuple,
+                            time_range=time_tuple,
                             variables=[var],
                         )
                         # drop duplicates if any
                         data_ = data_.drop_duplicates(dim="time", keep="first")
                         ds_list.append(data_)
                     except BaseException:
-                        logger.warning(
-                            f"{scenario}", f"{model_entry}", f"{var} not found"
-                        )
+                        logger.warning(f"{scenario}, {model_entry}, {var} not found")
                 # merge all variables back to data
                 data = xr.merge(ds_list)
-
-            # bug #677 in hydromt: attrs for non selected variables
-            # update the attrs
-            if entry_attrs is not None:
-                # unit attributes
-                for k in entry_attrs:
-                    if k in data:
-                        data[k].attrs.update(entry_attrs[k])
 
             # calculate statistics
             mean_stats, mean_stats_time = get_stats_clim_projections(

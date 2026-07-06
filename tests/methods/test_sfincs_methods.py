@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 import yaml
-from hydromt.config import configread
+from hydromt.readers import read_workflow_yaml
 from hydromt_sfincs import SfincsModel
 
 from hydroflows.events import Event
@@ -35,38 +35,46 @@ def test_sfincs_region(
 def test_sfincs_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
-    sfincs_root = Path(tmp_path, "model")
+    model_root = Path(tmp_path, "model")
     sfincs_build = SfincsBuild(
         region=str(region),
         config=build_cfgs["sfincs_build"],
-        sfincs_root=str(sfincs_root),
+        model_root=str(model_root),
         catalog_path=str(global_catalog),
         src_points_output=True,
         subgrid_output=True,
+        plot_fig=False,
     )
-    assert sfincs_build.output.sfincs_inp == sfincs_root / "sfincs.inp"
-    assert sfincs_build.output.sfincs_src_points == sfincs_root / "gis" / "src.geojson"
+    assert sfincs_build.output.sfincs_inp == model_root / "sfincs.inp"
+    assert sfincs_build.output.sfincs_src_points == model_root / "gis" / "dis.geojson"
     assert (
         sfincs_build.output.sfincs_subgrid_dep
-        == sfincs_root / "subgrid" / "dep_subgrid.tif"
+        == model_root / "subgrid" / "dep_subgrid.tif"
     )
 
     sfincs_build.run()
 
-    config = configread(build_cfgs["sfincs_build"])
-    config.pop("setup_subgrid")
+    _, _, steps = read_workflow_yaml(build_cfgs["sfincs_build"])
+    steps.pop(-2)
     temp_config = tmp_path / "temp_config.yml"
 
     with temp_config.open("w") as f:
         yaml.dump(
-            config, f, default_flow_style=False, sort_keys=False, allow_unicode=True
+            {"steps": steps},
+            f,
+            default_flow_style=False,
+            sort_keys=False,
+            allow_unicode=True,
         )
 
-    with pytest.raises(ValueError, match="The 'setup_subgrid' method must"):
+    with pytest.raises(
+        ValueError,
+        match="The 'subgrid.create' method must be included",
+    ):
         SfincsBuild(
             region=str(region),
             config=temp_config,
-            sfincs_root=tmp_path / "model_error",
+            model_root=tmp_path / "model_error",
             catalog_path=str(global_catalog),
             subgrid_output=True,
         ).run()
@@ -117,10 +125,10 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
 
 
 @pytest.mark.requires_test_data
-@pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_model", "sfincs_sim_model"])
+@pytest.mark.parametrize("model_root", ["sfincs_tmp_model", "sfincs_sim_model"])
 @pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
 def test_sfincs_run(
-    sfincs_root: Path,
+    model_root: Path,
     method: str,
     has_docker: bool,
     has_apptainer: bool,
@@ -136,9 +144,9 @@ def test_sfincs_run(
     elif method == "exe" and platform.system() != "Windows":
         pytest.skip("SFINCS exe only supported on Windows")
     # load fixture
-    sfincs_root: Path = request.getfixturevalue(sfincs_root)
+    model_root: Path = request.getfixturevalue(model_root)
 
-    sfincs_inp = Path(sfincs_root, "sfincs.inp")
+    sfincs_inp = Path(model_root, "sfincs.inp")
     sfincs_map = Path(sfincs_inp.parent, "sfincs_map.nc")
     sfincs_log = Path(sfincs_inp.parent, "sfincs.log")
     if sfincs_map.is_file():
@@ -147,7 +155,7 @@ def test_sfincs_run(
         sfincs_log.unlink()
 
     # modify the tstop to a short time
-    sf = SfincsModel(root=sfincs_root, mode="r+")
+    sf = SfincsModel(root=model_root, mode="r+")
     sf.set_config("tref", "20191231 000000")
     sf.set_config("tstart", "20191231 000000")
     sf.set_config("tstop", "20191231 010000")
@@ -183,14 +191,14 @@ def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     sf = SfincsModel(root=sfincs_tmp_model, mode="r")
     sf.read()
     # create dummy bnd points
-    sf.setup_waterlevel_bnd_from_mask(merge=False)
-    gdf_bnd = sf.forcing["bzs"].vector.to_gdf().iloc[[0]].reset_index()
+    sf.water_level.create_boundary_points_from_mask()
+    gdf_bnd = sf.water_level.data.vector.to_gdf().iloc[[0]].reset_index()
     gdf_bnd["index"] = 1
     tmp_bnd = Path(tmp_path, "bzs.geojson")
     gdf_bnd.to_file(tmp_bnd, driver="GeoJSON")
     # create dummy scr points
-    if "dis" in sf.forcing:
-        gdf_src = sf.forcing["dis"].vector.to_gdf().iloc[[0]].reset_index()
+    if "dis" in sf.discharge_points.data:
+        gdf_src = sf.discharge_points.data.vector.to_gdf().iloc[[0]].reset_index()
         gdf_src["index"] = 1
         tmp_src = Path(tmp_path, "dis.geojson")
         gdf_src.to_file(tmp_src, driver="GeoJSON")
@@ -233,8 +241,8 @@ def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
 
     sf = SfincsModel(root=sfincs_tmp_model / "sim" / "test", mode="r")
     sf.read()
-    assert sf.config["tstart"] == datetime.datetime(2020, 1, 1, 0, 0)
-    assert (sf.forcing["bzs"].index.values == 1).all()
-    assert (sf.forcing["bzs"].values == 2).all()
-    assert (sf.forcing["precip"].values == 3).all()
-    assert (sf.forcing["dis"].values == 1).all()
+    assert sf.config.data.tstart == datetime.datetime(2020, 1, 1, 0, 0)
+    assert (sf.water_level.data.bzs.index.values == 0).all()
+    assert (sf.water_level.data.bzs.values == 2).all()
+    assert (sf.precipitation.data.precip.values == 3).all()
+    assert (sf.discharge_points.data.dis.values == 1).all()

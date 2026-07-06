@@ -1,16 +1,16 @@
 """Method for updating a FIAT model with hazard maps."""
 
+import logging
 from pathlib import Path
 from typing import List, Literal, Optional, Union
 
-from hydromt_fiat.fiat import FiatModel
+from hydromt import log
+from hydromt_fiat import FIATModel
 from workflowpy._typing import FileDirPath, ListOfPath, OutputDirPath, WildcardPath
 from workflowpy.method import ReduceMethod
 from workflowpy.parameters import Parameters
-from workflowpy.utils.path_utils import make_relative_paths
 
 from hydroflows.events import EventSet
-from hydroflows.fiat.fiat_utils import copy_fiat_model
 
 __all__ = ["FIATUpdateHazard", "Input", "Output", "Params"]
 
@@ -56,7 +56,7 @@ class Params(Parameters):
     copy_model: bool = False
     """Create full copy of model or create rel paths in model config."""
 
-    map_type: Literal["water_level", "water_depth"] = "water_level"
+    hazard_type: Literal["water_level", "water_depth"] = "water_level"
     """"The data type of each map specified in the data catalog. A single map type
     applies for all the elements."""
 
@@ -83,7 +83,7 @@ class FIATUpdateHazard(ReduceMethod):
     hazard_maps : Path or List[Path], optional
         The path to the hazard maps. It can be a list of paths, a single path containing a wildcard,
         or a single path to a single hazard map.
-    map_type : Literal["water_level", "water_depth"], optional
+    hazard_type : Literal["water_level", "water_depth"], optional
         The hazard data type
     sim_name : str, optional
         The name of the simulation folder. If None, the stem of the event set file or the first hazard map is used.
@@ -116,7 +116,7 @@ class FIATUpdateHazard(ReduceMethod):
         hazard_maps: Union[Path, List[Path]],
         output_dir: str,
         risk: bool = True,
-        map_type: Literal["water_level", "water_depth"] = "water_level",
+        hazard_type: Literal["water_level", "water_depth"] = "water_level",
         **params,
     ):
         self.input: Input = Input(
@@ -125,27 +125,18 @@ class FIATUpdateHazard(ReduceMethod):
             hazard_maps=hazard_maps,
         )
 
-        # check if risk analysis is required
-        if (
-            isinstance(self.input.hazard_maps, list)
-            and len(self.input.hazard_maps) == 1
-        ):
-            risk = False
-
         self.params: Params = Params(
             output_dir=output_dir,
-            map_type=map_type,
+            hazard_type=hazard_type,
             risk=risk,
             **params,
         )
+
         if self.params.risk and self.input.event_set_yaml is None:
             raise ValueError(
                 "Event set is required for risk analysis. "
                 "Please provide an event set yaml file or set risk=False."
             )
-
-        # output root is the simulation folder
-        fiat_root = self.params.output_dir
 
         if not self.params.copy_model and not self.params.output_dir.is_relative_to(
             self.input.fiat_cfg.parent
@@ -155,100 +146,63 @@ class FIATUpdateHazard(ReduceMethod):
             )
 
         self.output: Output = Output(
-            fiat_hazard=fiat_root / "hazard" / "hazard.nc",
-            fiat_out_cfg=fiat_root / "settings.toml",
+            fiat_hazard=self.params.output_dir / "hazard.nc",
+            fiat_out_cfg=self.params.output_dir / "settings.toml",
         )
 
     def _run(self):
         """Run the FIATUpdateHazard method."""
-        # make sure hazard maps is a list
-        hazard_maps = self.input.hazard_maps
-        if not isinstance(hazard_maps, list):
-            hazard_maps = [hazard_maps]
-
-        # Load the existing
-        root = self.input.fiat_cfg.parent
-        out_root = self.output.fiat_out_cfg.parent
-
-        if self.params.copy_model:
-            copy_fiat_model(root, out_root)
-
-        model = FiatModel(
-            root=root,
-            mode="r",
+        log.initialize_logging(
+            file_path=Path(self.input.fiat_cfg.parent, "hydromt.log"),
+            level=logging.INFO,
         )
-        model.read()
+        # Open the existing model
+        model = FIATModel(
+            root=self.input.fiat_cfg.parent,
+            mode="r+",
+            config_fname=self.input.fiat_cfg.name,
+        )
 
-        # Make all paths relative in the config
-        if not self.params.copy_model:
-            config = {
-                k: make_relative_paths(model.config[k], root, out_root)
-                for k in model.config
-            }
-            config["exposure"]["csv"] = make_relative_paths(
-                model.config["exposure"]["csv"], root, out_root
-            )
-            config["exposure"]["geom"] = make_relative_paths(
-                model.config["exposure"]["geom"], root, out_root
-            )
-        else:
-            config = model.config
+        # Move it
+        model.move(
+            root=self.output.fiat_out_cfg.parent,
+            write=self.params.copy_model,
+        )
 
-        # READ the hazard catalog
+        hazard_fnames = self.input.hazard_maps
+        return_periods = None
+        # Check for the event set
         if self.input.event_set_yaml is not None:
-            event_set: EventSet = EventSet.from_yaml(self.input.event_set_yaml)
-            # filter out the right path names / sort them in the right order
-            names = [event["name"] for event in event_set.events]
-            hazard_fns = []
-            for name in names:
-                for fn in hazard_maps:
-                    if name in fn.as_posix():
-                        hazard_fns.append(fn)
-                        break
-            if len(hazard_fns) != len(names):
+            event_set = EventSet.from_yaml(self.input.event_set_yaml)
+            event_ids = [event["name"] for event in event_set.events]
+            files = map(
+                lambda x: next(
+                    (item for item in hazard_fnames if x in item.as_posix()), None
+                ),
+                event_ids,
+            )
+            files = list(files)
+            if not all(files):
                 raise ValueError(
-                    f"Could not find all hazard maps for the event set {self.input.event_set_yaml}"
+                    f"Could not find all hazard maps for \
+the event set {self.input.event_set_yaml}"
                 )
-            hazard_maps = hazard_fns
+            hazard_fnames = files
 
-        # get return periods
-        if self.params.risk:  # get matching hazard maps and return periods
-            rps = [event_set.get_event(name).return_period for name in names]
-        else:
-            rps = None
+            # Get the return periods if applicable
+            if self.params.risk:
+                return_periods = [
+                    event_set.get_event(name).return_period for name in event_ids
+                ]
 
-        # Setup the hazard map
-        # TODO: for some reason hydromt_fiat removes any existing nodata values from flood maps and then later returns
-        # a ValueError if the metadata of those same maps does not contain a nodata value. Here we impose a random -9999.
-        model.setup_config(**config)
-        model.setup_hazard(
-            map_fn=hazard_maps,
-            map_type=self.params.map_type,
-            rp=rps,
-            risk_output=self.params.risk,
-            var=self.params.map_type,  # water_level or water_depth
-            nodata=-9999.0,
+        # Setup the hazard
+        model.hazard.create(
+            hazard_fnames=hazard_fnames,
+            return_periods=return_periods,
+            risk=self.params.risk,
+            region=(model.region is not None),
         )
-        # change root to simulation folder
-        model.set_root(out_root, mode="w+")
-        hazard_out = self.output.fiat_hazard.relative_to(
-            self.output.fiat_out_cfg.parent
-        ).as_posix()
-        # Force north-south orientation
-        if model.grid.raster.res[1] > 0:
-            model._grid = model.grid.raster.flipud()
-        model._grid = model.grid.raster.gdal_compliant()
-        if self.params.risk:
-            model.write_grid(hazard_out)
-            model.set_config("hazard.settings.var_as_band", True)
-        else:
-            model.write_maps(hazard_out)
-        model.set_config("hazard.file", hazard_out)
 
-        # Write the config
-        model.write_config()
-
-        # remove empty directories using pathlib in out_root
-        for d in out_root.iterdir():
-            if d.is_dir() and not list(d.iterdir()):
-                d.rmdir()
+        # Write the data back
+        model.hazard.write()
+        model.config.write()

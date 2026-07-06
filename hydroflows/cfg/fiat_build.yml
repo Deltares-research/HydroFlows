@@ -1,32 +1,45 @@
-setup_output:
-  output_dir: output
-  output_csv_name: output.csv
-  output_vector_name: spatial.gpkg
+# Define the steps to be executed
+steps:
+  - set_config:
+      modeltype: geom
+      method: flood.depth
+      output:
+        path: output
 
-setup_vulnerability:
-  vulnerability_fn: jrc_vulnerability_curves
-  vulnerability_identifiers_and_linking_fn: jrc_vulnerability_curves_linking
-  unit: m
-  continent: South America
+  - set_region:
+      region: <region>
 
-setup_exposure_buildings:
-  asset_locations: OSM
-  occupancy_type: OSM
-  max_potential_damage: jrc_damage_values
-  ground_floor_height: 0
-  unit: m
-  extraction_method: centroid
-  damage_types: ["structure", "content"]
-  country: "Brazil"
-  damage_unit: "BRL"
-  bf_conversion: True
+  - vulnerability.create:
+      vulnerability_fname: jrc_curves
+      vulnerability_link_fname: jrc_curves_link
+      unit: m
+      continent: europe
 
-setup_aggregation_areas:
-  res_x: 500
-  res_y: 500
+  - exposure_geoms.create:
+      exposure_fname: osm_buildings
+      exposure_object_type_column: building
+      exposure_link_fname: osm_buildings_link
+      exposure_object_type_fill: unknown
 
-setup_exposure_roads:
-  roads_fn: "OSM"
-  road_types: ["motorway", "primary", "secondary", "tertiary"]
-  road_damage: null
-  unit: "meters"
+  - exposure_geoms.create_link:
+      exposure_name: osm_buildings
+      impact_type: damage
+
+  - exposure_geoms.create_max_damage:
+      exposure_name: osm_buildings
+      impact_type: damage
+      exposure_cost_table_fname: jrc_damage
+      country: World
+
+  - exposure_geoms.update_column:
+      exposure_name: osm_buildings
+      columns:
+        - elevation
+      values:
+        - 0
+
+# setup_exposure_roads:
+#   roads_fn: "OSM"
+#   road_types: ["motorway", "primary", "secondary", "tertiary"]
+#   road_damage: null
+#   unit: "meters"

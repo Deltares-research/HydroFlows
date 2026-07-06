@@ -112,7 +112,7 @@ class GetGTSMData(Method):
         gtsm = dc.get_geodataset(
             self.params.catalog_key,
             geom=region,
-            time_tuple=(self.params.start_time, self.params.end_time),
+            time_range=(self.params.start_time, self.params.end_time),
             buffer=self.params.buffer,
         )
 

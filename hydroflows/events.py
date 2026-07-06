@@ -109,7 +109,7 @@ class Forcing(BaseModel):
         """Read the CSV file."""
         # read csv; check for datetime index
         df: pd.DataFrame = pd.read_csv(self.path, index_col=0, parse_dates=True)
-        if not df.index.dtype == "datetime64[ns]":
+        if not isinstance(df.index, pd.DatetimeIndex):
             raise ValueError(f"Index of {self.path} is not datetime.")
         df = df.sort_index()  # make sure it is sorted
         # apply scale factor

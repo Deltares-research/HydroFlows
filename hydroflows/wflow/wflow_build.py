@@ -3,15 +3,19 @@
 from pathlib import Path
 from typing import Optional
 
-from hydromt.config import configread, configwrite
-from hydromt.log import setuplog
-from hydromt_wflow import WflowModel
+from hydromt import log
+from hydromt.readers import read_workflow_yaml
+from hydromt.writers import write_yaml
 from workflowpy._typing import FileDirPath, ListOfStr
 from workflowpy.method import Method
 from workflowpy.parameters import Parameters
 
 from hydroflows.cfg import CFG_DIR
+from hydroflows.wflow._compat import HAS_HYDROMT_WFLOW
 from hydroflows.wflow.wflow_utils import plot_basemap
+
+if HAS_HYDROMT_WFLOW:
+    from hydromt_wflow import WflowSbmModel
 
 __all__ = ["WflowBuild", "Input", "Output", "Params"]
 
@@ -64,7 +68,7 @@ class Params(Parameters):
         For more details on the WflowModel used in hydromt_wflow.
     """
 
-    wflow_root: Path
+    model_root: Path
     """The path to the root directory where the wflow model will be created."""
 
     predefined_catalogs: Optional[ListOfStr] = None
@@ -93,7 +97,7 @@ class WflowBuild(Method):
         specified in the config file. If None (default), a predefined data catalog should be provided.
     predefined_catalogs : Optional[ListOfStr], optional
         A list containing the predefined data catalog names.
-    wflow_root : Path
+    model_root : Path
         The path to the root directory where the  wflow model will be created, by default "models/wflow".
     **params
         Additional parameters to pass to the WflowBuild instance.
@@ -122,11 +126,11 @@ class WflowBuild(Method):
         catalog_path: Optional[Path] = None,
         predefined_catalogs: Optional[ListOfStr] = None,
         gauges: Path = None,
-        wflow_root: Path = "models/wflow",
+        model_root: Path = "models/wflow",
         **params,
     ) -> None:
         self.params: Params = Params(
-            wflow_root=wflow_root, predefined_catalogs=predefined_catalogs, **params
+            model_root=model_root, predefined_catalogs=predefined_catalogs, **params
         )
         self.input: Input = Input(
             region=region, config=config, catalog_path=catalog_path, gauges=gauges
@@ -136,12 +140,13 @@ class WflowBuild(Method):
                 "A data catalog must be specified either via catalog_path or predefined_catalogs."
             )
         self.output: Output = Output(
-            wflow_toml=Path(self.params.wflow_root, "wflow_sbm.toml"),
+            wflow_toml=Path(self.params.model_root, "wflow_sbm.toml"),
         )
 
     def _run(self):
         """Run the WflowBuild method."""
-        logger = setuplog("build", log_level=20)
+        root = self.output.wflow_toml.parent
+        log.initialize_logging(file_path=root, level=20)
 
         data_libs = []
         if self.params.predefined_catalogs:
@@ -150,13 +155,11 @@ class WflowBuild(Method):
             data_libs += [self.input.catalog_path]
 
         # create the hydromt model
-        root = self.output.wflow_toml.parent
-        w = WflowModel(
+        w = WflowSbmModel(
             root=root,
             mode="w+",
-            config_fn=self.output.wflow_toml.name,
+            config_filename=self.output.wflow_toml.name,
             data_libs=data_libs,
-            logger=logger,
         )
 
         # specify region
@@ -165,33 +168,36 @@ class WflowBuild(Method):
         }
 
         # read the configuration
-        opt = configread(self.input.config)
+        _, _, steps = read_workflow_yaml(self.input.config)
 
         # update placeholders in the config
-        opt["setup_basemaps"].update(region=region)
+        steps["setup_basemaps"].update(region=region)
 
         # for reservoirs, lakes and glaciers: check if data is available
         for key in [
             item
             for item in ["reservoirs", "lakes", "glaciers"]
-            if f"setup_{item}" in opt
+            if f"setup_{item}" in steps
         ]:
-            if opt[f"setup_{key}"].get(f"{key}_fn") not in w.data_catalog.sources:
-                opt.pop(f"setup_{key}")
+            if steps[f"setup_{key}"].get(f"{key}_fn") not in w.data_catalog.sources:
+                steps.pop(f"setup_{key}")
 
         # check whether the sfincs src file was generated
         gauges = self.input.gauges
         if gauges is None or not gauges.is_file():  # remove placeholder
             for item in ["setup_gauges", "setup_config_output_timeseries"]:
-                opt.pop(item, None)
+                steps.pop(item, None)
         else:  # replace placeholder with actual file
-            opt["setup_gauges"]["gauges_fn"] = str(gauges)
+            steps["setup_gauges"]["gauges_fn"] = str(gauges)
 
         # build the model
-        w.build(opt=opt)
+        w.build(
+            steps=steps,
+            write=True,
+        )
 
         # write the configuration
-        configwrite(root / "wflow_build.yaml", opt)
+        write_yaml(root / "wflow_build.yaml", {"steps": steps})
 
         # plot basemap
         if self.params.plot_fig:

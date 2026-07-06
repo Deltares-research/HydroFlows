@@ -30,12 +30,6 @@ __eps__ = {
     "get_gtsm_data": "hydroflows.coastal.get_gtsm_data:GetGTSMData",
     "floodmarks_validation": "hydroflows.hazard_validation.floodmarks:FloodmarksValidation",
     "fluvial_design_events": "hydroflows.discharge.fluvial_design_events:FluvialDesignEvents",
-    "setup_flood_adapt": "hydroflows.flood_adapt.setup_flood_adapt:SetupFloodAdapt",
     "merge_catalogs": "hydroflows.catalog.merge_catalogs:MergeCatalogs",
     "historical_events": "hydroflows.historical_events.historical_events:HistoricalEvents",
-    "combine_dummy_events": "hydroflows.dummy.combine_dummy_events:CombineDummyEvents",
-    "prepare_dummy_events": "hydroflows.dummy.prepare_dummy_events:PrepareDummyEvents",
-    "run_dummy_event": "hydroflows.dummy.run_dummy_event:RunDummyEvent",
-    "postprocess_dummy_event": "hydroflows.dummy.postprocess_dummy_event:PostprocessDummyEvent",
-    "prep_sfincs_models": "hydroflows.flood_adapt.prep_sfincs_models:PrepSfincsModels",
 }

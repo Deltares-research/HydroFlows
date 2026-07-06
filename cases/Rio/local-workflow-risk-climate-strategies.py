@@ -76,7 +76,7 @@ w.create_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs"
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
-    sfincs_root="models/sfincs_{strategies}",
+    model_root="models/sfincs_{strategies}",
     config=Path(setup_root, "hydromt_config/sfincs_config_{strategies}.yml"),
     catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
@@ -140,7 +140,7 @@ fiat_build = fiat.FIATBuild(
     ground_elevation=resolve_wildcards(
         sfincs_build.output.sfincs_subgrid_dep, {"strategies": strategies[0]}
     ),
-    fiat_root="models/fiat_default",
+    model_root="models/fiat_default",
     catalog_path=merged_catalog_all.output.merged_catalog_path,
     config=w.get_ref("$config.hydromt_fiat_config"),
 )

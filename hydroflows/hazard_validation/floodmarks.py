@@ -5,12 +5,12 @@ from pathlib import Path
 from typing import Literal, Union
 
 import geopandas as gpd
-import hydromt
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
+from hydromt.readers import open_raster
 from pydantic import PositiveInt
 from shapely.geometry import Point
 from workflowpy._typing import ListOfFloat, OutputDirPath, TupleOfInt
@@ -178,7 +178,7 @@ class FloodmarksValidation(Method):
         gdf = gpd.read_file(self.input.floodmarks_geom)
 
         # Read the floodmap using HydroMT
-        floodmap = hydromt.io.open_raster(self.input.flood_hazard_map)
+        floodmap = open_raster(self.input.flood_hazard_map)
 
         proj_crs = floodmap.raster.crs
         if not proj_crs.is_projected and proj_crs.to_epsg() is None:

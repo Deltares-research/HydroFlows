@@ -17,14 +17,14 @@ dependencies = [
   "dask",
   "fiat-toolbox<=0.1.20",           # toolbox for post-processing delft fiat output
   "geopandas>=1.0, <2.0",           # Reading vector data
-  "hatyan>=2.9, <3.0",              # harmonic tidal analysis and prediction
-  "hydromt>=0.10.0, <1.0",          # hydromt core for setting up models
-  "hydromt-fiat>=0.5.10",           # hydromt plugin for FIAT models
-  "hydromt_sfincs>=1.2.0, <2.0",    # hydromt plugin for sfincs models
-  "hydromt_wflow>=0.6.0, <1.0",     # hydromt plugin for wflow models
+  "hatyan>=2.9",                    # harmonic tidal analysis and prediction
+  "hydromt>=1.4.0",                 # hydromt core for setting up models
+  "hydromt-fiat@https://github.com/Deltares/hydromt_fiat.git", # HydroMT plugin for FIAT models
+  "hydromt_sfincs>=2.0.0rc1",       # hydromt plugin for sfincs models
+  # "hydromt_wflow>=1.0.2",           # hydromt plugin for wflow models
   "matplotlib",                     # plotting
   "netcdf4",                        # data handling
-  "numpy<2.4",                      # array handling
+  "numpy",                          # array handling
   "pandas<3",                       # data handling
   "pooch",                          # test data fetching
   "requests",                       # data fetching
@@ -33,7 +33,7 @@ dependencies = [
   "xarray",                         # data handling
 ]
 
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 readme = "README.rst"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -154,7 +154,7 @@ hydroflows = { path = ".", editable = true }
 # conda dependencies
 [tool.pixi.dependencies]
 graphviz = "*" # conda-forge to get dot executable
-numpy = "<2.4"
+numba = "*"
 pip = "*"
 uv = "*"
 
@@ -168,14 +168,22 @@ papermill = "*"
 [tool.pixi.feature.models.dependencies]
 delft_fiat = "==0.2.0"
 
-[tool.pixi.feature.py311.dependencies]
-python = "3.11.*"
+[tool.pixi.feature.py314.dependencies]
+python = "3.14.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
 
 [tool.pixi.environments]
-default = { features = ["py311", "dev", "docs", "extra", "models", "test"] }
-docs = { features = ["py311", "docs", "extra"] }
-slim = { features = ["py311"] }
-test-py311 = { features = ["py311", "extra", "test"] }
+default = { features = ["py313", "dev", "docs", "extra", "models", "test"] }
+docs = { features = ["py313", "docs", "extra"] }
+slim = { features = ["py314"] }
+test-py314 = { features = ["py314", "extra", "test"] }
+test-py313 = { features = ["py313", "extra", "test"] }
+test-py312 = { features = ["py312", "extra", "test"] }
 
 [tool.pixi.tasks]
 install-pre-commit = "pre-commit install"

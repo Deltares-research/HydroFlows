@@ -113,12 +113,13 @@ class SfincsDownscale(Method):
         dep = sf.data_catalog.get_rasterdataset(self.input.sfincs_subgrid_dep)
 
         # Read the model results
-        sf.read_results()
-        if "zsmax" not in sf.results:
+        sf.read()  # TODO this should not be needed, but otherwise it errors
+        sf.output.read()
+        if "zsmax" not in sf.output.data:
             raise KeyError(f"zsmax is missing in results of {self.input.sfincs_map}")
 
         # get zsmax
-        zsmax = sf.results["zsmax"].max(dim="timemax")
+        zsmax = sf.output.data["zsmax"].max(dim="timemax")
         zsmax.attrs["units"] = "m"
 
         # save to file

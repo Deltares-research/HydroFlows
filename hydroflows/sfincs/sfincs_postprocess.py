@@ -89,12 +89,12 @@ class SfincsPostprocess(Method):
         sf = SfincsModel(root, mode="r", write_gis=False)
 
         # Read the model results
-        sf.read_results()
-        if "zsmax" not in sf.results:
+        sf.output.read()
+        if "zsmax" not in sf.output.data:
             raise KeyError(f"zsmax is missing in results of {self.input.sfincs_map}")
 
         # get zsmax and save to file witt "water_level" as variable name
-        zsmax = sf.results["zsmax"].max(dim="timemax").rename("water_level")
+        zsmax = sf.output.data["zsmax"].max(dim="timemax").rename("water_level")
         zsmax = zsmax.fillna(-9999.0)
         zsmax.raster.set_nodata(-9999.0)
         zsmax.attrs["units"] = "m"
