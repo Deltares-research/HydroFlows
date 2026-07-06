@@ -7,8 +7,9 @@ from pathlib import Path
 
 from workflowpy import Workflow, WorkflowConfig
 from workflowpy.log import setuplog
+from workflowpy.methods import script
 
-from hydroflows import catalog, fiat, rainfall, script, sfincs
+from hydroflows import catalog, fiat, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
