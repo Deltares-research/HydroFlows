@@ -29,7 +29,7 @@ dependencies = [
   "pooch",                          # test data fetching
   "requests",                       # data fetching
   "shapely",                        # geometry
-  "workflowpy@https://github.com/Deltares-research/workflowpy.git",
+  "workflow-python@https://github.com/Deltares-research/workflow-python.git",
   "xarray",                         # data handling
 ]
 
