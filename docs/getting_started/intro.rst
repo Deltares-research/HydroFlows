@@ -96,8 +96,8 @@ More information on how to use HydroFlows including several examples can be foun
 
 .. code-block:: python
 
-   from hydroflows import Workflow
-   from hydroflows.methods import sfincs
+   from workflowpy import Workflow
+   from hydroflows import sfincs
 
    # create a workflow
    wf = Workflow(root="./my_workflow_root", name="my_workflow")
@@ -105,7 +105,7 @@ More information on how to use HydroFlows including several examples can be foun
    # initialize a method and add it to the workflow
    sfincs_build = sfincs.SfincsBuild(
       region="data/region.shp",
-      sfincs_root="models/sfincs",
+      model_root="models/sfincs",
       config="config/hydromt_sfincs.yml",
       catalog_path="data/data_catalog.yml",
    )

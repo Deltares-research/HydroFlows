@@ -1,0 +1,12 @@
+{
+    "data": {
+        "cmip6-data.tar.gz": "60ec5df8b94c5811fb06a4214225c51661511f2b0139482cdcb7282212d4a14f",
+        "cmip6-stats.tar.gz": "7839aa81f0f7f2141720c72610faa8b963b2bebd757aa7f59fa42fc15be410ec",
+        "fiat-model.tar.gz": "eef11908f7e13a3d084ecadeecb6e98bb8d87c66c27d2d5d12c7e452b64be335",
+        "global-data.tar.gz": "c220508b0bd05d4c3d728482ca9cb995f399fe50fd31303449b1459903c36700",
+        "sfincs-model.tar.gz": "3643c66c8de4db2d7f09a0a1d09e5f8f33ca37902010a1c035d40e580ea520fe",
+        "wflow-model.tar.gz": "d64eb186f034fca32d88ee9a834eea4b5d518c848485c3a586772eb2ead8b0ef"
+    },
+    "url": "doi:10.5281/zenodo.21418706",
+    "version": "v0.2.0"
+}

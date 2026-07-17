@@ -1,6 +1,0 @@
-name: nested_File
-type: array
-label: shorthand for a once nested array of Files
-items:
-  type: array
-  items: File

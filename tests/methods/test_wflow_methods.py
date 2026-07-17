@@ -3,24 +3,31 @@ from pathlib import Path
 
 import pytest
 import xarray as xr
-from hydromt_wflow import WflowModel
 
-from hydroflows.methods.wflow import (
+from hydroflows.wflow import (
     WflowBuild,
     WflowRun,
     WflowUpdateChangeFactors,
     WflowUpdateForcing,
 )
+from hydroflows.wflow._compat import HAS_HYDROMT_WFLOW
+
+if HAS_HYDROMT_WFLOW:
+    from hydromt_wflow import WflowSbmModel
 
 
-@pytest.mark.requires_test_data()
-@pytest.mark.slow()
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
+@pytest.mark.requires_test_data
+@pytest.mark.slow
 def test_wflow_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
     # required inputs
     region = region.as_posix()
-    wflow_root = Path(tmp_path, "wflow_model")
+    model_root = Path(tmp_path, "wflow_model")
 
     # some additional params
     catalog_path = global_catalog.as_posix()
@@ -31,7 +38,7 @@ def test_wflow_build(
         region=region,
         config=build_cfgs["wflow_build"],
         gauges=gauges,
-        wflow_root=wflow_root,
+        model_root=model_root,
         catalog_path=catalog_path,
         plot_fig=plot_fig,
     )
@@ -43,7 +50,11 @@ def test_wflow_build(
     # assert fn_geoms.exists()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_factors(
     tmp_path: Path, cmip6_stats: list, wflow_cached_model: Path, copy_model: bool
@@ -103,7 +114,11 @@ def test_wflow_update_factors(
         ds = None
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.skipif(
+    not HAS_HYDROMT_WFLOW,
+    reason="HydroMT-wflow not installed",
+)
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_forcing(
     wflow_tmp_model: Path, global_catalog: Path, copy_model: bool
@@ -159,8 +174,8 @@ def test_wflow_update_forcing(
         rule.run()
 
 
-@pytest.mark.slow()
-@pytest.mark.requires_test_data()
+@pytest.mark.slow
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("method", ["docker", "exe", "julia", "script", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,
@@ -189,7 +204,7 @@ def test_wflow_run(
     if wflow_scalar.is_file():
         wflow_scalar.unlink()
 
-    wf = WflowModel(root=wflow_sim_model, mode="r+")
+    wf = WflowSbmModel(root=wflow_sim_model, mode="r+")
     wf.setup_config(
         **{"starttime": "2014-01-01T00:00:00", "endtime": "2014-01-02T00:00:00"}
     )

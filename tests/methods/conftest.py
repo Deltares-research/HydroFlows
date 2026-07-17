@@ -13,8 +13,10 @@ import xarray as xr
 from shapely.geometry import Point
 
 from hydroflows.cfg import CFG_DIR
-from hydroflows.methods.utils.example_data import fetch_data
-from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
+from hydroflows.utils.example_data import fetch_data
+from hydroflows.wflow.scripts import SCRIPTS_DIR
+
+# from hydroflows.wflow.scripts import SCRIPTS_DIR
 
 EXAMPLE_DIR = Path(Path(__file__).parents[2], "examples")
 

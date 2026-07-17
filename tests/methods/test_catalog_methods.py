@@ -2,7 +2,7 @@ from pathlib import Path
 
 from hydromt.data_catalog import DataCatalog
 
-from hydroflows.methods.catalog.merge_catalogs import MergeCatalogs
+from hydroflows.catalog.merge_catalogs import MergeCatalogs
 
 
 def test_merge_catalogs(global_catalog: Path, tmp_path: Path):

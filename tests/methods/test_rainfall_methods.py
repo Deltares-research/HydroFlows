@@ -3,15 +3,15 @@ from pathlib import Path
 import pandas as pd
 import pytest
 import xarray as xr
+from workflowpy.wildcards import resolve_wildcards
 
-from hydroflows.methods.events import EventSet
-from hydroflows.methods.rainfall import (
+from hydroflows.events import EventSet
+from hydroflows.rainfall import (
     FutureClimateRainfall,
     GetERA5Rainfall,
     PluvialDesignEvents,
     PluvialDesignEventsGPEX,
 )
-from hydroflows.workflow.wildcards import resolve_wildcards
 
 
 def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
@@ -48,7 +48,7 @@ def test_pluvial_design_events(tmp_precip_time_series_nc: Path, tmp_path: Path):
     assert df.max().max() == 1.0
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_pluvial_design_events_gpex(region: Path, gpex_data: Path, tmp_path: Path):
     rps = [20, 39, 100]
     p_events = PluvialDesignEventsGPEX(

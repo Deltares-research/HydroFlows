@@ -5,9 +5,10 @@
 import subprocess
 from pathlib import Path
 
-from hydroflows import Workflow, WorkflowConfig
-from hydroflows.log import setuplog
-from hydroflows.methods import fiat, rainfall, sfincs
+from workflowpy import Workflow, WorkflowConfig
+from workflowpy.log import setuplog
+
+from hydroflows import fiat, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -59,7 +60,7 @@ w = Workflow(config=config, name=name, root=setup_root)
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
-    sfincs_root="models/sfincs_default",
+    model_root="models/sfincs_default",
     config=w.get_ref("$config.hydromt_sfincs_config"),
     catalog_path=w.get_ref("$config.catalog_path"),
     plot_fig=w.get_ref("$config.plot_fig"),
@@ -72,7 +73,7 @@ w.create_rule(sfincs_build, rule_id="sfincs_build")
 fiat_build = fiat.FIATBuild(
     region=sfincs_build.output.sfincs_region,
     ground_elevation=sfincs_build.output.sfincs_subgrid_dep,
-    fiat_root="models/fiat_default",
+    model_root="models/fiat_default",
     catalog_path=w.get_ref("$config.catalog_path"),
     config=w.get_ref("$config.hydromt_fiat_config"),
 )

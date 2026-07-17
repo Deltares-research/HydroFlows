@@ -4,10 +4,12 @@
 # Import packages
 from pathlib import Path
 
-from hydroflows import Workflow, WorkflowConfig
-from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
-from hydroflows.workflow.wildcards import resolve_wildcards
+from workflowpy import Workflow, WorkflowConfig
+from workflowpy.log import setuplog
+from workflowpy.methods import script
+from workflowpy.wildcards import resolve_wildcards
+
+from hydroflows import catalog, fiat, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -75,7 +77,7 @@ w.create_rule(merged_catalog_global_local, rule_id="merge_global_local_catalogs"
 # Sfincs build
 sfincs_build = sfincs.SfincsBuild(
     region=w.get_ref("$config.region"),
-    sfincs_root="models/sfincs_{strategies}",
+    model_root="models/sfincs_{strategies}",
     config=Path(setup_root, "hydromt_config/sfincs_config_{strategies}.yml"),
     catalog_path=merged_catalog_global_local.output.merged_catalog_path,
     plot_fig=w.get_ref("$config.plot_fig"),
@@ -139,7 +141,7 @@ fiat_build = fiat.FIATBuild(
     ground_elevation=resolve_wildcards(
         sfincs_build.output.sfincs_subgrid_dep, {"strategies": strategies[0]}
     ),
-    fiat_root="models/fiat_default",
+    model_root="models/fiat_default",
     catalog_path=merged_catalog_all.output.merged_catalog_path,
     config=w.get_ref("$config.hydromt_fiat_config"),
 )
@@ -247,23 +249,6 @@ fiat_visualize_risk = fiat.FIATVisualize(
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
-# %%
-# Prepare Sfincs models for FloodAdapt DataBase
-prep_sfincs_models = flood_adapt.PrepSfincsModels(
-    sfincs_inp=sfincs_run.output,
-    output_dir="output/floodadapt/risk_{scenarios}_{strategies}",
-)
-w.create_rule(prep_sfincs_models, rule_id="prep_sfincs_models")
-
-# %%
-# Setup FloodAdapt
-floodadapt_build = flood_adapt.SetupFloodAdapt(
-    sfincs_inp=prep_sfincs_models.output.sfincs_out_inp,
-    fiat_cfg=fiat_update.output.fiat_out_cfg,
-    event_set_yaml="events/present/pluvial_design_events_present.yml",
-    output_dir="output/floodadapt/database_prep",
-)
-w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 # %%
 # run workflow
 w.dryrun()
