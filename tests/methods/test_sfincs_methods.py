@@ -156,9 +156,9 @@ def test_sfincs_run(
 
     # modify the tstop to a short time
     sf = SfincsModel(root=model_root, mode="r+")
-    sf.set_config("tref", "20191231 000000")
-    sf.set_config("tstart", "20191231 000000")
-    sf.set_config("tstop", "20191231 010000")
+    sf.config.set("tref", "20191231 000000")
+    sf.config.set("tstart", "20191231 000000")
+    sf.config.set("tstop", "20191231 010000")
     sf.write_config()
 
     assert sfincs_inp.is_file()
