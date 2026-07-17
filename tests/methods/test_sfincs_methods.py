@@ -159,7 +159,7 @@ def test_sfincs_run(
     sf.config.set("tref", "20191231 000000")
     sf.config.set("tstart", "20191231 000000")
     sf.config.set("tstop", "20191231 010000")
-    sf.write_config()
+    sf.config.write()
 
     assert sfincs_inp.is_file()
     sf_run = SfincsRun(
