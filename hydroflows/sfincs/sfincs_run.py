@@ -121,8 +121,8 @@ class SfincsRun(Method):
 
         # set command to run depending on run_method
         if self.params.run_method == "bin":
-            sfincs_bin = self.params.sfincs_bin
-            if which(sfincs_bin) is None:
+            sfincs_bin = which(self.params.sfincs_bin)
+            if sfincs_bin is None:
                 raise FileNotFoundError(
                     f"SFINCS binary not found at/ for '{sfincs_bin}'. "
                     "Please check the path or install SFINCS."
