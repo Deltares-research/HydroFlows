@@ -7,19 +7,19 @@ Historical, future and design event methods
 Model events and EventSets
 --------------------------
 
-The model :class:`~hydroflows.methods.events.Event` class defines fluvial (discharge), pluvial (rainfall), or coastal (water levels) forcings.
-The class contains one or more :class:`hydroflows.methods.events.Forcing` objects with references to time series data, the start and end times
+The model :class:`~hydroflows.events.Event` class defines fluvial (discharge), pluvial (rainfall), or coastal (water levels) forcings.
+The class contains one or more :class:`hydroflows.events.Forcing` objects with references to time series data, the start and end times
 of the event, and optionally a return period (RP) associated with the event.
 
-The :class:`~hydroflows.methods.events.EventSet` class is a collection of references to multiple `Event` files.
+The :class:`~hydroflows.events.EventSet` class is a collection of references to multiple `Event` files.
 It is used to group the events which are jointly used to e.g. calculate risk.
 
 All event methods generate one or more `Event` files and one `EventSet` file.
 The `Event` files serve as inputs for the hazard model (SFINCS) using the
-:py:class:`~hydroflows.methods.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method.
+:py:class:`~hydroflows.sfincs.sfincs_update_forcing.SfincsUpdateForcing` method.
 
-The `EventSet` file is used as input to the risk model (FIAT) using the :py:class:`~hydroflows.methods.fiat.fiat_update.FIATUpdateHazard` method
-and flood adaptation model (FloodAdapt) using the :py:class:`~hydroflows.methods.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
+The `EventSet` file is used as input to the risk model (FIAT) using the :py:class:`~hydroflows.fiat.fiat_update.FIATUpdateHazard` method
+and flood adaptation model (FloodAdapt) using the :py:class:`~hydroflows.flood_adapt.setup_flood_adapt.SetupFloodAdapt` method.
 
 
 Event methods
@@ -27,7 +27,7 @@ Event methods
 
 HydroFlows has several methods to generate events for historical, future, and design events.
 
-The historical events can be extracted from time series data using the :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents` method and contain one or more forcings.
+The historical events can be extracted from time series data using the :py:class:`~hydroflows.historical_events.historical_events.HistoricalEvents` method and contain one or more forcings.
 
 Design events are currently univariate and are derived using extreme value analysis from time series data.
 The design events can be derived for coastal (storm tide), rainfall, and discharge time series data.
@@ -36,7 +36,7 @@ For rainfall design events, the global `GPEX <https://www.sciencedirect.com/scie
 
 The future climate events are used to scale historical or design events to future climate conditions.
 For rainfall the multiplicative Clausius-Clapeyron scaling is used, while for sea level rise an additive approach is used.
-For discharge events, rather than scaling then scaling the events a new set of events is generated from hydrological simulations under future climate conditions by scaling the input meteorological data, see the *data method* :py:class:`~hydroflows.methods.climate.change_factor.ChangeFactor`.
+For discharge events, rather than scaling then scaling the events a new set of events is generated from hydrological simulations under future climate conditions by scaling the input meteorological data, see the *data method* :py:class:`~hydroflows.climate.change_factor.ChangeFactor`.
 
 An overview with the current supported event methods in HydroFlows is shown in the table below.
 
@@ -49,18 +49,18 @@ An overview with the current supported event methods in HydroFlows is shown in t
       - Design events
       - Future climate events
     * - Coastal
-      - :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
-      - :py:class:`~hydroflows.methods.coastal.coastal_design_events.CoastalDesignEvents` :py:class:`~hydroflows.methods.coastal.coastal_design_events_from_rp_data.CoastalDesignEventFromRPData`
-      - :py:class:`~hydroflows.methods.coastal.future_slr.FutureSLR`
+      - :py:class:`~hydroflows.historical_events.historical_events.HistoricalEvents`
+      - :py:class:`~hydroflows.coastal.coastal_design_events.CoastalDesignEvents` :py:class:`~hydroflows.coastal.coastal_design_events_from_rp_data.CoastalDesignEventFromRPData`
+      - :py:class:`~hydroflows.coastal.future_slr.FutureSLR`
     * - Rainfall
-      - :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
-      - :py:class:`~hydroflows.methods.rainfall.pluvial_design_events.PluvialDesignEvents` :py:class:`~hydroflows.methods.rainfall.pluvial_design_events_GPEX.PluvialDesignEventsGPEX`
-      - :py:class:`~hydroflows.methods.rainfall.future_climate_rainfall.FutureClimateRainfall`
+      - :py:class:`~hydroflows.historical_events.historical_events.HistoricalEvents`
+      - :py:class:`~hydroflows.rainfall.pluvial_design_events.PluvialDesignEvents` :py:class:`~hydroflows.rainfall.pluvial_design_events_GPEX.PluvialDesignEventsGPEX`
+      - :py:class:`~hydroflows.rainfall.future_climate_rainfall.FutureClimateRainfall`
     * - Discharge
-      - :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
-      - :py:class:`~hydroflows.methods.discharge.fluvial_design_events.FluvialDesignEvents`
+      - :py:class:`~hydroflows.historical_events.historical_events.HistoricalEvents`
+      - :py:class:`~hydroflows.discharge.fluvial_design_events.FluvialDesignEvents`
       - N.A.
     * - Combined
-      - :py:class:`~hydroflows.methods.historical_events.historical_events.HistoricalEvents`
+      - :py:class:`~hydroflows.historical_events.historical_events.HistoricalEvents`
       - N.A.
       - N.A.

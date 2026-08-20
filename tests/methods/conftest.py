@@ -13,8 +13,8 @@ import xarray as xr
 from shapely.geometry import Point
 
 from hydroflows.cfg import CFG_DIR
-from hydroflows.methods.utils.example_data import fetch_data
-from hydroflows.methods.wflow.scripts import SCRIPTS_DIR
+from hydroflows.utils.example_data import fetch_data
+from hydroflows.wflow.scripts import SCRIPTS_DIR
 
 EXAMPLE_DIR = Path(Path(__file__).parents[2], "examples")
 
@@ -55,7 +55,7 @@ def has_fiat_python():
 
 
 @pytest.fixture(scope="session")
-def sfincs_exe():
+def sfincs_bin():
     return Path(EXAMPLE_DIR, "bin", "sfincs_v2.1.1", "sfincs.exe")
 
 
@@ -65,7 +65,7 @@ def wflow_exe():
 
 
 @pytest.fixture(scope="session")
-def fiat_exe():
+def fiat_bin():
     return Path(EXAMPLE_DIR, "bin", "fiat_v0.2.1", "fiat.exe")
 
 

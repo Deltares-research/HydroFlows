@@ -11,6 +11,5 @@ with Python language. The API is divided into three main parts: the workflow fra
 .. toctree::
    :maxdepth: 1
 
-   workflow_api
    event_api
    methods_api

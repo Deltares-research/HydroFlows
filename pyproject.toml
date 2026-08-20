@@ -8,22 +8,32 @@ authors = [
   { name = "Dirk Eilander", email = "dirk.eilander@deltares.nl" },
   { name = "Willem Tromp", email = "willem.tromp@deltares.nl" },
   { name = "Athanasios Tsiokanos", email = "athanasios.tsiokanos@deltares.nl"},
-  { name = "Brendan Dalmijn", email = "info@deltares.nl"},
-  { name = "Sarah Rautenbach", email = "info@deltares.nl"},
+  { name = "Brendan Dalmijn", email = "brendan.dalmijn@deltares.nl"},
+  { name = "Sarah Rautenbach", email = "sarah.rautenbach@deltares.nl"},
 ]
 dependencies = [
-  "click",                    # CLI
-  "graphviz",                 # plot graph
-  "importlib-metadata",       # entry points
-  "jinja2",                   # templating
-  "pydantic>=2.9, <3",        # data validation
-  "pyyaml",                   # configs
-  "typing_extensions",        # type hinting
-  "tqdm",                     # progress bar
+  "cartopy",                        # plotting
+  "contextily",                     # basemaps
+  "dask",
+  "fiat-toolbox<=0.1.20",           # toolbox for post-processing delft fiat output
+  "geopandas>=1.0, <2.0",           # Reading vector data
+  "hatyan>=2.9, <3.0",              # harmonic tidal analysis and prediction
+  "hydromt>=0.10.0, <1.0",          # hydromt core for setting up models
+  "hydromt-fiat>=0.5.10",           # hydromt plugin for FIAT models
+  "hydromt_sfincs>=1.2.0, <2.0",    # hydromt plugin for sfincs models
+  "hydromt_wflow>=0.6.0, <1.0",     # hydromt plugin for wflow models
+  "matplotlib",                     # plotting
+  "netcdf4",                        # data handling
+  "numpy<2.4",                      # array handling
+  "pandas<3",                       # data handling
+  "pooch",                          # test data fetching
+  "requests",                       # data fetching
+  "shapely",                        # geometry
+  "workflow-python@https://github.com/Deltares-research/workflow-python.git",
+  "xarray",                         # data handling
 ]
 
-
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 readme = "README.rst"
 classifiers = [
   "Development Status :: 5 - Production/Stable",
@@ -36,48 +46,22 @@ classifiers = [
 dynamic = ['version', 'description']
 
 [project.optional-dependencies]
-methods = [
-  "cartopy",                  # plotting
-  "contextily",               # basemaps
-  "dask",
-  "fiat-toolbox",            # toolbox for post-processing delft fiat output
-  "geopandas>=1.0, <2.0",     # Reading vector data
-  "hatyan>=2.9, <3.0",        # harmonic tidal analysis and prediction
-  "hydromt>=0.10.0, <1.0",     # hydromt core for setting up models
-  "hydromt-fiat>=0.5.5", # hydromt plugin for FIAT models
-  "hydromt_sfincs>=1.2.0, <2.0", # hydromt plugin for sfincs models
-  "hydromt_wflow>=0.6.0, <1.0",   # hydromt plugin for wflow models
-  "matplotlib",               # plotting
-  "netcdf4",                  # data handling
-  "numpy",              # array handling
-  "pandas",                   # data handling
-  "pooch",                    # test data fetching
-  "requests",                 # data fetching
-  "shapely",                  # geometry
-  "xarray",         # data handling
-]
 dev = [
-  "pip>=23.1.2", # needed for editable installs
   "pre-commit",  # linting
   "ruff",        # linting
   "tomli",       # parsing toml files
-  "hydroflows[doc, extra, methods, test]", # install all dependencies
 ]
-doc = [
-  "nbsphinx",  # Jupyter notebooks in Sphinx
-  "pip>=23.1.2", # needed for editable installs
+docs = [
+  "autodoc_pydantic",
+  "nbsphinx",
+  "pydata-sphinx-theme",
   "sphinx",
   "sphinx_design",
-  "pydata-sphinx-theme",
-  "autodoc_pydantic",
   "sphinxcontrib-programoutput",
-  "hydroflows[extra, methods]",
 ]
 extra = [
-  "papermill",  # execute Jupyter notebooks
   "jupyter",
-  "snakemake>=8.20, <9.0",      # Workflow manager
-  # "cwltool; platform_system != 'Windows'",  # Workflow manager for CWL This does not work with pixi..
+  "papermill",
 ]
 test = [
   "pytest>=2.7.3",  # testing framework
@@ -90,14 +74,12 @@ models = [
   "juliaup"             # julia package manager to install julia & wflow
 ]
 
-full = ["hydroflows[dev, doc, test, extra, methods, models]"]
-
 [project.urls]
 Source = "https://github.com/Deltares-research/HydroFlows"
 Documentation = "https://deltares-research.github.io/HydroFlows"
 
-[project.scripts]
-hydroflows = "hydroflows.cli.main:cli"
+[project.entry-points.workflowpy]
+hydroflows = "hydroflows.methods:__eps__"
 
 [tool.flit.sdist]
 exclude = ["docs/", "tests/", "examples/", "cases/", ".*", "pixi.lock"]
@@ -143,60 +125,45 @@ ignore_errors = true
 directory = ".cov"
 
 [tool.ruff]
+exclude = ["docs"]
 line-length = 88
 target-version = "py310"
 
+[tool.ruff.lint]
 # enable pydocstyle (E), pyflake (F) and isort (I), pytest-style (PT), bugbear (B)
 select = ["E", "F", "I", "PT", "D", "B"]
-ignore-init-module-imports = true
 ignore = ["D211", "D213", 'D206', 'E501', "E741", "D105", "E712", "B904", "B905"]
-exclude = ["docs"]
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/**" = ["D100", "D101", "D102", "D103", "D104", "PT001"]
 "tests/conftest.py" = ["E402"]
 "hydroflows/__init__.py" = ["E402", "F401", "F403"]
 "hydroflows/**/__init__.py" = ["F401", "F403"]
 "hydroflows/templates/*.py" = ["D103", "D100", "D104", "D205", "D400", "F403"]
 
-[tool.ruff.pydocstyle]
+[tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-[tool.make_env]
-channels = ["conda-forge", "bioconda"]
-deps_not_in_conda = [
-  "sphinx_design",
-  "hatyan",
-  "autodoc_pydantic",
-  "sphinxcontrib-programoutput",
-  "fiat-toolbox",
-  "hydromt-fiat"
-]
-
-[tool.pixi.project]
-channels = ["conda-forge", "bioconda"]
+[tool.pixi.workspace]
+channels = ["conda-forge"]
 platforms = ["win-64", "linux-64"]
 
 [tool.pixi.pypi-dependencies]
 hydroflows = { path = ".", editable = true }
-hydromt-fiat = { git = "https://github.com/Deltares/hydromt_fiat.git", branch = "fix_building_ground_elevtn", editable = true }
 
 # conda dependencies
 [tool.pixi.dependencies]
-hydromt = ">=0.10,<1.0"
-hydromt_sfincs = ">=1.1.0,<2.0"
-hydromt_wflow = ">=0.6,<1.0"
 graphviz = "*" # conda-forge to get dot executable
+numpy = "<2.4"
+pip = "*"
+uv = "*"
 
 [tool.pixi.target.linux-64.dependencies]
 cwltool = "*"
 
-[tool.pixi.feature.doc.dependencies]
+[tool.pixi.feature.docs.dependencies]
 nbsphinx = "*"
 papermill = "*"
-
-[tool.pixi.feature.extra.dependencies]
-snakemake = {version=">=8.20, <9.0", channel= "bioconda" }
 
 [tool.pixi.feature.models.dependencies]
 delft_fiat = "==0.2.0"
@@ -205,11 +172,10 @@ delft_fiat = "==0.2.0"
 python = "3.11.*"
 
 [tool.pixi.environments]
-default = { features = ["extra", "methods"], solve-group = "py311" }
-full = { features = ["dev", "doc", "test", "extra", "py311", "models", "methods", "full"], solve-group = "py311" }
-doc = { features = ["doc", "extra", "methods"], solve-group = "py311" }
-slim = { solve-group = "py311" }
-test-py311 = { features = ["test", "extra", "methods"], solve-group = "py311" }
+default = { features = ["py311", "dev", "docs", "extra", "models", "test"] }
+docs = { features = ["py311", "docs", "extra"] }
+slim = { features = ["py311"] }
+test-py311 = { features = ["py311", "extra", "test"] }
 
 [tool.pixi.tasks]
 install-pre-commit = "pre-commit install"

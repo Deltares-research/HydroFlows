@@ -5,9 +5,9 @@ Create a custom methods (advanced)
 
 To define a custom method, the following steps are required:
 
-1. Define the `input`, `output`, and `params` classes as subclasses of the :class:`~hydroflows.workflow.Parameters` class.
+1. Define the `input`, `output`, and `params` classes as subclasses of the :class:`~workflowpy.Parameters` class.
    This allows for type checking, validation, and referencing of the input, output, and parameters of the method.
-2. Set the ``input``, ``output``, ``params``, and ``name`` attributes of the method class, which should be a subclass of the :class:`~hydroflows.workflow.Method` class.
+2. Set the ``input``, ``output``, ``params``, and ``name`` attributes of the method class, which should be a subclass of the :class:`~workflowpy.Method` class.
 3. Implement the ``__init__`` method to initialize the input, output, and params attributes.
 4. Implement the ``_run`` method to define the logic of the method.
 5. Register the method using entry points.
@@ -51,7 +51,7 @@ Below is an example of a basic method that runs a dummy event with some model.
 
     from pathlib import Path
     from typing import Literal
-    from hydroflows.workflow import Method, Parameters
+    from workflowpy import Method, Parameters
 
     class RunDummyEventInput(Parameters):
         """Input files for the RunDummyEvent method."""
@@ -63,7 +63,7 @@ Below is an example of a basic method that runs a dummy event with some model.
         """Model settings file"""
 
         model_exe: Path | None = None
-        """Model executable, required if run_method is 'exe'"""
+        """Model executable, required if run_method is 'bin'"""
 
     class RunDummyEventOutput(Parameters):
         """Output files for the RunDummyEvent method."""
@@ -74,7 +74,7 @@ Below is an example of a basic method that runs a dummy event with some model.
     class RunDummyEventParams(Parameters):
         """Parameters for the RunDummyEvent method."""
 
-        run_method: Literal["exe", "docker"] = "exe"
+        run_method: Literal["bin", "docker"] = "bin"
         """How to run the model"""
 
         output_dir: Path
@@ -107,8 +107,8 @@ Below is an example of a basic method that runs a dummy event with some model.
             if event_name is None:
                 event_name = self.input.event_csv.stem
             self.params = RunDummyEventParams(output_dir=output_dir, event_name=event_name, **params)
-            if self.params.run_method == "exe" and model_exe is None:
-                raise ValueError("Model executable is required for run_method 'exe'")
+            if self.params.run_method == "bin" and model_exe is None:
+                raise ValueError("Model executable is required for run_method 'bin'")
             self.output = RunDummyEventOutput(
                 model_out_nc=self.params.output_dir / f"event_{event_name}_result.nc"
             )
@@ -127,10 +127,10 @@ This is useful when subsequent rules need to be executed for each of the output 
 
 Compared to a basic method, an expand method has the following additional attributes and methods:
 
-- :meth:`~hydroflows.workflow.ExpandMethod.set_expand_wildcard`: This method sets the wildcard name and values that are used to expand the method.
-- :meth:`~hydroflows.workflow.ExpandMethod.get_output_for_wildcards`: This method returns the output files for a specific wildcard value.
-- :attr:`~hydroflows.workflow.ExpandMethod.expand_wildcards`: This attribute stores the wildcard name and values that are used to expand the method.
-- :attr:`~hydroflows.workflow.ExpandMethod.output_expanded`: This attribute stores the output files for all wildcard values.
+- :meth:`~workflowpy.ExpandMethod.set_expand_wildcard`: This method sets the wildcard name and values that are used to expand the method.
+- :meth:`~workflowpy.ExpandMethod.get_output_for_wildcards`: This method returns the output files for a specific wildcard value.
+- :attr:`~workflowpy.ExpandMethod.expand_wildcards`: This attribute stores the wildcard name and values that are used to expand the method.
+- :attr:`~workflowpy.ExpandMethod.output_expanded`: This attribute stores the output files for all wildcard values.
 
 For the implementation of an expand method, the following additional requirements apply:
 
@@ -150,8 +150,8 @@ Below is an example of an expand method that prepares events for some model.
 .. code-block:: python
 
     from pathlib import Path
-    from hydroflows._typing import ListOfInt, WildcardPath
-    from hydroflows.workflow import ExpandMethod, Parameters
+    from workflowpy._typing import ListOfInt, WildcardPath
+    from workflowpy import ExpandMethod, Parameters
 
     class PrepareDummyEventsInput(Parameters):
         """Input files for the PrepareDummyEvents method."""
@@ -239,8 +239,8 @@ Below is an example of a reduce method that combines events for some model.
 .. code-block:: python
 
     from pathlib import Path
-    from hydroflows._typing import ListOfPath, WildcardPath
-    from hydroflows.workflow import Parameters, ReduceMethod
+    from workflowpy._typing import ListOfPath, WildcardPath
+    from workflowpy import Parameters, ReduceMethod
 
     class CombineDummyEventsInput(Parameters):
         """Input files for the CombineDummyEvents method."""
@@ -284,7 +284,7 @@ Below is an example of a reduce method that combines events for some model.
                 The output directory, by default None
             **params
                 Additional parameters to pass to the CombineDummyEvents Params instance.
-                See :py:class:`~hydroflows.methods.dummy.CombineDummyEvents
+                See :py:class:`~hydroflows.dummy.CombineDummyEvents
             """
             self.params = CombineDummyEventsParams(output_dir=output_dir, **params)
             self.input = CombineDummyEventsInput(model_out_ncs=model_out_ncs)
@@ -309,10 +309,10 @@ The following code should be part of your package:
 .. code-block:: python
 
     MY_METHODS = {
-        "combine_dummy_events": "hydroflows.methods.dummy.combine_dummy_events:CombineDummyEvents",
-        "prepare_dummy_events": "hydroflows.methods.dummy.prepare_dummy_events:PrepareDummyEvents",
-        "run_dummy_event":  "hydroflows.methods.dummy.run_dummy_event:RunDummyEvent",
-        "postprocess_dummy_event": "hydroflows.methods.dummy.postprocess_dummy_event:PostprocessDummyEvent",
+        "combine_dummy_events": "hydroflows.dummy.combine_dummy_events:CombineDummyEvents",
+        "prepare_dummy_events": "hydroflows.dummy.prepare_dummy_events:PrepareDummyEvents",
+        "run_dummy_event":  "hydroflows.dummy.run_dummy_event:RunDummyEvent",
+        "postprocess_dummy_event": "hydroflows.dummy.postprocess_dummy_event:PostprocessDummyEvent",
     }
 
 
@@ -320,7 +320,7 @@ The entry point should be defined in the `pyproject.toml` file as follows:
 
 .. code-block:: toml
 
-    [project.entry-points."hydroflows.methods"]
+    [project.entry-points."hydroflows"]
     my_methods = "my_package.my_module:MY_METHODS"
 
 

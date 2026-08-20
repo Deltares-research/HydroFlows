@@ -5,7 +5,7 @@ import pytest
 import xarray as xr
 from hydromt_wflow import WflowModel
 
-from hydroflows.methods.wflow import (
+from hydroflows.wflow import (
     WflowBuild,
     WflowRun,
     WflowUpdateChangeFactors,
@@ -13,8 +13,8 @@ from hydroflows.methods.wflow import (
 )
 
 
-@pytest.mark.requires_test_data()
-@pytest.mark.slow()
+@pytest.mark.requires_test_data
+@pytest.mark.slow
 def test_wflow_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
@@ -43,7 +43,7 @@ def test_wflow_build(
     # assert fn_geoms.exists()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_factors(
     tmp_path: Path, cmip6_stats: list, wflow_cached_model: Path, copy_model: bool
@@ -103,7 +103,7 @@ def test_wflow_update_factors(
         ds = None
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_wflow_update_forcing(
     wflow_tmp_model: Path, global_catalog: Path, copy_model: bool
@@ -159,9 +159,9 @@ def test_wflow_update_forcing(
         rule.run()
 
 
-@pytest.mark.slow()
-@pytest.mark.requires_test_data()
-@pytest.mark.parametrize("method", ["docker", "exe", "julia", "script", "apptainer"])
+@pytest.mark.slow
+@pytest.mark.requires_test_data
+@pytest.mark.parametrize("method", ["docker", "bin", "julia", "script", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,
     method: str,
@@ -174,9 +174,9 @@ def test_wflow_run(
     # check if wflow julia is installed
     if (method == "julia" or method == "script") and not has_wflow_julia:
         pytest.skip("Wflow Julia is not installed.")
-    elif method == "exe" and wflow_exe.is_file() is False:
+    elif method == "bin" and wflow_exe.is_file() is False:
         pytest.skip(f"Wflow executable is not available {wflow_exe}")
-    elif method == "exe" and platform.system() != "Windows":
+    elif method == "bin" and platform.system() != "Windows":
         pytest.skip("Wflow exe only supported on Windows")
     elif method == "docker" and has_docker is False:
         pytest.skip("Docker is not available.")

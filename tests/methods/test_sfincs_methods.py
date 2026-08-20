@@ -1,5 +1,4 @@
 import datetime
-import platform
 from pathlib import Path
 
 import pytest
@@ -7,18 +6,18 @@ import yaml
 from hydromt.config import configread
 from hydromt_sfincs import SfincsModel
 
-from hydroflows.methods.events import Event
-from hydroflows.methods.sfincs import (
+from hydroflows.events import Event
+from hydroflows.sfincs import (
     SfincsBuild,
     SfincsDownscale,
     SfincsRegion,
     SfincsRun,
     SfincsUpdateForcing,
 )
-from hydroflows.methods.sfincs.sfincs_utils import parse_event_sfincs
+from hydroflows.sfincs.sfincs_utils import parse_event_sfincs
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_region(
     sfincs_test_region: Path, merit_hydro_basins: Path, tmp_path: Path
 ):
@@ -31,7 +30,7 @@ def test_sfincs_region(
     sfincs_region.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_build(
     region: Path, build_cfgs: dict, global_catalog: Path, tmp_path: Path
 ):
@@ -72,7 +71,7 @@ def test_sfincs_build(
         ).run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model: bool):
     event_name = "p_event01"
@@ -116,25 +115,23 @@ def test_sfincs_update(sfincs_tmp_model: Path, event_set_file: Path, copy_model:
         sf.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("sfincs_root", ["sfincs_tmp_model", "sfincs_sim_model"])
-@pytest.mark.parametrize("method", ["docker", "exe", "apptainer"])
+@pytest.mark.parametrize("method", ["docker", "bin", "apptainer"])
 def test_sfincs_run(
     sfincs_root: Path,
     method: str,
     has_docker: bool,
     has_apptainer: bool,
-    sfincs_exe: Path,
+    sfincs_bin: Path,
     request,
 ):
     if method == "docker" and not has_docker:
         pytest.skip("Docker not available")
     elif method == "apptainer" and not has_apptainer:
         pytest.skip("Apptainer not available")
-    elif method == "exe" and not sfincs_exe.is_file():
-        pytest.skip(f"SFINCS executable not found at {sfincs_exe}")
-    elif method == "exe" and platform.system() != "Windows":
-        pytest.skip("SFINCS exe only supported on Windows")
+    elif method == "bin" and not sfincs_bin.is_file():
+        pytest.skip(f"SFINCS executable not found at {sfincs_bin}")
     # load fixture
     sfincs_root: Path = request.getfixturevalue(sfincs_root)
 
@@ -155,13 +152,13 @@ def test_sfincs_run(
 
     assert sfincs_inp.is_file()
     sf_run = SfincsRun(
-        sfincs_inp=str(sfincs_inp), run_method=method, sfincs_exe=sfincs_exe
+        sfincs_inp=str(sfincs_inp), run_method=method, sfincs_bin=sfincs_bin
     )
     assert sf_run.output.sfincs_map == sfincs_map
     sf_run.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     tmp_hazard_root = Path(sfincs_tmp_model, "hazard")
 
@@ -176,7 +173,7 @@ def test_sfincs_downscale(sfincs_tmp_model: Path, sfincs_sim_model: Path):
     sf_post.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     # get dummy location within the model domain
     # read gis/region.geojson
@@ -226,7 +223,9 @@ def test_parse_event_sfincs(sfincs_tmp_model: Path, tmp_path: Path):
     )
 
     parse_event_sfincs(
-        root=sfincs_tmp_model, event=event, out_root=sfincs_tmp_model / "sim" / "test"
+        inp=Path(sfincs_tmp_model, "sfincs.inp"),
+        event=event,
+        out_root=sfincs_tmp_model / "sim" / "test",
     )
 
     sf = SfincsModel(root=sfincs_tmp_model / "sim" / "test", mode="r")

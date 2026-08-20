@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from hydroflows.methods.discharge import FluvialDesignEvents
+from hydroflows.discharge import FluvialDesignEvents
 
 
 def test_fluvial_design_hydro(tmp_disch_time_series_nc: Path, tmp_path: Path):

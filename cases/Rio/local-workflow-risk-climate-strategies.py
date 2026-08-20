@@ -4,10 +4,12 @@
 # Import packages
 from pathlib import Path
 
-from hydroflows import Workflow, WorkflowConfig
-from hydroflows.log import setuplog
-from hydroflows.methods import catalog, fiat, flood_adapt, rainfall, script, sfincs
-from hydroflows.workflow.wildcards import resolve_wildcards
+from workflowpy import Workflow, WorkflowConfig
+from workflowpy.log import setuplog
+from workflowpy.methods import script
+from workflowpy.wildcards import resolve_wildcards
+
+from hydroflows import catalog, fiat, rainfall, sfincs
 
 # Where the current file is located
 pwd = Path(__file__).parent
@@ -32,12 +34,12 @@ config = WorkflowConfig(
     catalog_path_global=Path(pwd, "data/global-data/data_catalog.yml"),
     catalog_path_local=Path(pwd, "data/local-data/data_catalog.yml"),
     # sfincs settings
-    sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+    sfincs_bin=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
     subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
-    fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
+    fiat_bin=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
     risk=True,
     # design events settings
     rps=[5, 10, 100],
@@ -195,7 +197,7 @@ w.create_rule(sfincs_update, rule_id="sfincs_update")
 # Run the sfincs model
 sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
-    sfincs_exe=w.get_ref("$config.sfincs_exe"),
+    sfincs_bin=w.get_ref("$config.sfincs_bin"),
 )
 w.create_rule(sfincs_run, rule_id="sfincs_run")
 
@@ -234,7 +236,7 @@ w.create_rule(fiat_update, rule_id="fiat_update")
 # Run FIAT
 fiat_run = fiat.FIATRun(
     fiat_cfg=fiat_update.output.fiat_out_cfg,
-    fiat_exe=w.get_ref("$config.fiat_exe"),
+    fiat_bin=w.get_ref("$config.fiat_bin"),
 )
 w.create_rule(fiat_run, rule_id="fiat_run")
 
@@ -247,23 +249,6 @@ fiat_visualize_risk = fiat.FIATVisualize(
 )
 w.create_rule(fiat_visualize_risk, rule_id="fiat_visualize_risk")
 
-# %%
-# Prepare Sfincs models for FloodAdapt DataBase
-prep_sfincs_models = flood_adapt.PrepSfincsModels(
-    sfincs_inp=sfincs_run.output,
-    output_dir="output/floodadapt/risk_{scenarios}_{strategies}",
-)
-w.create_rule(prep_sfincs_models, rule_id="prep_sfincs_models")
-
-# %%
-# Setup FloodAdapt
-floodadapt_build = flood_adapt.SetupFloodAdapt(
-    sfincs_inp=prep_sfincs_models.output.sfincs_out_inp,
-    fiat_cfg=fiat_update.output.fiat_out_cfg,
-    event_set_yaml="events/present/pluvial_design_events_present.yml",
-    output_dir="output/floodadapt/database_prep",
-)
-w.create_rule(floodadapt_build, rule_id="floodadapt_build")
 # %%
 # run workflow
 w.dryrun()

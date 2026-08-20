@@ -16,7 +16,7 @@ as input for another method. To compose a workflow, the following steps are take
 Initialize a workflow
 ---------------------
 
-To initialize the :class:`~hydroflows.workflow.Workflow` class, a user can supply following arguments (all optional):
+To initialize the :class:`~workflowpy.Workflow` class, a user can supply following arguments (all optional):
 
 - The **root directory** *(recommended!)* is the directory where the workflow is executed.
   All input and output files of the rule are relative to this directory.
@@ -27,7 +27,7 @@ To initialize the :class:`~hydroflows.workflow.Workflow` class, a user can suppl
 
 .. ipython:: python
 
-    from hydroflows.workflow import Workflow
+    from workflowpy import Workflow
     import logging
 
     # setup logging
@@ -47,7 +47,7 @@ Create workflow rules (basic)
 -----------------------------
 
 To create a rule, the method it is based on should be initialized first.
-A rule is then created by added it to the workflow using the :meth:`~hydroflows.workflow.Workflow.create_rule`.
+A rule is then created by added it to the workflow using the :meth:`~workflowpy.Workflow.create_rule`.
 When calling ``create_rule`` with a method the following steps are executed in the background:
 
 - The :term:`wildcards` are detected and validated. Based on the wildcard values different *method instances* are created.
@@ -71,10 +71,10 @@ Here, the `model_exe` parameter is set using a reference to the workflow configu
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import RunDummyEvent
+    from workflowpy.methods._dummy import DummyRun
 
     # initialize a dummy method which performs a simulation for an event
-    simulate_event = RunDummyEvent(
+    simulate_event = DummyRun(
         event_csv="events/event_x.csv",
         settings_toml="settings.toml",
         model_exe=wf.get_ref("$config.model_exe"),  # use a reference to the workflow configuration
@@ -100,10 +100,10 @@ A reference to the output file can automatically be created because output files
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import PostprocessDummyEvent
+    from workflowpy.methods._dummy import DummyPostprocess
 
     # initialize a method that postprocesses the output of the simulation
-    postprocess = PostprocessDummyEvent(
+    postprocess = DummyPostprocess(
         model_nc=simulate_event.output.model_out_nc,
         output_dir="results",
         event_name="event_x",
@@ -139,7 +139,7 @@ The new rules will have six instances, one for each combination of the wildcards
     wf.wildcards.set("event", ["event01", "event02", "event03"])
 
     # initialize a method with `region` and `event` wildcards
-    simulate_event_repeat = RunDummyEvent(
+    simulate_event_repeat = DummyRun(
         event_csv="events/{region}/{event}.csv",
         settings_toml="{region}/settings.toml",
         model_exe=wf.get_ref("$config.model_exe"),  # use a reference to the workflow configuration
@@ -152,7 +152,7 @@ The new rules will have six instances, one for each combination of the wildcards
     wf.create_rule(simulate_event_repeat, rule_id="simulate_event_repeat")
 
     # initialize a method that postprocesses the output of the simulation
-    postprocess_repeat = PostprocessDummyEvent(
+    postprocess_repeat = DummyPostprocess(
         model_nc=simulate_event_repeat.output.model_out_nc,
         output_dir="results/{region}",
         event_name="{event}",
@@ -171,14 +171,14 @@ Create workflow rules (expand and reduce wildcards)
 In order to create multiple output files from a single set of input files (expand) or to create a single output file from multiple input files (reduce),
 special methods called ``ExpandMethod`` and ``ReduceMethod`` can be used, see :ref:`expand_reduce_methods`.
 
-For example, the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` method can be used to create multiple events for different return periods from a single time series.
+For example, the :class:`~workflowpy.methods._dummy.DummyPrepare` method can be used to create multiple events for different return periods from a single time series.
 The method has a ``wildcard`` parameter to define the wildcard name, while its values will be based on the ``rps`` parameter.
 Which input parameter is used for expanding or reducing depends on the method logic and is described in the method documentation.
 At initialization, an ``ExpandMethod`` stores the name and values as *expand* wildcard which are used to create multiple output files.
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import PrepareDummyEvents
+    from workflowpy.methods._dummy import DummyPrepare
 
     # initialize new workflow
     wf = Workflow(
@@ -187,7 +187,7 @@ At initialization, an ``ExpandMethod`` stores the name and values as *expand* wi
     )
 
     # initialize a method
-    prepare_events = PrepareDummyEvents(
+    prepare_events = DummyPrepare(
         timeseries_csv="data/timeseries.csv",
         output_dir="events",
         rps=[1,5,10,50,100],
@@ -204,17 +204,17 @@ At initialization, an ``ExpandMethod`` stores the name and values as *expand* wi
 After an ``ExpandMethod`` is added to the workflow, the wildcard can be used in subsequent rules to repeat the
 method for each value of the wildcard value and/or to reduce over multiple input files.
 
-In the following example, the :class:`~hydroflows.methods.dummy.RunDummyEvent` method is repeated for each event,
-created by the :class:`~hydroflows.methods.dummy.PrepareDummyEvents` method,
-followed by the ``ReduceMethod`` :class:`~hydroflows.methods.dummy.CombineDummyEvents` that combines the results.
+In the following example, the :class:`~workflowpy.methods._dummy.DummyRun` method is repeated for each event,
+created by the :class:`~workflowpy.methods._dummy.DummyPrepare` method,
+followed by the ``ReduceMethod`` :class:`~workflowpy.methods._dummy.DummyCombine` that combines the results.
 The latter takes the output of all event simulations as input.
 
 .. ipython:: python
 
-    from hydroflows.methods.dummy import CombineDummyEvents
+    from workflowpy.methods._dummy import DummyCombine
 
     # initialize a method that simulates the events
-    simulate_events = RunDummyEvent(
+    simulate_events = DummyRun(
         event_csv=prepare_events.output.event_csv,
         settings_toml="settings.toml",
         model_exe=wf.get_ref("$config.model_exe"),  # use a reference to the workflow configuration
@@ -227,7 +227,7 @@ The latter takes the output of all event simulations as input.
     wf.create_rule(simulate_events, rule_id="simulate_events")
 
     # initialize a method that combines the results of the events
-    combine_events = CombineDummyEvents(
+    combine_events = DummyCombine(
         model_out_ncs=simulate_events.output.model_out_nc,
         output_dir="results",
     )

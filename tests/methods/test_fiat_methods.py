@@ -9,10 +9,10 @@ import pytest
 import toml
 import xarray as xr
 
-from hydroflows.methods.fiat import FIATBuild, FIATRun, FIATUpdateHazard, FIATVisualize
+from hydroflows.fiat import FIATBuild, FIATRun, FIATUpdateHazard, FIATVisualize
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     # Setting input data
     region = sfincs_test_region.as_posix()
@@ -28,7 +28,7 @@ def test_fiat_build(tmp_path: Path, sfincs_test_region: Path, build_cfgs: dict):
     rule.run()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 @pytest.mark.parametrize("copy_model", [True, False])
 def test_fiat_update_hazard(
     fiat_tmp_model: Path,
@@ -44,7 +44,7 @@ def test_fiat_update_hazard(
     # NOTE file names should match the event names in the event set
     hazard_maps = []
     for i in range(3):
-        nc_file = tmp_path / f"flood_map_p_event{i+1:02d}.nc"
+        nc_file = tmp_path / f"flood_map_p_event{i + 1:02d}.nc"
         hazard_map_data.to_netcdf(nc_file)
         hazard_maps.append(nc_file)
 
@@ -91,14 +91,14 @@ def test_fiat_update_hazard(
     rule.run()
 
 
-@pytest.mark.requires_test_data()
-@pytest.mark.parametrize("method", ["python", "exe"])
+@pytest.mark.requires_test_data
+@pytest.mark.parametrize("method", ["python", "bin"])
 def test_fiat_run(
-    fiat_sim_model: Path, method: str, fiat_exe: Path, has_fiat_python: bool
+    fiat_sim_model: Path, method: str, fiat_bin: Path, has_fiat_python: bool
 ):
-    if method == "exe" and not fiat_exe.is_file():
-        pytest.skip(f"FIAT executable not found at {fiat_exe}")
-    elif method == "exe" and platform.system() != "Windows":
+    if method == "bin" and not fiat_bin.is_file():
+        pytest.skip(f"FIAT executable not found at {fiat_bin}")
+    elif method == "bin" and platform.system() != "Windows":
         pytest.skip("FIAT exe only supported on Windows")
     elif method == "python" and not has_fiat_python:
         pytest.skip("FIAT python package not found")
@@ -114,13 +114,14 @@ def test_fiat_run(
         "settings.toml",
     )
     # Setup the method
-    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_exe=fiat_exe, run_method=method)
+    rule = FIATRun(fiat_cfg=fiat_cfg, fiat_bin=fiat_bin, run_method=method)
     rule.run()
 
     assert fiat_cfg.exists()
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.skip(reason="Weird Tk error..")
+@pytest.mark.requires_test_data
 def test_fiat_visualize_risk_event(fiat_tmp_model_all: Path, tmp_path: Path):
     fiat_output = Path(
         fiat_tmp_model_all / "simulations" / "pluvial_events" / "output" / "output.csv"

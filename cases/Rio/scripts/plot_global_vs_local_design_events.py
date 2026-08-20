@@ -1,4 +1,4 @@
-""""Script to plot the differences between the derived global and local pluvial design events."""
+"""Script to plot the differences between the derived global and local pluvial design events."""
 
 import glob
 import os
@@ -7,7 +7,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 
-from hydroflows.methods.events import Event
+from hydroflows.events import Event
 
 
 def load_event_files(
@@ -81,7 +81,7 @@ def plot_global_vs_local_hyetographs(
 
         if i == 0:
             ax.legend()
-        ax.set_title(f" RP {1/event.probability} years")
+        ax.set_title(f" RP {1 / event.probability} years")
         ax.grid(True, alpha=0.3)
         ax.set_xlabel("Time [hour]")
 

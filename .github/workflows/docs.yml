@@ -21,20 +21,18 @@ jobs:
 
     steps:
       - name: checkout code
-        uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GH_PAT }}
+        uses: actions/checkout@v6
 
-      - uses: prefix-dev/setup-pixi@v0.8.1
+      - uses: prefix-dev/setup-pixi@v0.9.5
         with:
-          pixi-version: "v0.39.2"
-          environments: doc
+          pixi-version: "v0.69.0"
+          environments: docs
           locked: false
           cache: true
           cache-write: ${{ github.event_name == 'push' && github.ref_name == 'main' }}
 
       - name: Restore cache of hydroflows test data
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         id: restore-cache
         with:
           path: ~/.cache/hydroflows/*.tar.gz
@@ -44,19 +42,19 @@ jobs:
       - name: Generate dummy docs
         if: ${{ github.event_name == 'pull_request' }}
         run: |
-          pixi run -e doc docs-dummy
+          pixi run -e docs docs-dummy
 
       # build docs and save to html
       - name: Build docs
         if : ${{ github.event_name != 'pull_request' }}
         run: |
-          pixi run -e doc docs-html
-        # echo "DOC_VERSION=$(pixi run -e doc get-version)" >> $GITHUB_ENV
+          pixi run -e docs docs-html
+        # echo "DOC_VERSION=$(pixi run -e docs get-version)" >> $GITHUB_ENV
 
       # Upload the html docs as an artifact
       - name: Upload artifact
         if : ${{ github.event_name != 'pull_request' }}
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: docs/_build/html
 
@@ -81,4 +79,4 @@ jobs:
     # Deploy the docs to GitHub Pages
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v4
+      uses: actions/deploy-pages@v5

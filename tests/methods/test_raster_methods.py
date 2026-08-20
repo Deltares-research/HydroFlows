@@ -3,10 +3,10 @@ from pathlib import Path
 import pytest
 import xarray as xr
 
-from hydroflows.methods.raster import (
+from hydroflows.raster import (
     MergeGriddedDatasets,
 )
-from hydroflows.methods.raster.merge_utils import (
+from hydroflows.raster.merge_utils import (
     create_regular_grid,
 )
 
@@ -24,7 +24,7 @@ def test_regular_grid():
     assert ds.raster.bounds == (-2.0, -2.0, 2.0, 2.0)
 
 
-@pytest.mark.requires_test_data()
+@pytest.mark.requires_test_data
 def test_merge_gridded_datasets(tmp_path: Path, cmip6_stats: Path):
     models = ["CSIRO-ARCCSS_ACCESS-CM2", "INM_INM-CM5-0", "NOAA-GFDL_GFDL-ESM4"]
     datasets = [
