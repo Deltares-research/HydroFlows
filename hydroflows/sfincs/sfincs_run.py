@@ -121,13 +121,13 @@ class SfincsRun(Method):
 
         # set command to run depending on run_method
         if self.params.run_method == "bin":
-            sfincs_bin = Path(self.params.sfincs_bin).resolve()
-            if not sfincs_bin.is_file() and which(sfincs_bin.as_posix()) is None:
+            sfincs_bin = self.params.sfincs_bin
+            if which(sfincs_bin) is None:
                 raise FileNotFoundError(
-                    f"SFINCS binary not found at {self.params.sfincs_bin}. "
+                    f"SFINCS binary not found at/ for '{sfincs_bin}'. "
                     "Please check the path or install SFINCS."
                 )
-            cmd = [str(sfincs_bin)]
+            cmd = [str(Path(sfincs_bin).resolve())]
         elif self.params.run_method == "docker":
             # Get user info to properly set ownership of files created by container
             # see: https://unix.stackexchange.com/a/627028
