@@ -30,12 +30,12 @@ config = WorkflowConfig(
     plot_fig=True,
     # sfincs settings
     hydromt_sfincs_config=Path(setup_root, "hydromt_config/sfincs_config.yml"),
-    sfincs_exe=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
+    sfincs_bin=Path(pwd, "bin/sfincs_v2.1.1/sfincs.exe"),
     depth_min=0.05,
     subgrid_output=True,  # sfincs subgrid output should exist since it is used in the fiat model
     # fiat settings
     hydromt_fiat_config=Path(setup_root, "hydromt_config/fiat_config.yml"),
-    fiat_exe=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
+    fiat_bin=Path(pwd, "bin/fiat_v0.2.1/fiat.exe"),
     risk=True,
     # design events settings
     rps=[5, 10, 100],
@@ -103,7 +103,7 @@ w.create_rule(sfincs_update, rule_id="sfincs_update")
 # Run the sfincs model
 sfincs_run = sfincs.SfincsRun(
     sfincs_inp=sfincs_update.output.sfincs_out_inp,
-    sfincs_exe=w.get_ref("$config.sfincs_exe"),
+    sfincs_bin=w.get_ref("$config.sfincs_bin"),
 )
 w.create_rule(sfincs_run, rule_id="sfincs_run")
 
@@ -141,7 +141,7 @@ w.create_rule(fiat_update, rule_id="fiat_update")
 # Run FIAT
 fiat_run = fiat.FIATRun(
     fiat_cfg=fiat_update.output.fiat_out_cfg,
-    fiat_exe=w.get_ref("$config.fiat_exe"),
+    fiat_bin=w.get_ref("$config.fiat_bin"),
 )
 w.create_rule(fiat_run, rule_id="fiat_run")
 

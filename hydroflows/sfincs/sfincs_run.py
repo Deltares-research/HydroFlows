@@ -1,9 +1,9 @@
 """Method for running a SFINCS model."""
 
 import logging
-import platform
 import subprocess
 from pathlib import Path
+from shutil import which
 from typing import Literal, Optional
 
 from pydantic import model_validator
@@ -48,12 +48,12 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    sfincs_exe: Optional[Path] = None
-    """The path to SFINCS executable."""
+    sfincs_bin: Optional[Path | str] = None
+    """The path to SFINCS binary."""
 
-    run_method: Literal["exe", "docker", "apptainer"] = "exe"
-    """How to run the SFINCS model. The default is "exe", which runs the Windows executable.
-    If 'docker' or 'aptainer' is specified, the model is run in a Docker or Apptainer container.
+    run_method: Literal["bin", "docker", "apptainer"] = "bin"
+    """How to run the SFINCS model. The default is "bin", which runs the binary.
+    If 'docker' or 'apptainer' is specified, the model is run in a Docker or Apptainer container.
     """
 
     docker_tag: str = "sfincs-v2.2.0-col-dEze-Release"
@@ -61,9 +61,9 @@ class Params(Parameters):
 
     @model_validator(mode="after")
     def check_run_method(self) -> None:
-        """Check if sfincs_exe is specified if run_method == 'exe'."""
-        if self.run_method == "exe" and self.sfincs_exe is None:
-            raise ValueError("sfincs_exe should be specified when run_method is 'exe'")
+        """Check if sfincs_bin is specified if run_method == 'bin'."""
+        if self.run_method == "bin" and self.sfincs_bin is None:
+            raise ValueError("sfincs_bin should be specified when run_method is 'bin'")
         return self
 
 
@@ -74,11 +74,11 @@ class SfincsRun(Method):
     ----------
     sfincs_inp : str
         Path to the SFINCS input file.
-    run_method : Literal["exe", "docker", "apptainer"], optional
-        How to run the SFINCS model. The default is "exe", which runs the Windows executable.
+    run_method : Literal["bin", "docker", "apptainer"], optional
+        How to run the SFINCS model. The default is "bin", which runs the binary.
         If 'docker' or 'apptainer' is specified, the model is run in a Docker or Apptainer container.
-    sfincs_exe : Path, optional
-        Path to the SFINCS Windows executable.
+    sfincs_bin : Path, optional
+        Path to the SFINCS binary. Required if run_method is "bin".
     **params
         Additional parameters to pass to the SfincsRun instance.
         See :py:class:`sfincs_run Params <hydroflows.sfincs.sfincs_run.Params>`.
@@ -94,19 +94,19 @@ class SfincsRun(Method):
 
     _test_kwargs = {
         "sfincs_inp": Path("sfincs.inp"),
-        "sfincs_exe": Path("sfincs.exe"),
+        "sfincs_bin": Path("sfincs.exe"),
     }
 
     def __init__(
         self,
         sfincs_inp: str,
-        run_method: Literal["exe", "docker", "apptainer"] = "exe",
-        sfincs_exe: Optional[Path] = None,
+        run_method: Literal["bin", "docker", "apptainer"] = "bin",
+        sfincs_bin: Optional[Path] = None,
         **params,
     ) -> "SfincsRun":
         self.input: Input = Input(sfincs_inp=sfincs_inp)
         self.params: Params = Params(
-            sfincs_exe=sfincs_exe, run_method=run_method, **params
+            sfincs_bin=sfincs_bin, run_method=run_method, **params
         )
 
         self.output: Output = Output(
@@ -120,13 +120,14 @@ class SfincsRun(Method):
         base_folder = get_sfincs_basemodel_root(model_root / "sfincs.inp")
 
         # set command to run depending on run_method
-        if self.params.run_method == "exe":
-            if platform.system() != "Windows":
-                raise ValueError("sfince_exe only supported on Windows")
-            sfincs_exe = self.params.sfincs_exe.resolve()
-            if not sfincs_exe.is_file():
-                raise FileNotFoundError(f"sfincs_exe not found: {sfincs_exe}")
-            cmd = [str(sfincs_exe)]
+        if self.params.run_method == "bin":
+            sfincs_bin = Path(self.params.sfincs_bin).resolve()
+            if not sfincs_bin.is_file() and which(sfincs_bin.as_posix()) is None:
+                raise FileNotFoundError(
+                    f"SFINCS binary not found at {self.params.sfincs_bin}. "
+                    "Please check the path or install SFINCS."
+                )
+            cmd = [str(sfincs_bin)]
         elif self.params.run_method == "docker":
             # Get user info to properly set ownership of files created by container
             # see: https://unix.stackexchange.com/a/627028

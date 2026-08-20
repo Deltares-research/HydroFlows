@@ -41,8 +41,8 @@ class Output(Parameters):
 class Params(Parameters):
     """Parameters for the :py:class:`WflowRun`."""
 
-    run_method: Literal["exe", "docker", "julia", "script", "apptainer"] = "exe"
-    """How to run wflow. Options are 'exe' for running the executable directly (only on Windows),
+    run_method: Literal["bin", "docker", "julia", "script", "apptainer"] = "bin"
+    """How to run wflow. Options are 'bin' for running the executable directly (only on Windows),
     'docker' or 'apptainer' for running the model in a container."""
 
     wflow_bin: Optional[Path] = None
@@ -60,7 +60,7 @@ class Params(Parameters):
     @model_validator(mode="after")
     def check_wflow_bin(self):
         """Check the Wflow binary path."""
-        if self.wflow_bin is None and self.run_method == "exe":
+        if self.wflow_bin is None and self.run_method == "bin":
             raise ValueError(
                 "Path to the Wflow executable is required when running Wflow as an executable."
             )
@@ -93,8 +93,8 @@ class WflowRun(Method):
     ----------
     wflow_toml : Path
         The file path to the Wflow (toml) configuration file.
-    run_method : Literal["exe", "docker", "julia", "apptainer", "script"]
-        How to run Wflow. Options are 'exe' for running the executable directly (only on Windows),
+    run_method : Literal["bin", "docker", "julia", "apptainer", "script"]
+        How to run Wflow. Options are 'bin' for running the executable directly (only on Windows),
         'docker' or 'apptainer' for running the model in a container.
     wflow_bin : Path
         The path to the Wflow executable
@@ -119,7 +119,7 @@ class WflowRun(Method):
     def __init__(
         self,
         wflow_toml: Path,
-        run_method: Literal["exe", "docker", "julia", "apptainer", "script"] = "exe",
+        run_method: Literal["bin", "docker", "julia", "apptainer", "script"] = "bin",
         wflow_bin: Optional[Path] = None,
         **params,
     ) -> "WflowRun":
@@ -143,7 +143,7 @@ class WflowRun(Method):
 
         env = None
         # Path to the wflow_cli executable
-        if self.params.run_method == "exe":
+        if self.params.run_method == "bin":
             # Command to run wflow_cli with the TOML file
             command = [self.params.wflow_bin.as_posix(), wflow_toml]
             env = {"JULIA_NUM_THREADS": nthreads}

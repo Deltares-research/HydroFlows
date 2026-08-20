@@ -43,21 +43,21 @@ class Params(Parameters):
     method to define the required settings.
     """
 
-    run_method: Literal["exe", "python"] = "exe"
-    """How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
+    run_method: Literal["bin", "python"] = "bin"
+    """How to run the FIAT model. Options are 'bin' for running binary directly,
     'python' for running the model in a Python environment."""
 
-    fiat_exe: Optional[Path] = None
-    """The path to the FIAT executable."""
+    fiat_bin: Optional[Path] = None
+    """The path to the FIAT binary."""
 
     threads: int = 1
     """The number of the threads to be used."""
 
     @model_validator(mode="after")
-    def check_fiat_exe(self):
+    def check_fiat_bin(self):
         """Check the FIAT binary path."""
-        if self.run_method == "exe" and self.fiat_exe is None:
-            raise ValueError("FIAT binary path is required when run_method is 'exe'.")
+        if self.run_method == "bin" and self.fiat_bin is None:
+            raise ValueError("FIAT binary path is required when run_method is 'bin'.")
         return self
 
 
@@ -68,11 +68,11 @@ class FIATRun(Method):
     ----------
     fiat_cfg : Path
         Path to the FIAT config file.
-    run_method : Literal["exe", "python"]
-        How to run the FIAT model. Options are 'exe' for running the executable directly (only on Windows),
+    run_method : Literal["bin", "python"]
+        How to run the FIAT model. Options are 'bin' for running the binary directly,
         'python' for running the model in a Python environment.
-    fiat_exe : Path
-        Path to the FIAT executable
+    fiat_bin : Path
+        Path to the FIAT binary. Required if run_method is "bin".
     **params
         Additional parameters to pass to the FIATRun instance.
         See :py:class:`fiat_run Params <hydroflows.fiat.fiat_run.Params>`.
@@ -88,17 +88,17 @@ class FIATRun(Method):
 
     _test_kwargs = {
         "fiat_cfg": Path("fiat.toml"),
-        "fiat_exe": Path("fiat.exe"),
+        "fiat_bin": Path("fiat.exe"),
     }
 
     def __init__(
         self,
         fiat_cfg: Path,
-        run_method: Literal["exe", "python"] = "exe",
-        fiat_exe: Optional[Path] = None,
+        run_method: Literal["bin", "python"] = "bin",
+        fiat_bin: Optional[Path] = None,
         **params,
     ):
-        self.params: Params = Params(fiat_exe=fiat_exe, run_method=run_method, **params)
+        self.params: Params = Params(fiat_bin=fiat_bin, run_method=run_method, **params)
         self.input: Input = Input(fiat_cfg=fiat_cfg)
         self.output: Output = Output(
             fiat_out_gpkg=self.input.fiat_cfg.parent / "output" / "spatial.gpkg",
@@ -113,9 +113,7 @@ class FIATRun(Method):
         fiat_cfg_path = self.input.fiat_cfg.name
 
         entrypoint = (
-            "fiat"
-            if self.params.run_method == "python"
-            else self.params.fiat_exe.as_posix()
+            "fiat" if self.params.run_method == "python" else str(self.params.fiat_bin)
         )
 
         # Setup the cli command

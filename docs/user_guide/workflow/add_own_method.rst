@@ -63,7 +63,7 @@ Below is an example of a basic method that runs a dummy event with some model.
         """Model settings file"""
 
         model_exe: Path | None = None
-        """Model executable, required if run_method is 'exe'"""
+        """Model executable, required if run_method is 'bin'"""
 
     class RunDummyEventOutput(Parameters):
         """Output files for the RunDummyEvent method."""
@@ -74,7 +74,7 @@ Below is an example of a basic method that runs a dummy event with some model.
     class RunDummyEventParams(Parameters):
         """Parameters for the RunDummyEvent method."""
 
-        run_method: Literal["exe", "docker"] = "exe"
+        run_method: Literal["bin", "docker"] = "bin"
         """How to run the model"""
 
         output_dir: Path
@@ -107,8 +107,8 @@ Below is an example of a basic method that runs a dummy event with some model.
             if event_name is None:
                 event_name = self.input.event_csv.stem
             self.params = RunDummyEventParams(output_dir=output_dir, event_name=event_name, **params)
-            if self.params.run_method == "exe" and model_exe is None:
-                raise ValueError("Model executable is required for run_method 'exe'")
+            if self.params.run_method == "bin" and model_exe is None:
+                raise ValueError("Model executable is required for run_method 'bin'")
             self.output = RunDummyEventOutput(
                 model_out_nc=self.params.output_dir / f"event_{event_name}_result.nc"
             )

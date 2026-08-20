@@ -161,7 +161,7 @@ def test_wflow_update_forcing(
 
 @pytest.mark.slow
 @pytest.mark.requires_test_data
-@pytest.mark.parametrize("method", ["docker", "exe", "julia", "script", "apptainer"])
+@pytest.mark.parametrize("method", ["docker", "bin", "julia", "script", "apptainer"])
 def test_wflow_run(
     wflow_sim_model: Path,
     method: str,
@@ -174,9 +174,9 @@ def test_wflow_run(
     # check if wflow julia is installed
     if (method == "julia" or method == "script") and not has_wflow_julia:
         pytest.skip("Wflow Julia is not installed.")
-    elif method == "exe" and wflow_exe.is_file() is False:
+    elif method == "bin" and wflow_exe.is_file() is False:
         pytest.skip(f"Wflow executable is not available {wflow_exe}")
-    elif method == "exe" and platform.system() != "Windows":
+    elif method == "bin" and platform.system() != "Windows":
         pytest.skip("Wflow exe only supported on Windows")
     elif method == "docker" and has_docker is False:
         pytest.skip("Docker is not available.")

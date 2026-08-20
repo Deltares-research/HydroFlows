@@ -114,8 +114,8 @@ More information on how to use HydroFlows including several examples can be foun
    # initialize a second method and add it to the workflow
    sfincs_run = sfincs.SfincsRun(
       sfincs_inp=sfincs_build.output.sfincs_inp,
-      run_method="exe",
-      sfincs_exe="bin/sfincs/sfincs.exe"
+      run_method="bin",
+      sfincs_bin="bin/sfincs/sfincs.exe"
    )
    wf.create_rule(sfincs_run, rule_id="sfincs_run")
 
